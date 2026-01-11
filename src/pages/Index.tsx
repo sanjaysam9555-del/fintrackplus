@@ -6,6 +6,7 @@ import { SettingsPage } from "@/components/SettingsPage";
 import { AddTransactionSheet } from "@/components/AddTransactionSheet";
 import { NotificationsPage } from "@/components/NotificationsPage";
 import { AISummaryPage } from "@/components/AISummaryPage";
+import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { useCloudSync } from "@/hooks/useCloudSync";
@@ -25,7 +26,7 @@ const Index = () => {
   const { user } = useAuth();
   
   // Initialize cloud sync
-  useCloudSync();
+  const { showOnboarding, userName, completeOnboarding } = useCloudSync();
   
   useEffect(() => {
     // Set loading based on sync status
@@ -80,6 +81,15 @@ const Index = () => {
   
   return (
     <div className="min-h-screen bg-background">
+      {/* Onboarding Flow */}
+      <AnimatePresence>
+        {showOnboarding && (
+          <OnboardingFlow 
+            onComplete={completeOnboarding} 
+            userName={userName}
+          />
+        )}
+      </AnimatePresence>
       {/* Main Content Area */}
       <AnimatePresence mode="wait">
         <motion.div

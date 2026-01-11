@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useFinanceStore } from '@/lib/store';
@@ -25,6 +25,8 @@ const DEFAULT_CLOUD_CATEGORIES = [
 
 export const useCloudSync = () => {
   const { user } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [userName, setUserName] = useState<string>('');
   const { 
     setCloudData, 
     setSyncStatus
@@ -56,6 +58,12 @@ export const useCloudSync = () => {
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
+
+      // Check if onboarding should be shown
+      if (profile && !profile.onboarding_completed) {
+        setShowOnboarding(true);
+        setUserName(profile.name || '');
+      }
 
       // Fetch categories
       let { data: cloudCategories } = await supabase
@@ -146,5 +154,17 @@ export const useCloudSync = () => {
     }
   }, [user, fetchCloudData]);
 
-  return { fetchCloudData };
+  // Complete onboarding
+  const completeOnboarding = useCallback(async () => {
+    if (!user) return;
+    
+    await supabase
+      .from('profiles')
+      .update({ onboarding_completed: true })
+      .eq('user_id', user.id);
+    
+    setShowOnboarding(false);
+  }, [user]);
+
+  return { fetchCloudData, showOnboarding, userName, completeOnboarding };
 };
