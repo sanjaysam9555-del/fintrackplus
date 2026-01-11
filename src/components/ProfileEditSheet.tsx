@@ -101,9 +101,26 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
                       className="w-full h-full object-cover"
                     />
                   </div>
-                  <button className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg">
+                  <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg cursor-pointer hover:bg-primary/90 transition-colors">
                     <Camera size={14} />
-                  </button>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            const base64 = event.target?.result as string;
+                            updateUserProfile({ avatar: base64 });
+                            toast.success("Profile photo updated");
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">Tap to change photo</p>
               </div>

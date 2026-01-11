@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification } from './types';
+import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
 import { DEFAULT_CATEGORIES, DEFAULT_PROJECTS, DEMO_TRANSACTIONS } from './constants';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -30,6 +30,12 @@ interface FinanceStore extends FinanceState {
   updateProject: (id: string, project: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   
+  // Vendor actions
+  vendors: Vendor[];
+  addVendor: (name: string) => void;
+  updateVendor: (id: string, name: string) => void;
+  deleteVendor: (id: string) => void;
+  
   // Data management
   loadDemoData: () => void;
   clearAllData: () => void;
@@ -51,6 +57,7 @@ export const useFinanceStore = create<FinanceStore>()(
       transactions: [],
       categories: DEFAULT_CATEGORIES,
       projects: [],
+      vendors: [],
       userProfile: { name: 'Swati Sharma' },
       notifications: [],
       
@@ -142,17 +149,37 @@ export const useFinanceStore = create<FinanceStore>()(
         projects: state.projects.filter((p) => p.id !== id)
       })),
       
+      // Vendor actions
+      addVendor: (name) => set((state) => ({
+        vendors: [...state.vendors, { id: uuidv4(), name }]
+      })),
+      
+      updateVendor: (id, name) => set((state) => ({
+        vendors: state.vendors.map((v) => 
+          v.id === id ? { ...v, name } : v
+        )
+      })),
+      
+      deleteVendor: (id) => set((state) => ({
+        vendors: state.vendors.filter((v) => v.id !== id)
+      })),
+      
       // Data management
-      loadDemoData: () => set({
-        transactions: DEMO_TRANSACTIONS,
-        categories: DEFAULT_CATEGORIES,
-        projects: DEFAULT_PROJECTS,
-      }),
+      loadDemoData: () => {
+        const uniqueVendors = Array.from(new Set(DEMO_TRANSACTIONS.map(t => t.vendor)));
+        set({
+          transactions: DEMO_TRANSACTIONS,
+          categories: DEFAULT_CATEGORIES,
+          projects: DEFAULT_PROJECTS,
+          vendors: uniqueVendors.map(name => ({ id: uuidv4(), name })),
+        });
+      },
       
       clearAllData: () => set({
         transactions: [],
         categories: DEFAULT_CATEGORIES,
         projects: [],
+        vendors: [],
       }),
       
       // Computed helpers
