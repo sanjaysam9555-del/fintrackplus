@@ -113,10 +113,10 @@ export const TransactionItem = ({ transaction, category }: TransactionItemProps)
             
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">
-                {transaction.vendor}
+                {transaction.title || transaction.vendor || category?.name || 'Transaction'}
               </p>
               <p className="text-sm text-muted-foreground">
-                {category?.name || 'Other'} • {formatTime(transaction.time)}
+                {transaction.vendor && transaction.vendor !== (transaction.title || '') ? `${transaction.vendor} • ` : ''}{category?.name || 'Other'} • {formatTime(transaction.time)}
               </p>
             </div>
             
