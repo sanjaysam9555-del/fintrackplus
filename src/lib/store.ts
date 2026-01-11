@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
-import { DEFAULT_CATEGORIES, DEFAULT_PROJECTS, DEMO_TRANSACTIONS } from './constants';
+import { DEFAULT_CATEGORIES } from './constants';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -415,12 +415,11 @@ export const useFinanceStore = create<FinanceStore>()(
       
       // Data management
       loadDemoData: () => {
-        const uniqueVendors = Array.from(new Set(DEMO_TRANSACTIONS.map(t => t.vendor)));
         set({
-          transactions: DEMO_TRANSACTIONS,
+          transactions: [],
           categories: DEFAULT_CATEGORIES,
-          projects: DEFAULT_PROJECTS,
-          vendors: uniqueVendors.map(name => ({ id: uuidv4(), name })),
+          projects: [],
+          vendors: [],
         });
       },
       
