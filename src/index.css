@@ -1,96 +1,134 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    /* Primary - Denim Blue */
+    --primary: 214 78% 40%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 214 78% 95%;
+    --primary-glow: 214 78% 50%;
+    
+    /* Success - Income Green */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --success-light: 142 71% 95%;
+    
+    /* Destructive - Expense Red */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 0 72% 95%;
+    
+    /* Warning - Orange */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --warning-light: 38 92% 95%;
+    
+    /* Backgrounds */
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+    
+    /* Cards */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 222 47% 11%;
+    --card-glass: 0 0% 100% / 0.7;
+    
+    /* Popover */
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
+    --popover-foreground: 222 47% 11%;
+    
+    /* Secondary */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 47% 11%;
+    
+    /* Muted */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    
+    /* Accent */
+    --accent: 214 78% 95%;
+    --accent-foreground: 214 78% 40%;
+    
+    /* Border & Input */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 214 78% 40%;
+    
+    --radius: 1rem;
+    
+    /* Sidebar */
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Glass Effects */
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.3);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    
+    /* Chart Colors */
+    --chart-income: 142 71% 45%;
+    --chart-expense: 0 72% 51%;
+    --chart-primary: 214 78% 40%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    /* Deep Slate backgrounds - NOT pitch black */
+    --background: 222 47% 8%;
     --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
+    
+    --card: 222 47% 11%;
     --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
+    --card-glass: 222 47% 11% / 0.8;
+    
+    --popover: 222 47% 11%;
     --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
+    
+    --primary: 214 78% 50%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 214 78% 20%;
+    --primary-glow: 214 78% 60%;
+    
+    --secondary: 222 30% 15%;
     --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
+    
+    --muted: 222 30% 18%;
+    --muted-foreground: 215 20% 65%;
+    
+    --accent: 214 50% 20%;
+    --accent-foreground: 214 78% 70%;
+    
+    --success-light: 142 50% 15%;
+    --destructive-light: 0 50% 15%;
+    --warning-light: 38 50% 15%;
+    
+    --border: 222 30% 20%;
+    --input: 222 30% 20%;
+    --ring: 214 78% 50%;
+    
+    --sidebar-background: 222 47% 8%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent: 222 30% 15%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-border: 222 30% 20%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    --glass-bg: rgba(30, 41, 59, 0.85);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   }
 }
 
@@ -99,7 +137,122 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full;
+  }
+}
+
+@layer components {
+  /* Glass Card */
+  .glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+  }
+  
+  /* Glass Dock */
+  .glass-dock {
+    background: var(--glass-bg);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Primary gradient card */
+  .gradient-primary {
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-glow)) 100%);
+  }
+  
+  /* Skeleton loading */
+  .skeleton {
+    @apply animate-pulse bg-muted rounded-lg;
+  }
+  
+  /* Safe area padding for iOS */
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  /* Category icon backgrounds */
+  .category-icon {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center text-white;
+  }
+  
+  .category-food { @apply bg-orange-500; }
+  .category-transport { @apply bg-blue-500; }
+  .category-shopping { @apply bg-pink-500; }
+  .category-entertainment { @apply bg-purple-500; }
+  .category-utilities { @apply bg-yellow-500; }
+  .category-health { @apply bg-red-500; }
+  .category-travel { @apply bg-cyan-500; }
+  .category-salary { @apply bg-emerald-500; }
+  .category-freelance { @apply bg-indigo-500; }
+  .category-investment { @apply bg-teal-500; }
+  .category-other { @apply bg-gray-500; }
+  .category-software { @apply bg-violet-500; }
+  .category-groceries { @apply bg-green-500; }
+  .category-electronics { @apply bg-rose-500; }
+  .category-services { @apply bg-sky-500; }
+}
+
+@layer utilities {
+  /* Amount colors */
+  .text-income {
+    @apply text-success;
+  }
+  
+  .text-expense {
+    @apply text-destructive;
+  }
+  
+  /* Success/Destructive using semantic tokens */
+  .text-success {
+    color: hsl(var(--success));
+  }
+  
+  .bg-success {
+    background-color: hsl(var(--success));
+  }
+  
+  .bg-success-light {
+    background-color: hsl(var(--success-light));
+  }
+  
+  .text-warning {
+    color: hsl(var(--warning));
+  }
+  
+  .bg-warning {
+    background-color: hsl(var(--warning));
+  }
+  
+  .bg-warning-light {
+    background-color: hsl(var(--warning-light));
   }
 }
