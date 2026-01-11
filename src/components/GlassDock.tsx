@@ -14,8 +14,8 @@ interface GlassDockProps {
 const tabs = [
   { id: 'home' as TabId, icon: Home, label: 'Home' },
   { id: 'expenses' as TabId, icon: ArrowUpRight, label: 'Expense' },
-  { id: 'income' as TabId, icon: ArrowDownLeft, label: 'Income' },
   { id: 'add' as TabId, icon: Plus, label: 'Add' },
+  { id: 'income' as TabId, icon: ArrowDownLeft, label: 'Income' },
   { id: 'notifications' as TabId, icon: Bell, label: 'Alerts' },
 ];
 

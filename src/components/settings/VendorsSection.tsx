@@ -11,12 +11,24 @@ interface VendorsSectionProps {
   onBack: () => void;
 }
 
+const VENDOR_COLORS = [
+  '#10B981', // emerald
+  '#3B82F6', // blue
+  '#8B5CF6', // violet
+  '#EC4899', // pink
+  '#F59E0B', // amber
+  '#EF4444', // red
+  '#06B6D4', // cyan
+  '#84CC16', // lime
+];
+
 export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
   const { vendors, addVendor, updateVendor, deleteVendor, transactions } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [name, setName] = useState('');
+  const [selectedColor, setSelectedColor] = useState(VENDOR_COLORS[0]);
 
   // Combine stored vendors with transaction vendors, ensuring all are editable
   const allVendors = useMemo(() => {
@@ -45,13 +57,14 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
       toast.error("Vendor already exists");
       return;
     }
-    addVendor(name.trim());
+    addVendor(name.trim(), selectedColor);
     toast.success("Vendor added");
     setShowAddForm(false);
     setName('');
+    setSelectedColor(VENDOR_COLORS[0]);
   };
 
-  const handleUpdate = (id: string, originalName: string) => {
+  const handleUpdate = (id: string) => {
     if (!name.trim()) {
       toast.error("Please enter a vendor name");
       return;
@@ -59,13 +72,14 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
     
     // If this is a legacy vendor, add it to the store first
     if (id.startsWith('legacy-')) {
-      addVendor(name.trim());
+      addVendor(name.trim(), selectedColor);
     } else {
-      updateVendor(id, name.trim());
+      updateVendor(id, { name: name.trim(), color: selectedColor });
     }
     toast.success("Vendor updated");
     setEditingId(null);
     setName('');
+    setSelectedColor(VENDOR_COLORS[0]);
   };
 
   const handleDelete = () => {
@@ -79,9 +93,10 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
     }
   };
 
-  const startEdit = (vendorId: string, vendorName: string) => {
+  const startEdit = (vendorId: string, vendorName: string, vendorColor?: string) => {
     setEditingId(vendorId);
     setName(vendorName);
+    setSelectedColor(vendorColor || VENDOR_COLORS[0]);
   };
 
   return (
@@ -93,7 +108,7 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
           </button>
           <h1 className="text-xl font-bold">Vendors</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setName(''); }}>
+        <Button size="sm" onClick={() => { setShowAddForm(true); setName(''); setSelectedColor(VENDOR_COLORS[0]); }}>
           <Plus size={16} className="mr-1" /> Add
         </Button>
       </div>
@@ -119,6 +134,21 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Color</p>
+                <div className="flex gap-2 flex-wrap">
+                  {VENDOR_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`w-8 h-8 rounded-full transition-all ${
+                        selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
               <Button onClick={handleAdd} className="w-full">
                 <Check size={16} className="mr-1" /> Add Vendor
               </Button>
@@ -145,22 +175,40 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Vendor name"
                   />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Color</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {VENDOR_COLORS.map((color) => (
+                        <button
+                          key={color}
+                          onClick={() => setSelectedColor(color)}
+                          className={`w-8 h-8 rounded-full transition-all ${
+                            selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
+                          }`}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setEditingId(null)} className="flex-1">
                       Cancel
                     </Button>
-                    <Button onClick={() => handleUpdate(vendor.id, vendor.name)} className="flex-1">
+                    <Button onClick={() => handleUpdate(vendor.id)} className="flex-1">
                       Save
                     </Button>
                   </div>
                 </div>
               ) : (
               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
-                    <Store size={18} className="text-success" />
+                  <div 
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ backgroundColor: vendor.color ? `${vendor.color}20` : 'hsl(var(--success) / 0.1)' }}
+                  >
+                    <Store size={18} style={{ color: vendor.color || 'hsl(var(--success))' }} />
                   </div>
                   <p className="font-medium flex-1">{vendor.name}</p>
-                  <button onClick={() => startEdit(vendor.id, vendor.name)} className="p-2 hover:bg-muted rounded-lg">
+                  <button onClick={() => startEdit(vendor.id, vendor.name, vendor.color)} className="p-2 hover:bg-muted rounded-lg">
                     <Pencil size={16} className="text-muted-foreground" />
                   </button>
                   <button onClick={() => setDeleteId(vendor.id)} className="p-2 hover:bg-destructive/10 rounded-lg">
