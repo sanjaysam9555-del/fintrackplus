@@ -9,11 +9,13 @@ import { AISummaryPage } from "@/components/AISummaryPage";
 import { useFinanceStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 
-type TabId = 'home' | 'expenses' | 'add' | 'income' | 'settings' | 'notifications' | 'ai';
+type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications';
+type ViewMode = TabId | 'settings' | 'ai';
 type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('home');
+  const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
@@ -37,16 +39,18 @@ const Index = () => {
   
   const handleNavigate = (section: string) => {
     if (section === 'settings') {
-      setActiveTab('settings');
+      setViewMode('settings');
       setSettingsSection(null);
+    } else if (section === 'ai') {
+      setViewMode('ai');
     } else {
       setSettingsSection(section as SettingsSection);
-      setActiveTab('settings');
+      setViewMode('settings');
     }
   };
   
   const renderContent = () => {
-    switch (activeTab) {
+    switch (viewMode) {
       case 'home':
         return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
       case 'expenses':
@@ -64,15 +68,15 @@ const Index = () => {
     }
   };
   
-  // Hide dock when viewing a settings sub-section
-  const showDock = !(activeTab === 'settings' && settingsSection !== null);
+  // Hide dock when viewing settings or AI (accessed from home page buttons)
+  const showDock = viewMode !== 'settings' && viewMode !== 'ai';
   
   return (
     <div className="min-h-screen bg-background">
       {/* Main Content Area */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={activeTab}
+          key={viewMode}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -20 }}
@@ -89,6 +93,7 @@ const Index = () => {
           activeTab={activeTab}
           onTabChange={(tab) => {
             setActiveTab(tab);
+            setViewMode(tab);
             setSettingsSection(null);
           }}
           onAddClick={() => setIsAddSheetOpen(true)}

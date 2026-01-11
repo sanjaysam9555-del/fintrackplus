@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { Home, ArrowDownLeft, ArrowUpRight, Plus, Settings, Bell, Sparkles } from "lucide-react";
+import { Home, ArrowDownLeft, ArrowUpRight, Plus, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/lib/store";
 
-type TabId = 'home' | 'expenses' | 'add' | 'income' | 'settings' | 'notifications' | 'ai';
+type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications';
 
 interface GlassDockProps {
   activeTab: TabId;
@@ -16,9 +16,7 @@ const tabs = [
   { id: 'expenses' as TabId, icon: ArrowUpRight, label: 'Expense' },
   { id: 'income' as TabId, icon: ArrowDownLeft, label: 'Income' },
   { id: 'add' as TabId, icon: Plus, label: 'Add' },
-  { id: 'ai' as TabId, icon: Sparkles, label: 'AI' },
   { id: 'notifications' as TabId, icon: Bell, label: 'Alerts' },
-  { id: 'settings' as TabId, icon: Settings, label: 'Settings' },
 ];
 
 export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps) => {
