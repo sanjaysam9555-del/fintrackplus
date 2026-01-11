@@ -4,25 +4,6 @@ import { useAuth } from './useAuth';
 import { useFinanceStore } from '@/lib/store';
 import { toast } from 'sonner';
 
-// Default categories to seed for new users
-const DEFAULT_CLOUD_CATEGORIES = [
-  // Expense categories
-  { name: 'Food & Dining', icon: 'Utensils', color: '#F97316', type: 'expense' },
-  { name: 'Transport', icon: 'Car', color: '#3B82F6', type: 'expense' },
-  { name: 'Shopping', icon: 'ShoppingBag', color: '#EC4899', type: 'expense' },
-  { name: 'Entertainment', icon: 'Film', color: '#8B5CF6', type: 'expense' },
-  { name: 'Utilities', icon: 'Zap', color: '#EAB308', type: 'expense' },
-  { name: 'Health', icon: 'Heart', color: '#EF4444', type: 'expense' },
-  { name: 'Travel', icon: 'Plane', color: '#06B6D4', type: 'expense' },
-  { name: 'Groceries', icon: 'ShoppingCart', color: '#22C55E', type: 'expense' },
-  { name: 'Other', icon: 'MoreHorizontal', color: '#6B7280', type: 'expense' },
-  // Income categories
-  { name: 'Salary', icon: 'Wallet', color: '#10B981', type: 'income' },
-  { name: 'Freelance', icon: 'Briefcase', color: '#14B8A6', type: 'income' },
-  { name: 'Investment', icon: 'TrendingUp', color: '#22C55E', type: 'income' },
-  { name: 'Other', icon: 'MoreHorizontal', color: '#6B7280', type: 'income' },
-];
-
 export const useCloudSync = () => {
   const { user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -31,19 +12,6 @@ export const useCloudSync = () => {
     setCloudData, 
     setSyncStatus
   } = useFinanceStore();
-
-  // Seed default categories for new users
-  const seedDefaultCategories = useCallback(async (userId: string) => {
-    const categoriesToInsert = DEFAULT_CLOUD_CATEGORIES.map(cat => ({
-      user_id: userId,
-      name: cat.name,
-      icon: cat.icon,
-      color: cat.color,
-      type: cat.type,
-    }));
-
-    await supabase.from('categories').insert(categoriesToInsert);
-  }, []);
 
   // Fetch all data from cloud on login
   const fetchCloudData = useCallback(async () => {
@@ -66,20 +34,10 @@ export const useCloudSync = () => {
       }
 
       // Fetch categories
-      let { data: cloudCategories } = await supabase
+      const { data: cloudCategories } = await supabase
         .from('categories')
         .select('*')
         .eq('user_id', user.id);
-
-      // Seed default categories for new users
-      if (!cloudCategories || cloudCategories.length === 0) {
-        await seedDefaultCategories(user.id);
-        const { data: seededCategories } = await supabase
-          .from('categories')
-          .select('*')
-          .eq('user_id', user.id);
-        cloudCategories = seededCategories;
-      }
 
       // Fetch vendors
       const { data: cloudVendors } = await supabase
@@ -145,7 +103,7 @@ export const useCloudSync = () => {
       setSyncStatus('error');
       toast.error('Failed to sync data from cloud');
     }
-  }, [user, setCloudData, setSyncStatus, seedDefaultCategories]);
+  }, [user, setCloudData, setSyncStatus]);
 
   // Sync on login
   useEffect(() => {

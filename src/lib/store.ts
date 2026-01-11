@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
-import { DEFAULT_CATEGORIES } from './constants';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -79,15 +78,15 @@ export const useFinanceStore = create<FinanceStore>()(
       // Cloud sync
       setSyncStatus: (status) => set({ syncStatus: status }),
       
-      setCloudData: (data) => {
-        set({
-          transactions: data.transactions,
-          categories: data.categories.length > 0 ? data.categories : DEFAULT_CATEGORIES,
-          vendors: data.vendors,
-          projects: data.projects,
-          userProfile: data.profile || { name: 'User' },
-        });
-      },
+    setCloudData: (data) => {
+      set({
+        transactions: data.transactions,
+        categories: data.categories,
+        vendors: data.vendors,
+        projects: data.projects,
+        userProfile: data.profile || { name: 'User' },
+      });
+    },
       
       // User Profile
       updateUserProfile: async (profile) => {
@@ -415,7 +414,7 @@ export const useFinanceStore = create<FinanceStore>()(
       loadDemoData: () => {
         set({
           transactions: [],
-          categories: DEFAULT_CATEGORIES,
+          categories: [],
           projects: [],
           vendors: [],
         });
