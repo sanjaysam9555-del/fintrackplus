@@ -4,11 +4,15 @@ import { useFinanceStore } from "@/lib/store";
 import { formatDate as formatDateLabel, formatCurrency } from "@/lib/constants";
 import { TransactionItem } from "./TransactionItem";
 import { TransactionSkeleton } from "./ui/skeleton-loader";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, CalendarIcon } from "lucide-react";
 import { Input } from "./ui/input";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Button } from "@/components/ui/button";
 
 interface TransactionListProps {
   type: TransactionType;
@@ -22,6 +26,8 @@ export const TransactionList = ({ type }: TransactionListProps) => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading] = useState(false);
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   
   const filteredCategories = categories.filter(c => c.type === type);
   
@@ -39,6 +45,15 @@ export const TransactionList = ({ type }: TransactionListProps) => {
       case 'year':
         start.setFullYear(today.getFullYear() - 1);
         break;
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            start: format(customStartDate, 'yyyy-MM-dd'),
+            end: format(customEndDate, 'yyyy-MM-dd'),
+          };
+        }
+        start.setMonth(today.getMonth() - 1);
+        break;
       default:
         start.setMonth(today.getMonth() - 1);
     }
@@ -47,7 +62,7 @@ export const TransactionList = ({ type }: TransactionListProps) => {
       start: start.toISOString().split('T')[0],
       end: today.toISOString().split('T')[0],
     };
-  }, [timeFilter]);
+  }, [timeFilter, customStartDate, customEndDate]);
   
   const filteredTransactions = useMemo(() => {
     return transactions
@@ -115,21 +130,79 @@ export const TransactionList = ({ type }: TransactionListProps) => {
       {/* Time Filter Tabs */}
       <div className="px-4 mb-4">
         <div className="flex p-1 bg-muted rounded-xl">
-          {(['week', 'month', 'year'] as TimeFilter[]).map((filter) => (
+          {(['week', 'month', 'year', 'custom'] as TimeFilter[]).map((filter) => (
             <button
               key={filter}
               onClick={() => setTimeFilter(filter)}
               className={cn(
-                "flex-1 py-2 rounded-lg font-medium transition-colors capitalize",
+                "flex-1 py-2 rounded-lg font-medium transition-colors capitalize text-sm",
                 timeFilter === filter 
                   ? "bg-card shadow-sm" 
                   : "text-muted-foreground"
               )}
             >
-              {filter === 'week' ? 'Weekly' : filter === 'month' ? 'Monthly' : 'Yearly'}
+              {filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : filter === 'year' ? 'Year' : 'Custom'}
             </button>
           ))}
         </div>
+        
+        {/* Custom Date Range Picker */}
+        {timeFilter === 'custom' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-3 flex gap-2"
+          >
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal",
+                    !customStartDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {customStartDate ? format(customStartDate, "MMM dd, yyyy") : "Start date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card z-[60]" align="start">
+                <Calendar
+                  mode="single"
+                  selected={customStartDate}
+                  onSelect={setCustomStartDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal",
+                    !customEndDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {customEndDate ? format(customEndDate, "MMM dd, yyyy") : "End date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card z-[60]" align="end">
+                <Calendar
+                  mode="single"
+                  selected={customEndDate}
+                  onSelect={setCustomEndDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </motion.div>
+        )}
       </div>
       
       {/* Summary Card with Chart */}
@@ -140,7 +213,12 @@ export const TransactionList = ({ type }: TransactionListProps) => {
           className="bg-card rounded-2xl p-4 shadow-card"
         >
           <p className="text-sm text-muted-foreground">
-            Total {type === 'income' ? 'Income' : 'Expenses'} ({timeFilter === 'week' ? 'This Week' : timeFilter === 'month' ? 'This Month' : 'This Year'})
+            Total {type === 'income' ? 'Income' : 'Expenses'} ({
+              timeFilter === 'week' ? 'This Week' : 
+              timeFilter === 'month' ? 'This Month' : 
+              timeFilter === 'year' ? 'This Year' : 
+              customStartDate && customEndDate ? `${format(customStartDate, 'MMM dd')} - ${format(customEndDate, 'MMM dd')}` : 'Custom'
+            })
           </p>
           <p className={cn(
             "text-3xl font-bold mt-1",
