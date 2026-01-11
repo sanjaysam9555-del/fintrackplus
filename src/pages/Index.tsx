@@ -29,10 +29,12 @@ const Index = () => {
     return () => clearTimeout(timer);
   }, [transactions.length, loadDemoData]);
   
+  const handleOpenAddSheet = () => setIsAddSheetOpen(true);
+  
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <Dashboard isLoading={isLoading} />;
+        return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} />;
       case 'expenses':
         return <TransactionList type="expense" />;
       case 'income':
@@ -40,7 +42,7 @@ const Index = () => {
       case 'settings':
         return <SettingsPage />;
       default:
-        return <Dashboard isLoading={isLoading} />;
+        return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} />;
     }
   };
   

@@ -14,11 +14,12 @@ import { cn } from "@/lib/utils";
 
 interface DashboardProps {
   isLoading?: boolean;
+  onAddClick?: () => void;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const Dashboard = ({ isLoading = false }: DashboardProps) => {
+export const Dashboard = ({ isLoading = false, onAddClick }: DashboardProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -313,21 +314,19 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-3 gap-3"
+          className="grid grid-cols-2 gap-3"
         >
-          {[
-            { icon: "➕", label: "Add New" },
-            { icon: "📷", label: "Scan" },
-            { icon: "⋯", label: "More" },
-          ].map((action, i) => (
-            <button
-              key={i}
-              className="flex flex-col items-center gap-2 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
-            >
-              <span className="text-xl">{action.icon}</span>
-              <span className="text-xs font-medium text-muted-foreground">{action.label}</span>
-            </button>
-          ))}
+          <button
+            onClick={onAddClick}
+            className="flex flex-col items-center gap-2 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+          >
+            <span className="text-xl">➕</span>
+            <span className="text-xs font-medium text-muted-foreground">Add New</span>
+          </button>
+          <button className="flex flex-col items-center gap-2 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow">
+            <span className="text-xl">⋯</span>
+            <span className="text-xs font-medium text-muted-foreground">More</span>
+          </button>
         </motion.div>
       </div>
       

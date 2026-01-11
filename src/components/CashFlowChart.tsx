@@ -104,7 +104,7 @@ export const CashFlowChart = ({ transactions, onPointSelect }: CashFlowChartProp
         </motion.p>
       )}
       
-      <div className="h-40 mt-4">
+      <div className="h-28 mt-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} onClick={handleClick}>
             <defs>
@@ -158,14 +158,14 @@ export const CashFlowChart = ({ transactions, onPointSelect }: CashFlowChartProp
         </ResponsiveContainer>
       </div>
       
-      <div className="flex justify-center gap-6 mt-4">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-success" />
-          <span className="text-xs text-muted-foreground">Income</span>
+      <div className="flex justify-center gap-4 mt-2">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-success" />
+          <span className="text-[10px] text-muted-foreground">Income</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-destructive" />
-          <span className="text-xs text-muted-foreground">Expense</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-full bg-destructive" />
+          <span className="text-[10px] text-muted-foreground">Expense</span>
         </div>
       </div>
     </motion.div>
