@@ -152,41 +152,47 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Color</p>
-                <div className="flex gap-2 flex-wrap">
-                  {VENDOR_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`w-8 h-8 rounded-full transition-all ${
-                        selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
-                      }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Icon</p>
-                <ScrollArea className="h-24">
-                  <div className="flex gap-2 flex-wrap">
-                    {VENDOR_ICONS.map((iconName) => (
+              
+              {/* Color & Icon Row */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Color</p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {VENDOR_COLORS.map((color) => (
                       <button
-                        key={iconName}
-                        onClick={() => setSelectedIcon(iconName)}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
-                          selectedIcon === iconName 
-                            ? 'ring-2 ring-primary bg-primary/10' 
-                            : 'bg-muted hover:bg-muted/80'
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        className={`w-8 h-8 rounded-full transition-all ${
+                          selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
                         }`}
-                      >
-                        {renderIcon(iconName, selectedIcon === iconName ? selectedColor : 'hsl(var(--muted-foreground))', 18)}
-                      </button>
+                        style={{ backgroundColor: color }}
+                      />
                     ))}
                   </div>
-                </ScrollArea>
+                </div>
+                
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2">Icon</p>
+                  <ScrollArea className="h-[72px] rounded-lg border border-border p-2">
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {VENDOR_ICONS.map((iconName) => (
+                        <button
+                          key={iconName}
+                          onClick={() => setSelectedIcon(iconName)}
+                          className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
+                            selectedIcon === iconName 
+                              ? 'ring-2 ring-primary bg-primary/10' 
+                              : 'bg-muted/50 hover:bg-muted'
+                          }`}
+                        >
+                          {renderIcon(iconName, selectedIcon === iconName ? selectedColor : 'hsl(var(--muted-foreground))', 14)}
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
               </div>
+              
               <Button onClick={handleAdd} className="w-full">
                 <Check size={16} className="mr-1" /> Add Vendor
               </Button>
