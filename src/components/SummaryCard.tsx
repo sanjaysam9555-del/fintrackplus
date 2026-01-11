@@ -52,7 +52,7 @@ export const SummaryCard = ({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.02 }}
       className={cn(
-        "bg-card rounded-2xl p-3 shadow-card",
+        "bg-card rounded-2xl p-3 shadow-card border border-border",
         className
       )}
     >
