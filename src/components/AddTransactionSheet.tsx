@@ -244,33 +244,32 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                   </div>
                 </div>
                 
-                {/* Category & Date Row */}
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Category Dropdown */}
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Category *</Label>
-                    <Popover open={showCategories} onOpenChange={setShowCategories}>
-                      <PopoverTrigger asChild>
-                        <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
-                          {selectedCategory ? (
-                            <div className="flex items-center gap-2">
-                              <CategoryIcon 
-                                iconName={selectedCategory.icon} 
-                                colorClass={selectedCategory.color} 
-                                size="sm"
-                              />
-                              <span className="text-sm font-medium truncate">{selectedCategory.name}</span>
-                            </div>
-                          ) : (
-                            <span className="text-sm text-muted-foreground">Select</span>
-                          )}
-                          <ChevronDown size={16} className="text-muted-foreground shrink-0" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 p-2 bg-card z-[70]" align="start">
-                        <ScrollArea className="max-h-64">
-                          <div className="space-y-1">
-                            {filteredCategories.map((cat) => (
+                {/* Category Dropdown */}
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Category *</Label>
+                  <Popover open={showCategories} onOpenChange={setShowCategories}>
+                    <PopoverTrigger asChild>
+                      <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
+                        {selectedCategory ? (
+                          <div className="flex items-center gap-2">
+                            <CategoryIcon 
+                              iconName={selectedCategory.icon} 
+                              colorClass={selectedCategory.color} 
+                              size="sm"
+                            />
+                            <span className="text-sm font-medium truncate">{selectedCategory.name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Select category...</span>
+                        )}
+                        <ChevronDown size={16} className="text-muted-foreground shrink-0" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 p-2 bg-card z-[70]" align="start">
+                      <ScrollArea className="max-h-64">
+                        <div className="space-y-1">
+                          {filteredCategories.length > 0 ? (
+                            filteredCategories.map((cat) => (
                               <button
                                 key={cat.id}
                                 onClick={() => {
@@ -286,37 +285,41 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 <span className="text-sm font-medium flex-1 text-left">{cat.name}</span>
                                 <Check size={14} className={cn("text-primary shrink-0", categoryId === cat.id ? "opacity-100" : "opacity-0")} />
                               </button>
-                            ))}
-                          </div>
-                        </ScrollArea>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  
-                  {/* Date Picker */}
-                  <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date</Label>
-                    <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
-                      <PopoverTrigger asChild>
-                        <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
-                          <span className="text-sm font-medium">{format(date, 'MMM dd')}</span>
-                          <CalendarIcon size={16} className="text-muted-foreground" />
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0 bg-card z-[70]" align="end">
-                        <Calendar
-                          mode="single"
-                          selected={date}
-                          onSelect={(d) => {
-                            if (d) setDate(d);
-                            setShowDatePicker(false);
-                          }}
-                          initialFocus
-                          className="p-3 pointer-events-auto"
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                            ))
+                          ) : (
+                            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                              No categories available. Add categories in Settings.
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                
+                {/* Date Picker */}
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date</Label>
+                  <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+                    <PopoverTrigger asChild>
+                      <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
+                        <span className="text-sm font-medium">{format(date, 'MMM dd, yyyy')}</span>
+                        <CalendarIcon size={16} className="text-muted-foreground" />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-card z-[70]" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(d) => {
+                          if (d) setDate(d);
+                          setShowDatePicker(false);
+                        }}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 
                 {/* Vendor Dropdown */}
@@ -367,33 +370,39 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         />
                         <ScrollArea className="max-h-48">
                           <div className="space-y-1">
-                            {allVendors
-                              .filter(v => v.name.toLowerCase().includes(vendorSearch.toLowerCase()))
-                              .map((v) => (
-                                <button
-                                  key={v.name}
-                                  onClick={() => {
-                                    setVendor(v.name);
-                                    setVendorSearch("");
-                                    setShowVendors(false);
-                                  }}
-                                  className={cn(
-                                    "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
-                                    vendor === v.name ? "bg-primary/10" : "hover:bg-muted"
-                                  )}
-                                >
-                                  <div 
-                                    className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                                    style={{ 
-                                      backgroundColor: v.color ? `${v.color}20` : 'hsl(var(--success) / 0.2)' 
+                            {allVendors.length === 0 && !vendorSearch ? (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                Type to add a new {type === 'expense' ? 'vendor' : 'source'}
+                              </div>
+                            ) : (
+                              allVendors
+                                .filter(v => v.name.toLowerCase().includes(vendorSearch.toLowerCase()))
+                                .map((v) => (
+                                  <button
+                                    key={v.name}
+                                    onClick={() => {
+                                      setVendor(v.name);
+                                      setVendorSearch("");
+                                      setShowVendors(false);
                                     }}
+                                    className={cn(
+                                      "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
+                                      vendor === v.name ? "bg-primary/10" : "hover:bg-muted"
+                                    )}
                                   >
-                                    {renderVendorIcon(v.icon, v.color || 'hsl(var(--success))', 14)}
-                                  </div>
-                                  <span className="flex-1">{v.name}</span>
-                                  <Check size={14} className={cn("text-primary shrink-0", vendor === v.name ? "opacity-100" : "opacity-0")} />
-                                </button>
-                              ))}
+                                    <div 
+                                      className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                                      style={{ 
+                                        backgroundColor: v.color ? `${v.color}20` : 'hsl(var(--success) / 0.2)' 
+                                      }}
+                                    >
+                                      {renderVendorIcon(v.icon, v.color || 'hsl(var(--success))', 14)}
+                                    </div>
+                                    <span className="flex-1">{v.name}</span>
+                                    <Check size={14} className={cn("text-primary shrink-0", vendor === v.name ? "opacity-100" : "opacity-0")} />
+                                  </button>
+                                ))
+                            )}
                             {vendorSearch && !allVendors.some(v => v.name.toLowerCase() === vendorSearch.toLowerCase()) && (
                               <button
                                 onClick={() => {
@@ -458,9 +467,14 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         {selectedProject ? (
                           <div className="flex items-center gap-2">
                             <div 
-                              className="w-3 h-3 rounded-full" 
-                              style={{ backgroundColor: selectedProject.color }}
-                            />
+                              className="w-6 h-6 rounded-md flex items-center justify-center"
+                              style={{ backgroundColor: `${selectedProject.color}20` }}
+                            >
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: selectedProject.color }}
+                              />
+                            </div>
                             <span className="text-sm font-medium">{selectedProject.name}</span>
                           </div>
                         ) : (
@@ -469,7 +483,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         <ChevronDown size={16} className="text-muted-foreground" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-64 p-2 bg-card z-[70]" align="start">
+                    <PopoverContent className="w-72 p-2 bg-card z-[70]" align="start">
                       <ScrollArea className="max-h-48">
                         <div className="space-y-1">
                           <button
@@ -477,30 +491,44 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               setProjectId("");
                               setShowProjects(false);
                             }}
-                            className="w-full px-3 py-2.5 text-left text-sm rounded-lg hover:bg-muted text-muted-foreground"
+                            className="w-full px-3 py-2.5 text-left text-sm rounded-lg hover:bg-muted text-muted-foreground flex items-center gap-3"
                           >
+                            <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center">
+                              <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
+                            </div>
                             None
                           </button>
-                          {projects.map((proj) => (
-                            <button
-                              key={proj.id}
-                              onClick={() => {
-                                setProjectId(proj.id);
-                                setShowProjects(false);
-                              }}
-                              className={cn(
-                                "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
-                                projectId === proj.id ? "bg-primary/10" : "hover:bg-muted"
-                              )}
-                            >
-                              <div 
-                                className="w-3 h-3 rounded-full shrink-0" 
-                                style={{ backgroundColor: proj.color }}
-                              />
-                              <span className="flex-1">{proj.name}</span>
-                              <Check size={14} className={cn("text-primary shrink-0", projectId === proj.id ? "opacity-100" : "opacity-0")} />
-                            </button>
-                          ))}
+                          {projects.length > 0 ? (
+                            projects.map((proj) => (
+                              <button
+                                key={proj.id}
+                                onClick={() => {
+                                  setProjectId(proj.id);
+                                  setShowProjects(false);
+                                }}
+                                className={cn(
+                                  "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
+                                  projectId === proj.id ? "bg-primary/10" : "hover:bg-muted"
+                                )}
+                              >
+                                <div 
+                                  className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
+                                  style={{ backgroundColor: `${proj.color}20` }}
+                                >
+                                  <div 
+                                    className="w-3 h-3 rounded-full" 
+                                    style={{ backgroundColor: proj.color }}
+                                  />
+                                </div>
+                                <span className="flex-1">{proj.name}</span>
+                                <Check size={14} className={cn("text-primary shrink-0", projectId === proj.id ? "opacity-100" : "opacity-0")} />
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-3 py-2 text-sm text-muted-foreground text-center">
+                              No projects available. Add projects in Settings.
+                            </div>
+                          )}
                         </div>
                       </ScrollArea>
                     </PopoverContent>
