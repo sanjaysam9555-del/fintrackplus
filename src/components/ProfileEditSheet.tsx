@@ -2,11 +2,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Camera, User, Lock, Eye, EyeOff } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import avatarImage from "@/assets/avatar-swati.jpg";
 
 interface ProfileEditSheetProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ interface ProfileEditSheetProps {
 
 export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => {
   const { userProfile, updateUserProfile } = useFinanceStore();
+  const { user } = useAuth();
   const [name, setName] = useState(userProfile.name);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -94,12 +95,18 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
               {/* Avatar */}
               <div className="flex flex-col items-center">
                 <div className="relative">
-                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary">
-                    <img 
-                      src={userProfile.avatar || avatarImage} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-primary bg-primary/10 flex items-center justify-center">
+                    {userProfile.avatar ? (
+                      <img 
+                        src={userProfile.avatar} 
+                        alt="Profile" 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-3xl font-bold text-primary">
+                        {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                      </span>
+                    )}
                   </div>
                   <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg cursor-pointer hover:bg-primary/90 transition-colors">
                     <Camera size={14} />
@@ -141,7 +148,7 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
                 <Label className="text-xs text-muted-foreground uppercase tracking-wide">Email</Label>
                 <div className="mt-1 p-3 bg-muted rounded-xl flex items-center gap-2">
                   <User size={16} className="text-muted-foreground" />
-                  <span className="text-muted-foreground">swati.sharma@email.com</span>
+                  <span className="text-muted-foreground">{user?.email || 'No email'}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
               </div>

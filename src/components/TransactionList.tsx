@@ -110,7 +110,7 @@ export const TransactionList = ({ type }: TransactionListProps) => {
       });
       
       weeks.push({
-        name: `Week ${4 - i}`,
+        name: `W${4 - i}`,
         value: weekTransactions.reduce((sum, t) => sum + t.amount, 0),
       });
     }
