@@ -57,9 +57,11 @@ export const AuthPage = () => {
       >
         {/* Logo/Brand */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl gradient-primary flex items-center justify-center">
-            <span className="text-3xl font-bold text-primary-foreground">₹</span>
-          </div>
+          <img 
+            src="/app-icon-192.png" 
+            alt="FinTrack Pro" 
+            className="w-16 h-16 mx-auto mb-4 rounded-2xl"
+          />
           <h1 className="text-2xl font-bold">FinTrack Pro</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {isLogin ? 'Welcome back!' : 'Create your account'}
