@@ -68,7 +68,7 @@ export const SummaryCard = ({
       
       {percentChange !== undefined && (
         <p className={cn(
-          "text-xs font-medium mt-1",
+          "text-[10px] font-medium mt-1 whitespace-nowrap",
           isPositive ? "text-success" : "text-destructive"
         )}>
           {isPositive ? '+' : ''}{percentChange.toFixed(1)}% vs last
