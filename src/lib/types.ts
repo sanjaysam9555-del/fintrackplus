@@ -53,3 +53,17 @@ export interface InsightData {
   type: 'positive' | 'negative' | 'neutral';
   icon: string;
 }
+
+export interface UserProfile {
+  name: string;
+  avatar?: string;
+}
+
+export interface Notification {
+  id: string;
+  type: 'transaction' | 'export' | 'profile';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+}
