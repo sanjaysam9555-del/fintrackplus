@@ -20,7 +20,7 @@ export const TransactionItem = ({ transaction, category, onClick }: TransactionI
       whileHover={{ scale: 1.01 }}
       whileTap={{ scale: 0.99 }}
       onClick={onClick}
-      className="flex items-center gap-3 p-3 bg-card rounded-xl shadow-card cursor-pointer hover:shadow-card-hover transition-shadow"
+      className="flex items-center gap-3 p-3 bg-card rounded-xl shadow-card border border-border cursor-pointer hover:shadow-card-hover transition-shadow"
     >
       <CategoryIcon 
         iconName={category?.icon || 'Circle'} 

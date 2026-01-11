@@ -142,7 +142,7 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
           ].map((action, i) => (
             <button
               key={i}
-              className="flex flex-col items-center gap-2 p-3 bg-card rounded-xl shadow-card hover:shadow-card-hover transition-shadow"
+              className="flex flex-col items-center gap-2 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
             >
               <span className="text-xl">{action.icon}</span>
               <span className="text-xs font-medium text-muted-foreground">{action.label}</span>
