@@ -69,7 +69,7 @@ const Index = () => {
   const { user } = useAuth();
   
   // Initialize cloud sync
-  const { showOnboarding, userName, completeOnboarding } = useCloudSync();
+  const { showOnboarding, userName, completeOnboarding, refreshData, isRefreshing } = useCloudSync();
   
   useEffect(() => {
     // Set loading based on sync status
@@ -103,7 +103,15 @@ const Index = () => {
   const renderContent = () => {
     switch (viewMode) {
       case 'home':
-        return isLoading ? <DashboardSkeleton /> : <Dashboard isLoading={false} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
+        return isLoading ? <DashboardSkeleton /> : (
+          <Dashboard 
+            isLoading={false} 
+            onAddClick={handleOpenAddSheet} 
+            onNavigate={handleNavigate}
+            onRefresh={refreshData}
+            isRefreshing={isRefreshing}
+          />
+        );
       case 'expenses':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
