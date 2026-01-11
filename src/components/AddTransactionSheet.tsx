@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check } from "lucide-react";
+import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -271,7 +271,12 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                     <PopoverTrigger asChild>
                       <button className="w-full mt-1 p-2.5 bg-muted rounded-xl flex items-center justify-between">
                         {vendor ? (
-                          <span className="text-sm font-medium">{vendor}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 rounded-md bg-success/20 flex items-center justify-center">
+                              <Store size={12} className="text-success" />
+                            </div>
+                            <span className="text-sm font-medium">{vendor}</span>
+                          </div>
                         ) : (
                           <span className="text-sm text-muted-foreground">
                             {type === 'expense' ? 'Select vendor...' : 'Select source...'}
@@ -300,18 +305,24 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                                 }}
                                 className={cn(
                                   "w-full px-3 py-2 text-left text-sm rounded-md transition-colors flex items-center gap-2",
-                                  vendor === v ? "bg-primary/10 text-primary" : "hover:bg-muted"
+                                  vendor === v ? "bg-primary/10" : "hover:bg-muted"
                                 )}
                               >
-                                <Check size={12} className={cn("text-primary", vendor === v ? "opacity-100" : "opacity-0")} />
-                                {v}
+                                <div className="w-5 h-5 rounded-md bg-success/20 flex items-center justify-center shrink-0">
+                                  <Store size={12} className="text-success" />
+                                </div>
+                                <span className="flex-1">{v}</span>
+                                <Check size={12} className={cn("text-primary shrink-0", vendor === v ? "opacity-100" : "opacity-0")} />
                               </button>
                             ))}
                           {vendor && !allVendors.some(v => v.toLowerCase() === vendor.toLowerCase()) && (
                             <button
                               onClick={() => setShowVendors(false)}
-                              className="w-full px-3 py-2 text-left text-sm rounded-md hover:bg-muted text-primary"
+                              className="w-full px-3 py-2 text-left text-sm rounded-md hover:bg-muted text-primary flex items-center gap-2"
                             >
+                              <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center shrink-0">
+                                <Store size={12} className="text-primary" />
+                              </div>
                               + Add "{vendor}"
                             </button>
                           )}
@@ -361,7 +372,13 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                     <PopoverTrigger asChild>
                       <button className="w-full mt-1 p-2.5 bg-muted rounded-xl flex items-center justify-between">
                         {selectedProject ? (
-                          <span className="text-sm font-medium">{selectedProject.name}</span>
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: selectedProject.color }}
+                            />
+                            <span className="text-sm font-medium">{selectedProject.name}</span>
+                          </div>
                         ) : (
                           <span className="text-sm text-muted-foreground">Select project...</span>
                         )}
@@ -387,11 +404,15 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                           }}
                           className={cn(
                             "w-full px-3 py-2 text-left text-sm rounded-md transition-colors flex items-center gap-2",
-                            projectId === proj.id ? "bg-primary/10 text-primary" : "hover:bg-muted"
+                            projectId === proj.id ? "bg-primary/10" : "hover:bg-muted"
                           )}
                         >
-                          <Check size={12} className={cn("text-primary", projectId === proj.id ? "opacity-100" : "opacity-0")} />
-                          {proj.name}
+                          <div 
+                            className="w-3 h-3 rounded-full shrink-0" 
+                            style={{ backgroundColor: proj.color }}
+                          />
+                          <span className="flex-1">{proj.name}</span>
+                          <Check size={12} className={cn("text-primary shrink-0", projectId === proj.id ? "opacity-100" : "opacity-0")} />
                         </button>
                       ))}
                     </PopoverContent>
