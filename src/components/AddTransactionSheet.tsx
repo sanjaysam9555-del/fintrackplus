@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons } from "lucide-react";
+import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
+import { useNavigate } from "react-router-dom";
 // Helper to render dynamic icons
 const renderVendorIcon = (iconName: string | undefined, color: string, size: number = 12) => {
   const name = iconName || 'Store';
@@ -33,6 +33,7 @@ interface AddTransactionSheetProps {
 }
 
 export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId }: AddTransactionSheetProps) => {
+  const navigate = useNavigate();
   const { categories, projects, transactions, vendors, addTransaction } = useFinanceStore();
   
   const [type, setType] = useState<TransactionType>(defaultType);
@@ -291,15 +292,33 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                   <Check size={14} className={cn("text-primary shrink-0", categoryId === cat.id ? "opacity-100" : "opacity-0")} />
                                 </button>
                               ))}
-                              <div className="px-3 py-2 text-xs text-muted-foreground text-center border-t border-border mt-2 pt-2">
+                              <button
+                                onClick={() => {
+                                  setShowCategories(false);
+                                  onClose();
+                                  navigate('/?tab=settings');
+                                }}
+                                className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
+                              >
+                                <Settings size={12} />
                                 To add more categories, go to Settings
-                              </div>
+                              </button>
                             </>
                           ) : (
-                            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                            <button
+                              onClick={() => {
+                                setShowCategories(false);
+                                onClose();
+                                navigate('/?tab=settings');
+                              }}
+                              className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
                               No categories added yet.<br />
-                              <span className="text-xs">Add categories in Settings</span>
-                            </div>
+                              <span className="text-xs text-primary flex items-center justify-center gap-1 mt-1">
+                                <Settings size={12} />
+                                Add categories in Settings
+                              </span>
+                            </button>
                           )}
                         </div>
                       </ScrollArea>
@@ -401,15 +420,33 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                     <Check size={14} className={cn("text-primary shrink-0", vendor === v.name ? "opacity-100" : "opacity-0")} />
                                   </button>
                                 ))}
-                              <div className="px-3 py-2 text-xs text-muted-foreground text-center border-t border-border mt-2 pt-2">
+                              <button
+                                onClick={() => {
+                                  setShowVendors(false);
+                                  onClose();
+                                  navigate('/?tab=settings');
+                                }}
+                                className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
+                              >
+                                <Settings size={12} />
                                 To add more vendors, go to Settings
-                              </div>
+                              </button>
                             </>
                           ) : (
-                            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                            <button
+                              onClick={() => {
+                                setShowVendors(false);
+                                onClose();
+                                navigate('/?tab=settings');
+                              }}
+                              className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
                               No vendors added yet.<br />
-                              <span className="text-xs">Add vendors in Settings</span>
-                            </div>
+                              <span className="text-xs text-primary flex items-center justify-center gap-1 mt-1">
+                                <Settings size={12} />
+                                Add vendors in Settings
+                              </span>
+                            </button>
                           )}
                         </div>
                       </ScrollArea>
@@ -521,15 +558,33 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                   <Check size={14} className={cn("text-primary shrink-0", projectId === proj.id ? "opacity-100" : "opacity-0")} />
                                 </button>
                               ))}
-                              <div className="px-3 py-2 text-xs text-muted-foreground text-center border-t border-border mt-2 pt-2">
+                              <button
+                                onClick={() => {
+                                  setShowProjects(false);
+                                  onClose();
+                                  navigate('/?tab=settings');
+                                }}
+                                className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
+                              >
+                                <Settings size={12} />
                                 To add more projects, go to Settings
-                              </div>
+                              </button>
                             </>
                           ) : (
-                            <div className="px-3 py-4 text-center text-sm text-muted-foreground">
+                            <button
+                              onClick={() => {
+                                setShowProjects(false);
+                                onClose();
+                                navigate('/?tab=settings');
+                              }}
+                              className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
                               No projects added yet.<br />
-                              <span className="text-xs">Add projects in Settings</span>
-                            </div>
+                              <span className="text-xs text-primary flex items-center justify-center gap-1 mt-1">
+                                <Settings size={12} />
+                                Add projects in Settings
+                              </span>
+                            </button>
                           )}
                         </div>
                       </ScrollArea>
