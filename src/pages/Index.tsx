@@ -62,6 +62,7 @@ const ContentSkeleton = () => (
 );
 
 const PULL_THRESHOLD = 80;
+const INDICATOR_SIZE = 40;
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('home');
@@ -75,9 +76,10 @@ const Index = () => {
   // Pull to refresh state
   const [isPulling, setIsPulling] = useState(false);
   const pullY = useMotionValue(0);
-  const pullOpacity = useTransform(pullY, [0, 40, PULL_THRESHOLD], [0, 0.5, 1]);
-  const pullScale = useTransform(pullY, [0, PULL_THRESHOLD], [0.5, 1]);
+  const pullOpacity = useTransform(pullY, [0, 20, PULL_THRESHOLD], [0, 0.5, 1]);
+  const pullScale = useTransform(pullY, [0, PULL_THRESHOLD], [0.6, 1]);
   const pullRotation = useTransform(pullY, [0, PULL_THRESHOLD], [0, 180]);
+  const pullTop = useTransform(pullY, [0, PULL_THRESHOLD], [-INDICATOR_SIZE, 16]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Initialize cloud sync
@@ -201,25 +203,35 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Pull to Refresh Indicator */}
-      <motion.div
-        style={{ opacity: pullOpacity, scale: pullScale }}
-        className={cn(
-          "absolute left-1/2 -translate-x-1/2 z-20 flex items-center justify-center",
-          "w-10 h-10 rounded-full bg-card border border-border shadow-lg",
-          "pointer-events-none"
+      <AnimatePresence>
+        {(isPulling || isRefreshing) && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.6, top: -INDICATOR_SIZE }}
+            animate={{ 
+              opacity: isRefreshing ? 1 : pullOpacity.get(),
+              scale: isRefreshing ? 1 : pullScale.get(),
+              top: isRefreshing ? 16 : pullTop.get()
+            }}
+            exit={{ opacity: 0, scale: 0.6, top: -INDICATOR_SIZE }}
+            transition={{ duration: 0.2 }}
+            style={!isRefreshing ? { opacity: pullOpacity, scale: pullScale, top: pullTop } : undefined}
+            className={cn(
+              "fixed left-1/2 z-50 flex items-center justify-center",
+              "w-10 h-10 rounded-full bg-card border border-border shadow-lg",
+              "pointer-events-none",
+              "-translate-x-1/2"
+            )}
+          >
+            <motion.div
+              style={!isRefreshing ? { rotate: pullRotation } : undefined}
+              animate={isRefreshing ? { rotate: 360 } : {}}
+              transition={isRefreshing ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
+            >
+              <RefreshCw size={18} className="text-primary" />
+            </motion.div>
+          </motion.div>
         )}
-        animate={{ 
-          top: isRefreshing ? 16 : -40 + pullY.get() / 2
-        }}
-      >
-        <motion.div
-          style={{ rotate: isRefreshing ? undefined : pullRotation }}
-          animate={isRefreshing ? { rotate: 360 } : {}}
-          transition={isRefreshing ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
-        >
-          <RefreshCw size={18} className="text-primary" />
-        </motion.div>
-      </motion.div>
+      </AnimatePresence>
 
       {/* Onboarding Flow */}
       <AnimatePresence>
