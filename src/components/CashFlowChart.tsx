@@ -4,9 +4,14 @@ import { Transaction } from "@/lib/types";
 import { formatCurrency } from "@/lib/constants";
 import { motion } from "framer-motion";
 import { TrendingUp } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+
+type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
 interface CashFlowChartProps {
   transactions: Transaction[];
+  timeFilter: TimeFilter;
+  dateRange: { start: string; end: string };
   onPointSelect?: (amount: number, label: string) => void;
 }
 
@@ -18,43 +23,136 @@ interface ChartDataPoint {
   date: string;
 }
 
-export const CashFlowChart = ({ transactions, onPointSelect }: CashFlowChartProps) => {
+export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSelect }: CashFlowChartProps) => {
   const [selectedPoint, setSelectedPoint] = useState<ChartDataPoint | null>(null);
   
   const chartData = useMemo(() => {
-    const today = new Date();
-    const weeks: ChartDataPoint[] = [];
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
+    const daysDiff = differenceInDays(endDate, startDate);
     
-    for (let i = 3; i >= 0; i--) {
-      const weekEnd = new Date(today);
-      weekEnd.setDate(today.getDate() - (i * 7));
-      const weekStart = new Date(weekEnd);
-      weekStart.setDate(weekEnd.getDate() - 6);
-      
-      const weekTransactions = transactions.filter((t) => {
-        const date = new Date(t.date);
-        return date >= weekStart && date <= weekEnd;
-      });
-      
-      const income = weekTransactions
-        .filter((t) => t.type === 'income')
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      const expense = weekTransactions
-        .filter((t) => t.type === 'expense')
-        .reduce((sum, t) => sum + t.amount, 0);
-      
-      weeks.push({
-        name: `W${4 - i}`,
-        income,
-        expense,
-        net: income - expense,
-        date: weekEnd.toISOString().split('T')[0],
-      });
+    const dataPoints: ChartDataPoint[] = [];
+    
+    if (timeFilter === 'week' || daysDiff <= 7) {
+      // Show 7 days
+      for (let i = 6; i >= 0; i--) {
+        const day = new Date(endDate);
+        day.setDate(endDate.getDate() - i);
+        const dayStr = day.toISOString().split('T')[0];
+        
+        const dayTransactions = transactions.filter(t => t.date === dayStr);
+        const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        
+        dataPoints.push({
+          name: format(day, 'EEE'),
+          income,
+          expense,
+          net: income - expense,
+          date: dayStr,
+        });
+      }
+    } else if (timeFilter === 'month' || (daysDiff > 7 && daysDiff <= 31)) {
+      // Show 4 weeks
+      for (let i = 3; i >= 0; i--) {
+        const weekEnd = new Date(endDate);
+        weekEnd.setDate(endDate.getDate() - (i * 7));
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekEnd.getDate() - 6);
+        
+        const weekTransactions = transactions.filter(t => {
+          const date = new Date(t.date);
+          return date >= weekStart && date <= weekEnd;
+        });
+        
+        const income = weekTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const expense = weekTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        
+        dataPoints.push({
+          name: `W${4 - i}`,
+          income,
+          expense,
+          net: income - expense,
+          date: weekEnd.toISOString().split('T')[0],
+        });
+      }
+    } else if (timeFilter === 'year' || daysDiff > 31) {
+      // Show 12 months
+      for (let i = 11; i >= 0; i--) {
+        const monthDate = new Date(endDate);
+        monthDate.setMonth(endDate.getMonth() - i);
+        const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+        const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+        
+        const monthTransactions = transactions.filter(t => {
+          const date = new Date(t.date);
+          return date >= monthStart && date <= monthEnd;
+        });
+        
+        const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const expense = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        
+        dataPoints.push({
+          name: format(monthDate, 'MMM'),
+          income,
+          expense,
+          net: income - expense,
+          date: monthDate.toISOString().split('T')[0],
+        });
+      }
+    } else {
+      // Custom: determine based on days difference
+      if (daysDiff <= 14) {
+        // Show days
+        for (let i = daysDiff; i >= 0; i--) {
+          const day = new Date(endDate);
+          day.setDate(endDate.getDate() - i);
+          const dayStr = day.toISOString().split('T')[0];
+          
+          if (day >= startDate) {
+            const dayTransactions = transactions.filter(t => t.date === dayStr);
+            const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            
+            dataPoints.push({
+              name: format(day, 'd'),
+              income,
+              expense,
+              net: income - expense,
+              date: dayStr,
+            });
+          }
+        }
+      } else {
+        // Show weeks
+        const numWeeks = Math.ceil(daysDiff / 7);
+        for (let i = numWeeks - 1; i >= 0; i--) {
+          const weekEnd = new Date(endDate);
+          weekEnd.setDate(endDate.getDate() - (i * 7));
+          const weekStart = new Date(weekEnd);
+          weekStart.setDate(weekEnd.getDate() - 6);
+          
+          const weekTransactions = transactions.filter(t => {
+            const date = new Date(t.date);
+            return date >= weekStart && date <= weekEnd && date >= startDate;
+          });
+          
+          const income = weekTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+          const expense = weekTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+          
+          dataPoints.push({
+            name: `W${numWeeks - i}`,
+            income,
+            expense,
+            net: income - expense,
+            date: weekEnd.toISOString().split('T')[0],
+          });
+        }
+      }
     }
     
-    return weeks;
-  }, [transactions]);
+    return dataPoints;
+  }, [transactions, timeFilter, dateRange]);
   
   const totalNet = chartData.reduce((sum, w) => sum + w.net, 0);
   const percentChange = useMemo(() => {
@@ -121,7 +219,8 @@ export const CashFlowChart = ({ transactions, onPointSelect }: CashFlowChartProp
               dataKey="name" 
               axisLine={false} 
               tickLine={false} 
-              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+              tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+              interval="preserveStartEnd"
             />
             <YAxis hide />
             <Tooltip 
@@ -142,8 +241,8 @@ export const CashFlowChart = ({ transactions, onPointSelect }: CashFlowChartProp
               stroke="hsl(var(--success))"
               strokeWidth={2}
               fill="url(#incomeGradient)"
-              dot={{ fill: 'hsl(var(--success))', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: 'hsl(var(--success))', strokeWidth: 2 }}
+              dot={{ fill: 'hsl(var(--success))', strokeWidth: 2, r: 3 }}
+              activeDot={{ r: 5, stroke: 'hsl(var(--success))', strokeWidth: 2 }}
             />
             <Area
               type="monotone"
@@ -151,8 +250,8 @@ export const CashFlowChart = ({ transactions, onPointSelect }: CashFlowChartProp
               stroke="hsl(var(--destructive))"
               strokeWidth={2}
               fill="url(#expenseGradient)"
-              dot={{ fill: 'hsl(var(--destructive))', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: 'hsl(var(--destructive))', strokeWidth: 2 }}
+              dot={{ fill: 'hsl(var(--destructive))', strokeWidth: 2, r: 3 }}
+              activeDot={{ r: 5, stroke: 'hsl(var(--destructive))', strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>

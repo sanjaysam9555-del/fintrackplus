@@ -319,7 +319,11 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
       
       {/* Cash Flow Chart */}
       <div className="px-4 mb-6">
-        <CashFlowChart transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} />
+        <CashFlowChart 
+          transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
+          timeFilter={timeFilter}
+          dateRange={dateRange}
+        />
       </div>
       
       {/* Quick Actions */}
