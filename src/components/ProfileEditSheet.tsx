@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Camera, User, Lock, Eye, EyeOff } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +32,7 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
     onClose();
   };
   
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error("Please fill all password fields");
       return;
@@ -47,7 +48,16 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
       return;
     }
     
-    // In a real app, this would call an API
+    // Update password via Supabase Auth
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    
     toast.success("Password changed successfully");
     setCurrentPassword("");
     setNewPassword("");
