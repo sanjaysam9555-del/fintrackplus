@@ -11,7 +11,8 @@ export const useCloudSync = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { 
     setCloudData, 
-    setSyncStatus
+    setSyncStatus,
+    setLastSyncedAt
   } = useFinanceStore();
 
   // Fetch all data from cloud on login
@@ -101,6 +102,7 @@ export const useCloudSync = () => {
       });
 
       setSyncStatus('synced');
+      setLastSyncedAt(new Date().toISOString());
       if (showToast) {
         toast.success('Data synced successfully');
       }
@@ -111,7 +113,7 @@ export const useCloudSync = () => {
     } finally {
       setIsRefreshing(false);
     }
-  }, [user, setCloudData, setSyncStatus]);
+  }, [user, setCloudData, setSyncStatus, setLastSyncedAt]);
 
   // Manual refresh function
   const refreshData = useCallback(() => {

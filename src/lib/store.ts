@@ -47,7 +47,9 @@ interface FinanceStore extends FinanceState {
   
   // Cloud sync
   syncStatus: SyncStatus;
+  lastSyncedAt: string | null;
   setSyncStatus: (status: SyncStatus) => void;
+  setLastSyncedAt: (timestamp: string) => void;
   setCloudData: (data: CloudData) => void;
   
   // Data management
@@ -74,9 +76,11 @@ export const useFinanceStore = create<FinanceStore>()(
     userProfile: { name: 'User' },
     notifications: [],
     syncStatus: 'idle',
+    lastSyncedAt: null,
       
       // Cloud sync
       setSyncStatus: (status) => set({ syncStatus: status }),
+      setLastSyncedAt: (timestamp) => set({ lastSyncedAt: timestamp }),
       
     setCloudData: (data) => {
       set({
