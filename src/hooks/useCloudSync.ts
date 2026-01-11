@@ -2,17 +2,22 @@ import { useEffect, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useFinanceStore } from '@/lib/store';
+import { useOnlineStatus } from './useOnlineStatus';
+import { syncPendingOperations, getPendingOperationsCount } from '@/lib/offlineSync';
 import { toast } from 'sonner';
 
 export const useCloudSync = () => {
   const { user } = useAuth();
+  const { isOnline, wasOffline } = useOnlineStatus();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userName, setUserName] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { 
     setCloudData, 
     setSyncStatus,
-    setLastSyncedAt
+    setLastSyncedAt,
+    updatePendingCount,
+    pendingCount
   } = useFinanceStore();
 
   // Fetch all data from cloud on login
@@ -120,12 +125,47 @@ export const useCloudSync = () => {
     fetchCloudData(true);
   }, [fetchCloudData]);
 
+  // Sync pending operations when coming back online
+  const syncOfflineChanges = useCallback(async () => {
+    if (!user || !isOnline) return;
+    
+    const pendingCount = getPendingOperationsCount();
+    if (pendingCount === 0) return;
+    
+    setSyncStatus('syncing');
+    toast.info(`Syncing ${pendingCount} offline change${pendingCount > 1 ? 's' : ''}...`);
+    
+    const { synced, failed } = await syncPendingOperations();
+    
+    updatePendingCount();
+    
+    if (synced > 0) {
+      toast.success(`Synced ${synced} offline change${synced > 1 ? 's' : ''}`);
+      // Refresh data to get the latest from cloud
+      await fetchCloudData();
+    }
+    
+    if (failed > 0) {
+      toast.error(`Failed to sync ${failed} change${failed > 1 ? 's' : ''}`);
+      setSyncStatus('error');
+    }
+  }, [user, isOnline, fetchCloudData, setSyncStatus, updatePendingCount]);
+
   // Sync on login
   useEffect(() => {
     if (user) {
       fetchCloudData();
+      // Also sync any pending offline changes
+      syncOfflineChanges();
     }
-  }, [user, fetchCloudData]);
+  }, [user, fetchCloudData, syncOfflineChanges]);
+
+  // Sync when coming back online
+  useEffect(() => {
+    if (wasOffline && isOnline && user) {
+      syncOfflineChanges();
+    }
+  }, [wasOffline, isOnline, user, syncOfflineChanges]);
 
   // Set up realtime subscriptions for live updates
   useEffect(() => {
@@ -201,5 +241,5 @@ export const useCloudSync = () => {
     setShowOnboarding(false);
   }, [user]);
 
-  return { fetchCloudData, refreshData, isRefreshing, showOnboarding, userName, completeOnboarding };
+  return { fetchCloudData, refreshData, isRefreshing, showOnboarding, userName, completeOnboarding, isOnline, pendingCount };
 };

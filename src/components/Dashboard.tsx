@@ -5,7 +5,7 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
-import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -17,11 +17,13 @@ interface DashboardProps {
   onNavigate?: (tab: string) => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
+  isOnline?: boolean;
+  pendingCount?: number;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing }: DashboardProps) => {
+export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0 }: DashboardProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -308,16 +310,23 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           {/* Sync Status Chip */}
           <button
             onClick={onRefresh}
-            disabled={isRefreshing}
+            disabled={isRefreshing || !isOnline}
             className={cn(
               "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full transition-colors",
-              syncStatus === 'synced' && "bg-success/10 text-success",
-              syncStatus === 'syncing' && "bg-primary/10 text-primary",
-              syncStatus === 'error' && "bg-destructive/10 text-destructive",
-              syncStatus === 'idle' && "bg-muted text-muted-foreground"
+              !isOnline && "bg-amber-500/10 text-amber-600",
+              isOnline && syncStatus === 'synced' && pendingCount === 0 && "bg-success/10 text-success",
+              isOnline && syncStatus === 'syncing' && "bg-primary/10 text-primary",
+              isOnline && syncStatus === 'error' && "bg-destructive/10 text-destructive",
+              isOnline && syncStatus === 'idle' && "bg-muted text-muted-foreground",
+              isOnline && pendingCount > 0 && syncStatus !== 'syncing' && "bg-amber-500/10 text-amber-600"
             )}
           >
-            {syncStatus === 'syncing' || isRefreshing ? (
+            {!isOnline ? (
+              <>
+                <WifiOff size={12} />
+                Offline{pendingCount > 0 ? ` (${pendingCount} pending)` : ''}
+              </>
+            ) : syncStatus === 'syncing' || isRefreshing ? (
               <>
                 <Loader2 size={12} className="animate-spin" />
                 Syncing...
@@ -326,6 +335,11 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
               <>
                 <CloudOff size={12} />
                 Sync Error
+              </>
+            ) : pendingCount > 0 ? (
+              <>
+                <Cloud size={12} />
+                {pendingCount} pending
               </>
             ) : (
               <>

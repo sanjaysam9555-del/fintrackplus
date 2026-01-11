@@ -1,7 +1,9 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
+import { addPendingOperation, getPendingOperationsCount } from './offlineSync';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -48,9 +50,11 @@ interface FinanceStore extends FinanceState {
   // Cloud sync
   syncStatus: SyncStatus;
   lastSyncedAt: string | null;
+  pendingCount: number;
   setSyncStatus: (status: SyncStatus) => void;
   setLastSyncedAt: (timestamp: string) => void;
   setCloudData: (data: CloudData) => void;
+  updatePendingCount: () => void;
   
   // Data management
   loadDemoData: () => void;
@@ -77,10 +81,12 @@ export const useFinanceStore = create<FinanceStore>()(
     notifications: [],
     syncStatus: 'idle',
     lastSyncedAt: null,
+    pendingCount: 0,
       
       // Cloud sync
       setSyncStatus: (status) => set({ syncStatus: status }),
       setLastSyncedAt: (timestamp) => set({ lastSyncedAt: timestamp }),
+      updatePendingCount: () => set({ pendingCount: getPendingOperationsCount() }),
       
     setCloudData: (data) => {
       set({
@@ -140,30 +146,53 @@ export const useFinanceStore = create<FinanceStore>()(
       // Transaction actions
       addTransaction: async (transaction, userId) => {
         const id = uuidv4();
+        const isOnline = navigator.onLine;
         
-        // Sync to cloud if user is logged in - do this FIRST
-        if (userId) {
+        const transactionData = {
+          type: transaction.type,
+          amount: transaction.amount,
+          title: transaction.title || null,
+          vendor: transaction.vendor,
+          category_id: transaction.categoryId || null,
+          project_id: transaction.projectId || null,
+          payment_method: transaction.paymentMethod,
+          date: transaction.date,
+          time: transaction.time,
+          notes: transaction.notes || null,
+          is_recurring: transaction.isRecurring || false,
+          recurring_frequency: transaction.recurringFrequency || null,
+        };
+        
+        // Sync to cloud if user is logged in and online
+        if (userId && isOnline) {
           const { error } = await supabase.from('transactions').insert({
             id,
             user_id: userId,
-            type: transaction.type,
-            amount: transaction.amount,
-            title: transaction.title || null,
-            vendor: transaction.vendor,
-            category_id: transaction.categoryId || null,
-            project_id: transaction.projectId || null,
-            payment_method: transaction.paymentMethod,
-            date: transaction.date,
-            time: transaction.time,
-            notes: transaction.notes || null,
-            is_recurring: transaction.isRecurring || false,
-            recurring_frequency: transaction.recurringFrequency || null,
+            ...transactionData,
           });
           
           if (error) {
             console.error('Error saving transaction to cloud:', error);
-            // Still add to local state but notify about sync failure
+            // Queue for later sync
+            addPendingOperation({
+              type: 'insert',
+              entity: 'transaction',
+              entityId: id,
+              data: transactionData,
+              userId,
+            });
+            get().updatePendingCount();
           }
+        } else if (userId && !isOnline) {
+          // Offline - queue for later sync
+          addPendingOperation({
+            type: 'insert',
+            entity: 'transaction',
+            entityId: id,
+            data: transactionData,
+            userId,
+          });
+          get().updatePendingCount();
         }
         
         // Add to local state
@@ -174,7 +203,7 @@ export const useFinanceStore = create<FinanceStore>()(
         get().addNotification({
           type: 'transaction',
           title: `${transaction.type === 'income' ? 'Income' : 'Expense'} Added`,
-          message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+          message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}${!isOnline ? ' (offline)' : ''}`,
         });
       },
       

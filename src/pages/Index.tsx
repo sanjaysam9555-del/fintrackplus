@@ -81,7 +81,7 @@ const Index = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Initialize cloud sync
-  const { showOnboarding, userName, completeOnboarding, refreshData, isRefreshing } = useCloudSync();
+  const { showOnboarding, userName, completeOnboarding, refreshData, isRefreshing, isOnline, pendingCount } = useCloudSync();
   
   useEffect(() => {
     // Set loading based on sync status
@@ -156,6 +156,8 @@ const Index = () => {
             onNavigate={handleNavigate}
             onRefresh={refreshData}
             isRefreshing={isRefreshing}
+            isOnline={isOnline}
+            pendingCount={pendingCount}
           />
         );
       case 'expenses':
