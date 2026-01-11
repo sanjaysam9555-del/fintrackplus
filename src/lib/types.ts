@@ -59,6 +59,11 @@ export interface UserProfile {
   avatar?: string;
 }
 
+export interface Vendor {
+  id: string;
+  name: string;
+}
+
 export interface Notification {
   id: string;
   type: 'transaction' | 'export' | 'profile';
