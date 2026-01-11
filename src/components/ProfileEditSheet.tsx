@@ -124,16 +124,33 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
                       type="file"
                       accept="image/*"
                       className="hidden"
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (event) => {
-                            const base64 = event.target?.result as string;
-                            updateUserProfile({ avatar: base64 });
+                        if (file && user) {
+                          try {
+                            const fileExt = file.name.split('.').pop();
+                            const filePath = `${user.id}/avatar.${fileExt}`;
+                            
+                            // Upload to Supabase Storage
+                            const { error: uploadError } = await supabase.storage
+                              .from('avatars')
+                              .upload(filePath, file, { upsert: true });
+                            
+                            if (uploadError) throw uploadError;
+                            
+                            // Get public URL
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('avatars')
+                              .getPublicUrl(filePath);
+                            
+                            // Add cache buster to force refresh
+                            const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+                            updateUserProfile({ avatar: avatarUrl });
                             toast.success("Profile photo updated");
-                          };
-                          reader.readAsDataURL(file);
+                          } catch (error) {
+                            console.error('Avatar upload error:', error);
+                            toast.error("Failed to upload photo");
+                          }
                         }
                       }}
                     />
