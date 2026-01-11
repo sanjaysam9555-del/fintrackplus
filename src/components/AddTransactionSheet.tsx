@@ -21,13 +21,11 @@ interface AddTransactionSheetProps {
 }
 
 export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }: AddTransactionSheetProps) => {
-  const { categories, projects, transactions, addTransaction } = useFinanceStore();
+  const { categories, projects, transactions, vendors, addTransaction } = useFinanceStore();
   
   const [type, setType] = useState<TransactionType>(defaultType);
   const [amount, setAmount] = useState("");
   const [vendor, setVendor] = useState("");
-  const [vendorSearch, setVendorSearch] = useState("");
-  const [showVendorDropdown, setShowVendorDropdown] = useState(false);
   const [categoryId, setCategoryId] = useState("");
   const [projectId, setProjectId] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
@@ -36,18 +34,18 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
   const [magicInput, setMagicInput] = useState("");
   const [showCategories, setShowCategories] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
+  const [showVendors, setShowVendors] = useState(false);
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
   
-  // Get unique vendors from past transactions
-  const uniqueVendors = useMemo(() => {
-    const vendors = new Set(transactions.map(t => t.vendor));
-    return Array.from(vendors).filter(v => 
-      v.toLowerCase().includes(vendorSearch.toLowerCase())
-    ).slice(0, 5);
-  }, [transactions, vendorSearch]);
+  // Get all vendors from both store and transactions
+  const allVendors = useMemo(() => {
+    const storedVendorNames = vendors.map(v => v.name);
+    const transactionVendorNames = Array.from(new Set(transactions.map(t => t.vendor)));
+    return Array.from(new Set([...storedVendorNames, ...transactionVendorNames]));
+  }, [vendors, transactions]);
   
   const handleMagicFill = () => {
     const text = magicInput.toLowerCase();
@@ -264,59 +262,63 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                   </div>
                 </div>
                 
-                {/* Vendor with Dropdown */}
-                <div className="relative">
+                {/* Vendor Dropdown */}
+                <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
                     {type === 'expense' ? 'Vendor' : 'Source'} *
                   </Label>
-                  <div className="relative mt-1">
-                    <Input
-                      value={vendor}
-                      onChange={(e) => {
-                        setVendor(e.target.value);
-                        setVendorSearch(e.target.value);
-                        setShowVendorDropdown(true);
-                      }}
-                      onFocus={() => setShowVendorDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowVendorDropdown(false), 150)}
-                      placeholder={type === 'expense' ? "e.g. Starbucks, Amazon" : "e.g. Salary, Freelance"}
-                      className="pr-8"
-                    />
-                    {vendor && (
-                      <button 
-                        onClick={() => setVendor("")}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        <X size={14} />
+                  <Popover open={showVendors} onOpenChange={setShowVendors}>
+                    <PopoverTrigger asChild>
+                      <button className="w-full mt-1 p-2.5 bg-muted rounded-xl flex items-center justify-between">
+                        {vendor ? (
+                          <span className="text-sm font-medium">{vendor}</span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            {type === 'expense' ? 'Select vendor...' : 'Select source...'}
+                          </span>
+                        )}
+                        <ChevronDown size={14} className="text-muted-foreground" />
                       </button>
-                    )}
-                  </div>
-                  
-                  {/* Vendor Suggestions */}
-                  <AnimatePresence>
-                    {showVendorDropdown && uniqueVendors.length > 0 && vendorSearch && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -4 }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden"
-                      >
-                        {uniqueVendors.map((v) => (
-                          <button
-                            key={v}
-                            onMouseDown={() => {
-                              setVendor(v);
-                              setShowVendorDropdown(false);
-                            }}
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted flex items-center gap-2"
-                          >
-                            <Check size={12} className={cn("text-primary", vendor === v ? "opacity-100" : "opacity-0")} />
-                            {v}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-2 bg-card z-[70]" align="start">
+                      <div className="space-y-1">
+                        <Input
+                          placeholder="Search or add new..."
+                          value={vendor}
+                          onChange={(e) => setVendor(e.target.value)}
+                          className="mb-2"
+                        />
+                        <ScrollArea className="max-h-48">
+                          {allVendors
+                            .filter(v => v.toLowerCase().includes(vendor.toLowerCase()))
+                            .map((v) => (
+                              <button
+                                key={v}
+                                onClick={() => {
+                                  setVendor(v);
+                                  setShowVendors(false);
+                                }}
+                                className={cn(
+                                  "w-full px-3 py-2 text-left text-sm rounded-md transition-colors flex items-center gap-2",
+                                  vendor === v ? "bg-primary/10 text-primary" : "hover:bg-muted"
+                                )}
+                              >
+                                <Check size={12} className={cn("text-primary", vendor === v ? "opacity-100" : "opacity-0")} />
+                                {v}
+                              </button>
+                            ))}
+                          {vendor && !allVendors.some(v => v.toLowerCase() === vendor.toLowerCase()) && (
+                            <button
+                              onClick={() => setShowVendors(false)}
+                              className="w-full px-3 py-2 text-left text-sm rounded-md hover:bg-muted text-primary"
+                            >
+                              + Add "{vendor}"
+                            </button>
+                          )}
+                        </ScrollArea>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 
                 {/* Payment Method */}

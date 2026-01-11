@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { Home, ArrowDownLeft, ArrowUpRight, Plus, Settings } from "lucide-react";
+import { Home, ArrowDownLeft, ArrowUpRight, Plus, Settings, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useFinanceStore } from "@/lib/store";
 
-type TabId = 'home' | 'expenses' | 'add' | 'income' | 'settings';
+type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications' | 'settings';
 
 interface GlassDockProps {
   activeTab: TabId;
@@ -15,16 +16,20 @@ const tabs = [
   { id: 'expenses' as TabId, icon: ArrowUpRight, label: 'Expenses' },
   { id: 'add' as TabId, icon: Plus, label: 'Add' },
   { id: 'income' as TabId, icon: ArrowDownLeft, label: 'Income' },
-  { id: 'settings' as TabId, icon: Settings, label: 'Settings' },
+  { id: 'notifications' as TabId, icon: Bell, label: 'Alerts' },
 ];
 
 export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps) => {
+  const { notifications } = useFinanceStore();
+  const unreadCount = notifications.filter(n => !n.read).length;
+  
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
       <nav className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const isAddButton = tab.id === 'add';
+          const isNotifications = tab.id === 'notifications';
           
           if (isAddButton) {
             return (
@@ -47,12 +52,19 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
               onClick={() => onTabChange(tab.id)}
               whileTap={{ scale: 0.9 }}
               className={cn(
-                "flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-colors relative min-w-[60px]",
+                "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors relative min-w-[50px]",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <tab.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-              <span className="text-xs font-medium">{tab.label}</span>
+              <div className="relative">
+                <tab.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                {isNotifications && unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] font-medium">{tab.label}</span>
               {isActive && (
                 <motion.div
                   layoutId="activeTab"

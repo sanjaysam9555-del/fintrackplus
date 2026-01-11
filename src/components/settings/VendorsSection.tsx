@@ -18,14 +18,22 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [name, setName] = useState('');
 
-  // Also include vendors from transactions that aren't in the vendors list
+  // Combine stored vendors with transaction vendors, ensuring all are editable
   const allVendors = useMemo(() => {
-    const transactionVendors = new Set(transactions.map(t => t.vendor));
-    const existingVendorNames = new Set(vendors.map(v => v.name));
-    const missingVendors = Array.from(transactionVendors)
-      .filter(v => !existingVendorNames.has(v))
-      .map(name => ({ id: `temp-${name}`, name, isTemp: true }));
-    return [...vendors.map(v => ({ ...v, isTemp: false })), ...missingVendors];
+    const storedVendorNames = new Set(vendors.map(v => v.name));
+    const transactionVendorNames = Array.from(new Set(transactions.map(t => t.vendor)));
+    
+    // Add any missing transaction vendors to a combined list
+    const combinedVendors = [...vendors];
+    
+    transactionVendorNames.forEach(vendorName => {
+      if (!storedVendorNames.has(vendorName)) {
+        // These are "legacy" vendors from transactions - we'll allow editing but will add them to store first
+        combinedVendors.push({ id: `legacy-${vendorName}`, name: vendorName });
+      }
+    });
+    
+    return combinedVendors;
   }, [vendors, transactions]);
 
   const handleAdd = () => {
@@ -43,12 +51,18 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
     setName('');
   };
 
-  const handleUpdate = (id: string) => {
+  const handleUpdate = (id: string, originalName: string) => {
     if (!name.trim()) {
       toast.error("Please enter a vendor name");
       return;
     }
-    updateVendor(id, name.trim());
+    
+    // If this is a legacy vendor, add it to the store first
+    if (id.startsWith('legacy-')) {
+      addVendor(name.trim());
+    } else {
+      updateVendor(id, name.trim());
+    }
     toast.success("Vendor updated");
     setEditingId(null);
     setName('');
@@ -56,10 +70,18 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
 
   const handleDelete = () => {
     if (deleteId) {
-      deleteVendor(deleteId);
+      // Only delete from store if it's a stored vendor
+      if (!deleteId.startsWith('legacy-')) {
+        deleteVendor(deleteId);
+      }
       toast.success("Vendor deleted");
       setDeleteId(null);
     }
+  };
+
+  const startEdit = (vendorId: string, vendorName: string) => {
+    setEditingId(vendorId);
+    setName(vendorName);
   };
 
   return (
@@ -127,27 +149,23 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
                     <Button variant="outline" onClick={() => setEditingId(null)} className="flex-1">
                       Cancel
                     </Button>
-                    <Button onClick={() => handleUpdate(vendor.id)} className="flex-1">
+                    <Button onClick={() => handleUpdate(vendor.id, vendor.name)} className="flex-1">
                       Save
                     </Button>
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
                     <Store size={18} className="text-success" />
                   </div>
                   <p className="font-medium flex-1">{vendor.name}</p>
-                  {!vendor.isTemp && (
-                    <>
-                      <button onClick={() => { setEditingId(vendor.id); setName(vendor.name); }} className="p-2 hover:bg-muted rounded-lg">
-                        <Pencil size={16} className="text-muted-foreground" />
-                      </button>
-                      <button onClick={() => setDeleteId(vendor.id)} className="p-2 hover:bg-destructive/10 rounded-lg">
-                        <Trash2 size={16} className="text-destructive" />
-                      </button>
-                    </>
-                  )}
+                  <button onClick={() => startEdit(vendor.id, vendor.name)} className="p-2 hover:bg-muted rounded-lg">
+                    <Pencil size={16} className="text-muted-foreground" />
+                  </button>
+                  <button onClick={() => setDeleteId(vendor.id)} className="p-2 hover:bg-destructive/10 rounded-lg">
+                    <Trash2 size={16} className="text-destructive" />
+                  </button>
                 </div>
               )}
             </motion.div>
