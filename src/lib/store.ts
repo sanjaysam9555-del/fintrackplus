@@ -72,16 +72,17 @@ interface FinanceStore extends FinanceState {
 }
 
 export const useFinanceStore = create<FinanceStore>()(
-  (set, get) => ({
-    transactions: [],
-    categories: [],
-    projects: [],
-    vendors: [],
-    userProfile: { name: 'User' },
-    notifications: [],
-    syncStatus: 'idle',
-    lastSyncedAt: null,
-    pendingCount: 0,
+  persist(
+    (set, get) => ({
+      transactions: [],
+      categories: [],
+      projects: [],
+      vendors: [],
+      userProfile: { name: 'User' },
+      notifications: [],
+      syncStatus: 'idle',
+      lastSyncedAt: null,
+      pendingCount: 0,
       
       // Cloud sync
       setSyncStatus: (status) => set({ syncStatus: status }),
@@ -507,5 +508,19 @@ export const useFinanceStore = create<FinanceStore>()(
         const vendors = new Set(get().transactions.map(t => t.vendor));
         return Array.from(vendors);
       },
-    })
+    }),
+    {
+      name: 'fintrack-storage',
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({
+        transactions: state.transactions,
+        categories: state.categories,
+        projects: state.projects,
+        vendors: state.vendors,
+        userProfile: state.userProfile,
+        notifications: state.notifications,
+        lastSyncedAt: state.lastSyncedAt,
+      }),
+    }
+  )
 );
