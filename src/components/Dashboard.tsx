@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import { useFinanceStore } from "@/lib/store";
 import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
-import { motion } from "framer-motion";
-import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw } from "lucide-react";
-import { format } from "date-fns";
+import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
+import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2 } from "lucide-react";
+import { format, formatDistanceToNow } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -22,7 +22,7 @@ interface DashboardProps {
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
 export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing }: DashboardProps) => {
-  const { transactions, categories, getTotalIncome, getTotalExpense, userProfile } = useFinanceStore();
+  const { transactions, categories, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
@@ -294,16 +294,50 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           </div>
         </div>
         
-        {/* Time Filter Badge */}
+        {/* Time Filter Badge + Sync Status */}
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-3"
+          className="mt-3 flex items-center gap-2 flex-wrap"
         >
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
             <CalendarDays size={14} />
             {getTimeFilterLabel()}
           </span>
+          
+          {/* Sync Status Chip */}
+          <button
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full transition-colors",
+              syncStatus === 'synced' && "bg-success/10 text-success",
+              syncStatus === 'syncing' && "bg-primary/10 text-primary",
+              syncStatus === 'error' && "bg-destructive/10 text-destructive",
+              syncStatus === 'idle' && "bg-muted text-muted-foreground"
+            )}
+          >
+            {syncStatus === 'syncing' || isRefreshing ? (
+              <>
+                <Loader2 size={12} className="animate-spin" />
+                Syncing...
+              </>
+            ) : syncStatus === 'error' ? (
+              <>
+                <CloudOff size={12} />
+                Sync Error
+              </>
+            ) : (
+              <>
+                <Cloud size={12} />
+                {lastSyncedAt ? (
+                  `Synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: false })} ago`
+                ) : (
+                  'Synced'
+                )}
+              </>
+            )}
+          </button>
         </motion.div>
       </div>
       
