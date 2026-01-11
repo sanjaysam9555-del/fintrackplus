@@ -98,13 +98,13 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   
   // Render section sub-pages using dedicated components
   if (activeSection === 'categories') {
-    return <CategoriesSection onBack={handleBack} />;
+    return <CategoriesSection onBack={handleBack} userId={user?.id} />;
   }
   if (activeSection === 'vendors') {
-    return <VendorsSection onBack={handleBack} />;
+    return <VendorsSection onBack={handleBack} userId={user?.id} />;
   }
   if (activeSection === 'projects') {
-    return <ProjectsSection onBack={handleBack} />;
+    return <ProjectsSection onBack={handleBack} userId={user?.id} />;
   }
   if (activeSection === 'reports') {
     return <ReportsSection onBack={handleBack} />;

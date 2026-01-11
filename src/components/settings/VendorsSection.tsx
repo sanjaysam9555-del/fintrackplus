@@ -11,6 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface VendorsSectionProps {
   onBack: () => void;
+  userId?: string;
 }
 
 const VENDOR_COLORS = [
@@ -31,7 +32,7 @@ const VENDOR_ICONS = [
   'Pill', 'Stethoscope', 'GraduationCap', 'Book', 'Laptop', 'Smartphone'
 ];
 
-export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
+export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   const { vendors, addVendor, updateVendor, deleteVendor, transactions } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -66,7 +67,7 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
       toast.error("Vendor already exists");
       return;
     }
-    addVendor(name.trim(), selectedColor, selectedIcon);
+    addVendor(name.trim(), selectedColor, selectedIcon, userId);
     toast.success("Vendor added");
     setShowAddForm(false);
     setName('');
@@ -81,9 +82,9 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
     }
     
     if (id.startsWith('legacy-')) {
-      addVendor(name.trim(), selectedColor, selectedIcon);
+      addVendor(name.trim(), selectedColor, selectedIcon, userId);
     } else {
-      updateVendor(id, { name: name.trim(), color: selectedColor, icon: selectedIcon });
+      updateVendor(id, { name: name.trim(), color: selectedColor, icon: selectedIcon }, userId);
     }
     toast.success("Vendor updated");
     setEditingId(null);
@@ -95,7 +96,7 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
   const handleDelete = () => {
     if (deleteId) {
       if (!deleteId.startsWith('legacy-')) {
-        deleteVendor(deleteId);
+        deleteVendor(deleteId, userId);
       }
       toast.success("Vendor deleted");
       setDeleteId(null);
