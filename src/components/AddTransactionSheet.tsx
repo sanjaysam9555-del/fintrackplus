@@ -109,13 +109,13 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   };
   
   const handleSubmit = () => {
-    if (!amount || !vendor || !categoryId) return;
+    if (!amount || !categoryId) return;
     
     addTransaction({
       type,
       amount: parseFloat(amount),
       title: title || undefined,
-      vendor,
+      vendor: vendor || 'Not Specified',
       categoryId,
       projectId: projectId || undefined,
       paymentMethod,
@@ -322,7 +322,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                 {/* Vendor Dropdown */}
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    {type === 'expense' ? 'Vendor' : 'Source'} *
+                    {type === 'expense' ? 'Vendor' : 'Source'} <span className="text-muted-foreground/60">(optional)</span>
                   </Label>
                   <Popover open={showVendors} onOpenChange={(open) => {
                     setShowVendors(open);
@@ -523,7 +523,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                 {/* Submit Button */}
                 <Button
                   onClick={handleSubmit}
-                  disabled={!amount || !vendor || !categoryId}
+                  disabled={!amount || !categoryId}
                   className="w-full py-5 text-base font-semibold gradient-primary text-primary-foreground rounded-xl"
                 >
                   Add {type === 'expense' ? 'Expense' : 'Income'} →
