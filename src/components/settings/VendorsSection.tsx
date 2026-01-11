@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -117,6 +118,73 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
     return <IconComponent size={size} style={{ color }} />;
   };
 
+  const VendorForm = ({ isEdit = false, vendorId = '' }: { isEdit?: boolean; vendorId?: string }) => (
+    <div className="space-y-4">
+      <Input
+        placeholder="Vendor name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        autoFocus
+      />
+      
+      {/* Color Selection */}
+      <div>
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-2 block">Color</Label>
+        <div className="flex flex-wrap gap-2">
+          {VENDOR_COLORS.map((color) => (
+            <button
+              key={color}
+              onClick={() => setSelectedColor(color)}
+              className={`w-9 h-9 rounded-full transition-all ${
+                selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105'
+              }`}
+              style={{ backgroundColor: color }}
+            />
+          ))}
+        </div>
+      </div>
+      
+      {/* Icon Selection */}
+      <div>
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-2 block">Icon</Label>
+        <div className="grid grid-cols-8 gap-1.5">
+          {VENDOR_ICONS.map((iconName) => (
+            <button
+              key={iconName}
+              onClick={() => setSelectedIcon(iconName)}
+              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all ${
+                selectedIcon === iconName 
+                  ? 'ring-2 ring-primary bg-primary/10' 
+                  : 'bg-muted/50 hover:bg-muted'
+              }`}
+            >
+              {renderIcon(iconName, selectedIcon === iconName ? selectedColor : 'hsl(var(--muted-foreground))', 16)}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      <div className="flex gap-2 pt-2">
+        <Button 
+          variant="outline" 
+          onClick={() => {
+            if (isEdit) setEditingId(null);
+            else setShowAddForm(false);
+            setName('');
+            setSelectedColor(VENDOR_COLORS[0]);
+            setSelectedIcon('Store');
+          }} 
+          className="flex-1"
+        >
+          Cancel
+        </Button>
+        <Button onClick={() => isEdit ? handleUpdate(vendorId) : handleAdd()} className="flex-1">
+          <Check size={16} className="mr-1" /> {isEdit ? 'Save' : 'Add'}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 bg-background z-10 flex items-center justify-between p-4 border-b border-border">
@@ -139,63 +207,15 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-card rounded-xl border border-border p-4 space-y-4"
+              className="bg-card rounded-xl border border-border p-4"
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold">New Vendor</h3>
                 <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-muted rounded">
                   <X size={18} />
                 </button>
               </div>
-              <Input
-                placeholder="Vendor name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-              
-              {/* Color & Icon Row */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Color</p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {VENDOR_COLORS.map((color) => (
-                      <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
-                        className={`w-8 h-8 rounded-full transition-all ${
-                          selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
-                        }`}
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <p className="text-xs text-muted-foreground mb-2">Icon</p>
-                  <ScrollArea className="h-[72px] rounded-lg border border-border p-2">
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {VENDOR_ICONS.map((iconName) => (
-                        <button
-                          key={iconName}
-                          onClick={() => setSelectedIcon(iconName)}
-                          className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
-                            selectedIcon === iconName 
-                              ? 'ring-2 ring-primary bg-primary/10' 
-                              : 'bg-muted/50 hover:bg-muted'
-                          }`}
-                        >
-                          {renderIcon(iconName, selectedIcon === iconName ? selectedColor : 'hsl(var(--muted-foreground))', 14)}
-                        </button>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                </div>
-              </div>
-              
-              <Button onClick={handleAdd} className="w-full">
-                <Check size={16} className="mr-1" /> Add Vendor
-              </Button>
+              <VendorForm />
             </motion.div>
           )}
         </AnimatePresence>
@@ -213,71 +233,16 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
               className="bg-card rounded-xl border border-border p-4"
             >
               {editingId === vendor.id ? (
-                <div className="space-y-4">
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Vendor name"
-                  />
-                  
-                  {/* Color & Icon Row */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-2">Color</p>
-                      <div className="grid grid-cols-4 gap-2">
-                        {VENDOR_COLORS.map((color) => (
-                          <button
-                            key={color}
-                            onClick={() => setSelectedColor(color)}
-                            className={`w-8 h-8 rounded-full transition-all ${
-                              selectedColor === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
-                            }`}
-                            style={{ backgroundColor: color }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <p className="text-xs text-muted-foreground mb-2">Icon</p>
-                      <ScrollArea className="h-[72px] rounded-lg border border-border p-2">
-                        <div className="grid grid-cols-4 gap-1.5">
-                          {VENDOR_ICONS.map((iconName) => (
-                            <button
-                              key={iconName}
-                              onClick={() => setSelectedIcon(iconName)}
-                              className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
-                                selectedIcon === iconName 
-                                  ? 'ring-2 ring-primary bg-primary/10' 
-                                  : 'bg-muted/50 hover:bg-muted'
-                              }`}
-                            >
-                              {renderIcon(iconName, selectedIcon === iconName ? selectedColor : 'hsl(var(--muted-foreground))', 14)}
-                            </button>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2 pt-2">
-                    <Button variant="outline" onClick={() => setEditingId(null)} className="flex-1">
-                      Cancel
-                    </Button>
-                    <Button onClick={() => handleUpdate(vendor.id)} className="flex-1">
-                      Save
-                    </Button>
-                  </div>
-                </div>
+                <VendorForm isEdit vendorId={vendor.id} />
               ) : (
-              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3">
                   <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                     style={{ backgroundColor: vendor.color ? `${vendor.color}20` : 'hsl(var(--success) / 0.1)' }}
                   >
                     {renderIcon(vendor.icon || 'Store', vendor.color || 'hsl(var(--success))')}
                   </div>
-                  <p className="font-medium flex-1">{vendor.name}</p>
+                  <p className="font-medium flex-1 truncate">{vendor.name}</p>
                   <button onClick={() => startEdit(vendor.id, vendor.name, vendor.color, vendor.icon)} className="p-2 hover:bg-muted rounded-lg">
                     <Pencil size={16} className="text-muted-foreground" />
                   </button>

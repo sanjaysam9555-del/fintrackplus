@@ -147,6 +147,7 @@ export type Database = {
           project_id: string | null
           recurring_frequency: string | null
           time: string
+          title: string | null
           type: string
           user_id: string
           vendor: string
@@ -163,6 +164,7 @@ export type Database = {
           project_id?: string | null
           recurring_frequency?: string | null
           time?: string
+          title?: string | null
           type: string
           user_id: string
           vendor: string
@@ -179,6 +181,7 @@ export type Database = {
           project_id?: string | null
           recurring_frequency?: string | null
           time?: string
+          title?: string | null
           type?: string
           user_id?: string
           vendor?: string

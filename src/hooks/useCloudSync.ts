@@ -85,6 +85,7 @@ export const useCloudSync = () => {
           id: t.id,
           type: t.type as 'income' | 'expense',
           amount: Number(t.amount),
+          title: (t as unknown as { title?: string }).title || undefined,
           vendor: t.vendor,
           categoryId: t.category_id || '',
           projectId: t.project_id || undefined,

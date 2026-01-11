@@ -23,6 +23,7 @@ export interface Transaction {
   id: string;
   type: TransactionType;
   amount: number;
+  title?: string;
   vendor: string;
   categoryId: string;
   projectId?: string;
