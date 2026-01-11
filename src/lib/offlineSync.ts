@@ -73,30 +73,36 @@ const processOperation = async (operation: PendingOperation): Promise<boolean> =
   try {
     let result;
     
-    switch (type) {
-      case 'insert':
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        result = await (supabase.from(tableName) as any).insert({
-          ...data,
-          id: entityId,
-          user_id: userId,
-        });
-        break;
-        
-      case 'update':
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        result = await (supabase.from(tableName) as any)
-          .update(data)
-          .eq('id', entityId);
-        break;
-        
-      case 'delete':
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        result = await (supabase.from(tableName) as any)
-          .delete()
-          .eq('id', entityId);
-        break;
-    }
+      switch (type) {
+        case 'insert':
+          // Use upsert for idempotency (prevents duplicate-key failures on retry)
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          result = await (supabase.from(tableName) as any).upsert(
+            {
+              ...data,
+              id: entityId,
+              user_id: userId,
+            },
+            { onConflict: 'id' }
+          );
+          break;
+          
+        case 'update':
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          result = await (supabase.from(tableName) as any)
+            .update(data)
+            .eq('id', entityId)
+            .eq('user_id', userId);
+          break;
+          
+        case 'delete':
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          result = await (supabase.from(tableName) as any)
+            .delete()
+            .eq('id', entityId)
+            .eq('user_id', userId);
+          break;
+      }
     
     if (result?.error) {
       console.error(`Failed to sync ${type} ${entity}:`, result.error);

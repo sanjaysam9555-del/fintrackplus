@@ -20,13 +20,18 @@ export const useCloudSync = () => {
     pendingCount
   } = useFinanceStore();
 
+  // Ensure pending count is correct on initial load
+  useEffect(() => {
+    updatePendingCount();
+  }, [updatePendingCount]);
+
   // Fetch all data from cloud on login - PARALLEL fetch for speed
   const fetchCloudData = useCallback(async (showToast = false) => {
     if (!user) return;
-    
+
+    const previousStatus = useFinanceStore.getState().syncStatus;
     setSyncStatus('syncing');
-    if (showToast) setIsRefreshing(true);
-    
+
     try {
       // Fetch ALL data in parallel for faster sync
       const [
@@ -42,6 +47,17 @@ export const useCloudSync = () => {
         supabase.from('projects').select('*').eq('user_id', user.id),
         supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false })
       ]);
+
+      const firstError =
+        profileResult.error ||
+        categoriesResult.error ||
+        vendorsResult.error ||
+        projectsResult.error ||
+        transactionsResult.error;
+
+      if (firstError) {
+        throw firstError;
+      }
 
       const profile = profileResult.data;
       const cloudCategories = categoriesResult.data;
@@ -95,50 +111,85 @@ export const useCloudSync = () => {
         })) || []
       });
 
-      setSyncStatus('synced');
       setLastSyncedAt(new Date().toISOString());
+      const remainingPending = getPendingOperationsCount();
+
+      // If we previously had a sync error and pending ops still exist, keep error state.
+      if (previousStatus === 'error' && remainingPending > 0) {
+        setSyncStatus('error');
+      } else {
+        setSyncStatus('synced');
+      }
+
       if (showToast) {
-        toast.success('Data synced successfully');
+        if (remainingPending > 0) {
+          toast.info(`Cloud refreshed. ${remainingPending} change${remainingPending > 1 ? 's' : ''} still pending upload.`);
+        } else {
+          toast.success('Sync successful');
+        }
       }
     } catch (error) {
       console.error('Error fetching cloud data:', error);
       setSyncStatus('error');
       toast.error('Failed to sync data from cloud');
-    } finally {
-      setIsRefreshing(false);
     }
   }, [user, setCloudData, setSyncStatus, setLastSyncedAt]);
 
-  // Manual refresh function
-  const refreshData = useCallback(() => {
-    fetchCloudData(true);
-  }, [fetchCloudData]);
-
   // Sync pending operations when coming back online
-  const syncOfflineChanges = useCallback(async () => {
-    if (!user || !isOnline) return;
-    
-    const pendingCount = getPendingOperationsCount();
-    if (pendingCount === 0) return;
-    
+  const syncOfflineChanges = useCallback(async (options: { showToast?: boolean; refreshAfter?: boolean } = {}) => {
+    const { showToast = true, refreshAfter = true } = options;
+
+    if (!user || !isOnline) {
+      return { synced: 0, failed: 0, remaining: getPendingOperationsCount() };
+    }
+
+    const pending = getPendingOperationsCount();
+    if (pending === 0) {
+      return { synced: 0, failed: 0, remaining: 0 };
+    }
+
     setSyncStatus('syncing');
-    toast.info(`Syncing ${pendingCount} offline change${pendingCount > 1 ? 's' : ''}...`);
-    
+    if (showToast) {
+      toast.info(`Syncing ${pending} offline change${pending > 1 ? 's' : ''}...`);
+    }
+
     const { synced, failed } = await syncPendingOperations();
-    
+
     updatePendingCount();
-    
-    if (synced > 0) {
-      toast.success(`Synced ${synced} offline change${synced > 1 ? 's' : ''}`);
-      // Refresh data to get the latest from cloud
-      await fetchCloudData();
-    }
-    
+    const remaining = getPendingOperationsCount();
+
     if (failed > 0) {
-      toast.error(`Failed to sync ${failed} change${failed > 1 ? 's' : ''}`);
       setSyncStatus('error');
+      if (showToast) {
+        toast.error(`Failed to sync ${failed} change${failed > 1 ? 's' : ''}`);
+      }
+    } else {
+      setSyncStatus('synced');
+      setLastSyncedAt(new Date().toISOString());
+      if (showToast && synced > 0) {
+        toast.success(`Synced ${synced} offline change${synced > 1 ? 's' : ''}`);
+      }
     }
-  }, [user, isOnline, fetchCloudData, setSyncStatus, updatePendingCount]);
+
+    if (refreshAfter && synced > 0) {
+      await fetchCloudData(false);
+    }
+
+    return { synced, failed, remaining };
+  }, [user, isOnline, fetchCloudData, setSyncStatus, updatePendingCount, setLastSyncedAt]);
+
+  // Manual refresh function (also tries to push pending offline changes first)
+  const refreshData = useCallback(async () => {
+    if (!user) return;
+
+    setIsRefreshing(true);
+    try {
+      await syncOfflineChanges({ showToast: false, refreshAfter: false });
+      await fetchCloudData(true);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [user, syncOfflineChanges, fetchCloudData]);
 
   // Sync on login
   useEffect(() => {
