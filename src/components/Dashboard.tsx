@@ -19,11 +19,12 @@ interface DashboardProps {
   isRefreshing?: boolean;
   isOnline?: boolean;
   pendingCount?: number;
+  userId?: string;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0 }: DashboardProps) => {
+export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId }: DashboardProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -464,6 +465,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 <TransactionItem
                   transaction={transaction}
                   category={categories.find(c => c.id === transaction.categoryId)}
+                  userId={userId}
                 />
               </motion.div>
             ))
