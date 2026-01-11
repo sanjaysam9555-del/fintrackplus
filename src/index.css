@@ -255,4 +255,8 @@
   .bg-warning-light {
     background-color: hsl(var(--warning-light));
   }
+  
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }

@@ -8,11 +8,13 @@ import { useFinanceStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'settings';
+type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
   const { transactions, loadDemoData } = useFinanceStore();
   
   useEffect(() => {
@@ -31,20 +33,28 @@ const Index = () => {
   
   const handleOpenAddSheet = () => setIsAddSheetOpen(true);
   
+  const handleNavigate = (section: string) => {
+    setSettingsSection(section as SettingsSection);
+    setActiveTab('settings');
+  };
+  
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} />;
+        return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
       case 'expenses':
         return <TransactionList type="expense" />;
       case 'income':
         return <TransactionList type="income" />;
       case 'settings':
-        return <SettingsPage />;
+        return <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} />;
       default:
-        return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} />;
+        return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
     }
   };
+  
+  // Hide dock when viewing a settings sub-section
+  const showDock = !(activeTab === 'settings' && settingsSection !== null);
   
   return (
     <div className="min-h-screen bg-background">
@@ -62,12 +72,17 @@ const Index = () => {
         </motion.div>
       </AnimatePresence>
       
-      {/* Glass Dock Navigation */}
-      <GlassDock
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        onAddClick={() => setIsAddSheetOpen(true)}
-      />
+      {/* Glass Dock Navigation - Hidden in settings sub-sections */}
+      {showDock && (
+        <GlassDock
+          activeTab={activeTab}
+          onTabChange={(tab) => {
+            setActiveTab(tab);
+            setSettingsSection(null);
+          }}
+          onAddClick={() => setIsAddSheetOpen(true)}
+        />
+      )}
       
       {/* Add Transaction Sheet */}
       <AddTransactionSheet

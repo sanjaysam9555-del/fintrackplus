@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   ChevronRight, 
   Download, 
@@ -10,18 +10,43 @@ import {
   Trash2,
   Moon,
   Sun,
-  User,
-  Pencil
+  Pencil,
+  ArrowLeft,
+  Grid3X3,
+  Store,
+  FolderKanban,
+  FileBarChart
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { toast } from "sonner";
 import avatarImage from "@/assets/avatar-swati.jpg";
 import { ProfileEditSheet } from "./ProfileEditSheet";
 
-export const SettingsPage = () => {
+type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
+
+interface SettingsPageProps {
+  initialSection?: SettingsSection;
+  onSectionChange?: (section: SettingsSection) => void;
+}
+
+export const SettingsPage = ({ initialSection = null, onSectionChange }: SettingsPageProps) => {
   const { loadDemoData, clearAllData, transactions, categories, projects, userProfile, addNotification } = useFinanceStore();
   const [isDark, setIsDark] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
+  
+  useEffect(() => {
+    setActiveSection(initialSection);
+  }, [initialSection]);
+  
+  const handleSectionChange = (section: SettingsSection) => {
+    setActiveSection(section);
+    onSectionChange?.(section);
+  };
+  
+  const handleBack = () => {
+    handleSectionChange(null);
+  };
   
   const handleExportCSV = () => {
     const headers = ['Date', 'Time', 'Type', 'Vendor', 'Category', 'Amount', 'Payment Method', 'Notes'];
@@ -82,16 +107,28 @@ export const SettingsPage = () => {
       section: "Data Management",
       items: [
         { 
-          icon: FolderOpen, 
-          label: "Manage Categories", 
+          icon: Grid3X3, 
+          label: "Categories", 
           sublabel: `${categories.length} categories`,
-          onClick: () => toast.info('Categories management coming soon!')
+          onClick: () => handleSectionChange('categories')
         },
         { 
-          icon: Tag, 
-          label: "Manage Projects", 
+          icon: Store, 
+          label: "Vendors", 
+          sublabel: "Manage vendors",
+          onClick: () => handleSectionChange('vendors')
+        },
+        { 
+          icon: FolderKanban, 
+          label: "Project Labels", 
           sublabel: `${projects.length} projects`,
-          onClick: () => toast.info('Projects management coming soon!')
+          onClick: () => handleSectionChange('projects')
+        },
+        { 
+          icon: FileBarChart, 
+          label: "Reports", 
+          sublabel: "View & export",
+          onClick: () => handleSectionChange('reports')
         },
       ]
     },
@@ -132,6 +169,127 @@ export const SettingsPage = () => {
       ]
     },
   ];
+  
+  // Render section sub-pages
+  const renderSectionPage = () => {
+    const sectionConfig: Record<string, { title: string; icon: React.ElementType; content: React.ReactNode }> = {
+      categories: {
+        title: "Categories",
+        icon: Grid3X3,
+        content: (
+          <div className="space-y-3">
+            {categories.map((cat) => (
+              <div key={cat.id} className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center category-icon-${cat.icon}`}>
+                  <Grid3X3 size={18} className="text-white" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">{cat.name}</p>
+                  <p className="text-sm text-muted-foreground capitalize">{cat.type}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      },
+      vendors: {
+        title: "Vendors",
+        icon: Store,
+        content: (
+          <div className="space-y-3">
+            {Array.from(new Set(transactions.map(t => t.vendor))).map((vendor) => (
+              <div key={vendor} className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
+                <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center">
+                  <Store size={18} className="text-success" />
+                </div>
+                <p className="font-medium">{vendor}</p>
+              </div>
+            ))}
+          </div>
+        )
+      },
+      projects: {
+        title: "Project Labels",
+        icon: FolderKanban,
+        content: (
+          <div className="space-y-3">
+            {projects.map((project) => (
+              <div key={project.id} className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                  <FolderKanban size={18} className="text-amber-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">{project.name}</p>
+                  <div 
+                    className="w-3 h-3 rounded-full mt-1" 
+                    style={{ backgroundColor: project.color }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      },
+      reports: {
+        title: "Reports",
+        icon: FileBarChart,
+        content: (
+          <div className="space-y-4">
+            <div 
+              onClick={handleExportCSV}
+              className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border cursor-pointer hover:bg-muted/50"
+            >
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Download size={18} className="text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">Export CSV</p>
+                <p className="text-sm text-muted-foreground">{transactions.length} transactions</p>
+              </div>
+              <ChevronRight size={18} className="text-muted-foreground" />
+            </div>
+            <div 
+              onClick={handleExportPDF}
+              className="flex items-center gap-3 p-4 bg-card rounded-xl border border-border cursor-pointer hover:bg-muted/50"
+            >
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                <FileText size={18} className="text-purple-500" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium">Export PDF</p>
+                <p className="text-sm text-muted-foreground">Coming soon</p>
+              </div>
+              <ChevronRight size={18} className="text-muted-foreground" />
+            </div>
+          </div>
+        )
+      }
+    };
+    
+    const config = activeSection ? sectionConfig[activeSection] : null;
+    if (!config) return null;
+    
+    return (
+      <div className="min-h-screen bg-background">
+        {/* Header with Back Button */}
+        <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 border-b border-border">
+          <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-xl font-bold">{config.title}</h1>
+        </div>
+        
+        <div className="p-4">
+          {config.content}
+        </div>
+      </div>
+    );
+  };
+  
+  // If a section is active, show the section page
+  if (activeSection) {
+    return renderSectionPage();
+  }
   
   return (
     <div className="min-h-screen pb-24">
