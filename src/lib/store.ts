@@ -105,64 +105,156 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      updateTransaction: (id, updates) => set((state) => ({
-        transactions: state.transactions.map((t) => 
-          t.id === id ? { ...t, ...updates } : t
-        )
-      })),
+      updateTransaction: (id, updates) => {
+        const transaction = get().transactions.find(t => t.id === id);
+        set((state) => ({
+          transactions: state.transactions.map((t) => 
+            t.id === id ? { ...t, ...updates } : t
+          )
+        }));
+        if (transaction) {
+          get().addNotification({
+            type: 'edit',
+            title: 'Transaction Updated',
+            message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+          });
+        }
+      },
       
-      deleteTransaction: (id) => set((state) => ({
-        transactions: state.transactions.filter((t) => t.id !== id)
-      })),
+      deleteTransaction: (id) => {
+        const transaction = get().transactions.find(t => t.id === id);
+        set((state) => ({
+          transactions: state.transactions.filter((t) => t.id !== id)
+        }));
+        if (transaction) {
+          get().addNotification({
+            type: 'delete',
+            title: 'Transaction Deleted',
+            message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+          });
+        }
+      },
       
       // Category actions
-      addCategory: (category) => set((state) => ({
-        categories: [...state.categories, { ...category, id: uuidv4() }]
-      })),
+      addCategory: (category) => {
+        set((state) => ({
+          categories: [...state.categories, { ...category, id: uuidv4() }]
+        }));
+        get().addNotification({
+          type: 'category',
+          title: 'Category Added',
+          message: category.name,
+        });
+      },
       
-      updateCategory: (id, updates) => set((state) => ({
-        categories: state.categories.map((c) => 
-          c.id === id ? { ...c, ...updates } : c
-        )
-      })),
+      updateCategory: (id, updates) => {
+        set((state) => ({
+          categories: state.categories.map((c) => 
+            c.id === id ? { ...c, ...updates } : c
+          )
+        }));
+        get().addNotification({
+          type: 'edit',
+          title: 'Category Updated',
+          message: updates.name || 'Category modified',
+        });
+      },
       
-      deleteCategory: (id) => set((state) => ({
-        categories: state.categories.filter((c) => c.id !== id)
-      })),
+      deleteCategory: (id) => {
+        const category = get().categories.find(c => c.id === id);
+        set((state) => ({
+          categories: state.categories.filter((c) => c.id !== id)
+        }));
+        if (category) {
+          get().addNotification({
+            type: 'delete',
+            title: 'Category Deleted',
+            message: category.name,
+          });
+        }
+      },
       
       // Project actions
-      addProject: (project) => set((state) => ({
-        projects: [...state.projects, { 
-          ...project, 
-          id: uuidv4(),
-          createdAt: new Date().toISOString().split('T')[0]
-        }]
-      })),
+      addProject: (project) => {
+        set((state) => ({
+          projects: [...state.projects, { 
+            ...project, 
+            id: uuidv4(),
+            createdAt: new Date().toISOString().split('T')[0]
+          }]
+        }));
+        get().addNotification({
+          type: 'project',
+          title: 'Project Added',
+          message: project.name,
+        });
+      },
       
-      updateProject: (id, updates) => set((state) => ({
-        projects: state.projects.map((p) => 
-          p.id === id ? { ...p, ...updates } : p
-        )
-      })),
+      updateProject: (id, updates) => {
+        set((state) => ({
+          projects: state.projects.map((p) => 
+            p.id === id ? { ...p, ...updates } : p
+          )
+        }));
+        get().addNotification({
+          type: 'edit',
+          title: 'Project Updated',
+          message: updates.name || 'Project modified',
+        });
+      },
       
-      deleteProject: (id) => set((state) => ({
-        projects: state.projects.filter((p) => p.id !== id)
-      })),
+      deleteProject: (id) => {
+        const project = get().projects.find(p => p.id === id);
+        set((state) => ({
+          projects: state.projects.filter((p) => p.id !== id)
+        }));
+        if (project) {
+          get().addNotification({
+            type: 'delete',
+            title: 'Project Deleted',
+            message: project.name,
+          });
+        }
+      },
       
       // Vendor actions
-      addVendor: (name) => set((state) => ({
-        vendors: [...state.vendors, { id: uuidv4(), name }]
-      })),
+      addVendor: (name) => {
+        set((state) => ({
+          vendors: [...state.vendors, { id: uuidv4(), name }]
+        }));
+        get().addNotification({
+          type: 'vendor',
+          title: 'Vendor Added',
+          message: name,
+        });
+      },
       
-      updateVendor: (id, name) => set((state) => ({
-        vendors: state.vendors.map((v) => 
-          v.id === id ? { ...v, name } : v
-        )
-      })),
+      updateVendor: (id, name) => {
+        set((state) => ({
+          vendors: state.vendors.map((v) => 
+            v.id === id ? { ...v, name } : v
+          )
+        }));
+        get().addNotification({
+          type: 'edit',
+          title: 'Vendor Updated',
+          message: name,
+        });
+      },
       
-      deleteVendor: (id) => set((state) => ({
-        vendors: state.vendors.filter((v) => v.id !== id)
-      })),
+      deleteVendor: (id) => {
+        const vendor = get().vendors.find(v => v.id === id);
+        set((state) => ({
+          vendors: state.vendors.filter((v) => v.id !== id)
+        }));
+        if (vendor) {
+          get().addNotification({
+            type: 'delete',
+            title: 'Vendor Deleted',
+            message: vendor.name,
+          });
+        }
+      },
       
       // Data management
       loadDemoData: () => {

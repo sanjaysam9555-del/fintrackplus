@@ -14,10 +14,10 @@ interface GlassDockProps {
 const tabs = [
   { id: 'home' as TabId, icon: Home, label: 'Home' },
   { id: 'expenses' as TabId, icon: ArrowUpRight, label: 'Expense' },
-  { id: 'add' as TabId, icon: Plus, label: 'Add' },
   { id: 'income' as TabId, icon: ArrowDownLeft, label: 'Income' },
-  { id: 'notifications' as TabId, icon: Bell, label: 'Alerts' },
+  { id: 'add' as TabId, icon: Plus, label: 'Add' },
   { id: 'ai' as TabId, icon: Sparkles, label: 'AI' },
+  { id: 'notifications' as TabId, icon: Bell, label: 'Alerts' },
   { id: 'settings' as TabId, icon: Settings, label: 'Settings' },
 ];
 

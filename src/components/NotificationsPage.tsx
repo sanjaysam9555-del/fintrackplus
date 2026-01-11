@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check } from "lucide-react";
+import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,16 @@ export const NotificationsPage = () => {
         return FileDown;
       case 'profile':
         return User;
+      case 'category':
+        return Grid3X3;
+      case 'vendor':
+        return Store;
+      case 'project':
+        return FolderKanban;
+      case 'delete':
+        return Trash2;
+      case 'edit':
+        return Pencil;
       default:
         return Bell;
     }
@@ -28,6 +38,16 @@ export const NotificationsPage = () => {
         return 'bg-success/10 text-success';
       case 'profile':
         return 'bg-purple-500/10 text-purple-500';
+      case 'category':
+        return 'bg-blue-500/10 text-blue-500';
+      case 'vendor':
+        return 'bg-emerald-500/10 text-emerald-500';
+      case 'project':
+        return 'bg-amber-500/10 text-amber-500';
+      case 'delete':
+        return 'bg-destructive/10 text-destructive';
+      case 'edit':
+        return 'bg-orange-500/10 text-orange-500';
       default:
         return 'bg-muted text-muted-foreground';
     }

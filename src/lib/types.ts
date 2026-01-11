@@ -66,7 +66,7 @@ export interface Vendor {
 
 export interface Notification {
   id: string;
-  type: 'transaction' | 'export' | 'profile';
+  type: 'transaction' | 'export' | 'profile' | 'category' | 'vendor' | 'project' | 'delete' | 'edit';
   title: string;
   message: string;
   timestamp: string;
