@@ -5,7 +5,7 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { motion } from "framer-motion";
-import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles } from "lucide-react";
+import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -15,11 +15,13 @@ interface DashboardProps {
   isLoading?: boolean;
   onAddClick?: () => void;
   onNavigate?: (tab: string) => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: DashboardProps) => {
+export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing }: DashboardProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense, userProfile } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -159,7 +161,22 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            {onRefresh && (
+              <button 
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="p-2 rounded-full hover:bg-muted transition-colors disabled:opacity-50"
+              >
+                <RefreshCw 
+                  size={20} 
+                  className={cn(
+                    "text-muted-foreground transition-all",
+                    isRefreshing && "animate-spin"
+                  )} 
+                />
+              </button>
+            )}
             <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
               <PopoverTrigger asChild>
                 <button className="p-2 rounded-full hover:bg-muted transition-colors">
