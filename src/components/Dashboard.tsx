@@ -314,11 +314,11 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             className={cn(
               "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full transition-colors",
               !isOnline && "bg-amber-500/10 text-amber-600",
-              isOnline && syncStatus === 'synced' && pendingCount === 0 && "bg-success/10 text-success",
+              isOnline && pendingCount > 0 && syncStatus !== 'syncing' && "bg-amber-500/10 text-amber-600",
+              isOnline && pendingCount === 0 && syncStatus === 'synced' && "bg-success/10 text-success",
               isOnline && syncStatus === 'syncing' && "bg-primary/10 text-primary",
-              isOnline && syncStatus === 'error' && "bg-destructive/10 text-destructive",
-              isOnline && syncStatus === 'idle' && "bg-muted text-muted-foreground",
-              isOnline && pendingCount > 0 && syncStatus !== 'syncing' && "bg-amber-500/10 text-amber-600"
+              isOnline && pendingCount === 0 && syncStatus === 'error' && "bg-destructive/10 text-destructive",
+              isOnline && syncStatus === 'idle' && pendingCount === 0 && "bg-muted text-muted-foreground"
             )}
           >
             {!isOnline ? (
@@ -331,15 +331,15 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 <Loader2 size={12} className="animate-spin" />
                 Syncing...
               </>
+            ) : pendingCount > 0 ? (
+              <>
+                <Cloud size={12} />
+                {pendingCount} uploading...
+              </>
             ) : syncStatus === 'error' ? (
               <>
                 <CloudOff size={12} />
                 Sync Error
-              </>
-            ) : pendingCount > 0 ? (
-              <>
-                <Cloud size={12} />
-                {pendingCount} pending
               </>
             ) : (
               <>
