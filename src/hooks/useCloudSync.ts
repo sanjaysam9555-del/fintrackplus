@@ -8,16 +8,18 @@ export const useCloudSync = () => {
   const { user } = useAuth();
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [userName, setUserName] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { 
     setCloudData, 
     setSyncStatus
   } = useFinanceStore();
 
   // Fetch all data from cloud on login
-  const fetchCloudData = useCallback(async () => {
+  const fetchCloudData = useCallback(async (showToast = false) => {
     if (!user) return;
     
     setSyncStatus('syncing');
+    if (showToast) setIsRefreshing(true);
     
     try {
       // Fetch profile
@@ -99,18 +101,90 @@ export const useCloudSync = () => {
       });
 
       setSyncStatus('synced');
+      if (showToast) {
+        toast.success('Data synced successfully');
+      }
     } catch (error) {
       console.error('Error fetching cloud data:', error);
       setSyncStatus('error');
       toast.error('Failed to sync data from cloud');
+    } finally {
+      setIsRefreshing(false);
     }
   }, [user, setCloudData, setSyncStatus]);
+
+  // Manual refresh function
+  const refreshData = useCallback(() => {
+    fetchCloudData(true);
+  }, [fetchCloudData]);
 
   // Sync on login
   useEffect(() => {
     if (user) {
       fetchCloudData();
     }
+  }, [user, fetchCloudData]);
+
+  // Set up realtime subscriptions for live updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('db-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          // Refetch all data when transactions change
+          fetchCloudData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'categories',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchCloudData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vendors',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchCloudData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchCloudData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [user, fetchCloudData]);
 
   // Complete onboarding
@@ -125,5 +199,5 @@ export const useCloudSync = () => {
     setShowOnboarding(false);
   }, [user]);
 
-  return { fetchCloudData, showOnboarding, userName, completeOnboarding };
+  return { fetchCloudData, refreshData, isRefreshing, showOnboarding, userName, completeOnboarding };
 };
