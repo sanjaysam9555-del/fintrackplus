@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, Store } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface VendorsSectionProps {
   onBack: () => void;
@@ -22,6 +23,13 @@ const VENDOR_COLORS = [
   '#84CC16', // lime
 ];
 
+const VENDOR_ICONS = [
+  'Store', 'ShoppingBag', 'Coffee', 'Utensils', 'Car', 'Fuel', 
+  'Home', 'Building2', 'Briefcase', 'Plane', 'Train', 'Bus',
+  'Heart', 'Gift', 'Music', 'Film', 'Gamepad2', 'Dumbbell',
+  'Pill', 'Stethoscope', 'GraduationCap', 'Book', 'Laptop', 'Smartphone'
+];
+
 export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
   const { vendors, addVendor, updateVendor, deleteVendor, transactions } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -29,6 +37,7 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(VENDOR_COLORS[0]);
+  const [selectedIcon, setSelectedIcon] = useState('Store');
 
   // Combine stored vendors with transaction vendors, ensuring all are editable
   const allVendors = useMemo(() => {
@@ -40,7 +49,6 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
     
     transactionVendorNames.forEach(vendorName => {
       if (!storedVendorNames.has(vendorName)) {
-        // These are "legacy" vendors from transactions - we'll allow editing but will add them to store first
         combinedVendors.push({ id: `legacy-${vendorName}`, name: vendorName });
       }
     });
@@ -57,11 +65,12 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
       toast.error("Vendor already exists");
       return;
     }
-    addVendor(name.trim(), selectedColor);
+    addVendor(name.trim(), selectedColor, selectedIcon);
     toast.success("Vendor added");
     setShowAddForm(false);
     setName('');
     setSelectedColor(VENDOR_COLORS[0]);
+    setSelectedIcon('Store');
   };
 
   const handleUpdate = (id: string) => {
@@ -70,21 +79,20 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
       return;
     }
     
-    // If this is a legacy vendor, add it to the store first
     if (id.startsWith('legacy-')) {
-      addVendor(name.trim(), selectedColor);
+      addVendor(name.trim(), selectedColor, selectedIcon);
     } else {
-      updateVendor(id, { name: name.trim(), color: selectedColor });
+      updateVendor(id, { name: name.trim(), color: selectedColor, icon: selectedIcon });
     }
     toast.success("Vendor updated");
     setEditingId(null);
     setName('');
     setSelectedColor(VENDOR_COLORS[0]);
+    setSelectedIcon('Store');
   };
 
   const handleDelete = () => {
     if (deleteId) {
-      // Only delete from store if it's a stored vendor
       if (!deleteId.startsWith('legacy-')) {
         deleteVendor(deleteId);
       }
@@ -93,10 +101,20 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
     }
   };
 
-  const startEdit = (vendorId: string, vendorName: string, vendorColor?: string) => {
+  const startEdit = (vendorId: string, vendorName: string, vendorColor?: string, vendorIcon?: string) => {
     setEditingId(vendorId);
     setName(vendorName);
     setSelectedColor(vendorColor || VENDOR_COLORS[0]);
+    setSelectedIcon(vendorIcon || 'Store');
+  };
+
+  const renderIcon = (iconName: string, color: string, size: number = 18) => {
+    const IconComponent = icons[iconName as keyof typeof icons];
+    if (!IconComponent) {
+      const FallbackIcon = icons['Store'];
+      return <FallbackIcon size={size} style={{ color }} />;
+    }
+    return <IconComponent size={size} style={{ color }} />;
   };
 
   return (
@@ -108,7 +126,7 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
           </button>
           <h1 className="text-xl font-bold">Vendors</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setName(''); setSelectedColor(VENDOR_COLORS[0]); }}>
+        <Button size="sm" onClick={() => { setShowAddForm(true); setName(''); setSelectedColor(VENDOR_COLORS[0]); setSelectedIcon('Store'); }}>
           <Plus size={16} className="mr-1" /> Add
         </Button>
       </div>
@@ -148,6 +166,26 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
                     />
                   ))}
                 </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Icon</p>
+                <ScrollArea className="h-24">
+                  <div className="flex gap-2 flex-wrap">
+                    {VENDOR_ICONS.map((iconName) => (
+                      <button
+                        key={iconName}
+                        onClick={() => setSelectedIcon(iconName)}
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+                          selectedIcon === iconName 
+                            ? 'ring-2 ring-primary bg-primary/10' 
+                            : 'bg-muted hover:bg-muted/80'
+                        }`}
+                      >
+                        {renderIcon(iconName, selectedIcon === iconName ? selectedColor : 'hsl(var(--muted-foreground))', 18)}
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
               </div>
               <Button onClick={handleAdd} className="w-full">
                 <Check size={16} className="mr-1" /> Add Vendor
@@ -190,6 +228,26 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
                       ))}
                     </div>
                   </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Icon</p>
+                    <ScrollArea className="h-24">
+                      <div className="flex gap-2 flex-wrap">
+                        {VENDOR_ICONS.map((iconName) => (
+                          <button
+                            key={iconName}
+                            onClick={() => setSelectedIcon(iconName)}
+                            className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${
+                              selectedIcon === iconName 
+                                ? 'ring-2 ring-primary bg-primary/10' 
+                                : 'bg-muted hover:bg-muted/80'
+                            }`}
+                          >
+                            {renderIcon(iconName, selectedIcon === iconName ? selectedColor : 'hsl(var(--muted-foreground))', 18)}
+                          </button>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
                   <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setEditingId(null)} className="flex-1">
                       Cancel
@@ -205,10 +263,10 @@ export const VendorsSection = ({ onBack }: VendorsSectionProps) => {
                     className="w-10 h-10 rounded-xl flex items-center justify-center"
                     style={{ backgroundColor: vendor.color ? `${vendor.color}20` : 'hsl(var(--success) / 0.1)' }}
                   >
-                    <Store size={18} style={{ color: vendor.color || 'hsl(var(--success))' }} />
+                    {renderIcon(vendor.icon || 'Store', vendor.color || 'hsl(var(--success))')}
                   </div>
                   <p className="font-medium flex-1">{vendor.name}</p>
-                  <button onClick={() => startEdit(vendor.id, vendor.name, vendor.color)} className="p-2 hover:bg-muted rounded-lg">
+                  <button onClick={() => startEdit(vendor.id, vendor.name, vendor.color, vendor.icon)} className="p-2 hover:bg-muted rounded-lg">
                     <Pencil size={16} className="text-muted-foreground" />
                   </button>
                   <button onClick={() => setDeleteId(vendor.id)} className="p-2 hover:bg-destructive/10 rounded-lg">
