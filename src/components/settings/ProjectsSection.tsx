@@ -9,11 +9,12 @@ import { toast } from "sonner";
 
 interface ProjectsSectionProps {
   onBack: () => void;
+  userId?: string;
 }
 
 const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1'];
 
-export const ProjectsSection = ({ onBack }: ProjectsSectionProps) => {
+export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
   const { projects, addProject, updateProject, deleteProject, getProjectSpending } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -30,7 +31,7 @@ export const ProjectsSection = ({ onBack }: ProjectsSectionProps) => {
       description: formData.description.trim(),
       budgetLimit: formData.budgetLimit,
       color: formData.color,
-    });
+    }, userId);
     toast.success("Project added");
     setShowAddForm(false);
     setFormData({ name: '', description: '', budgetLimit: 0, color: '#10B981' });
@@ -46,14 +47,14 @@ export const ProjectsSection = ({ onBack }: ProjectsSectionProps) => {
       description: formData.description.trim(),
       budgetLimit: formData.budgetLimit,
       color: formData.color,
-    });
+    }, userId);
     toast.success("Project updated");
     setEditingId(null);
   };
 
   const handleDelete = () => {
     if (deleteId) {
-      deleteProject(deleteId);
+      deleteProject(deleteId, userId);
       toast.success("Project deleted");
       setDeleteId(null);
     }

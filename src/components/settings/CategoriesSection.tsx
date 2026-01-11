@@ -10,6 +10,7 @@ import { LucideIcon } from "lucide-react";
 
 interface CategoriesSectionProps {
   onBack: () => void;
+  userId?: string;
 }
 
 const ICON_OPTIONS: { id: string; icon: LucideIcon }[] = [
@@ -35,7 +36,7 @@ const getIconComponent = (iconId: string): LucideIcon => {
   return ICON_OPTIONS.find(i => i.id === iconId)?.icon || MoreHorizontal;
 };
 
-export const CategoriesSection = ({ onBack }: CategoriesSectionProps) => {
+export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) => {
   const { categories, addCategory, updateCategory, deleteCategory } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -52,7 +53,7 @@ export const CategoriesSection = ({ onBack }: CategoriesSectionProps) => {
       icon: formData.icon,
       color: formData.color,
       type: formData.type,
-    });
+    }, userId);
     toast.success("Category added");
     setShowAddForm(false);
     setFormData({ name: '', icon: 'other', color: '#10B981', type: 'expense' });
@@ -68,14 +69,14 @@ export const CategoriesSection = ({ onBack }: CategoriesSectionProps) => {
       icon: formData.icon,
       color: formData.color,
       type: formData.type,
-    });
+    }, userId);
     toast.success("Category updated");
     setEditingId(null);
   };
 
   const handleDelete = () => {
     if (deleteId) {
-      deleteCategory(deleteId);
+      deleteCategory(deleteId, userId);
       toast.success("Category deleted");
       setDeleteId(null);
     }
