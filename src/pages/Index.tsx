@@ -4,10 +4,11 @@ import { Dashboard } from "@/components/Dashboard";
 import { TransactionList } from "@/components/TransactionList";
 import { SettingsPage } from "@/components/SettingsPage";
 import { AddTransactionSheet } from "@/components/AddTransactionSheet";
+import { NotificationsPage } from "@/components/NotificationsPage";
 import { useFinanceStore } from "@/lib/store";
 import { motion, AnimatePresence } from "framer-motion";
 
-type TabId = 'home' | 'expenses' | 'add' | 'income' | 'settings';
+type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications' | 'settings';
 type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
 
 const Index = () => {
@@ -34,8 +35,13 @@ const Index = () => {
   const handleOpenAddSheet = () => setIsAddSheetOpen(true);
   
   const handleNavigate = (section: string) => {
-    setSettingsSection(section as SettingsSection);
-    setActiveTab('settings');
+    if (section === 'settings') {
+      setActiveTab('settings');
+      setSettingsSection(null);
+    } else {
+      setSettingsSection(section as SettingsSection);
+      setActiveTab('settings');
+    }
   };
   
   const renderContent = () => {
@@ -46,6 +52,8 @@ const Index = () => {
         return <TransactionList type="expense" />;
       case 'income':
         return <TransactionList type="income" />;
+      case 'notifications':
+        return <NotificationsPage />;
       case 'settings':
         return <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} />;
       default:

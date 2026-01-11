@@ -4,9 +4,8 @@ import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
-import { NotificationPanel } from "./NotificationPanel";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bell, CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart } from "lucide-react";
+import { motion } from "framer-motion";
+import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings } from "lucide-react";
 import avatarImage from "@/assets/avatar-swati.jpg";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -22,13 +21,12 @@ interface DashboardProps {
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
 export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: DashboardProps) => {
-  const { transactions, categories, getTotalIncome, getTotalExpense, notifications, userProfile } = useFinanceStore();
+  const { transactions, categories, getTotalIncome, getTotalExpense, userProfile } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCustomCalendar, setShowCustomCalendar] = useState<'start' | 'end' | null>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
   
   const today = new Date();
   
@@ -260,13 +258,10 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
               </PopoverContent>
             </Popover>
             <button 
-              onClick={() => setShowNotifications(true)}
-              className="p-2 rounded-full hover:bg-muted transition-colors relative"
+              onClick={() => onNavigate?.('settings')}
+              className="p-2 rounded-full hover:bg-muted transition-colors"
             >
-              <Bell size={22} className="text-muted-foreground" />
-              {notifications.filter(n => !n.read).length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-              )}
+              <Settings size={22} className="text-muted-foreground" />
             </button>
           </div>
         </div>
@@ -395,12 +390,6 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
           )}
         </div>
       </div>
-      
-      {/* Notification Panel */}
-      <NotificationPanel
-        isOpen={showNotifications}
-        onClose={() => setShowNotifications(false)}
-      />
     </div>
   );
 };
