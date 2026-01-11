@@ -20,7 +20,7 @@ export const useCloudSync = () => {
     pendingCount
   } = useFinanceStore();
 
-  // Fetch all data from cloud on login
+  // Fetch all data from cloud on login - PARALLEL fetch for speed
   const fetchCloudData = useCallback(async (showToast = false) => {
     if (!user) return;
     
@@ -28,43 +28,32 @@ export const useCloudSync = () => {
     if (showToast) setIsRefreshing(true);
     
     try {
-      // Fetch profile
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      // Fetch ALL data in parallel for faster sync
+      const [
+        profileResult,
+        categoriesResult,
+        vendorsResult,
+        projectsResult,
+        transactionsResult
+      ] = await Promise.all([
+        supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('categories').select('*').eq('user_id', user.id),
+        supabase.from('vendors').select('*').eq('user_id', user.id),
+        supabase.from('projects').select('*').eq('user_id', user.id),
+        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false })
+      ]);
+
+      const profile = profileResult.data;
+      const cloudCategories = categoriesResult.data;
+      const cloudVendors = vendorsResult.data;
+      const cloudProjects = projectsResult.data;
+      const cloudTransactions = transactionsResult.data;
 
       // Check if onboarding should be shown
       if (profile && !profile.onboarding_completed) {
         setShowOnboarding(true);
         setUserName(profile.name || '');
       }
-
-      // Fetch categories
-      const { data: cloudCategories } = await supabase
-        .from('categories')
-        .select('*')
-        .eq('user_id', user.id);
-
-      // Fetch vendors
-      const { data: cloudVendors } = await supabase
-        .from('vendors')
-        .select('*')
-        .eq('user_id', user.id);
-
-      // Fetch projects
-      const { data: cloudProjects } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('user_id', user.id);
-
-      // Fetch transactions
-      const { data: cloudTransactions } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('date', { ascending: false });
 
       setCloudData({
         profile: profile ? { name: profile.name, avatar: profile.avatar_url } : undefined,
@@ -167,9 +156,19 @@ export const useCloudSync = () => {
     }
   }, [wasOffline, isOnline, user, syncOfflineChanges]);
 
-  // Set up realtime subscriptions for live updates
+  // Set up realtime subscriptions for live updates with debouncing
   useEffect(() => {
     if (!user) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+    
+    // Debounced fetch to prevent multiple rapid fetches
+    const debouncedFetch = () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        fetchCloudData();
+      }, 300); // 300ms debounce
+    };
 
     const channel = supabase
       .channel('db-changes')
@@ -181,10 +180,7 @@ export const useCloudSync = () => {
           table: 'transactions',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
-          // Refetch all data when transactions change
-          fetchCloudData();
-        }
+        debouncedFetch
       )
       .on(
         'postgres_changes',
@@ -194,9 +190,7 @@ export const useCloudSync = () => {
           table: 'categories',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
-          fetchCloudData();
-        }
+        debouncedFetch
       )
       .on(
         'postgres_changes',
@@ -206,9 +200,7 @@ export const useCloudSync = () => {
           table: 'vendors',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
-          fetchCloudData();
-        }
+        debouncedFetch
       )
       .on(
         'postgres_changes',
@@ -218,13 +210,12 @@ export const useCloudSync = () => {
           table: 'projects',
           filter: `user_id=eq.${user.id}`,
         },
-        () => {
-          fetchCloudData();
-        }
+        debouncedFetch
       )
       .subscribe();
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       supabase.removeChannel(channel);
     };
   }, [user, fetchCloudData]);
