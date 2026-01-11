@@ -76,21 +76,18 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
           />
           
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl max-h-[90vh] overflow-y-auto"
+            className="fixed inset-0 z-50 bg-background overflow-y-auto"
           >
-            <div className="flex justify-center pt-3">
-              <div className="w-10 h-1 bg-muted rounded-full" />
-            </div>
-            
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-xl font-bold">Edit Profile</h2>
-              <button onClick={handleClose} className="p-2 rounded-full hover:bg-muted">
+            {/* Header with Back Button */}
+            <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 border-b border-border">
+              <button onClick={handleClose} className="p-2 -ml-2 rounded-full hover:bg-muted">
                 <X size={20} />
               </button>
+              <h2 className="text-xl font-bold">Edit Profile</h2>
             </div>
             
             <div className="p-6 space-y-6">

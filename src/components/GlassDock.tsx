@@ -20,7 +20,7 @@ const tabs = [
 
 export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps) => {
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border safe-bottom">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
       <nav className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
