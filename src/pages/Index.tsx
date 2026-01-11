@@ -4,7 +4,7 @@ import { Dashboard } from "@/components/Dashboard";
 import { DashboardSkeleton, TransactionSkeleton } from "@/components/ui/skeleton-loader";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
-import { useCloudSync } from "@/hooks/useCloudSync";
+import { useSyncEngine } from "@/hooks/useSyncEngine";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -82,8 +82,8 @@ const Index = () => {
   const pullTop = useTransform(pullY, [0, PULL_THRESHOLD], [-INDICATOR_SIZE, 16]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
-  // Initialize cloud sync
-  const { showOnboarding, userName, completeOnboarding, refreshData, isRefreshing, isOnline, pendingCount } = useCloudSync();
+  // Initialize airtight sync engine
+  const { showOnboarding, userName, completeOnboarding, refreshData, isRefreshing, isOnline, pendingCount } = useSyncEngine();
   
   useEffect(() => {
     // Set loading based on sync status
