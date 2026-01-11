@@ -1,43 +1,98 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useFinanceStore } from "@/lib/store";
 import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Bell, CalendarDays } from "lucide-react";
 import avatarImage from "@/assets/avatar-swati.jpg";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 interface DashboardProps {
   isLoading?: boolean;
 }
 
+type TimeFilter = 'week' | 'month' | 'year' | 'custom';
+
 export const Dashboard = ({ isLoading = false }: DashboardProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   
   const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-  const monthEnd = today.toISOString().split('T')[0];
   
-  const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1).toISOString().split('T')[0];
-  const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0).toISOString().split('T')[0];
+  const dateRange = useMemo(() => {
+    const todayDate = new Date();
+    const start = new Date();
+    
+    switch (timeFilter) {
+      case 'week':
+        start.setDate(todayDate.getDate() - 7);
+        break;
+      case 'month':
+        start.setDate(1);
+        break;
+      case 'year':
+        start.setMonth(0, 1);
+        break;
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            start: format(customStartDate, 'yyyy-MM-dd'),
+            end: format(customEndDate, 'yyyy-MM-dd'),
+          };
+        }
+        start.setDate(1);
+        break;
+      default:
+        start.setDate(1);
+    }
+    
+    return {
+      start: start.toISOString().split('T')[0],
+      end: todayDate.toISOString().split('T')[0],
+    };
+  }, [timeFilter, customStartDate, customEndDate]);
   
-  const currentIncome = getTotalIncome(monthStart, monthEnd);
-  const currentExpense = getTotalExpense(monthStart, monthEnd);
-  const lastMonthIncome = getTotalIncome(lastMonthStart, lastMonthEnd);
-  const lastMonthExpense = getTotalExpense(lastMonthStart, lastMonthEnd);
+  // Previous period for comparison
+  const previousDateRange = useMemo(() => {
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
+    const duration = endDate.getTime() - startDate.getTime();
+    
+    const prevEnd = new Date(startDate.getTime() - 1);
+    const prevStart = new Date(prevEnd.getTime() - duration);
+    
+    return {
+      start: prevStart.toISOString().split('T')[0],
+      end: prevEnd.toISOString().split('T')[0],
+    };
+  }, [dateRange]);
   
-  const incomeChange = lastMonthIncome > 0 
-    ? ((currentIncome - lastMonthIncome) / lastMonthIncome) * 100 
+  const currentIncome = getTotalIncome(dateRange.start, dateRange.end);
+  const currentExpense = getTotalExpense(dateRange.start, dateRange.end);
+  const previousIncome = getTotalIncome(previousDateRange.start, previousDateRange.end);
+  const previousExpense = getTotalExpense(previousDateRange.start, previousDateRange.end);
+  
+  const incomeChange = previousIncome > 0 
+    ? ((currentIncome - previousIncome) / previousIncome) * 100 
     : 0;
-  const expenseChange = lastMonthExpense > 0 
-    ? ((currentExpense - lastMonthExpense) / lastMonthExpense) * 100 
+  const expenseChange = previousExpense > 0 
+    ? ((currentExpense - previousExpense) / previousExpense) * 100 
     : 0;
   
   const netBalance = currentIncome - currentExpense;
   
-  const recentTransactions = useMemo(() => {
+  // Filter transactions based on selected date range
+  const filteredTransactions = useMemo(() => {
     return transactions
+      .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
       .slice()
       .sort((a, b) => {
         const dateCompare = b.date.localeCompare(a.date);
@@ -45,7 +100,7 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
         return b.time.localeCompare(a.time);
       })
       .slice(0, 5);
-  }, [transactions]);
+  }, [transactions, dateRange]);
   
   const greeting = useMemo(() => {
     const hour = today.getHours();
@@ -53,6 +108,20 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
     if (hour < 17) return "Good Afternoon";
     return "Good Evening";
   }, []);
+  
+  const getTimeFilterLabel = () => {
+    switch (timeFilter) {
+      case 'week': return 'This Week';
+      case 'month': return format(today, 'MMMM yyyy');
+      case 'year': return format(today, 'yyyy');
+      case 'custom': 
+        if (customStartDate && customEndDate) {
+          return `${format(customStartDate, 'MMM dd')} - ${format(customEndDate, 'MMM dd')}`;
+        }
+        return 'Custom';
+      default: return format(today, 'MMMM yyyy');
+    }
+  };
   
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -83,15 +152,94 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
           </div>
           
           <div className="flex items-center gap-2">
-            <button className="p-2 rounded-full hover:bg-muted transition-colors">
-              <CalendarDays size={22} className="text-muted-foreground" />
-            </button>
+            <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+              <PopoverTrigger asChild>
+                <button className="p-2 rounded-full hover:bg-muted transition-colors">
+                  <CalendarDays size={22} className={cn(
+                    "transition-colors",
+                    showDatePicker ? "text-primary" : "text-muted-foreground"
+                  )} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-4 bg-card z-[60]" align="end">
+                <div className="space-y-4">
+                  <p className="text-sm font-medium text-muted-foreground">Select Time Frame</p>
+                  
+                  {/* Quick Filters */}
+                  <div className="grid grid-cols-3 gap-2">
+                    {(['week', 'month', 'year'] as TimeFilter[]).map((filter) => (
+                      <button
+                        key={filter}
+                        onClick={() => {
+                          setTimeFilter(filter);
+                          setShowDatePicker(false);
+                        }}
+                        className={cn(
+                          "px-3 py-2 rounded-lg text-sm font-medium transition-colors capitalize",
+                          timeFilter === filter && timeFilter !== 'custom'
+                            ? "bg-primary text-primary-foreground" 
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
+                      >
+                        {filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : 'Year'}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="border-t border-border pt-4">
+                    <p className="text-xs text-muted-foreground mb-2">Or select custom range:</p>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Start Date</p>
+                        <Calendar
+                          mode="single"
+                          selected={customStartDate}
+                          onSelect={(date) => {
+                            setCustomStartDate(date);
+                            if (date) setTimeFilter('custom');
+                          }}
+                          className="p-2 pointer-events-auto border rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">End Date</p>
+                        <Calendar
+                          mode="single"
+                          selected={customEndDate}
+                          onSelect={(date) => {
+                            setCustomEndDate(date);
+                            if (date && customStartDate) {
+                              setTimeFilter('custom');
+                              setShowDatePicker(false);
+                            }
+                          }}
+                          disabled={(date) => customStartDate ? date < customStartDate : false}
+                          className="p-2 pointer-events-auto border rounded-lg"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
             <button className="p-2 rounded-full hover:bg-muted transition-colors relative">
               <Bell size={22} className="text-muted-foreground" />
               <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
             </button>
           </div>
         </div>
+        
+        {/* Time Filter Badge */}
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-3"
+        >
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
+            <CalendarDays size={14} />
+            {getTimeFilterLabel()}
+          </span>
+        </motion.div>
       </div>
       
       {/* Summary Cards - 3 Column Grid */}
@@ -123,7 +271,7 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
       
       {/* Cash Flow Chart */}
       <div className="px-4 mb-6">
-        <CashFlowChart transactions={transactions} />
+        <CashFlowChart transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} />
       </div>
       
       {/* Quick Actions */}
@@ -132,7 +280,7 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-4 gap-3"
+          className="grid grid-cols-3 gap-3"
         >
           {[
             { icon: "➕", label: "Add New" },
@@ -158,15 +306,15 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
         </div>
         
         <div className="space-y-2">
-          {recentTransactions.length === 0 ? (
-            <div className="text-center py-8 bg-card rounded-xl">
-              <p className="text-muted-foreground">No transactions yet</p>
+          {filteredTransactions.length === 0 ? (
+            <div className="text-center py-8 bg-card rounded-xl border border-border">
+              <p className="text-muted-foreground">No transactions in this period</p>
               <p className="text-sm text-muted-foreground mt-1">
-                Tap + to add your first transaction
+                Try selecting a different time frame
               </p>
             </div>
           ) : (
-            recentTransactions.map((transaction, index) => (
+            filteredTransactions.map((transaction, index) => (
               <motion.div
                 key={transaction.id}
                 initial={{ opacity: 0, x: -20 }}
