@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
-import { addPendingOperation, getPendingOperationsCount } from './offlineSync';
+import { addToSyncQueue, getQueueSize, processSyncQueue } from './syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -87,7 +87,7 @@ export const useFinanceStore = create<FinanceStore>()(
       // Cloud sync
       setSyncStatus: (status) => set({ syncStatus: status }),
       setLastSyncedAt: (timestamp) => set({ lastSyncedAt: timestamp }),
-      updatePendingCount: () => set({ pendingCount: getPendingOperationsCount() }),
+      updatePendingCount: () => set({ pendingCount: getQueueSize() }),
       
     setCloudData: (data) => {
       set({
@@ -144,10 +144,9 @@ export const useFinanceStore = create<FinanceStore>()(
         notifications: state.notifications.map((n) => ({ ...n, read: true }))
       })),
       
-      // Transaction actions
+      // Transaction actions - Optimistic local-first with background sync
       addTransaction: async (transaction, userId) => {
         const id = uuidv4();
-        const isOnline = navigator.onLine;
         
         const transactionData = {
           type: transaction.type,
@@ -164,29 +163,14 @@ export const useFinanceStore = create<FinanceStore>()(
           recurring_frequency: transaction.recurringFrequency || null,
         };
         
-        // Sync to cloud if user is logged in and online
-        if (userId && isOnline) {
-          const { error } = await supabase.from('transactions').insert({
-            id,
-            user_id: userId,
-            ...transactionData,
-          });
-          
-          if (error) {
-            console.error('Error saving transaction to cloud:', error);
-            // Queue for later sync
-            addPendingOperation({
-              type: 'insert',
-              entity: 'transaction',
-              entityId: id,
-              data: transactionData,
-              userId,
-            });
-            get().updatePendingCount();
-          }
-        } else if (userId && !isOnline) {
-          // Offline - queue for later sync
-          addPendingOperation({
+        // 1. Add to local state immediately (optimistic)
+        set((state) => ({
+          transactions: [{ ...transaction, id }, ...state.transactions]
+        }));
+        
+        // 2. Queue for sync (handles online/offline automatically)
+        if (userId) {
+          addToSyncQueue({
             type: 'insert',
             entity: 'transaction',
             entityId: id,
@@ -194,28 +178,33 @@ export const useFinanceStore = create<FinanceStore>()(
             userId,
           });
           get().updatePendingCount();
+          
+          // 3. Try to sync immediately if online
+          if (navigator.onLine) {
+            processSyncQueue().then(() => {
+              get().updatePendingCount();
+            }).catch(console.error);
+          }
         }
-        
-        // Add to local state
-        set((state) => ({
-          transactions: [{ ...transaction, id }, ...state.transactions]
-        }));
         
         get().addNotification({
           type: 'transaction',
           title: `${transaction.type === 'income' ? 'Income' : 'Expense'} Added`,
-          message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}${!isOnline ? ' (offline)' : ''}`,
+          message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
         });
       },
       
       updateTransaction: async (id, updates, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
+        
+        // 1. Update local state immediately (optimistic)
         set((state) => ({
           transactions: state.transactions.map((t) => 
             t.id === id ? { ...t, ...updates } : t
           )
         }));
         
+        // 2. Queue for sync
         if (userId) {
           const dbUpdates: Record<string, unknown> = {};
           if (updates.type) dbUpdates.type = updates.type;
@@ -229,7 +218,18 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.time) dbUpdates.time = updates.time;
           if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
           
-          await supabase.from('transactions').update(dbUpdates).eq('id', id);
+          addToSyncQueue({
+            type: 'update',
+            entity: 'transaction',
+            entityId: id,
+            data: dbUpdates,
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         if (transaction) {
@@ -243,12 +243,26 @@ export const useFinanceStore = create<FinanceStore>()(
       
       deleteTransaction: async (id, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
+        
+        // 1. Remove from local state immediately (optimistic)
         set((state) => ({
           transactions: state.transactions.filter((t) => t.id !== id)
         }));
         
+        // 2. Queue for sync
         if (userId) {
-          await supabase.from('transactions').delete().eq('id', id);
+          addToSyncQueue({
+            type: 'delete',
+            entity: 'transaction',
+            entityId: id,
+            data: {},
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         if (transaction) {
@@ -260,22 +274,32 @@ export const useFinanceStore = create<FinanceStore>()(
         }
       },
       
-      // Category actions
+      // Category actions - Optimistic local-first with background sync
       addCategory: async (category, userId) => {
         const id = uuidv4();
+        
         set((state) => ({
           categories: [...state.categories, { ...category, id }]
         }));
         
         if (userId) {
-          await supabase.from('categories').insert({
-            id,
-            user_id: userId,
-            name: category.name,
-            icon: category.icon,
-            color: category.color,
-            type: category.type,
+          addToSyncQueue({
+            type: 'insert',
+            entity: 'category',
+            entityId: id,
+            data: {
+              name: category.name,
+              icon: category.icon,
+              color: category.color,
+              type: category.type,
+            },
+            userId,
           });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         get().addNotification({
@@ -293,7 +317,18 @@ export const useFinanceStore = create<FinanceStore>()(
         }));
         
         if (userId) {
-          await supabase.from('categories').update(updates).eq('id', id);
+          addToSyncQueue({
+            type: 'update',
+            entity: 'category',
+            entityId: id,
+            data: updates,
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         get().addNotification({
@@ -305,12 +340,24 @@ export const useFinanceStore = create<FinanceStore>()(
       
       deleteCategory: async (id, userId) => {
         const category = get().categories.find(c => c.id === id);
+        
         set((state) => ({
           categories: state.categories.filter((c) => c.id !== id)
         }));
         
         if (userId) {
-          await supabase.from('categories').delete().eq('id', id);
+          addToSyncQueue({
+            type: 'delete',
+            entity: 'category',
+            entityId: id,
+            data: {},
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         if (category) {
@@ -322,23 +369,33 @@ export const useFinanceStore = create<FinanceStore>()(
         }
       },
       
-      // Project actions
+      // Project actions - Optimistic local-first with background sync
       addProject: async (project, userId) => {
         const id = uuidv4();
         const createdAt = new Date().toISOString().split('T')[0];
+        
         set((state) => ({
           projects: [...state.projects, { ...project, id, createdAt }]
         }));
         
         if (userId) {
-          await supabase.from('projects').insert({
-            id,
-            user_id: userId,
-            name: project.name,
-            description: project.description || null,
-            budget_limit: project.budgetLimit,
-            color: project.color,
+          addToSyncQueue({
+            type: 'insert',
+            entity: 'project',
+            entityId: id,
+            data: {
+              name: project.name,
+              description: project.description || null,
+              budget_limit: project.budgetLimit,
+              color: project.color,
+            },
+            userId,
           });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         get().addNotification({
@@ -362,7 +419,18 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.budgetLimit !== undefined) dbUpdates.budget_limit = updates.budgetLimit;
           if (updates.color) dbUpdates.color = updates.color;
           
-          await supabase.from('projects').update(dbUpdates).eq('id', id);
+          addToSyncQueue({
+            type: 'update',
+            entity: 'project',
+            entityId: id,
+            data: dbUpdates,
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         get().addNotification({
@@ -374,12 +442,24 @@ export const useFinanceStore = create<FinanceStore>()(
       
       deleteProject: async (id, userId) => {
         const project = get().projects.find(p => p.id === id);
+        
         set((state) => ({
           projects: state.projects.filter((p) => p.id !== id)
         }));
         
         if (userId) {
-          await supabase.from('projects').delete().eq('id', id);
+          addToSyncQueue({
+            type: 'delete',
+            entity: 'project',
+            entityId: id,
+            data: {},
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         if (project) {
@@ -391,21 +471,31 @@ export const useFinanceStore = create<FinanceStore>()(
         }
       },
       
-      // Vendor actions
+      // Vendor actions - Optimistic local-first with background sync
       addVendor: async (name, color, icon, userId) => {
         const id = uuidv4();
+        
         set((state) => ({
           vendors: [...state.vendors, { id, name, color, icon }]
         }));
         
         if (userId) {
-          await supabase.from('vendors').insert({
-            id,
-            user_id: userId,
-            name,
-            icon: icon || null,
-            color: color || null,
+          addToSyncQueue({
+            type: 'insert',
+            entity: 'vendor',
+            entityId: id,
+            data: {
+              name,
+              icon: icon || null,
+              color: color || null,
+            },
+            userId,
           });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         get().addNotification({
@@ -423,7 +513,18 @@ export const useFinanceStore = create<FinanceStore>()(
         }));
         
         if (userId) {
-          await supabase.from('vendors').update(updates).eq('id', id);
+          addToSyncQueue({
+            type: 'update',
+            entity: 'vendor',
+            entityId: id,
+            data: updates,
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         const vendor = get().vendors.find(v => v.id === id);
@@ -436,12 +537,24 @@ export const useFinanceStore = create<FinanceStore>()(
       
       deleteVendor: async (id, userId) => {
         const vendor = get().vendors.find(v => v.id === id);
+        
         set((state) => ({
           vendors: state.vendors.filter((v) => v.id !== id)
         }));
         
         if (userId) {
-          await supabase.from('vendors').delete().eq('id', id);
+          addToSyncQueue({
+            type: 'delete',
+            entity: 'vendor',
+            entityId: id,
+            data: {},
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
         }
         
         if (vendor) {
