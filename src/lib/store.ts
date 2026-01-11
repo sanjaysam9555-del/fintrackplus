@@ -3,6 +3,17 @@ import { persist } from 'zustand/middleware';
 import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
 import { DEFAULT_CATEGORIES, DEFAULT_PROJECTS, DEMO_TRANSACTIONS } from './constants';
 import { v4 as uuidv4 } from 'uuid';
+import { supabase } from '@/integrations/supabase/client';
+
+type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+
+interface CloudData {
+  profile?: UserProfile;
+  categories: Category[];
+  vendors: Vendor[];
+  projects: Project[];
+  transactions: Transaction[];
+}
 
 interface FinanceStore extends FinanceState {
   // User Profile
@@ -16,25 +27,30 @@ interface FinanceStore extends FinanceState {
   markAllNotificationsRead: () => void;
   
   // Transaction actions
-  addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
-  updateTransaction: (id: string, transaction: Partial<Transaction>) => void;
-  deleteTransaction: (id: string) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string) => void;
+  updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
+  deleteTransaction: (id: string, userId?: string) => void;
   
   // Category actions
-  addCategory: (category: Omit<Category, 'id'>) => void;
-  updateCategory: (id: string, category: Partial<Category>) => void;
-  deleteCategory: (id: string) => void;
+  addCategory: (category: Omit<Category, 'id'>, userId?: string) => void;
+  updateCategory: (id: string, category: Partial<Category>, userId?: string) => void;
+  deleteCategory: (id: string, userId?: string) => void;
   
   // Project actions
-  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => void;
-  updateProject: (id: string, project: Partial<Project>) => void;
-  deleteProject: (id: string) => void;
+  addProject: (project: Omit<Project, 'id' | 'createdAt'>, userId?: string) => void;
+  updateProject: (id: string, project: Partial<Project>, userId?: string) => void;
+  deleteProject: (id: string, userId?: string) => void;
   
   // Vendor actions
   vendors: Vendor[];
-  addVendor: (name: string, color?: string, icon?: string) => void;
-  updateVendor: (id: string, updates: Partial<Vendor>) => void;
-  deleteVendor: (id: string) => void;
+  addVendor: (name: string, color?: string, icon?: string, userId?: string) => void;
+  updateVendor: (id: string, updates: Partial<Vendor>, userId?: string) => void;
+  deleteVendor: (id: string, userId?: string) => void;
+  
+  // Cloud sync
+  syncStatus: SyncStatus;
+  setSyncStatus: (status: SyncStatus) => void;
+  setCloudData: (data: CloudData) => void;
   
   // Data management
   loadDemoData: () => void;
@@ -55,17 +71,44 @@ export const useFinanceStore = create<FinanceStore>()(
   persist(
     (set, get) => ({
       transactions: [],
-      categories: DEFAULT_CATEGORIES,
+      categories: [],
       projects: [],
       vendors: [],
-      userProfile: { name: 'Swati Sharma' },
+      userProfile: { name: 'User' },
       notifications: [],
+      syncStatus: 'idle',
+      
+      // Cloud sync
+      setSyncStatus: (status) => set({ syncStatus: status }),
+      
+      setCloudData: (data) => {
+        set({
+          transactions: data.transactions,
+          categories: data.categories.length > 0 ? data.categories : DEFAULT_CATEGORIES,
+          vendors: data.vendors,
+          projects: data.projects,
+          userProfile: data.profile || { name: 'User' },
+        });
+      },
       
       // User Profile
-      updateUserProfile: (profile) => {
+      updateUserProfile: async (profile) => {
         set((state) => ({
           userProfile: { ...state.userProfile, ...profile }
         }));
+        
+        // Sync to cloud
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('profiles')
+            .update({ 
+              name: profile.name, 
+              avatar_url: profile.avatar 
+            })
+            .eq('user_id', user.id);
+        }
+        
         get().addNotification({
           type: 'profile',
           title: 'Profile Updated',
@@ -80,7 +123,7 @@ export const useFinanceStore = create<FinanceStore>()(
           id: uuidv4(),
           timestamp: new Date().toISOString(),
           read: false,
-        }, ...state.notifications].slice(0, 50) // Keep last 50 notifications
+        }, ...state.notifications].slice(0, 50)
       })),
       
       markNotificationRead: (id) => set((state) => ({
@@ -94,10 +137,31 @@ export const useFinanceStore = create<FinanceStore>()(
       })),
       
       // Transaction actions
-      addTransaction: (transaction) => {
+      addTransaction: async (transaction, userId) => {
+        const id = uuidv4();
         set((state) => ({
-          transactions: [{ ...transaction, id: uuidv4() }, ...state.transactions]
+          transactions: [{ ...transaction, id }, ...state.transactions]
         }));
+        
+        // Sync to cloud if user is logged in
+        if (userId) {
+          await supabase.from('transactions').insert({
+            id,
+            user_id: userId,
+            type: transaction.type,
+            amount: transaction.amount,
+            vendor: transaction.vendor,
+            category_id: transaction.categoryId || null,
+            project_id: transaction.projectId || null,
+            payment_method: transaction.paymentMethod,
+            date: transaction.date,
+            time: transaction.time,
+            notes: transaction.notes || null,
+            is_recurring: transaction.isRecurring || false,
+            recurring_frequency: transaction.recurringFrequency || null,
+          });
+        }
+        
         get().addNotification({
           type: 'transaction',
           title: `${transaction.type === 'income' ? 'Income' : 'Expense'} Added`,
@@ -105,13 +169,29 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      updateTransaction: (id, updates) => {
+      updateTransaction: async (id, updates, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
         set((state) => ({
           transactions: state.transactions.map((t) => 
             t.id === id ? { ...t, ...updates } : t
           )
         }));
+        
+        if (userId) {
+          const dbUpdates: Record<string, unknown> = {};
+          if (updates.type) dbUpdates.type = updates.type;
+          if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
+          if (updates.vendor) dbUpdates.vendor = updates.vendor;
+          if (updates.categoryId !== undefined) dbUpdates.category_id = updates.categoryId || null;
+          if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId || null;
+          if (updates.paymentMethod) dbUpdates.payment_method = updates.paymentMethod;
+          if (updates.date) dbUpdates.date = updates.date;
+          if (updates.time) dbUpdates.time = updates.time;
+          if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
+          
+          await supabase.from('transactions').update(dbUpdates).eq('id', id);
+        }
+        
         if (transaction) {
           get().addNotification({
             type: 'edit',
@@ -121,11 +201,16 @@ export const useFinanceStore = create<FinanceStore>()(
         }
       },
       
-      deleteTransaction: (id) => {
+      deleteTransaction: async (id, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
         set((state) => ({
           transactions: state.transactions.filter((t) => t.id !== id)
         }));
+        
+        if (userId) {
+          await supabase.from('transactions').delete().eq('id', id);
+        }
+        
         if (transaction) {
           get().addNotification({
             type: 'delete',
@@ -136,10 +221,23 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       // Category actions
-      addCategory: (category) => {
+      addCategory: async (category, userId) => {
+        const id = uuidv4();
         set((state) => ({
-          categories: [...state.categories, { ...category, id: uuidv4() }]
+          categories: [...state.categories, { ...category, id }]
         }));
+        
+        if (userId) {
+          await supabase.from('categories').insert({
+            id,
+            user_id: userId,
+            name: category.name,
+            icon: category.icon,
+            color: category.color,
+            type: category.type,
+          });
+        }
+        
         get().addNotification({
           type: 'category',
           title: 'Category Added',
@@ -147,12 +245,17 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      updateCategory: (id, updates) => {
+      updateCategory: async (id, updates, userId) => {
         set((state) => ({
           categories: state.categories.map((c) => 
             c.id === id ? { ...c, ...updates } : c
           )
         }));
+        
+        if (userId) {
+          await supabase.from('categories').update(updates).eq('id', id);
+        }
+        
         get().addNotification({
           type: 'edit',
           title: 'Category Updated',
@@ -160,11 +263,16 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      deleteCategory: (id) => {
+      deleteCategory: async (id, userId) => {
         const category = get().categories.find(c => c.id === id);
         set((state) => ({
           categories: state.categories.filter((c) => c.id !== id)
         }));
+        
+        if (userId) {
+          await supabase.from('categories').delete().eq('id', id);
+        }
+        
         if (category) {
           get().addNotification({
             type: 'delete',
@@ -175,14 +283,24 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       // Project actions
-      addProject: (project) => {
+      addProject: async (project, userId) => {
+        const id = uuidv4();
+        const createdAt = new Date().toISOString().split('T')[0];
         set((state) => ({
-          projects: [...state.projects, { 
-            ...project, 
-            id: uuidv4(),
-            createdAt: new Date().toISOString().split('T')[0]
-          }]
+          projects: [...state.projects, { ...project, id, createdAt }]
         }));
+        
+        if (userId) {
+          await supabase.from('projects').insert({
+            id,
+            user_id: userId,
+            name: project.name,
+            description: project.description || null,
+            budget_limit: project.budgetLimit,
+            color: project.color,
+          });
+        }
+        
         get().addNotification({
           type: 'project',
           title: 'Project Added',
@@ -190,12 +308,23 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      updateProject: (id, updates) => {
+      updateProject: async (id, updates, userId) => {
         set((state) => ({
           projects: state.projects.map((p) => 
             p.id === id ? { ...p, ...updates } : p
           )
         }));
+        
+        if (userId) {
+          const dbUpdates: Record<string, unknown> = {};
+          if (updates.name) dbUpdates.name = updates.name;
+          if (updates.description !== undefined) dbUpdates.description = updates.description;
+          if (updates.budgetLimit !== undefined) dbUpdates.budget_limit = updates.budgetLimit;
+          if (updates.color) dbUpdates.color = updates.color;
+          
+          await supabase.from('projects').update(dbUpdates).eq('id', id);
+        }
+        
         get().addNotification({
           type: 'edit',
           title: 'Project Updated',
@@ -203,11 +332,16 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      deleteProject: (id) => {
+      deleteProject: async (id, userId) => {
         const project = get().projects.find(p => p.id === id);
         set((state) => ({
           projects: state.projects.filter((p) => p.id !== id)
         }));
+        
+        if (userId) {
+          await supabase.from('projects').delete().eq('id', id);
+        }
+        
         if (project) {
           get().addNotification({
             type: 'delete',
@@ -218,10 +352,22 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       // Vendor actions
-      addVendor: (name, color, icon) => {
+      addVendor: async (name, color, icon, userId) => {
+        const id = uuidv4();
         set((state) => ({
-          vendors: [...state.vendors, { id: uuidv4(), name, color, icon }]
+          vendors: [...state.vendors, { id, name, color, icon }]
         }));
+        
+        if (userId) {
+          await supabase.from('vendors').insert({
+            id,
+            user_id: userId,
+            name,
+            icon: icon || null,
+            color: color || null,
+          });
+        }
+        
         get().addNotification({
           type: 'vendor',
           title: 'Vendor Added',
@@ -229,12 +375,17 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      updateVendor: (id, updates) => {
+      updateVendor: async (id, updates, userId) => {
         set((state) => ({
           vendors: state.vendors.map((v) => 
             v.id === id ? { ...v, ...updates } : v
           )
         }));
+        
+        if (userId) {
+          await supabase.from('vendors').update(updates).eq('id', id);
+        }
+        
         const vendor = get().vendors.find(v => v.id === id);
         get().addNotification({
           type: 'edit',
@@ -243,11 +394,16 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      deleteVendor: (id) => {
+      deleteVendor: async (id, userId) => {
         const vendor = get().vendors.find(v => v.id === id);
         set((state) => ({
           vendors: state.vendors.filter((v) => v.id !== id)
         }));
+        
+        if (userId) {
+          await supabase.from('vendors').delete().eq('id', id);
+        }
+        
         if (vendor) {
           get().addNotification({
             type: 'delete',
@@ -270,7 +426,7 @@ export const useFinanceStore = create<FinanceStore>()(
       
       clearAllData: () => set({
         transactions: [],
-        categories: DEFAULT_CATEGORIES,
+        categories: [],
         projects: [],
         vendors: [],
       }),

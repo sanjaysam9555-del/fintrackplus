@@ -7,6 +7,8 @@ import { AddTransactionSheet } from "@/components/AddTransactionSheet";
 import { NotificationsPage } from "@/components/NotificationsPage";
 import { AISummaryPage } from "@/components/AISummaryPage";
 import { useFinanceStore } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
+import { useCloudSync } from "@/hooks/useCloudSync";
 import { motion, AnimatePresence } from "framer-motion";
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications';
@@ -19,21 +21,20 @@ const Index = () => {
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
-  const { transactions, loadDemoData } = useFinanceStore();
+  const { syncStatus } = useFinanceStore();
+  const { user } = useAuth();
+  
+  // Initialize cloud sync
+  useCloudSync();
   
   useEffect(() => {
-    // Auto-load demo data on first visit
-    const timer = setTimeout(() => {
+    // Set loading based on sync status
+    if (syncStatus === 'synced' || syncStatus === 'error') {
       setIsLoading(false);
-    }, 500);
-    
-    // Always load demo data for showcase
-    if (transactions.length === 0) {
-      loadDemoData();
+    } else if (syncStatus === 'syncing') {
+      setIsLoading(true);
     }
-    
-    return () => clearTimeout(timer);
-  }, [transactions.length, loadDemoData]);
+  }, [syncStatus]);
   
   const handleOpenAddSheet = () => setIsAddSheetOpen(true);
   
@@ -110,6 +111,7 @@ const Index = () => {
       <AddTransactionSheet
         isOpen={isAddSheetOpen}
         onClose={() => setIsAddSheetOpen(false)}
+        userId={user?.id}
       />
     </div>
   );

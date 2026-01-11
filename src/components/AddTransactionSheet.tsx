@@ -29,9 +29,10 @@ interface AddTransactionSheetProps {
   isOpen: boolean;
   onClose: () => void;
   defaultType?: TransactionType;
+  userId?: string;
 }
 
-export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }: AddTransactionSheetProps) => {
+export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId }: AddTransactionSheetProps) => {
   const { categories, projects, transactions, vendors, addTransaction } = useFinanceStore();
   
   const [type, setType] = useState<TransactionType>(defaultType);
@@ -117,7 +118,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
       date: format(date, 'yyyy-MM-dd'),
       time: format(new Date(), 'HH:mm'),
       notes: notes || undefined,
-    });
+    }, userId);
     
     setAmount("");
     setVendor("");

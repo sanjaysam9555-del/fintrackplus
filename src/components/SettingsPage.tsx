@@ -9,9 +9,11 @@ import {
   Store,
   FolderKanban,
   FileBarChart,
-  ArrowLeft
+  ArrowLeft,
+  LogOut
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import avatarImage from "@/assets/avatar-swati.jpg";
 import { ProfileEditSheet } from "./ProfileEditSheet";
@@ -19,6 +21,7 @@ import { CategoriesSection } from "./settings/CategoriesSection";
 import { VendorsSection } from "./settings/VendorsSection";
 import { ProjectsSection } from "./settings/ProjectsSection";
 import { ReportsSection } from "./settings/ReportsSection";
+import { Button } from "./ui/button";
 
 type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
 
@@ -30,9 +33,15 @@ interface SettingsPageProps {
 
 export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }: SettingsPageProps) => {
   const { categories, projects, userProfile } = useFinanceStore();
+  const { signOut, user } = useAuth();
   const [isDark, setIsDark] = useState(false);
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
+  
+  const handleLogout = async () => {
+    await signOut();
+    toast.success('Logged out successfully');
+  };
   
   useEffect(() => {
     setActiveSection(initialSection);
@@ -214,13 +223,25 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
         </div>
       ))}
       
+      {/* Logout Button */}
+      <div className="px-4 mb-6">
+        <Button 
+          variant="outline" 
+          className="w-full text-destructive border-destructive/20 hover:bg-destructive/10"
+          onClick={handleLogout}
+        >
+          <LogOut size={18} className="mr-2" />
+          Sign Out
+        </Button>
+      </div>
+      
       {/* App Info */}
       <div className="px-4 text-center">
         <p className="text-xs text-muted-foreground">
           FinTrack Pro v1.0.0
         </p>
         <p className="text-xs text-muted-foreground mt-1">
-          Built with ❤️ for financial clarity
+          {user?.email}
         </p>
       </div>
       
