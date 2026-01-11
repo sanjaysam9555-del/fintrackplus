@@ -85,12 +85,11 @@ const Index = () => {
   // Initialize airtight sync engine
   const { showOnboarding, userName, completeOnboarding, refreshData, isRefreshing, isOnline, pendingCount } = useSyncEngine();
   
+  // Only show loading on initial mount, not during syncs
   useEffect(() => {
-    // Set loading based on sync status
+    // Once we have any data or the first sync completes, stop showing loading
     if (syncStatus === 'synced' || syncStatus === 'error') {
       setIsLoading(false);
-    } else if (syncStatus === 'syncing') {
-      setIsLoading(true);
     }
   }, [syncStatus]);
   
