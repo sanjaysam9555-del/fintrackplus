@@ -147,6 +147,7 @@ export const useFinanceStore = create<FinanceStore>()(
             user_id: userId,
             type: transaction.type,
             amount: transaction.amount,
+            title: transaction.title || null,
             vendor: transaction.vendor,
             category_id: transaction.categoryId || null,
             project_id: transaction.projectId || null,
@@ -178,6 +179,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const dbUpdates: Record<string, unknown> = {};
           if (updates.type) dbUpdates.type = updates.type;
           if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
+          if (updates.title !== undefined) dbUpdates.title = updates.title || null;
           if (updates.vendor) dbUpdates.vendor = updates.vendor;
           if (updates.categoryId !== undefined) dbUpdates.category_id = updates.categoryId || null;
           if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId || null;
