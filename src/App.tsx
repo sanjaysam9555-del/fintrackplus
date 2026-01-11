@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
 const AuthPage = lazy(() => import("./pages/Auth").then(m => ({ default: m.AuthPage })));
+const InstallPage = lazy(() => import("./pages/Install").then(m => ({ default: m.InstallPage })));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -83,14 +84,19 @@ const AppRoutes = () => {
 
   return (
     <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
-      {!user ? (
-        <AuthPage />
-      ) : (
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      )}
+      <Routes>
+        {/* Install page is always accessible */}
+        <Route path="/install" element={<InstallPage />} />
+        
+        {!user ? (
+          <Route path="*" element={<AuthPage />} />
+        ) : (
+          <>
+            <Route path="/" element={<Index />} />
+            <Route path="*" element={<NotFound />} />
+          </>
+        )}
+      </Routes>
     </Suspense>
   );
 };
