@@ -267,12 +267,13 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                         <CalendarIcon size={16} className="text-muted-foreground" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-card" align="start">
+                    <PopoverContent className="w-auto p-0 bg-card z-[60]" align="start">
                       <Calendar
                         mode="single"
                         selected={date}
                         onSelect={(d) => d && setDate(d)}
                         initialFocus
+                        className="p-3 pointer-events-auto"
                       />
                     </PopoverContent>
                   </Popover>
