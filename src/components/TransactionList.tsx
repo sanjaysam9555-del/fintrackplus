@@ -9,7 +9,7 @@ import { Input } from "./ui/input";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
-import { format } from "date-fns";
+import { format, differenceInDays } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -95,28 +95,104 @@ export const TransactionList = ({ type }: TransactionListProps) => {
   }, [filteredTransactions]);
   
   const chartData = useMemo(() => {
-    const weeks: { name: string; value: number }[] = [];
-    const today = new Date();
+    const startDate = new Date(dateRange.start);
+    const endDate = new Date(dateRange.end);
+    const daysDiff = differenceInDays(endDate, startDate);
     
-    for (let i = 3; i >= 0; i--) {
-      const weekEnd = new Date(today);
-      weekEnd.setDate(today.getDate() - (i * 7));
-      const weekStart = new Date(weekEnd);
-      weekStart.setDate(weekEnd.getDate() - 6);
-      
-      const weekTransactions = filteredTransactions.filter((t) => {
-        const date = new Date(t.date);
-        return date >= weekStart && date <= weekEnd;
-      });
-      
-      weeks.push({
-        name: `W${4 - i}`,
-        value: weekTransactions.reduce((sum, t) => sum + t.amount, 0),
-      });
+    const dataPoints: { name: string; value: number }[] = [];
+    
+    if (timeFilter === 'week' || daysDiff <= 7) {
+      // Show 7 days
+      for (let i = 6; i >= 0; i--) {
+        const day = new Date(endDate);
+        day.setDate(endDate.getDate() - i);
+        const dayStr = day.toISOString().split('T')[0];
+        
+        const dayTransactions = filteredTransactions.filter(t => t.date === dayStr);
+        
+        dataPoints.push({
+          name: format(day, 'EEE'),
+          value: dayTransactions.reduce((sum, t) => sum + t.amount, 0),
+        });
+      }
+    } else if (timeFilter === 'month' || (daysDiff > 7 && daysDiff <= 31)) {
+      // Show 4 weeks
+      for (let i = 3; i >= 0; i--) {
+        const weekEnd = new Date(endDate);
+        weekEnd.setDate(endDate.getDate() - (i * 7));
+        const weekStart = new Date(weekEnd);
+        weekStart.setDate(weekEnd.getDate() - 6);
+        
+        const weekTransactions = filteredTransactions.filter(t => {
+          const date = new Date(t.date);
+          return date >= weekStart && date <= weekEnd;
+        });
+        
+        dataPoints.push({
+          name: `W${4 - i}`,
+          value: weekTransactions.reduce((sum, t) => sum + t.amount, 0),
+        });
+      }
+    } else if (timeFilter === 'year' || daysDiff > 31) {
+      // Show 12 months
+      for (let i = 11; i >= 0; i--) {
+        const monthDate = new Date(endDate);
+        monthDate.setMonth(endDate.getMonth() - i);
+        const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+        const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+        
+        const monthTransactions = filteredTransactions.filter(t => {
+          const date = new Date(t.date);
+          return date >= monthStart && date <= monthEnd;
+        });
+        
+        dataPoints.push({
+          name: format(monthDate, 'MMM'),
+          value: monthTransactions.reduce((sum, t) => sum + t.amount, 0),
+        });
+      }
+    } else {
+      // Custom: determine based on days difference
+      if (daysDiff <= 14) {
+        // Show days
+        for (let i = daysDiff; i >= 0; i--) {
+          const day = new Date(endDate);
+          day.setDate(endDate.getDate() - i);
+          const dayStr = day.toISOString().split('T')[0];
+          
+          if (day >= startDate) {
+            const dayTransactions = filteredTransactions.filter(t => t.date === dayStr);
+            
+            dataPoints.push({
+              name: format(day, 'd'),
+              value: dayTransactions.reduce((sum, t) => sum + t.amount, 0),
+            });
+          }
+        }
+      } else {
+        // Show weeks
+        const numWeeks = Math.ceil(daysDiff / 7);
+        for (let i = numWeeks - 1; i >= 0; i--) {
+          const weekEnd = new Date(endDate);
+          weekEnd.setDate(endDate.getDate() - (i * 7));
+          const weekStart = new Date(weekEnd);
+          weekStart.setDate(weekEnd.getDate() - 6);
+          
+          const weekTransactions = filteredTransactions.filter(t => {
+            const date = new Date(t.date);
+            return date >= weekStart && date <= weekEnd && date >= startDate;
+          });
+          
+          dataPoints.push({
+            name: `W${numWeeks - i}`,
+            value: weekTransactions.reduce((sum, t) => sum + t.amount, 0),
+          });
+        }
+      }
     }
     
-    return weeks;
-  }, [filteredTransactions]);
+    return dataPoints;
+  }, [filteredTransactions, timeFilter, dateRange]);
   
   return (
     <div className="min-h-screen pb-24">
