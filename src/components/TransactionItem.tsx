@@ -99,7 +99,7 @@ export const TransactionItem = ({ transaction, category }: TransactionItemProps)
           onDragEnd={handleDragEnd}
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="bg-card rounded-xl shadow-card border border-border overflow-hidden relative"
+          className="bg-card rounded-xl shadow-md border border-border/50 overflow-hidden relative hover:shadow-lg transition-shadow"
         >
           {/* Main Row */}
           <div
