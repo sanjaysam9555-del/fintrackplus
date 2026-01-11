@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Home, ArrowDownLeft, ArrowUpRight, Plus, Bell } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/lib/store";
+import { triggerHaptic } from "@/components/ui/button";
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications';
 
@@ -23,6 +24,16 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
   const { notifications } = useFinanceStore();
   const unreadCount = notifications.filter(n => !n.read).length;
   
+  const handleTabClick = (tabId: TabId) => {
+    triggerHaptic('light');
+    onTabChange(tabId);
+  };
+  
+  const handleAddClick = () => {
+    triggerHaptic('medium');
+    onAddClick();
+  };
+  
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe">
       <nav className="flex items-center justify-around py-2 px-4 max-w-md mx-auto">
@@ -35,7 +46,7 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
             return (
               <motion.button
                 key={tab.id}
-                onClick={onAddClick}
+                onClick={handleAddClick}
                 whileTap={{ scale: 0.9 }}
                 className="flex flex-col items-center gap-1 px-4 py-2"
               >
@@ -49,7 +60,7 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
           return (
             <motion.button
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => handleTabClick(tab.id)}
               whileTap={{ scale: 0.9 }}
               className={cn(
                 "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors relative min-w-[44px]",
