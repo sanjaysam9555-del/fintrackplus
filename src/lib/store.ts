@@ -1,10 +1,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Transaction, Category, Project, FinanceState, TransactionType } from './types';
+import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification } from './types';
 import { DEFAULT_CATEGORIES, DEFAULT_PROJECTS, DEMO_TRANSACTIONS } from './constants';
 import { v4 as uuidv4 } from 'uuid';
 
 interface FinanceStore extends FinanceState {
+  // User Profile
+  userProfile: UserProfile;
+  updateUserProfile: (profile: Partial<UserProfile>) => void;
+  
+  // Notifications
+  notifications: Notification[];
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  
   // Transaction actions
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>) => void;
@@ -32,6 +42,7 @@ interface FinanceStore extends FinanceState {
   getProjectSpending: (projectId: string) => number;
   getTotalIncome: (startDate?: string, endDate?: string) => number;
   getTotalExpense: (startDate?: string, endDate?: string) => number;
+  getUniqueVendors: () => string[];
 }
 
 export const useFinanceStore = create<FinanceStore>()(
@@ -40,11 +51,52 @@ export const useFinanceStore = create<FinanceStore>()(
       transactions: [],
       categories: DEFAULT_CATEGORIES,
       projects: [],
+      userProfile: { name: 'Swati Sharma' },
+      notifications: [],
+      
+      // User Profile
+      updateUserProfile: (profile) => {
+        set((state) => ({
+          userProfile: { ...state.userProfile, ...profile }
+        }));
+        get().addNotification({
+          type: 'profile',
+          title: 'Profile Updated',
+          message: 'Your profile has been updated successfully',
+        });
+      },
+      
+      // Notifications
+      addNotification: (notification) => set((state) => ({
+        notifications: [{
+          ...notification,
+          id: uuidv4(),
+          timestamp: new Date().toISOString(),
+          read: false,
+        }, ...state.notifications].slice(0, 50) // Keep last 50 notifications
+      })),
+      
+      markNotificationRead: (id) => set((state) => ({
+        notifications: state.notifications.map((n) =>
+          n.id === id ? { ...n, read: true } : n
+        )
+      })),
+      
+      markAllNotificationsRead: () => set((state) => ({
+        notifications: state.notifications.map((n) => ({ ...n, read: true }))
+      })),
       
       // Transaction actions
-      addTransaction: (transaction) => set((state) => ({
-        transactions: [{ ...transaction, id: uuidv4() }, ...state.transactions]
-      })),
+      addTransaction: (transaction) => {
+        set((state) => ({
+          transactions: [{ ...transaction, id: uuidv4() }, ...state.transactions]
+        }));
+        get().addNotification({
+          type: 'transaction',
+          title: `${transaction.type === 'income' ? 'Income' : 'Expense'} Added`,
+          message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+        });
+      },
       
       updateTransaction: (id, updates) => set((state) => ({
         transactions: state.transactions.map((t) => 
@@ -135,6 +187,11 @@ export const useFinanceStore = create<FinanceStore>()(
           transactions = transactions.filter((t) => t.date >= startDate && t.date <= endDate);
         }
         return transactions.reduce((sum, t) => sum + t.amount, 0);
+      },
+      
+      getUniqueVendors: () => {
+        const vendors = new Set(get().transactions.map(t => t.vendor));
+        return Array.from(vendors);
       },
     }),
     {

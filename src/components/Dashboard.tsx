@@ -4,8 +4,10 @@ import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
+import { NotificationPanel } from "./NotificationPanel";
+import { ProfileEditSheet } from "./ProfileEditSheet";
 import { motion, AnimatePresence } from "framer-motion";
-import { Bell, CalendarDays } from "lucide-react";
+import { Bell, CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart } from "lucide-react";
 import avatarImage from "@/assets/avatar-swati.jpg";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -15,17 +17,20 @@ import { cn } from "@/lib/utils";
 interface DashboardProps {
   isLoading?: boolean;
   onAddClick?: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const Dashboard = ({ isLoading = false, onAddClick }: DashboardProps) => {
-  const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
+export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: DashboardProps) => {
+  const { transactions, categories, getTotalIncome, getTotalExpense, notifications, userProfile } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCustomCalendar, setShowCustomCalendar] = useState<'start' | 'end' | null>(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   
   const today = new Date();
   
@@ -134,22 +139,22 @@ export const Dashboard = ({ isLoading = false, onAddClick }: DashboardProps) => 
       {/* Header */}
       <div className="p-4 pt-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" onClick={() => setShowProfileEdit(true)}>
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", damping: 15 }}
-              className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary"
+              className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary cursor-pointer"
             >
               <img 
-                src={avatarImage} 
+                src={userProfile.avatar || avatarImage} 
                 alt="Profile" 
                 className="w-full h-full object-cover"
               />
             </motion.div>
-            <div>
+            <div className="cursor-pointer">
               <p className="text-sm text-muted-foreground">{greeting},</p>
-              <h1 className="text-lg font-bold">Swati Sharma</h1>
+              <h1 className="text-lg font-bold">{userProfile.name}</h1>
             </div>
           </div>
           
@@ -256,9 +261,14 @@ export const Dashboard = ({ isLoading = false, onAddClick }: DashboardProps) => 
                 </div>
               </PopoverContent>
             </Popover>
-            <button className="p-2 rounded-full hover:bg-muted transition-colors relative">
+            <button 
+              onClick={() => setShowNotifications(true)}
+              className="p-2 rounded-full hover:bg-muted transition-colors relative"
+            >
               <Bell size={22} className="text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+              {notifications.filter(n => !n.read).length > 0 && (
+                <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+              )}
             </button>
           </div>
         </div>
@@ -314,18 +324,43 @@ export const Dashboard = ({ isLoading = false, onAddClick }: DashboardProps) => 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-2 gap-3"
+          className="grid grid-cols-4 gap-2"
         >
           <button
-            onClick={onAddClick}
-            className="flex flex-col items-center gap-2 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+            onClick={() => onNavigate?.('categories')}
+            className="flex flex-col items-center gap-1.5 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
           >
-            <span className="text-xl">➕</span>
-            <span className="text-xs font-medium text-muted-foreground">Add New</span>
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Grid3X3 size={16} className="text-primary" />
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground">Categories</span>
           </button>
-          <button className="flex flex-col items-center gap-2 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow">
-            <span className="text-xl">⋯</span>
-            <span className="text-xs font-medium text-muted-foreground">More</span>
+          <button
+            onClick={() => onNavigate?.('vendors')}
+            className="flex flex-col items-center gap-1.5 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+          >
+            <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
+              <Store size={16} className="text-success" />
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground">Vendors</span>
+          </button>
+          <button
+            onClick={() => onNavigate?.('projects')}
+            className="flex flex-col items-center gap-1.5 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+          >
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <FolderKanban size={16} className="text-amber-500" />
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground">Projects</span>
+          </button>
+          <button
+            onClick={() => onNavigate?.('reports')}
+            className="flex flex-col items-center gap-1.5 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+          >
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <FileBarChart size={16} className="text-purple-500" />
+            </div>
+            <span className="text-[10px] font-medium text-muted-foreground">Reports</span>
           </button>
         </motion.div>
       </div>
@@ -362,6 +397,18 @@ export const Dashboard = ({ isLoading = false, onAddClick }: DashboardProps) => 
           )}
         </div>
       </div>
+      
+      {/* Notification Panel */}
+      <NotificationPanel
+        isOpen={showNotifications}
+        onClose={() => setShowNotifications(false)}
+      />
+      
+      {/* Profile Edit Sheet */}
+      <ProfileEditSheet
+        isOpen={showProfileEdit}
+        onClose={() => setShowProfileEdit(false)}
+      />
     </div>
   );
 };
