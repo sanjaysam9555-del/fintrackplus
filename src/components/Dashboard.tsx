@@ -136,7 +136,6 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
         >
           {[
             { icon: "➕", label: "Add New" },
-            { icon: "↔️", label: "Transfer" },
             { icon: "📷", label: "Scan" },
             { icon: "⋯", label: "More" },
           ].map((action, i) => (
