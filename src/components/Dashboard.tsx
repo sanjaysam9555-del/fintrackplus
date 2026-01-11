@@ -6,7 +6,6 @@ import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { motion } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles } from "lucide-react";
-import avatarImage from "@/assets/avatar-swati.jpg";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -140,13 +139,19 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", damping: 15 }}
-              className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary"
+              className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center"
             >
-              <img 
-                src={userProfile.avatar || avatarImage} 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-              />
+              {userProfile.avatar ? (
+                <img 
+                  src={userProfile.avatar} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-lg font-bold text-primary">
+                  {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+              )}
             </motion.div>
             <div>
               <p className="text-sm text-muted-foreground">{greeting},</p>
