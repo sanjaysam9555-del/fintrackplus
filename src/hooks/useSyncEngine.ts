@@ -78,11 +78,8 @@ export const useSyncEngine = () => {
       const remaining = getQueueSize();
       refreshPendingCount();
       
-      if (remaining > 0) {
-        setSyncStatus('error'); // Still have pending items
-      } else {
-        setSyncStatus('synced');
-      }
+      // Only show 'synced' - pending items are handled separately by the UI
+      setSyncStatus('synced');
 
       if (showToast && !isBackground) {
         if (remaining > 0) {
