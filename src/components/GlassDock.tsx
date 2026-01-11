@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { Home, ArrowDownLeft, ArrowUpRight, Plus, Settings, Bell } from "lucide-react";
+import { Home, ArrowDownLeft, ArrowUpRight, Plus, Settings, Bell, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useFinanceStore } from "@/lib/store";
 
-type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications' | 'settings';
+type TabId = 'home' | 'expenses' | 'add' | 'income' | 'settings' | 'notifications' | 'ai';
 
 interface GlassDockProps {
   activeTab: TabId;
@@ -13,10 +13,12 @@ interface GlassDockProps {
 
 const tabs = [
   { id: 'home' as TabId, icon: Home, label: 'Home' },
-  { id: 'expenses' as TabId, icon: ArrowUpRight, label: 'Expenses' },
+  { id: 'expenses' as TabId, icon: ArrowUpRight, label: 'Expense' },
   { id: 'add' as TabId, icon: Plus, label: 'Add' },
   { id: 'income' as TabId, icon: ArrowDownLeft, label: 'Income' },
   { id: 'notifications' as TabId, icon: Bell, label: 'Alerts' },
+  { id: 'ai' as TabId, icon: Sparkles, label: 'AI' },
+  { id: 'settings' as TabId, icon: Settings, label: 'Settings' },
 ];
 
 export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps) => {
@@ -52,19 +54,19 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
               onClick={() => onTabChange(tab.id)}
               whileTap={{ scale: 0.9 }}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-colors relative min-w-[50px]",
+                "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors relative min-w-[44px]",
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
               <div className="relative">
-                <tab.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
+                <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                 {isNotifications && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-destructive text-destructive-foreground text-[8px] font-bold rounded-full flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] font-medium">{tab.label}</span>
+              <span className="text-[9px] font-medium">{tab.label}</span>
               {isActive && (
                 <motion.div
                   layoutId="activeTab"
