@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.79a3e63ba41d4b9cbf1d9935381d7325',
+  appId: 'app.lovable.fintrackpro',
   appName: 'FinTrack Pro',
   webDir: 'dist',
   server: {
