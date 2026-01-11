@@ -5,7 +5,7 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { motion } from "framer-motion";
-import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings } from "lucide-react";
+import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles } from "lucide-react";
 import avatarImage from "@/assets/avatar-swati.jpg";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -257,6 +257,12 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
                 </div>
               </PopoverContent>
             </Popover>
+            <button 
+              onClick={() => onNavigate?.('ai')}
+              className="p-2 rounded-full hover:bg-muted transition-colors"
+            >
+              <Sparkles size={22} className="text-muted-foreground" />
+            </button>
             <button 
               onClick={() => onNavigate?.('settings')}
               className="p-2 rounded-full hover:bg-muted transition-colors"
