@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
 import { DEFAULT_CATEGORIES } from './constants';
 import { v4 as uuidv4 } from 'uuid';
@@ -68,15 +67,14 @@ interface FinanceStore extends FinanceState {
 }
 
 export const useFinanceStore = create<FinanceStore>()(
-  persist(
-    (set, get) => ({
-      transactions: [],
-      categories: [],
-      projects: [],
-      vendors: [],
-      userProfile: { name: 'User' },
-      notifications: [],
-      syncStatus: 'idle',
+  (set, get) => ({
+    transactions: [],
+    categories: [],
+    projects: [],
+    vendors: [],
+    userProfile: { name: 'User' },
+    notifications: [],
+    syncStatus: 'idle',
       
       // Cloud sync
       setSyncStatus: (status) => set({ syncStatus: status }),
@@ -468,9 +466,5 @@ export const useFinanceStore = create<FinanceStore>()(
         const vendors = new Set(get().transactions.map(t => t.vendor));
         return Array.from(vendors);
       },
-    }),
-    {
-      name: 'fintrack-storage',
-    }
-  )
+    })
 );

@@ -15,7 +15,6 @@ import {
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import avatarImage from "@/assets/avatar-swati.jpg";
 import { ProfileEditSheet } from "./ProfileEditSheet";
 import { CategoriesSection } from "./settings/CategoriesSection";
 import { VendorsSection } from "./settings/VendorsSection";
@@ -133,17 +132,23 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
           className="bg-card rounded-2xl p-4 shadow-card border border-border"
         >
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary">
-              <img 
-                src={userProfile.avatar || avatarImage} 
-                alt="Profile" 
-                className="w-full h-full object-cover"
-              />
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center">
+              {userProfile.avatar ? (
+                <img 
+                  src={userProfile.avatar} 
+                  alt="Profile" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-2xl font-bold text-primary">
+                  {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                </span>
+              )}
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-bold">{userProfile.name}</h2>
-              <p className="text-sm text-muted-foreground">swati.sharma@email.com</p>
-              <p className="text-xs text-primary mt-1">Guest Mode • Data stored locally</p>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
+              <p className="text-xs text-success mt-1">Cloud Sync Enabled</p>
             </div>
           </div>
           <button 
