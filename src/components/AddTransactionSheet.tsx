@@ -42,10 +42,29 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
-    const storedVendorNames = vendors.map(v => v.name);
+    const storedVendors = vendors;
     const transactionVendorNames = Array.from(new Set(transactions.map(t => t.vendor)));
-    return Array.from(new Set([...storedVendorNames, ...transactionVendorNames]));
+    
+    // Merge: stored vendors take priority, then transaction vendors as fallback
+    const vendorMap = new Map<string, { name: string; icon?: string; color?: string }>();
+    
+    // Add transaction vendors first (will be overwritten by stored vendors)
+    transactionVendorNames.forEach(name => {
+      vendorMap.set(name.toLowerCase(), { name });
+    });
+    
+    // Add stored vendors (overwrite transaction vendors)
+    storedVendors.forEach(v => {
+      vendorMap.set(v.name.toLowerCase(), { name: v.name, icon: v.icon, color: v.color });
+    });
+    
+    return Array.from(vendorMap.values());
   }, [vendors, transactions]);
+  
+  // Find vendor details for selected vendor
+  const selectedVendorDetails = useMemo(() => {
+    return allVendors.find(v => v.name.toLowerCase() === vendor.toLowerCase());
+  }, [allVendors, vendor]);
   
   const handleMagicFill = () => {
     const text = magicInput.toLowerCase();
@@ -272,8 +291,20 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                       <button className="w-full mt-1 p-2.5 bg-muted rounded-xl flex items-center justify-between">
                         {vendor ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-5 h-5 rounded-md bg-success/20 flex items-center justify-center">
-                              <Store size={12} className="text-success" />
+                            <div 
+                              className="w-5 h-5 rounded-md flex items-center justify-center"
+                              style={{ 
+                                backgroundColor: selectedVendorDetails?.color 
+                                  ? `${selectedVendorDetails.color}20` 
+                                  : 'hsl(var(--success) / 0.2)' 
+                              }}
+                            >
+                              <Store 
+                                size={12} 
+                                style={{ 
+                                  color: selectedVendorDetails?.color || 'hsl(var(--success))' 
+                                }} 
+                              />
                             </div>
                             <span className="text-sm font-medium">{vendor}</span>
                           </div>
@@ -295,27 +326,35 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                         />
                         <ScrollArea className="max-h-48">
                           {allVendors
-                            .filter(v => v.toLowerCase().includes(vendor.toLowerCase()))
+                            .filter(v => v.name.toLowerCase().includes(vendor.toLowerCase()))
                             .map((v) => (
                               <button
-                                key={v}
+                                key={v.name}
                                 onClick={() => {
-                                  setVendor(v);
+                                  setVendor(v.name);
                                   setShowVendors(false);
                                 }}
                                 className={cn(
                                   "w-full px-3 py-2 text-left text-sm rounded-md transition-colors flex items-center gap-2",
-                                  vendor === v ? "bg-primary/10" : "hover:bg-muted"
+                                  vendor === v.name ? "bg-primary/10" : "hover:bg-muted"
                                 )}
                               >
-                                <div className="w-5 h-5 rounded-md bg-success/20 flex items-center justify-center shrink-0">
-                                  <Store size={12} className="text-success" />
+                                <div 
+                                  className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                                  style={{ 
+                                    backgroundColor: v.color ? `${v.color}20` : 'hsl(var(--success) / 0.2)' 
+                                  }}
+                                >
+                                  <Store 
+                                    size={12} 
+                                    style={{ color: v.color || 'hsl(var(--success))' }} 
+                                  />
                                 </div>
-                                <span className="flex-1">{v}</span>
-                                <Check size={12} className={cn("text-primary shrink-0", vendor === v ? "opacity-100" : "opacity-0")} />
+                                <span className="flex-1">{v.name}</span>
+                                <Check size={12} className={cn("text-primary shrink-0", vendor === v.name ? "opacity-100" : "opacity-0")} />
                               </button>
                             ))}
-                          {vendor && !allVendors.some(v => v.toLowerCase() === vendor.toLowerCase()) && (
+                          {vendor && !allVendors.some(v => v.name.toLowerCase() === vendor.toLowerCase()) && (
                             <button
                               onClick={() => setShowVendors(false)}
                               className="w-full px-3 py-2 text-left text-sm rounded-md hover:bg-muted text-primary flex items-center gap-2"

@@ -62,6 +62,8 @@ export interface UserProfile {
 export interface Vendor {
   id: string;
   name: string;
+  icon?: string;
+  color?: string;
 }
 
 export interface Notification {

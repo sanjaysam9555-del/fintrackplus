@@ -32,8 +32,8 @@ interface FinanceStore extends FinanceState {
   
   // Vendor actions
   vendors: Vendor[];
-  addVendor: (name: string) => void;
-  updateVendor: (id: string, name: string) => void;
+  addVendor: (name: string, color?: string) => void;
+  updateVendor: (id: string, updates: Partial<Vendor>) => void;
   deleteVendor: (id: string) => void;
   
   // Data management
@@ -218,9 +218,9 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       // Vendor actions
-      addVendor: (name) => {
+      addVendor: (name, color) => {
         set((state) => ({
-          vendors: [...state.vendors, { id: uuidv4(), name }]
+          vendors: [...state.vendors, { id: uuidv4(), name, color }]
         }));
         get().addNotification({
           type: 'vendor',
@@ -229,16 +229,17 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
-      updateVendor: (id, name) => {
+      updateVendor: (id, updates) => {
         set((state) => ({
           vendors: state.vendors.map((v) => 
-            v.id === id ? { ...v, name } : v
+            v.id === id ? { ...v, ...updates } : v
           )
         }));
+        const vendor = get().vendors.find(v => v.id === id);
         get().addNotification({
           type: 'edit',
           title: 'Vendor Updated',
-          message: name,
+          message: updates.name || vendor?.name || 'Vendor modified',
         });
       },
       
