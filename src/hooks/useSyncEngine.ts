@@ -50,14 +50,12 @@ export const useSyncEngine = () => {
     setPendingCount(getQueueSize());
   }, []);
 
-  // Core sync function - fetches cloud data (silent by default)
+  // Core sync function - fetches cloud data (always silent - no UI changes)
   const syncFromCloud = useCallback(async (options: { showToast?: boolean; isBackground?: boolean } = {}) => {
-    const { showToast = false, isBackground = false } = options;
+    const { showToast = false } = options;
     
     if (!user || !navigator.onLine) return;
-    if (!isBackground) setIsSyncing(true);
-    // Don't set 'syncing' status for background syncs to avoid UI flicker
-    if (!isBackground) setSyncStatus('syncing');
+    // Never set syncing status - keep sync completely invisible
 
     try {
       const { data, error } = await fetchAllCloudData(user.id);
@@ -73,12 +71,10 @@ export const useSyncEngine = () => {
       
       refreshPendingCount();
       
-      // Only set synced if not background (background syncs shouldn't change status)
-      if (!isBackground) {
-        setSyncStatus('synced');
-      }
+      // Always update status silently
+      setSyncStatus('synced');
 
-      if (showToast && !isBackground) {
+      if (showToast) {
         const remaining = getQueueSize();
         if (remaining > 0) {
           toast.info(`Refreshed. ${remaining} pending.`);
@@ -89,18 +85,14 @@ export const useSyncEngine = () => {
     } catch (error) {
       console.error('[SyncEngine] Fetch failed:', error);
       if (!isMounted.current) return;
-      if (!isBackground) {
-        setSyncStatus('error');
-        if (showToast) {
-          toast.error('Sync failed');
-        }
+      setSyncStatus('error');
+      if (showToast) {
+        toast.error('Sync failed');
       }
-    } finally {
-      if (!isBackground) setIsSyncing(false);
     }
   }, [user, setCloudData, setSyncStatus, setLastSyncedAt, refreshPendingCount]);
 
-  // Push pending operations to cloud (silent by default now)
+  // Push pending operations to cloud (always silent - no UI changes)
   const pushToCloud = useCallback(async (options: { showToast?: boolean } = {}) => {
     const { showToast = false } = options;
     
@@ -109,60 +101,48 @@ export const useSyncEngine = () => {
     const pending = getQueueSize();
     if (pending === 0) return { synced: 0, failed: 0, remaining: 0 };
 
-    // Don't show syncing status for background pushes
-    if (showToast) {
-      setIsSyncing(true);
-      setSyncStatus('syncing');
-    }
-
     const result = await processSyncQueue();
     refreshPendingCount();
 
     if (!isMounted.current) return result;
 
-    if (result.failed > 0 && showToast) {
+    if (result.failed > 0) {
       setSyncStatus('error');
-      toast.error(`${result.failed} change${result.failed > 1 ? 's' : ''} failed`);
-    } else if (result.synced > 0 && showToast) {
+      if (showToast) toast.error(`${result.failed} change${result.failed > 1 ? 's' : ''} failed`);
+    } else if (result.synced > 0) {
       setSyncStatus('synced');
       setLastSyncedAt(new Date().toISOString());
-      toast.success(`Synced ${result.synced} change${result.synced > 1 ? 's' : ''}`);
     }
 
-    if (showToast) setIsSyncing(false);
     return result;
   }, [user, setSyncStatus, setLastSyncedAt, refreshPendingCount]);
 
-  // Full sync: push pending, then pull from cloud (with timeout safety)
+  // Full sync: push pending, then pull from cloud (completely silent)
   const fullSync = useCallback(async (options: { showToast?: boolean } = {}) => {
     const { showToast = false } = options;
     
     if (!user) return;
 
-    setIsSyncing(true);
-    
-    // Safety timeout to prevent stuck spinner
-    const timeoutId = setTimeout(() => {
-      if (isMounted.current) setIsSyncing(false);
-    }, 15000);
-    
     try {
-      // First push any pending changes (silently)
+      // First push any pending changes
       await pushToCloud({ showToast: false });
       
       // Then fetch latest from cloud
-      await syncFromCloud({ showToast, isBackground: false });
-    } finally {
-      clearTimeout(timeoutId);
-      if (isMounted.current) setIsSyncing(false);
+      await syncFromCloud({ showToast });
+    } catch (error) {
+      console.error('[SyncEngine] Full sync failed:', error);
     }
   }, [user, pushToCloud, syncFromCloud]);
 
-  // Manual refresh (user-triggered) - shows toast
+  // Manual refresh (user-triggered)
   const refreshData = useCallback(async () => {
-    if (isSyncing) return; // Prevent double-refresh
-    await fullSync({ showToast: true });
-  }, [fullSync, isSyncing]);
+    setIsSyncing(true);
+    try {
+      await fullSync({ showToast: false });
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [fullSync]);
 
   // Queue an operation for sync
   const queueOperation = useCallback((
