@@ -162,21 +162,22 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
                   )} />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-64 p-3 bg-card z-[60]" align="end">
-                <div className="space-y-3">
-                  <p className="text-xs font-medium text-muted-foreground">Select Time Frame</p>
+              <PopoverContent className="w-56 p-3 bg-card z-[60]" align="end" sideOffset={8}>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Time Frame</p>
                   
                   {/* Quick Filters */}
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="flex gap-1">
                     {(['week', 'month', 'year'] as TimeFilter[]).map((filter) => (
                       <button
                         key={filter}
                         onClick={() => {
                           setTimeFilter(filter);
+                          setShowCustomCalendar(null);
                           setShowDatePicker(false);
                         }}
                         className={cn(
-                          "px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize",
+                          "flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors",
                           timeFilter === filter && timeFilter !== 'custom'
                             ? "bg-primary text-primary-foreground" 
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -187,60 +188,69 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
                     ))}
                   </div>
                   
-                  <div className="border-t border-border pt-3">
-                    <p className="text-xs text-muted-foreground mb-2">Custom range:</p>
-                    <div className="grid grid-cols-2 gap-2 mb-2">
-                      <button
-                        onClick={() => setShowCustomCalendar('start')}
-                        className={cn(
-                          "px-2 py-1.5 text-xs rounded-lg border text-left",
-                          customStartDate ? "border-primary bg-primary/5" : "border-border"
-                        )}
-                      >
-                        {customStartDate ? format(customStartDate, "MMM dd") : "Start"}
-                      </button>
-                      <button
-                        onClick={() => setShowCustomCalendar('end')}
-                        className={cn(
-                          "px-2 py-1.5 text-xs rounded-lg border text-left",
-                          customEndDate ? "border-primary bg-primary/5" : "border-border"
-                        )}
-                      >
-                        {customEndDate ? format(customEndDate, "MMM dd") : "End"}
-                      </button>
-                    </div>
-                    
-                    <AnimatePresence>
-                      {showCustomCalendar && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                        >
+                  <div className="border-t border-border pt-2 mt-2">
+                    <p className="text-[10px] text-muted-foreground mb-1.5">Custom</p>
+                    <div className="flex gap-1.5">
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            className={cn(
+                              "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
+                              customStartDate ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                            )}
+                          >
+                            {customStartDate ? format(customStartDate, "MMM dd") : "From"}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-card z-[70]" align="start" side="bottom">
                           <Calendar
                             mode="single"
-                            selected={showCustomCalendar === 'start' ? customStartDate : customEndDate}
+                            selected={customStartDate}
                             onSelect={(date) => {
-                              if (showCustomCalendar === 'start') {
-                                setCustomStartDate(date);
-                                setShowCustomCalendar('end');
-                              } else {
-                                setCustomEndDate(date);
-                                if (date && customStartDate) {
-                                  setTimeFilter('custom');
-                                  setShowDatePicker(false);
-                                  setShowCustomCalendar(null);
-                                }
+                              setCustomStartDate(date);
+                              if (date) setTimeFilter('custom');
+                            }}
+                            className="p-2 pointer-events-auto"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <span className="text-xs text-muted-foreground self-center">–</span>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <button
+                            className={cn(
+                              "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
+                              customEndDate ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                            )}
+                          >
+                            {customEndDate ? format(customEndDate, "MMM dd") : "To"}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0 bg-card z-[70]" align="end" side="bottom">
+                          <Calendar
+                            mode="single"
+                            selected={customEndDate}
+                            onSelect={(date) => {
+                              setCustomEndDate(date);
+                              if (date && customStartDate) {
+                                setTimeFilter('custom');
+                                setShowDatePicker(false);
                               }
                             }}
-                            disabled={(date) => 
-                              showCustomCalendar === 'end' && customStartDate ? date < customStartDate : false
-                            }
-                            className="p-1 pointer-events-auto border rounded-lg text-xs scale-90 origin-top"
+                            disabled={(date) => customStartDate ? date < customStartDate : false}
+                            className="p-2 pointer-events-auto"
                           />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    {timeFilter === 'custom' && customStartDate && customEndDate && (
+                      <button
+                        onClick={() => setShowDatePicker(false)}
+                        className="w-full mt-2 px-2 py-1.5 bg-primary text-primary-foreground text-xs rounded-md font-medium"
+                      >
+                        Apply
+                      </button>
+                    )}
                   </div>
                 </div>
               </PopoverContent>
