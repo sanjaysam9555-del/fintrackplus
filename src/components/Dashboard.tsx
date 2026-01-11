@@ -24,6 +24,7 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showCustomCalendar, setShowCustomCalendar] = useState<'start' | 'end' | null>(null);
   
   const today = new Date();
   
@@ -161,12 +162,12 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
                   )} />
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-4 bg-card z-[60]" align="end">
-                <div className="space-y-4">
-                  <p className="text-sm font-medium text-muted-foreground">Select Time Frame</p>
+              <PopoverContent className="w-64 p-3 bg-card z-[60]" align="end">
+                <div className="space-y-3">
+                  <p className="text-xs font-medium text-muted-foreground">Select Time Frame</p>
                   
                   {/* Quick Filters */}
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-1.5">
                     {(['week', 'month', 'year'] as TimeFilter[]).map((filter) => (
                       <button
                         key={filter}
@@ -175,7 +176,7 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
                           setShowDatePicker(false);
                         }}
                         className={cn(
-                          "px-3 py-2 rounded-lg text-sm font-medium transition-colors capitalize",
+                          "px-2 py-1.5 rounded-lg text-xs font-medium transition-colors capitalize",
                           timeFilter === filter && timeFilter !== 'custom'
                             ? "bg-primary text-primary-foreground" 
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
@@ -186,38 +187,60 @@ export const Dashboard = ({ isLoading = false }: DashboardProps) => {
                     ))}
                   </div>
                   
-                  <div className="border-t border-border pt-4">
-                    <p className="text-xs text-muted-foreground mb-2">Or select custom range:</p>
-                    <div className="space-y-2">
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">Start Date</p>
-                        <Calendar
-                          mode="single"
-                          selected={customStartDate}
-                          onSelect={(date) => {
-                            setCustomStartDate(date);
-                            if (date) setTimeFilter('custom');
-                          }}
-                          className="p-2 pointer-events-auto border rounded-lg"
-                        />
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground mb-1">End Date</p>
-                        <Calendar
-                          mode="single"
-                          selected={customEndDate}
-                          onSelect={(date) => {
-                            setCustomEndDate(date);
-                            if (date && customStartDate) {
-                              setTimeFilter('custom');
-                              setShowDatePicker(false);
-                            }
-                          }}
-                          disabled={(date) => customStartDate ? date < customStartDate : false}
-                          className="p-2 pointer-events-auto border rounded-lg"
-                        />
-                      </div>
+                  <div className="border-t border-border pt-3">
+                    <p className="text-xs text-muted-foreground mb-2">Custom range:</p>
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      <button
+                        onClick={() => setShowCustomCalendar('start')}
+                        className={cn(
+                          "px-2 py-1.5 text-xs rounded-lg border text-left",
+                          customStartDate ? "border-primary bg-primary/5" : "border-border"
+                        )}
+                      >
+                        {customStartDate ? format(customStartDate, "MMM dd") : "Start"}
+                      </button>
+                      <button
+                        onClick={() => setShowCustomCalendar('end')}
+                        className={cn(
+                          "px-2 py-1.5 text-xs rounded-lg border text-left",
+                          customEndDate ? "border-primary bg-primary/5" : "border-border"
+                        )}
+                      >
+                        {customEndDate ? format(customEndDate, "MMM dd") : "End"}
+                      </button>
                     </div>
+                    
+                    <AnimatePresence>
+                      {showCustomCalendar && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                        >
+                          <Calendar
+                            mode="single"
+                            selected={showCustomCalendar === 'start' ? customStartDate : customEndDate}
+                            onSelect={(date) => {
+                              if (showCustomCalendar === 'start') {
+                                setCustomStartDate(date);
+                                setShowCustomCalendar('end');
+                              } else {
+                                setCustomEndDate(date);
+                                if (date && customStartDate) {
+                                  setTimeFilter('custom');
+                                  setShowDatePicker(false);
+                                  setShowCustomCalendar(null);
+                                }
+                              }
+                            }}
+                            disabled={(date) => 
+                              showCustomCalendar === 'end' && customStartDate ? date < customStartDate : false
+                            }
+                            className="p-1 pointer-events-auto border rounded-lg text-xs scale-90 origin-top"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </PopoverContent>
