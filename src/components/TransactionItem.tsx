@@ -106,23 +106,52 @@ export const TransactionItem = ({ transaction, category }: TransactionItemProps)
             onClick={() => !isEditing && setIsExpanded(!isExpanded)}
             className="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/30 transition-colors"
           >
-            <CategoryIcon 
-              iconName={category?.icon || 'Circle'} 
-              colorClass={category?.color || 'category-other'} 
-            />
+            <div className="flex-shrink-0">
+              <CategoryIcon 
+                iconName={category?.icon || 'Circle'} 
+                colorClass={category?.color || 'category-other'} 
+              />
+            </div>
             
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-foreground truncate">
                 {transaction.title || transaction.vendor || category?.name || 'Transaction'}
               </p>
-              <p className="text-sm text-muted-foreground">
-                {transaction.vendor && transaction.vendor !== (transaction.title || '') ? `${transaction.vendor} • ` : ''}{category?.name || 'Other'} • {formatTime(transaction.time)}
+              <p className="text-sm text-muted-foreground truncate">
+                {(() => {
+                  const parts: string[] = [];
+                  
+                  // Add vendor if different from title
+                  if (transaction.vendor && transaction.vendor !== (transaction.title || '')) {
+                    parts.push(transaction.vendor);
+                  }
+                  
+                  // Add category name
+                  if (category?.name) {
+                    parts.push(category.name);
+                  }
+                  
+                  // Add project name if available
+                  if (project?.name && parts.length < 2) {
+                    parts.push(project.name);
+                  }
+                  
+                  // Add payment method if we still need more info
+                  if (parts.length < 2) {
+                    parts.push(transaction.paymentMethod === 'cash' ? 'Cash' : 'Online');
+                  }
+                  
+                  // Always add time
+                  parts.push(formatTime(transaction.time));
+                  
+                  return parts.join(' • ');
+                })()}
               </p>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <p className={cn(
-                "font-bold text-right",
+                "font-bold text-right whitespace-nowrap",
                 isExpense ? "text-destructive" : "text-success"
               )}>
                 {isExpense ? '-' : '+'}{formatCurrency(transaction.amount)}
@@ -130,7 +159,7 @@ export const TransactionItem = ({ transaction, category }: TransactionItemProps)
               <ChevronDown 
                 size={16} 
                 className={cn(
-                  "text-muted-foreground transition-transform",
+                  "text-muted-foreground transition-transform flex-shrink-0",
                   isExpanded && "rotate-180"
                 )} 
               />
