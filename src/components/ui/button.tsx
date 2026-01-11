@@ -30,18 +30,46 @@ const buttonVariants = cva(
   },
 );
 
+// Haptic feedback utility
+const triggerHaptic = (style: 'light' | 'medium' | 'heavy' = 'light') => {
+  if (!navigator.vibrate) return;
+  const patterns = { light: 10, medium: 25, heavy: 50 };
+  try {
+    navigator.vibrate(patterns[style]);
+  } catch (e) {
+    // Silently fail
+  }
+};
+
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  haptic?: boolean | 'light' | 'medium' | 'heavy';
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, haptic = true, onClick, ...props }, ref) => {
     const Comp = asChild ? Slot : "button";
-    return <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />;
+    
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (haptic) {
+        const style = typeof haptic === 'string' ? haptic : 'light';
+        triggerHaptic(style);
+      }
+      onClick?.(e);
+    };
+    
+    return (
+      <Comp 
+        className={cn(buttonVariants({ variant, size, className }))} 
+        ref={ref} 
+        onClick={asChild ? onClick : handleClick}
+        {...props} 
+      />
+    );
   },
 );
 Button.displayName = "Button";
 
-export { Button, buttonVariants };
+export { Button, buttonVariants, triggerHaptic };

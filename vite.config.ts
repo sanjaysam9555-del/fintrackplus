@@ -45,6 +45,8 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        // Increase limit for large icons
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         // Cache strategies for different resource types
         runtimeCaching: [
           {
