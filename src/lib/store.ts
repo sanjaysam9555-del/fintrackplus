@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
-import { addToSyncQueue, getQueueSize, processSyncQueue } from './syncEngine';
+import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue } from './syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -90,12 +90,59 @@ export const useFinanceStore = create<FinanceStore>()(
       updatePendingCount: () => set({ pendingCount: getQueueSize() }),
       
     setCloudData: (data) => {
+      // CRITICAL: Merge cloud data with pending local operations to prevent data loss
+      const pendingQueue = loadSyncQueue();
+      
+      // Get sets of entity IDs that are pending insert/update (should be preserved locally)
+      const pendingInserts = new Map<string, Set<string>>();
+      const pendingUpdates = new Map<string, Set<string>>();
+      const pendingDeletes = new Map<string, Set<string>>();
+      
+      pendingQueue.forEach(op => {
+        const key = op.entity;
+        if (op.type === 'insert') {
+          if (!pendingInserts.has(key)) pendingInserts.set(key, new Set());
+          pendingInserts.get(key)!.add(op.entityId);
+        } else if (op.type === 'update') {
+          if (!pendingUpdates.has(key)) pendingUpdates.set(key, new Set());
+          pendingUpdates.get(key)!.add(op.entityId);
+        } else if (op.type === 'delete') {
+          if (!pendingDeletes.has(key)) pendingDeletes.set(key, new Set());
+          pendingDeletes.get(key)!.add(op.entityId);
+        }
+      });
+      
+      const currentState = get();
+      
+      // Helper to merge arrays: keep pending inserts from local, exclude pending deletes from cloud
+      const mergeData = <T extends { id: string }>(
+        cloudItems: T[],
+        localItems: T[],
+        entityType: string
+      ): T[] => {
+        const insertIds = pendingInserts.get(entityType) || new Set();
+        const deleteIds = pendingDeletes.get(entityType) || new Set();
+        
+        // Start with cloud items, excluding ones pending delete
+        const merged = cloudItems.filter(item => !deleteIds.has(item.id));
+        
+        // Add locally inserted items that aren't in cloud yet
+        const cloudIds = new Set(cloudItems.map(c => c.id));
+        localItems.forEach(localItem => {
+          if (insertIds.has(localItem.id) && !cloudIds.has(localItem.id)) {
+            merged.push(localItem);
+          }
+        });
+        
+        return merged;
+      };
+      
       set({
-        transactions: data.transactions,
-        categories: data.categories,
-        vendors: data.vendors,
-        projects: data.projects,
-        userProfile: data.profile || { name: 'User' },
+        transactions: mergeData(data.transactions, currentState.transactions, 'transaction'),
+        categories: mergeData(data.categories, currentState.categories, 'category'),
+        vendors: mergeData(data.vendors, currentState.vendors, 'vendor'),
+        projects: mergeData(data.projects, currentState.projects, 'project'),
+        userProfile: data.profile || currentState.userProfile || { name: 'User' },
       });
     },
       
@@ -179,11 +226,9 @@ export const useFinanceStore = create<FinanceStore>()(
           });
           get().updatePendingCount();
           
-          // 3. Try to sync immediately if online
+          // 3. Try to sync immediately if online (silently)
           if (navigator.onLine) {
-            processSyncQueue().then(() => {
-              get().updatePendingCount();
-            }).catch(console.error);
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
           }
         }
         
@@ -231,7 +276,7 @@ export const useFinanceStore = create<FinanceStore>()(
             processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
           }
         }
-        
+
         if (transaction) {
           get().addNotification({
             type: 'edit',

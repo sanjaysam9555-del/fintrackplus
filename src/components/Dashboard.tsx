@@ -6,7 +6,7 @@ import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -172,9 +172,9 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 className="p-2 rounded-full hover:bg-muted transition-colors disabled:opacity-50"
               >
                 <RefreshCw 
-                  size={20} 
+                  size={18} 
                   className={cn(
-                    "text-muted-foreground transition-all",
+                    "text-muted-foreground",
                     isRefreshing && "animate-spin"
                   )} 
                 />
@@ -297,7 +297,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           </div>
         </div>
         
-        {/* Time Filter Badge + Sync Status */}
+        {/* Time Filter Badge */}
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -308,51 +308,42 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             {getTimeFilterLabel()}
           </span>
           
-          {/* Sync Status Chip */}
-          <button
-            onClick={onRefresh}
-            disabled={isRefreshing || !isOnline}
-            className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full transition-colors",
-              !isOnline && "bg-amber-500/10 text-amber-600",
-              isOnline && pendingCount > 0 && syncStatus !== 'syncing' && "bg-amber-500/10 text-amber-600",
-              isOnline && pendingCount === 0 && syncStatus === 'synced' && "bg-success/10 text-success",
-              isOnline && syncStatus === 'syncing' && "bg-primary/10 text-primary",
-              isOnline && pendingCount === 0 && syncStatus === 'error' && "bg-destructive/10 text-destructive",
-              isOnline && syncStatus === 'idle' && pendingCount === 0 && "bg-muted text-muted-foreground"
-            )}
-          >
-            {!isOnline ? (
-              <>
-                <WifiOff size={12} />
-                Offline{pendingCount > 0 ? ` (${pendingCount} pending)` : ''}
-              </>
-            ) : syncStatus === 'syncing' || isRefreshing ? (
-              <>
-                <Loader2 size={12} className="animate-spin" />
-                Syncing...
-              </>
-            ) : pendingCount > 0 ? (
-              <>
-                <Cloud size={12} />
-                {pendingCount} uploading...
-              </>
-            ) : syncStatus === 'error' ? (
-              <>
-                <CloudOff size={12} />
-                Sync Error
-              </>
-            ) : (
-              <>
-                <Cloud size={12} />
-                {lastSyncedAt ? (
-                  `Synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: false })} ago`
-                ) : (
-                  'Synced'
-                )}
-              </>
-            )}
-          </button>
+          {/* Sync Status Chip - Only show when relevant (offline/syncing/error/pending) */}
+          {(!isOnline || syncStatus === 'syncing' || isRefreshing || syncStatus === 'error' || pendingCount > 0) && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing || !isOnline}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-full transition-all",
+                !isOnline && "bg-amber-500/10 text-amber-600",
+                isOnline && (syncStatus === 'syncing' || isRefreshing) && "bg-muted text-muted-foreground",
+                isOnline && pendingCount > 0 && syncStatus !== 'syncing' && !isRefreshing && "bg-amber-500/10 text-amber-600",
+                isOnline && syncStatus === 'error' && pendingCount === 0 && "bg-destructive/10 text-destructive"
+              )}
+            >
+              {!isOnline ? (
+                <>
+                  <WifiOff size={12} />
+                  Offline
+                </>
+              ) : syncStatus === 'syncing' || isRefreshing ? (
+                <>
+                  <Loader2 size={12} className="animate-spin" />
+                  Syncing
+                </>
+              ) : pendingCount > 0 ? (
+                <>
+                  <Cloud size={12} />
+                  {pendingCount} pending
+                </>
+              ) : syncStatus === 'error' ? (
+                <>
+                  <CloudOff size={12} />
+                  Error
+                </>
+              ) : null}
+            </button>
+          )}
         </motion.div>
       </div>
       

@@ -203,32 +203,26 @@ const Index = () => {
   
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Pull to Refresh Indicator */}
+      {/* Pull to Refresh Indicator - Smaller and less obtrusive */}
       <AnimatePresence>
-        {(isPulling || isRefreshing) && (
+        {isPulling && !isRefreshing && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.6, top: -INDICATOR_SIZE }}
+            initial={{ opacity: 0, scale: 0.5 }}
             animate={{ 
-              opacity: isRefreshing ? 1 : pullOpacity.get(),
-              scale: isRefreshing ? 1 : pullScale.get(),
-              top: isRefreshing ? 16 : pullTop.get()
+              opacity: pullOpacity.get(),
+              scale: pullScale.get(),
             }}
-            exit={{ opacity: 0, scale: 0.6, top: -INDICATOR_SIZE }}
-            transition={{ duration: 0.2 }}
-            style={!isRefreshing ? { opacity: pullOpacity, scale: pullScale, top: pullTop } : undefined}
+            exit={{ opacity: 0, scale: 0.5 }}
+            transition={{ duration: 0.15 }}
+            style={{ opacity: pullOpacity, scale: pullScale, top: pullTop }}
             className={cn(
               "fixed left-1/2 z-50 flex items-center justify-center",
-              "w-10 h-10 rounded-full bg-card border border-border shadow-lg",
-              "pointer-events-none",
-              "-translate-x-1/2"
+              "w-8 h-8 rounded-full bg-card/90 border border-border shadow-md",
+              "pointer-events-none -translate-x-1/2"
             )}
           >
-            <motion.div
-              style={!isRefreshing ? { rotate: pullRotation } : undefined}
-              animate={isRefreshing ? { rotate: 360 } : {}}
-              transition={isRefreshing ? { duration: 1, repeat: Infinity, ease: "linear" } : {}}
-            >
-              <RefreshCw size={18} className="text-primary" />
+            <motion.div style={{ rotate: pullRotation }}>
+              <RefreshCw size={14} className="text-muted-foreground" />
             </motion.div>
           </motion.div>
         )}
