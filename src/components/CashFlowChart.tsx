@@ -204,7 +204,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
       
       <div className="h-28 mt-2">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} onClick={handleClick}>
+          <AreaChart data={chartData} onClick={handleClick} margin={{ left: 10, right: 10 }}>
             <defs>
               <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
@@ -220,7 +220,8 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
               axisLine={false} 
               tickLine={false} 
               tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-              interval="preserveStartEnd"
+              interval={0}
+              padding={{ left: 5, right: 5 }}
             />
             <YAxis hide />
             <Tooltip 
