@@ -62,7 +62,7 @@ export const SummaryCard = ({
       
       <p className="text-xs text-muted-foreground font-medium mb-1">{title}</p>
       
-      <p className={cn("text-lg font-bold", colors.text)}>
+      <p className={cn("text-sm font-bold truncate", colors.text)}>
         {type === 'expense' ? '-' : ''}{formatCurrency(amount)}
       </p>
       
