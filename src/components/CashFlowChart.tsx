@@ -77,7 +77,7 @@ export const CashFlowChart = ({ transactions, onPointSelect }: CashFlowChartProp
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card rounded-2xl p-4 shadow-card"
+      className="bg-card rounded-2xl p-4 shadow-card border border-border"
     >
       <div className="flex items-center justify-between mb-2">
         <div>
