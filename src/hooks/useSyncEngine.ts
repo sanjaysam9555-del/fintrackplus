@@ -50,13 +50,14 @@ export const useSyncEngine = () => {
     setPendingCount(getQueueSize());
   }, []);
 
-  // Core sync function - fetches cloud data
+  // Core sync function - fetches cloud data (silent by default)
   const syncFromCloud = useCallback(async (options: { showToast?: boolean; isBackground?: boolean } = {}) => {
     const { showToast = false, isBackground = false } = options;
     
     if (!user || !navigator.onLine) return;
     if (!isBackground) setIsSyncing(true);
-    setSyncStatus('syncing');
+    // Don't set 'syncing' status for background syncs to avoid UI flicker
+    if (!isBackground) setSyncStatus('syncing');
 
     try {
       const { data, error } = await fetchAllCloudData(user.id);
@@ -67,23 +68,20 @@ export const useSyncEngine = () => {
         throw new Error(error || 'Unknown error fetching data');
       }
 
-      // Check onboarding
-      if (data.profile && !showOnboarding) {
-        // Profile exists, onboarding check would be done elsewhere
-      }
-
       setCloudData(data);
       setLastSyncedAt(new Date().toISOString());
       
-      const remaining = getQueueSize();
       refreshPendingCount();
       
-      // Only show 'synced' - pending items are handled separately by the UI
-      setSyncStatus('synced');
+      // Only set synced if not background (background syncs shouldn't change status)
+      if (!isBackground) {
+        setSyncStatus('synced');
+      }
 
       if (showToast && !isBackground) {
+        const remaining = getQueueSize();
         if (remaining > 0) {
-          toast.info(`Refreshed. ${remaining} change${remaining > 1 ? 's' : ''} pending upload.`);
+          toast.info(`Refreshed. ${remaining} pending.`);
         } else {
           toast.success('Synced');
         }
@@ -91,29 +89,30 @@ export const useSyncEngine = () => {
     } catch (error) {
       console.error('[SyncEngine] Fetch failed:', error);
       if (!isMounted.current) return;
-      setSyncStatus('error');
-      if (showToast && !isBackground) {
-        toast.error('Sync failed');
+      if (!isBackground) {
+        setSyncStatus('error');
+        if (showToast) {
+          toast.error('Sync failed');
+        }
       }
     } finally {
       if (!isBackground) setIsSyncing(false);
     }
-  }, [user, setCloudData, setSyncStatus, setLastSyncedAt, refreshPendingCount, showOnboarding]);
+  }, [user, setCloudData, setSyncStatus, setLastSyncedAt, refreshPendingCount]);
 
-  // Push pending operations to cloud
+  // Push pending operations to cloud (silent by default now)
   const pushToCloud = useCallback(async (options: { showToast?: boolean } = {}) => {
-    const { showToast = true } = options;
+    const { showToast = false } = options;
     
     if (!user || !navigator.onLine) return { synced: 0, failed: 0, remaining: getQueueSize() };
 
     const pending = getQueueSize();
     if (pending === 0) return { synced: 0, failed: 0, remaining: 0 };
 
-    setIsSyncing(true);
-    setSyncStatus('syncing');
-
+    // Don't show syncing status for background pushes
     if (showToast) {
-      toast.info(`Uploading ${pending} change${pending > 1 ? 's' : ''}...`);
+      setIsSyncing(true);
+      setSyncStatus('syncing');
     }
 
     const result = await processSyncQueue();
@@ -121,44 +120,49 @@ export const useSyncEngine = () => {
 
     if (!isMounted.current) return result;
 
-    if (result.failed > 0) {
+    if (result.failed > 0 && showToast) {
       setSyncStatus('error');
-      if (showToast) {
-        toast.error(`${result.failed} change${result.failed > 1 ? 's' : ''} failed to upload`);
-      }
-    } else if (result.synced > 0) {
+      toast.error(`${result.failed} change${result.failed > 1 ? 's' : ''} failed`);
+    } else if (result.synced > 0 && showToast) {
       setSyncStatus('synced');
       setLastSyncedAt(new Date().toISOString());
-      if (showToast) {
-        toast.success(`Uploaded ${result.synced} change${result.synced > 1 ? 's' : ''}`);
-      }
+      toast.success(`Synced ${result.synced} change${result.synced > 1 ? 's' : ''}`);
     }
 
-    setIsSyncing(false);
+    if (showToast) setIsSyncing(false);
     return result;
   }, [user, setSyncStatus, setLastSyncedAt, refreshPendingCount]);
 
-  // Full sync: push pending, then pull from cloud
+  // Full sync: push pending, then pull from cloud (with timeout safety)
   const fullSync = useCallback(async (options: { showToast?: boolean } = {}) => {
-    const { showToast = true } = options;
+    const { showToast = false } = options;
     
     if (!user) return;
 
     setIsSyncing(true);
     
-    // First push any pending changes
-    await pushToCloud({ showToast: false });
+    // Safety timeout to prevent stuck spinner
+    const timeoutId = setTimeout(() => {
+      if (isMounted.current) setIsSyncing(false);
+    }, 15000);
     
-    // Then fetch latest from cloud
-    await syncFromCloud({ showToast, isBackground: false });
-    
-    setIsSyncing(false);
+    try {
+      // First push any pending changes (silently)
+      await pushToCloud({ showToast: false });
+      
+      // Then fetch latest from cloud
+      await syncFromCloud({ showToast, isBackground: false });
+    } finally {
+      clearTimeout(timeoutId);
+      if (isMounted.current) setIsSyncing(false);
+    }
   }, [user, pushToCloud, syncFromCloud]);
 
-  // Manual refresh (user-triggered)
+  // Manual refresh (user-triggered) - shows toast
   const refreshData = useCallback(async () => {
+    if (isSyncing) return; // Prevent double-refresh
     await fullSync({ showToast: true });
-  }, [fullSync]);
+  }, [fullSync, isSyncing]);
 
   // Queue an operation for sync
   const queueOperation = useCallback((
