@@ -10,16 +10,18 @@ import {
   Trash2,
   Moon,
   Sun,
-  User
+  User,
+  Pencil
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import avatarImage from "@/assets/avatar-swati.jpg";
+import { ProfileEditSheet } from "./ProfileEditSheet";
 
 export const SettingsPage = () => {
-  const { loadDemoData, clearAllData, transactions, categories, projects } = useFinanceStore();
+  const { loadDemoData, clearAllData, transactions, categories, projects, userProfile, addNotification } = useFinanceStore();
   const [isDark, setIsDark] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   
   const handleExportCSV = () => {
     const headers = ['Date', 'Time', 'Type', 'Vendor', 'Category', 'Amount', 'Payment Method', 'Notes'];
@@ -45,6 +47,11 @@ export const SettingsPage = () => {
     a.download = `fintrack-export-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     
+    addNotification({
+      type: 'export',
+      title: 'CSV Exported',
+      message: `${transactions.length} transactions exported successfully`,
+    });
     toast.success('CSV exported successfully!');
   };
   
@@ -138,22 +145,28 @@ export const SettingsPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-2xl p-4 shadow-card flex items-center gap-4"
+          className="bg-card rounded-2xl p-4 shadow-card border border-border"
         >
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary">
-            <img 
-              src={avatarImage} 
-              alt="Profile" 
-              className="w-full h-full object-cover"
-            />
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary">
+              <img 
+                src={userProfile.avatar || avatarImage} 
+                alt="Profile" 
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold">{userProfile.name}</h2>
+              <p className="text-sm text-muted-foreground">swati.sharma@email.com</p>
+              <p className="text-xs text-primary mt-1">Guest Mode • Data stored locally</p>
+            </div>
           </div>
-          <div className="flex-1">
-            <h2 className="text-lg font-bold">Swati Sharma</h2>
-            <p className="text-sm text-muted-foreground">Guest Mode</p>
-            <p className="text-xs text-primary mt-1">Data stored locally</p>
-          </div>
-          <button className="p-2 rounded-full hover:bg-muted">
-            <User size={20} className="text-muted-foreground" />
+          <button 
+            onClick={() => setShowProfileEdit(true)}
+            className="w-full mt-4 flex items-center justify-center gap-2 p-2.5 bg-primary/10 text-primary rounded-xl font-medium text-sm hover:bg-primary/20 transition-colors"
+          >
+            <Pencil size={14} />
+            Edit Profile
           </button>
         </motion.div>
       </div>
@@ -163,7 +176,7 @@ export const SettingsPage = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-2xl p-4 shadow-card"
+          className="bg-card rounded-2xl p-4 shadow-card border border-border"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -201,7 +214,7 @@ export const SettingsPage = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: sectionIndex * 0.1 }}
-            className="bg-card rounded-2xl shadow-card overflow-hidden"
+            className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
           >
             {section.items.map((item, index) => (
               <button
@@ -251,6 +264,12 @@ export const SettingsPage = () => {
           Built with ❤️ for financial clarity
         </p>
       </div>
+      
+      {/* Profile Edit Sheet */}
+      <ProfileEditSheet
+        isOpen={showProfileEdit}
+        onClose={() => setShowProfileEdit(false)}
+      />
     </div>
   );
 };

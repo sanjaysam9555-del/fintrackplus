@@ -5,7 +5,6 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { NotificationPanel } from "./NotificationPanel";
-import { ProfileEditSheet } from "./ProfileEditSheet";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bell, CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart } from "lucide-react";
 import avatarImage from "@/assets/avatar-swati.jpg";
@@ -30,7 +29,6 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCustomCalendar, setShowCustomCalendar] = useState<'start' | 'end' | null>(null);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [showProfileEdit, setShowProfileEdit] = useState(false);
   
   const today = new Date();
   
@@ -139,12 +137,12 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
       {/* Header */}
       <div className="p-4 pt-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3" onClick={() => setShowProfileEdit(true)}>
+          <div className="flex items-center gap-3">
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: "spring", damping: 15 }}
-              className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary cursor-pointer"
+              className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary"
             >
               <img 
                 src={userProfile.avatar || avatarImage} 
@@ -152,7 +150,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
                 className="w-full h-full object-cover"
               />
             </motion.div>
-            <div className="cursor-pointer">
+            <div>
               <p className="text-sm text-muted-foreground">{greeting},</p>
               <h1 className="text-lg font-bold">{userProfile.name}</h1>
             </div>
@@ -402,12 +400,6 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate }: Dashboa
       <NotificationPanel
         isOpen={showNotifications}
         onClose={() => setShowNotifications(false)}
-      />
-      
-      {/* Profile Edit Sheet */}
-      <ProfileEditSheet
-        isOpen={showProfileEdit}
-        onClose={() => setShowProfileEdit(false)}
       />
     </div>
   );
