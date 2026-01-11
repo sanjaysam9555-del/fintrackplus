@@ -16,11 +16,12 @@ import { Button } from "@/components/ui/button";
 
 interface TransactionListProps {
   type: TransactionType;
+  userId?: string;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const TransactionList = ({ type }: TransactionListProps) => {
+export const TransactionList = ({ type, userId }: TransactionListProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
@@ -421,6 +422,7 @@ export const TransactionList = ({ type }: TransactionListProps) => {
                     key={t.id}
                     transaction={t}
                     category={categories.find(c => c.id === t.categoryId)}
+                    userId={userId}
                   />
                 ))}
               </div>

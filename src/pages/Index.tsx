@@ -160,18 +160,19 @@ const Index = () => {
             isRefreshing={isRefreshing}
             isOnline={isOnline}
             pendingCount={pendingCount}
+            userId={user?.id}
           />
         );
       case 'expenses':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="expense" />
+            <TransactionList type="expense" userId={user?.id} />
           </Suspense>
         );
       case 'income':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="income" />
+            <TransactionList type="income" userId={user?.id} />
           </Suspense>
         );
       case 'notifications':

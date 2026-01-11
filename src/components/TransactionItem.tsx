@@ -14,9 +14,10 @@ interface TransactionItemProps {
   transaction: Transaction;
   category?: Category;
   onClick?: () => void;
+  userId?: string;
 }
 
-export const TransactionItem = ({ transaction, category }: TransactionItemProps) => {
+export const TransactionItem = ({ transaction, category, userId }: TransactionItemProps) => {
   const { deleteTransaction, updateTransaction, projects } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -41,7 +42,7 @@ export const TransactionItem = ({ transaction, category }: TransactionItemProps)
   };
   
   const confirmDelete = () => {
-    deleteTransaction(transaction.id);
+    deleteTransaction(transaction.id, userId);
   };
   
   const handleEdit = (e: React.MouseEvent) => {
@@ -55,7 +56,7 @@ export const TransactionItem = ({ transaction, category }: TransactionItemProps)
       amount: parseFloat(editAmount),
       vendor: editVendor,
       notes: editNotes || undefined,
-    });
+    }, userId);
     setIsEditing(false);
   };
   
