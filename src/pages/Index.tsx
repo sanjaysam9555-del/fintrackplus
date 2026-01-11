@@ -1,6 +1,7 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { GlassDock } from "@/components/GlassDock";
 import { Dashboard } from "@/components/Dashboard";
+import { DashboardSkeleton, TransactionSkeleton } from "@/components/ui/skeleton-loader";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { useCloudSync } from "@/hooks/useCloudSync";
@@ -18,10 +19,43 @@ type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications';
 type ViewMode = TabId | 'settings' | 'ai';
 type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
 
-// Lightweight loading placeholder
-const ContentLoader = () => (
-  <div className="flex items-center justify-center p-8">
-    <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+// Skeleton loader for transaction lists
+const TransactionListSkeleton = () => (
+  <div className="p-4 space-y-2">
+    <div className="h-6 w-32 bg-muted rounded skeleton mb-4" />
+    {[1, 2, 3, 4, 5].map(i => (
+      <TransactionSkeleton key={i} />
+    ))}
+  </div>
+);
+
+// Skeleton loader for settings
+const SettingsSkeleton = () => (
+  <div className="p-4 space-y-4">
+    <div className="h-8 w-24 bg-muted rounded skeleton" />
+    <div className="space-y-3">
+      {[1, 2, 3, 4].map(i => (
+        <div key={i} className="bg-card rounded-2xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-muted skeleton" />
+          <div className="flex-1 space-y-2">
+            <div className="h-4 w-24 bg-muted rounded skeleton" />
+            <div className="h-3 w-32 bg-muted rounded skeleton" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+// Generic content skeleton
+const ContentSkeleton = () => (
+  <div className="p-4 space-y-4">
+    <div className="h-6 w-40 bg-muted rounded skeleton" />
+    <div className="bg-card rounded-2xl p-6 space-y-4">
+      <div className="h-4 w-full bg-muted rounded skeleton" />
+      <div className="h-4 w-3/4 bg-muted rounded skeleton" />
+      <div className="h-4 w-1/2 bg-muted rounded skeleton" />
+    </div>
   </div>
 );
 
@@ -69,39 +103,39 @@ const Index = () => {
   const renderContent = () => {
     switch (viewMode) {
       case 'home':
-        return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
+        return isLoading ? <DashboardSkeleton /> : <Dashboard isLoading={false} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
       case 'expenses':
         return (
-          <Suspense fallback={<ContentLoader />}>
+          <Suspense fallback={<TransactionListSkeleton />}>
             <TransactionList type="expense" />
           </Suspense>
         );
       case 'income':
         return (
-          <Suspense fallback={<ContentLoader />}>
+          <Suspense fallback={<TransactionListSkeleton />}>
             <TransactionList type="income" />
           </Suspense>
         );
       case 'notifications':
         return (
-          <Suspense fallback={<ContentLoader />}>
+          <Suspense fallback={<ContentSkeleton />}>
             <NotificationsPage />
           </Suspense>
         );
       case 'ai':
         return (
-          <Suspense fallback={<ContentLoader />}>
+          <Suspense fallback={<ContentSkeleton />}>
             <AISummaryPage onBack={handleBackToHome} />
           </Suspense>
         );
       case 'settings':
         return (
-          <Suspense fallback={<ContentLoader />}>
+          <Suspense fallback={<SettingsSkeleton />}>
             <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={handleBackToHome} />
           </Suspense>
         );
       default:
-        return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
+        return isLoading ? <DashboardSkeleton /> : <Dashboard isLoading={false} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
     }
   };
   

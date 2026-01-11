@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,39 +49,97 @@ export const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <motion.div 
+          className="absolute -top-40 -right-40 w-80 h-80 bg-primary/10 rounded-full blur-3xl"
+          animate={{ 
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3]
+          }}
+          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div 
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-success/10 rounded-full blur-3xl"
+          animate={{ 
+            scale: [1.2, 1, 1.2],
+            opacity: [0.3, 0.5, 0.3]
+          }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <motion.div 
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-warning/5 rounded-full blur-3xl"
+          animate={{ 
+            rotate: 360
+          }}
+          transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+        />
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-sm"
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="w-full max-w-sm relative z-10"
       >
         {/* Logo/Brand */}
-        <div className="text-center mb-8">
-          <img 
-            src="/app-icon-192.png" 
-            alt="FinTrack Pro" 
-            className="w-16 h-16 mx-auto mb-4 rounded-2xl"
-          />
-          <h1 className="text-2xl font-bold">FinTrack Pro</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            {isLogin ? 'Welcome back!' : 'Create your account'}
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.5 }}
+        >
+          <motion.div
+            className="relative inline-block"
+            whileHover={{ scale: 1.05 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl" />
+            <img 
+              src="/app-icon-192.png" 
+              alt="FinTrack Pro" 
+              className="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-lg relative z-10"
+            />
+          </motion.div>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text">
+            FinTrack Pro
+          </h1>
+          <p className="text-muted-foreground text-xs mt-1 flex items-center justify-center gap-1">
+            <Sparkles size={12} className="text-primary" />
+            An App by Saffron Events
           </p>
-        </div>
+          <motion.p 
+            className="text-muted-foreground text-sm mt-3"
+            key={isLogin ? 'welcome' : 'create'}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {isLogin ? 'Welcome back!' : 'Create your account'}
+          </motion.p>
+        </motion.div>
 
         {/* Auth Form */}
         <motion.form
           key={isLogin ? 'login' : 'signup'}
           initial={{ opacity: 0, x: isLogin ? -20 : 20 }}
           animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           onSubmit={handleSubmit}
-          className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-4"
+          className="bg-card/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-border/50 space-y-5"
         >
           {!isLogin && (
-            <div>
-              <Label htmlFor="name" className="text-xs text-muted-foreground uppercase tracking-wide">
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <Label htmlFor="name" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
                 Name
               </Label>
-              <div className="relative mt-1">
+              <div className="relative mt-1.5">
                 <User size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="name"
@@ -89,18 +147,18 @@ export const AuthPage = () => {
                   placeholder="Your name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 rounded-xl bg-background/50 border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
                   required={!isLogin}
                 />
               </div>
-            </div>
+            </motion.div>
           )}
 
           <div>
-            <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wide">
+            <Label htmlFor="email" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
               Email
             </Label>
-            <div className="relative mt-1">
+            <div className="relative mt-1.5">
               <Mail size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="email"
@@ -108,17 +166,17 @@ export const AuthPage = () => {
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-12 rounded-xl bg-background/50 border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
                 required
               />
             </div>
           </div>
 
           <div>
-            <Label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wide">
+            <Label htmlFor="password" className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
               Password
             </Label>
-            <div className="relative mt-1">
+            <div className="relative mt-1.5">
               <Lock size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input
                 id="password"
@@ -126,50 +184,73 @@ export const AuthPage = () => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pl-10 pr-10"
+                className="pl-10 pr-10 h-12 rounded-xl bg-background/50 border-border/50 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 transition-all"
                 required
                 minLength={6}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            className="w-full h-12 rounded-xl text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all" 
+            disabled={isLoading}
+          >
             {isLoading ? (
               <span className="flex items-center gap-2">
                 <motion.span
                   animate={{ rotate: 360 }}
                   transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-                  className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full"
+                  className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full"
                 />
                 {isLogin ? 'Signing in...' : 'Creating account...'}
               </span>
             ) : (
-              <span className="flex items-center gap-2">
+              <motion.span 
+                className="flex items-center gap-2"
+                whileHover={{ x: 5 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
                 {isLogin ? 'Sign In' : 'Create Account'}
                 <ArrowRight size={18} />
-              </span>
+              </motion.span>
             )}
           </Button>
         </motion.form>
 
         {/* Toggle */}
-        <p className="text-center text-sm text-muted-foreground mt-6">
+        <motion.p 
+          className="text-center text-sm text-muted-foreground mt-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+        >
           {isLogin ? "Don't have an account?" : 'Already have an account?'}
           <button
             type="button"
             onClick={() => setIsLogin(!isLogin)}
-            className="text-primary font-medium ml-1 hover:underline"
+            className="text-primary font-semibold ml-1 hover:underline underline-offset-4 transition-all"
           >
             {isLogin ? 'Sign up' : 'Sign in'}
           </button>
-        </p>
+        </motion.p>
+
+        {/* Footer branding */}
+        <motion.div 
+          className="text-center mt-8 text-xs text-muted-foreground/60"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          <p>Secure • Simple • Smart</p>
+        </motion.div>
       </motion.div>
     </div>
   );
