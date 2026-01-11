@@ -136,13 +136,10 @@ export const useFinanceStore = create<FinanceStore>()(
       // Transaction actions
       addTransaction: async (transaction, userId) => {
         const id = uuidv4();
-        set((state) => ({
-          transactions: [{ ...transaction, id }, ...state.transactions]
-        }));
         
-        // Sync to cloud if user is logged in
+        // Sync to cloud if user is logged in - do this FIRST
         if (userId) {
-          await supabase.from('transactions').insert({
+          const { error } = await supabase.from('transactions').insert({
             id,
             user_id: userId,
             type: transaction.type,
@@ -158,7 +155,17 @@ export const useFinanceStore = create<FinanceStore>()(
             is_recurring: transaction.isRecurring || false,
             recurring_frequency: transaction.recurringFrequency || null,
           });
+          
+          if (error) {
+            console.error('Error saving transaction to cloud:', error);
+            // Still add to local state but notify about sync failure
+          }
         }
+        
+        // Add to local state
+        set((state) => ({
+          transactions: [{ ...transaction, id }, ...state.transactions]
+        }));
         
         get().addNotification({
           type: 'transaction',
