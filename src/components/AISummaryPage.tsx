@@ -1,10 +1,14 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Sparkles, TrendingUp, TrendingDown, AlertCircle, Lightbulb, PiggyBank, Target } from "lucide-react";
+import { Sparkles, TrendingUp, TrendingDown, AlertCircle, Lightbulb, PiggyBank, Target, ArrowLeft } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { format, subDays, startOfMonth } from "date-fns";
 
-export const AISummaryPage = () => {
+interface AISummaryPageProps {
+  onBack?: () => void;
+}
+
+export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
   const { transactions, categories, projects, getTotalIncome, getTotalExpense } = useFinanceStore();
   
   const insights = useMemo(() => {
@@ -129,7 +133,12 @@ export const AISummaryPage = () => {
     <div className="min-h-screen pb-24">
       {/* Header */}
       <div className="p-4 pt-6">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
+              <ArrowLeft size={20} />
+            </button>
+          )}
           <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
             <Sparkles size={20} className="text-primary-foreground" />
           </div>

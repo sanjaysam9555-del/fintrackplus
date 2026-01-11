@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Store } from "lucide-react";
+import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,17 @@ import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+// Helper to render dynamic icons
+const renderVendorIcon = (iconName: string | undefined, color: string, size: number = 12) => {
+  const name = iconName || 'Store';
+  const IconComponent = icons[name as keyof typeof icons];
+  if (!IconComponent) {
+    const FallbackIcon = icons['Store'];
+    return <FallbackIcon size={size} style={{ color }} />;
+  }
+  return <IconComponent size={size} style={{ color }} />;
+};
 
 interface AddTransactionSheetProps {
   isOpen: boolean;
@@ -299,12 +310,10 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                                   : 'hsl(var(--success) / 0.2)' 
                               }}
                             >
-                              <Store 
-                                size={12} 
-                                style={{ 
-                                  color: selectedVendorDetails?.color || 'hsl(var(--success))' 
-                                }} 
-                              />
+                              {renderVendorIcon(
+                                selectedVendorDetails?.icon, 
+                                selectedVendorDetails?.color || 'hsl(var(--success))'
+                              )}
                             </div>
                             <span className="text-sm font-medium">{vendor}</span>
                           </div>
@@ -345,10 +354,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                                     backgroundColor: v.color ? `${v.color}20` : 'hsl(var(--success) / 0.2)' 
                                   }}
                                 >
-                                  <Store 
-                                    size={12} 
-                                    style={{ color: v.color || 'hsl(var(--success))' }} 
-                                  />
+                                  {renderVendorIcon(v.icon, v.color || 'hsl(var(--success))')}
                                 </div>
                                 <span className="flex-1">{v.name}</span>
                                 <Check size={12} className={cn("text-primary shrink-0", vendor === v.name ? "opacity-100" : "opacity-0")} />
@@ -360,7 +366,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense' }
                               className="w-full px-3 py-2 text-left text-sm rounded-md hover:bg-muted text-primary flex items-center gap-2"
                             >
                               <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center shrink-0">
-                                <Store size={12} className="text-primary" />
+                                {renderVendorIcon('Store', 'hsl(var(--primary))')}
                               </div>
                               + Add "{vendor}"
                             </button>

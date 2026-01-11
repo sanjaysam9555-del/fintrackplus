@@ -49,6 +49,12 @@ const Index = () => {
     }
   };
   
+  const handleBackToHome = () => {
+    setViewMode('home');
+    setActiveTab('home');
+    setSettingsSection(null);
+  };
+  
   const renderContent = () => {
     switch (viewMode) {
       case 'home':
@@ -60,9 +66,9 @@ const Index = () => {
       case 'notifications':
         return <NotificationsPage />;
       case 'ai':
-        return <AISummaryPage />;
+        return <AISummaryPage onBack={handleBackToHome} />;
       case 'settings':
-        return <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} />;
+        return <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={handleBackToHome} />;
       default:
         return <Dashboard isLoading={isLoading} onAddClick={handleOpenAddSheet} onNavigate={handleNavigate} />;
     }
