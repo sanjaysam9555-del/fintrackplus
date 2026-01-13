@@ -214,15 +214,18 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           transactions: [{ ...transaction, id }, ...state.transactions]
         }));
+
+        // Resolve userId if caller didn't pass it (prevents local items being overwritten by cloud refresh)
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
         
         // 2. Queue for sync (handles online/offline automatically)
-        if (userId) {
+        if (uid) {
           addToSyncQueue({
             type: 'insert',
             entity: 'transaction',
             entityId: id,
             data: transactionData,
-            userId,
+            userId: uid,
           });
           get().updatePendingCount();
           
@@ -326,8 +329,10 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           categories: [...state.categories, { ...category, id }]
         }));
-        
-        if (userId) {
+
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+         
+        if (uid) {
           addToSyncQueue({
             type: 'insert',
             entity: 'category',
@@ -338,7 +343,7 @@ export const useFinanceStore = create<FinanceStore>()(
               color: category.color,
               type: category.type,
             },
-            userId,
+            userId: uid,
           });
           get().updatePendingCount();
           
@@ -422,8 +427,10 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           projects: [...state.projects, { ...project, id, createdAt }]
         }));
-        
-        if (userId) {
+
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+         
+        if (uid) {
           addToSyncQueue({
             type: 'insert',
             entity: 'project',
@@ -434,7 +441,7 @@ export const useFinanceStore = create<FinanceStore>()(
               budget_limit: project.budgetLimit,
               color: project.color,
             },
-            userId,
+            userId: uid,
           });
           get().updatePendingCount();
           
@@ -523,8 +530,10 @@ export const useFinanceStore = create<FinanceStore>()(
         set((state) => ({
           vendors: [...state.vendors, { id, name, color, icon }]
         }));
-        
-        if (userId) {
+
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+         
+        if (uid) {
           addToSyncQueue({
             type: 'insert',
             entity: 'vendor',
@@ -534,7 +543,7 @@ export const useFinanceStore = create<FinanceStore>()(
               icon: icon || null,
               color: color || null,
             },
-            userId,
+            userId: uid,
           });
           get().updatePendingCount();
           
