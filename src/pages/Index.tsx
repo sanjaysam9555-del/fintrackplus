@@ -1,13 +1,11 @@
-import { useState, useEffect, lazy, Suspense, useCallback, useRef } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { GlassDock } from "@/components/GlassDock";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardSkeleton, TransactionSkeleton } from "@/components/ui/skeleton-loader";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { useSyncEngine } from "@/hooks/useSyncEngine";
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
-import { RefreshCw } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Lazy load heavy components that aren't needed immediately
 const TransactionList = lazy(() => import("@/components/TransactionList").then(m => ({ default: m.TransactionList })));
@@ -61,9 +59,6 @@ const ContentSkeleton = () => (
   </div>
 );
 
-const PULL_THRESHOLD = 80;
-const INDICATOR_SIZE = 40;
-
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [viewMode, setViewMode] = useState<ViewMode>('home');
@@ -73,17 +68,8 @@ const Index = () => {
   const { syncStatus } = useFinanceStore();
   const { user } = useAuth();
   
-  // Pull to refresh state
-  const [isPulling, setIsPulling] = useState(false);
-  const pullY = useMotionValue(0);
-  const pullOpacity = useTransform(pullY, [0, 20, PULL_THRESHOLD], [0, 0.5, 1]);
-  const pullScale = useTransform(pullY, [0, PULL_THRESHOLD], [0.6, 1]);
-  const pullRotation = useTransform(pullY, [0, PULL_THRESHOLD], [0, 180]);
-  const pullTop = useTransform(pullY, [0, PULL_THRESHOLD], [-INDICATOR_SIZE, 16]);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  
-  // Initialize airtight sync engine
-  const { showOnboarding, userName, completeOnboarding, refreshData, isRefreshing, isOnline, pendingCount } = useSyncEngine();
+  // Initialize airtight sync engine (all syncing happens silently in background)
+  const { showOnboarding, userName, completeOnboarding, refreshData, isOnline, pendingCount } = useSyncEngine();
   
   // Only show loading on initial mount, not during syncs
   useEffect(() => {
@@ -92,40 +78,6 @@ const Index = () => {
       setIsLoading(false);
     }
   }, [syncStatus]);
-  
-  // Handle pull to refresh
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    const container = scrollContainerRef.current;
-    if (container && container.scrollTop <= 0) {
-      setIsPulling(true);
-    }
-  }, []);
-  
-  const handleTouchMove = useCallback((e: React.TouchEvent) => {
-    if (!isPulling) return;
-    const container = scrollContainerRef.current;
-    if (!container || container.scrollTop > 0) {
-      setIsPulling(false);
-      pullY.set(0);
-      return;
-    }
-  }, [isPulling, pullY]);
-  
-  const handleDrag = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (!isPulling) return;
-    if (info.offset.y > 0) {
-      const dampedY = Math.min(info.offset.y * 0.5, 120);
-      pullY.set(dampedY);
-    }
-  }, [isPulling, pullY]);
-  
-  const handleDragEnd = useCallback(async () => {
-    if (pullY.get() >= PULL_THRESHOLD && !isRefreshing) {
-      refreshData();
-    }
-    pullY.set(0);
-    setIsPulling(false);
-  }, [pullY, isRefreshing, refreshData]);
   
   const handleOpenAddSheet = () => setIsAddSheetOpen(true);
   
@@ -156,7 +108,7 @@ const Index = () => {
             onAddClick={handleOpenAddSheet} 
             onNavigate={handleNavigate}
             onRefresh={refreshData}
-            isRefreshing={isRefreshing}
+            isRefreshing={false}
             isOnline={isOnline}
             pendingCount={pendingCount}
             userId={user?.id}
@@ -202,31 +154,6 @@ const Index = () => {
   
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
-      {/* Pull to Refresh Indicator - Smaller and less obtrusive */}
-      <AnimatePresence>
-        {isPulling && !isRefreshing && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ 
-              opacity: pullOpacity.get(),
-              scale: pullScale.get(),
-            }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            transition={{ duration: 0.15 }}
-            style={{ opacity: pullOpacity, scale: pullScale, top: pullTop }}
-            className={cn(
-              "fixed left-1/2 z-50 flex items-center justify-center",
-              "w-8 h-8 rounded-full bg-card/90 border border-border shadow-md",
-              "pointer-events-none -translate-x-1/2"
-            )}
-          >
-            <motion.div style={{ rotate: pullRotation }}>
-              <RefreshCw size={14} className="text-muted-foreground" />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Onboarding Flow */}
       <AnimatePresence>
         {showOnboarding && (
@@ -239,19 +166,8 @@ const Index = () => {
         )}
       </AnimatePresence>
       
-      {/* Main Content Area with Pull to Refresh */}
-      <motion.div
-        ref={scrollContainerRef}
-        className="h-screen overflow-y-auto"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        drag={isPulling ? "y" : false}
-        dragConstraints={{ top: 0, bottom: 120 }}
-        dragElastic={0}
-        onDrag={handleDrag}
-        onDragEnd={handleDragEnd}
-        style={{ y: isPulling ? pullY : 0 }}
-      >
+      {/* Main Content Area - No pull-to-refresh, stable layout */}
+      <div className="h-screen overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={viewMode}
@@ -264,7 +180,7 @@ const Index = () => {
             {renderContent()}
           </motion.div>
         </AnimatePresence>
-      </motion.div>
+      </div>
       
       {/* Glass Dock Navigation - Hidden in settings sub-sections */}
       {showDock && (
