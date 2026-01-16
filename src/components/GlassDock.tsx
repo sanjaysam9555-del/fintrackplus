@@ -1,10 +1,9 @@
 import { motion } from "framer-motion";
-import { Home, ArrowDownLeft, ArrowUpRight, Plus, Bell } from "lucide-react";
+import { Home, ArrowDownLeft, ArrowUpRight, Plus, FolderKanban } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useFinanceStore } from "@/lib/store";
 import { triggerHaptic } from "@/components/ui/button";
 
-type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications';
+type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
 
 interface GlassDockProps {
   activeTab: TabId;
@@ -17,13 +16,10 @@ const tabs = [
   { id: 'expenses' as TabId, icon: ArrowUpRight, label: 'Expense' },
   { id: 'add' as TabId, icon: Plus, label: 'Add' },
   { id: 'income' as TabId, icon: ArrowDownLeft, label: 'Income' },
-  { id: 'notifications' as TabId, icon: Bell, label: 'Alerts' },
+  { id: 'projects' as TabId, icon: FolderKanban, label: 'Projects' },
 ];
 
 export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps) => {
-  const { notifications } = useFinanceStore();
-  const unreadCount = notifications.filter(n => !n.read).length;
-  
   const handleTabClick = (tabId: TabId) => {
     triggerHaptic('light');
     onTabChange(tabId);
@@ -40,7 +36,6 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           const isAddButton = tab.id === 'add';
-          const isNotifications = tab.id === 'notifications';
           
           if (isAddButton) {
             return (
@@ -67,14 +62,7 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
                 isActive ? "text-primary" : "text-muted-foreground"
               )}
             >
-              <div className="relative">
-                <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                {isNotifications && unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1.5 w-3.5 h-3.5 bg-destructive text-destructive-foreground text-[8px] font-bold rounded-full flex items-center justify-center">
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </span>
-                )}
-              </div>
+              <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
               <span className="text-[9px] font-medium">{tab.label}</span>
               {isActive && (
                 <motion.div

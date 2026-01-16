@@ -11,11 +11,11 @@ import { motion, AnimatePresence } from "framer-motion";
 const TransactionList = lazy(() => import("@/components/TransactionList").then(m => ({ default: m.TransactionList })));
 const SettingsPage = lazy(() => import("@/components/SettingsPage").then(m => ({ default: m.SettingsPage })));
 const AddTransactionSheet = lazy(() => import("@/components/AddTransactionSheet").then(m => ({ default: m.AddTransactionSheet })));
-const NotificationsPage = lazy(() => import("@/components/NotificationsPage").then(m => ({ default: m.NotificationsPage })));
+const ProjectOverviewPage = lazy(() => import("@/components/ProjectOverviewPage").then(m => ({ default: m.ProjectOverviewPage })));
 const AISummaryPage = lazy(() => import("@/components/AISummaryPage").then(m => ({ default: m.AISummaryPage })));
 const OnboardingFlow = lazy(() => import("@/components/OnboardingFlow").then(m => ({ default: m.OnboardingFlow })));
 
-type TabId = 'home' | 'expenses' | 'add' | 'income' | 'notifications';
+type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
 type ViewMode = TabId | 'settings' | 'ai';
 type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
 
@@ -126,10 +126,10 @@ const Index = () => {
             <TransactionList type="income" userId={user?.id} />
           </Suspense>
         );
-      case 'notifications':
+      case 'projects':
         return (
           <Suspense fallback={<ContentSkeleton />}>
-            <NotificationsPage />
+            <ProjectOverviewPage userId={user?.id} />
           </Suspense>
         );
       case 'ai':
