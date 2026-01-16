@@ -32,6 +32,8 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
     onClose();
   };
   
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       toast.error("Please fill all password fields");
@@ -48,21 +50,43 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
       return;
     }
     
-    // Update password via Supabase Auth
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-    
-    if (error) {
-      toast.error(error.message);
+    if (!user?.email) {
+      toast.error("Unable to verify identity");
       return;
     }
     
-    toast.success("Password changed successfully");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-    setShowPasswordSection(false);
+    setIsChangingPassword(true);
+    
+    try {
+      // Re-authenticate with current password first to verify identity
+      const { error: reAuthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword
+      });
+      
+      if (reAuthError) {
+        toast.error("Current password is incorrect");
+        return;
+      }
+      
+      // Now safe to update password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword
+      });
+      
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      
+      toast.success("Password changed successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setShowPasswordSection(false);
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
   
   const handleClose = () => {
@@ -257,9 +281,10 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
                           onClick={handleChangePassword}
                           variant="outline"
                           className="w-full"
+                          disabled={isChangingPassword}
                         >
                           <Lock size={14} className="mr-2" />
-                          Update Password
+                          {isChangingPassword ? "Verifying..." : "Update Password"}
                         </Button>
                       </div>
                     </motion.div>
