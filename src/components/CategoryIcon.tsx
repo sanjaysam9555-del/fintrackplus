@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
-import * as Icons from "lucide-react";
-import { LucideIcon } from "lucide-react";
+import { icons, LucideIcon } from "lucide-react";
 
 interface CategoryIconProps {
   iconName: string;
@@ -8,28 +7,6 @@ interface CategoryIconProps {
   size?: "sm" | "md" | "lg";
   className?: string;
 }
-
-const iconMap: Record<string, LucideIcon> = {
-  Utensils: Icons.Utensils,
-  Car: Icons.Car,
-  ShoppingBag: Icons.ShoppingBag,
-  Film: Icons.Film,
-  Zap: Icons.Zap,
-  Heart: Icons.Heart,
-  Plane: Icons.Plane,
-  ShoppingCart: Icons.ShoppingCart,
-  Smartphone: Icons.Smartphone,
-  Code: Icons.Code,
-  MoreHorizontal: Icons.MoreHorizontal,
-  Wallet: Icons.Wallet,
-  Briefcase: Icons.Briefcase,
-  TrendingUp: Icons.TrendingUp,
-  Wrench: Icons.Wrench,
-  Coffee: Icons.Coffee,
-  Home: Icons.Home,
-  DollarSign: Icons.DollarSign,
-  CreditCard: Icons.CreditCard,
-};
 
 const sizeClasses = {
   sm: "w-8 h-8",
@@ -44,7 +21,8 @@ const iconSizes = {
 };
 
 export const CategoryIcon = ({ iconName, colorClass, size = "md", className }: CategoryIconProps) => {
-  const Icon = iconMap[iconName] || Icons.Circle;
+  // Dynamically get the icon from lucide-react's icons object
+  const Icon: LucideIcon = (icons[iconName as keyof typeof icons] as LucideIcon) || icons.Circle;
   
   return (
     <div className={cn(

@@ -1,19 +1,20 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons, Settings } from "lucide-react";
+import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
-import { TransactionType, PaymentMethod } from "@/lib/types";
+import { Transaction, TransactionType, PaymentMethod } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
+
 // Helper to render dynamic icons
 const renderVendorIcon = (iconName: string | undefined, color: string, size: number = 12) => {
   const name = iconName || 'Store';
@@ -25,32 +26,44 @@ const renderVendorIcon = (iconName: string | undefined, color: string, size: num
   return <IconComponent size={size} style={{ color }} />;
 };
 
-interface AddTransactionSheetProps {
+interface EditTransactionSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultType?: TransactionType;
+  transaction: Transaction;
   userId?: string;
 }
 
-export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId }: AddTransactionSheetProps) => {
+export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: EditTransactionSheetProps) => {
   const navigate = useNavigate();
-  const { categories, projects, transactions, vendors, addTransaction } = useFinanceStore();
+  const { categories, projects, transactions, vendors, updateTransaction } = useFinanceStore();
   
-  const [type, setType] = useState<TransactionType>(defaultType);
-  const [amount, setAmount] = useState("");
-  const [title, setTitle] = useState("");
-  const [vendor, setVendor] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [projectId, setProjectId] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
-  const [date, setDate] = useState<Date>(new Date());
-  const [notes, setNotes] = useState("");
-  const [magicInput, setMagicInput] = useState("");
+  const [type, setType] = useState<TransactionType>(transaction.type);
+  const [amount, setAmount] = useState(transaction.amount.toString());
+  const [title, setTitle] = useState(transaction.title || "");
+  const [vendor, setVendor] = useState(transaction.vendor);
+  const [categoryId, setCategoryId] = useState(transaction.categoryId);
+  const [projectId, setProjectId] = useState(transaction.projectId || "");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(transaction.paymentMethod);
+  const [date, setDate] = useState<Date>(parseISO(transaction.date));
+  const [notes, setNotes] = useState(transaction.notes || "");
   const [showCategories, setShowCategories] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
   const [showVendors, setShowVendors] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [vendorSearch, setVendorSearch] = useState("");
+  
+  // Reset state when transaction changes
+  useEffect(() => {
+    setType(transaction.type);
+    setAmount(transaction.amount.toString());
+    setTitle(transaction.title || "");
+    setVendor(transaction.vendor);
+    setCategoryId(transaction.categoryId);
+    setProjectId(transaction.projectId || "");
+    setPaymentMethod(transaction.paymentMethod);
+    setDate(parseISO(transaction.date));
+    setNotes(transaction.notes || "");
+  }, [transaction]);
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
@@ -61,15 +74,12 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     const storedVendors = vendors;
     const transactionVendorNames = Array.from(new Set(transactions.map(t => t.vendor)));
     
-    // Merge: stored vendors take priority, then transaction vendors as fallback
     const vendorMap = new Map<string, { name: string; icon?: string; color?: string }>();
     
-    // Add transaction vendors first (will be overwritten by stored vendors)
     transactionVendorNames.forEach(name => {
       vendorMap.set(name.toLowerCase(), { name });
     });
     
-    // Add stored vendors (overwrite transaction vendors)
     storedVendors.forEach(v => {
       vendorMap.set(v.name.toLowerCase(), { name: v.name, icon: v.icon, color: v.color });
     });
@@ -77,42 +87,14 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     return Array.from(vendorMap.values());
   }, [vendors, transactions]);
   
-  // Find vendor details for selected vendor
   const selectedVendorDetails = useMemo(() => {
     return allVendors.find(v => v.name.toLowerCase() === vendor.toLowerCase());
   }, [allVendors, vendor]);
   
-  const handleMagicFill = () => {
-    const text = magicInput.toLowerCase();
-    const numberMatch = text.match(/\d+/);
-    
-    if (numberMatch) {
-      setAmount(numberMatch[0]);
-    }
-    
-    const words = text.split(' ');
-    const atIndex = words.indexOf('at');
-    if (atIndex !== -1 && words[atIndex + 1]) {
-      setVendor(words.slice(atIndex + 1).join(' ').replace(/for.*/, '').trim());
-    } else if (words.length > 1) {
-      setVendor(words[0].charAt(0).toUpperCase() + words[0].slice(1));
-    }
-    
-    if (text.includes('coffee') || text.includes('lunch') || text.includes('food') || text.includes('starbucks')) {
-      setCategoryId('food');
-    } else if (text.includes('uber') || text.includes('taxi') || text.includes('transport')) {
-      setCategoryId('transport');
-    } else if (text.includes('shopping') || text.includes('buy')) {
-      setCategoryId('shopping');
-    }
-    
-    setMagicInput("");
-  };
-  
   const handleSubmit = () => {
     if (!amount || !categoryId) return;
     
-    addTransaction({
+    updateTransaction(transaction.id, {
       type,
       amount: parseFloat(amount),
       title: title || undefined,
@@ -121,17 +103,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       projectId: projectId || undefined,
       paymentMethod,
       date: format(date, 'yyyy-MM-dd'),
-      time: format(new Date(), 'HH:mm'),
       notes: notes || undefined,
     }, userId);
     
-    setAmount("");
-    setTitle("");
-    setVendor("");
-    setCategoryId("");
-    setProjectId("");
-    setNotes("");
-    setVendorSearch("");
     onClose();
   };
   
@@ -159,9 +133,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
             </div>
             
             <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-xl font-bold">
-                Add {type === 'expense' ? 'Expense' : 'Income'}
-              </h2>
+              <h2 className="text-xl font-bold">Edit Transaction</h2>
               <button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
                 <X size={20} />
               </button>
@@ -193,27 +165,6 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                   >
                     Income
                   </button>
-                </div>
-                
-                {/* Magic Fill */}
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Sparkles size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
-                    <Input
-                      placeholder="Magic: 'Lunch at Cafe for 450'"
-                      value={magicInput}
-                      onChange={(e) => setMagicInput(e.target.value)}
-                      className="pl-9 text-sm bg-primary/5 border-primary/20"
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleMagicFill}
-                    disabled={!magicInput}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Fill
-                  </Button>
                 </div>
                 
                 {/* Title */}
@@ -611,7 +562,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                   disabled={!amount || !categoryId}
                   className="w-full py-5 text-base font-semibold gradient-primary text-primary-foreground rounded-xl"
                 >
-                  Add {type === 'expense' ? 'Expense' : 'Income'} →
+                  Save Changes →
                 </Button>
               </div>
             </ScrollArea>
