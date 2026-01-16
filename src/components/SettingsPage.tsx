@@ -11,7 +11,9 @@ import {
   FileBarChart,
   ArrowLeft,
   LogOut,
-  Bell
+  Bell,
+  Monitor,
+  Smartphone
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +26,8 @@ import { ReportsSection } from "./settings/ReportsSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
+import { useTheme, ThemeMode } from "@/hooks/useTheme";
+import { cn } from "@/lib/utils";
 
 // Inline notification content for settings page
 const NotificationsContent = () => {
@@ -129,7 +133,7 @@ interface SettingsPageProps {
 export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }: SettingsPageProps) => {
   const { categories, projects, userProfile } = useFinanceStore();
   const { signOut, user } = useAuth();
-  const [isDark, setIsDark] = useState(false);
+  const { mode, setTheme, isDark, isOled } = useTheme();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
   
@@ -150,11 +154,13 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   const handleBack = () => {
     handleSectionChange(null);
   };
-  
-  const toggleTheme = () => {
-    setIsDark(!isDark);
-    document.documentElement.classList.toggle('dark');
-  };
+
+  const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
+    { value: 'light', label: 'Light', icon: Sun, description: 'Light theme' },
+    { value: 'dark', label: 'Dark', icon: Moon, description: 'Dark theme' },
+    { value: 'oled', label: 'OLED', icon: Smartphone, description: 'Pure black' },
+    { value: 'system', label: 'System', icon: Monitor, description: 'Follow system' },
+  ];
 
   // Get unique vendors count from transactions
   const { transactions, vendors } = useFinanceStore();
@@ -281,36 +287,50 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
         </motion.div>
       </div>
       
-      {/* Theme Toggle */}
+      {/* Theme Selector */}
       <div className="px-4 mb-6">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+          Appearance
+        </p>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-2xl p-4 shadow-card border border-border"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              {isDark ? <Moon size={20} /> : <Sun size={20} />}
-              <div>
-                <p className="font-medium">Theme</p>
-                <p className="text-sm text-muted-foreground">
-                  {isDark ? 'Dark Mode' : 'Light Mode'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={toggleTheme}
-              className={`w-14 h-8 rounded-full transition-colors relative ${
-                isDark ? 'bg-primary' : 'bg-muted'
-              }`}
-            >
-              <div
-                className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow transition-transform ${
-                  isDark ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
-            </button>
+          <div className="grid grid-cols-4 gap-2">
+            {themeOptions.map((option) => {
+              const isActive = mode === option.value;
+              return (
+                <button
+                  key={option.value}
+                  onClick={() => setTheme(option.value)}
+                  className={cn(
+                    "flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
+                    isActive 
+                      ? "bg-primary/10 border-2 border-primary" 
+                      : "bg-muted/50 border-2 border-transparent hover:bg-muted"
+                  )}
+                >
+                  <option.icon 
+                    size={20} 
+                    className={isActive ? "text-primary" : "text-muted-foreground"} 
+                  />
+                  <span className={cn(
+                    "text-xs font-medium",
+                    isActive ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
+          <p className="text-xs text-muted-foreground text-center mt-3">
+            {isOled ? 'OLED mode saves battery on AMOLED screens' : 
+             mode === 'system' ? 'Following your system preference' :
+             isDark ? 'Dark mode is easier on the eyes at night' : 
+             'Light mode is best for bright environments'}
+          </p>
         </motion.div>
       </div>
       
