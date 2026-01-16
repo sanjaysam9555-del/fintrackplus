@@ -16,12 +16,6 @@ import { cn } from '@/lib/utils';
 import { useFinanceStore } from '@/lib/store';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import {
-  Tooltip as TooltipRoot,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
 type ViewMode = TabId | 'settings' | 'ai';
@@ -62,13 +56,12 @@ export const DesktopSidebar = ({
   };
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <motion.aside 
-        initial={false}
-        animate={{ width: isCollapsed ? 72 : 256 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className="hidden md:flex flex-col h-screen bg-card border-r border-border sticky top-0 overflow-hidden"
-      >
+    <motion.aside 
+      initial={false}
+      animate={{ width: isCollapsed ? 72 : 256 }}
+      transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+      className="hidden md:flex flex-col h-screen bg-card border-r border-border sticky top-0 overflow-hidden"
+    >
         {/* Profile Section */}
         <div className={cn(
           "p-4 border-b border-border",
@@ -104,33 +97,20 @@ export const DesktopSidebar = ({
         
         {/* Add Transaction Button */}
         <div className={cn("p-4", isCollapsed && "p-2")}>
-          {isCollapsed ? (
-            <TooltipRoot>
-              <TooltipTrigger asChild>
-                <motion.button
-                  onClick={onAddClick}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="w-12 h-12 flex items-center justify-center gradient-primary rounded-xl text-primary-foreground mx-auto"
-                >
-                  <Plus size={20} />
-                </motion.button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Add Transaction</p>
-              </TooltipContent>
-            </TooltipRoot>
-          ) : (
-            <motion.button
-              onClick={onAddClick}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 gradient-primary rounded-xl text-primary-foreground font-medium"
-            >
-              <Plus size={20} />
-              Add Transaction
-            </motion.button>
-          )}
+          <motion.button
+            onClick={onAddClick}
+            whileHover={{ scale: isCollapsed ? 1.05 : 1.02 }}
+            whileTap={{ scale: isCollapsed ? 0.95 : 0.98 }}
+            className={cn(
+              "gradient-primary rounded-xl text-primary-foreground font-medium",
+              isCollapsed 
+                ? "w-12 h-12 flex items-center justify-center mx-auto"
+                : "w-full flex items-center justify-center gap-2 py-3 px-4"
+            )}
+          >
+            <Plus size={20} />
+            {!isCollapsed && "Add Transaction"}
+          </motion.button>
         </div>
         
         {/* Main Navigation */}
@@ -143,7 +123,7 @@ export const DesktopSidebar = ({
           <div className="space-y-1">
             {navItems.map((item) => {
               const isActive = viewMode === item.id;
-              const button = (
+              return (
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
@@ -166,17 +146,6 @@ export const DesktopSidebar = ({
                   )}
                 </button>
               );
-
-              return isCollapsed ? (
-                <TooltipRoot key={item.id}>
-                  <TooltipTrigger asChild>
-                    {button}
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>{item.label}</p>
-                  </TooltipContent>
-                </TooltipRoot>
-              ) : button;
             })}
           </div>
           
@@ -192,7 +161,7 @@ export const DesktopSidebar = ({
               { id: 'settings', icon: Settings, label: 'Settings' },
             ].map((item) => {
               const isActive = viewMode === item.id;
-              const button = (
+              return (
                 <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
@@ -215,17 +184,6 @@ export const DesktopSidebar = ({
                   )}
                 </button>
               );
-
-              return isCollapsed ? (
-                <TooltipRoot key={item.id}>
-                  <TooltipTrigger asChild>
-                    {button}
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>{item.label}</p>
-                  </TooltipContent>
-                </TooltipRoot>
-              ) : button;
             })}
           </div>
         </nav>
@@ -246,36 +204,24 @@ export const DesktopSidebar = ({
         
         {/* Footer */}
         <div className={cn("p-4 border-t border-border", isCollapsed && "p-2")}>
-          {isCollapsed ? (
-            <TooltipRoot>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={handleLogout}
-                  className="w-12 h-12 flex items-center justify-center rounded-xl text-destructive hover:bg-destructive/10 transition-colors mx-auto"
-                >
-                  <LogOut size={18} />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                <p>Sign Out</p>
-              </TooltipContent>
-            </TooltipRoot>
-          ) : (
-            <>
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
-              >
-                <LogOut size={18} />
-                Sign Out
-              </button>
-              <p className="text-[10px] text-muted-foreground text-center mt-3">
-                FinTrack Pro v1.0.0
-              </p>
-            </>
+          <button
+            onClick={handleLogout}
+            className={cn(
+              "rounded-xl text-destructive hover:bg-destructive/10 transition-colors",
+              isCollapsed 
+                ? "w-12 h-12 flex items-center justify-center mx-auto"
+                : "w-full flex items-center gap-3 px-3 py-2.5 text-sm font-medium"
+            )}
+          >
+            <LogOut size={18} />
+            {!isCollapsed && "Sign Out"}
+          </button>
+          {!isCollapsed && (
+            <p className="text-[10px] text-muted-foreground text-center mt-3">
+              FinTrack Pro v1.0.0
+            </p>
           )}
         </div>
       </motion.aside>
-    </TooltipProvider>
   );
 };
