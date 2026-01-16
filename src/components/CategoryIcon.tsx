@@ -44,13 +44,19 @@ export const CategoryIcon = ({ iconName, colorClass, size = "md", className }: C
   const lucideName = ICON_ID_TO_LUCIDE[iconName] || iconName;
   const Icon: LucideIcon = (icons[lucideName as keyof typeof icons] as LucideIcon) || icons.Circle;
   
+  // Check if colorClass is a hex color
+  const isHexColor = colorClass?.startsWith('#');
+  
   return (
-    <div className={cn(
-      "rounded-xl flex items-center justify-center",
-      sizeClasses[size],
-      colorClass,
-      className
-    )}>
+    <div 
+      className={cn(
+        "rounded-xl flex items-center justify-center",
+        sizeClasses[size],
+        !isHexColor && colorClass,
+        className
+      )}
+      style={isHexColor ? { backgroundColor: colorClass } : undefined}
+    >
       <Icon size={iconSizes[size]} className="text-white" />
     </div>
   );
