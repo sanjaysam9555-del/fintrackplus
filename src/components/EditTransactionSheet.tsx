@@ -139,8 +139,8 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
               </button>
             </div>
             
-            <ScrollArea className="h-[calc(85vh-100px)]">
-              <div className="p-4 space-y-4 pb-8">
+            <ScrollArea className="h-[calc(85vh-180px)]">
+              <div className="p-4 space-y-4 pb-4">
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">
                   <button
@@ -367,7 +367,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                     >
                                       {renderVendorIcon(v.icon, v.color || 'hsl(var(--success))', 14)}
                                     </div>
-                                    <span className="flex-1">{v.name}</span>
+                                    <span className="font-medium flex-1">{v.name}</span>
                                     <Check size={14} className={cn("text-primary shrink-0", vendor === v.name ? "opacity-100" : "opacity-0")} />
                                   </button>
                                 ))}
@@ -408,38 +408,38 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                 {/* Payment Method */}
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">Payment Method</Label>
-                  <div className="grid grid-cols-2 gap-2 mt-1">
+                  <div className="flex gap-2 mt-1">
                     <button
-                      onClick={() => setPaymentMethod("cash")}
+                      onClick={() => setPaymentMethod('online')}
                       className={cn(
-                        "p-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-colors",
-                        paymentMethod === "cash" 
+                        "flex-1 p-3 rounded-xl flex items-center justify-center gap-2 border-2 transition-colors",
+                        paymentMethod === 'online' 
                           ? "border-primary bg-primary/5" 
-                          : "border-border"
+                          : "border-transparent bg-muted"
                       )}
                     >
-                      <Banknote size={16} />
-                      <span className="text-sm font-medium">Cash</span>
+                      <CreditCard size={16} className={paymentMethod === 'online' ? "text-primary" : "text-muted-foreground"} />
+                      <span className={cn("text-sm font-medium", paymentMethod === 'online' ? "text-foreground" : "text-muted-foreground")}>Online</span>
                     </button>
                     <button
-                      onClick={() => setPaymentMethod("online")}
+                      onClick={() => setPaymentMethod('cash')}
                       className={cn(
-                        "p-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-colors",
-                        paymentMethod === "online" 
+                        "flex-1 p-3 rounded-xl flex items-center justify-center gap-2 border-2 transition-colors",
+                        paymentMethod === 'cash' 
                           ? "border-primary bg-primary/5" 
-                          : "border-border"
+                          : "border-transparent bg-muted"
                       )}
                     >
-                      <CreditCard size={16} />
-                      <span className="text-sm font-medium">Online</span>
+                      <Banknote size={16} className={paymentMethod === 'cash' ? "text-primary" : "text-muted-foreground"} />
+                      <span className={cn("text-sm font-medium", paymentMethod === 'cash' ? "text-foreground" : "text-muted-foreground")}>Cash</span>
                     </button>
                   </div>
                 </div>
                 
-                {/* Project Label */}
+                {/* Project Dropdown */}
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Project Label <span className="text-muted-foreground/60">(optional)</span>
+                    Project <span className="text-muted-foreground/60">(optional)</span>
                   </Label>
                   <Popover open={showProjects} onOpenChange={setShowProjects}>
                     <PopoverTrigger asChild>
@@ -447,14 +447,9 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                         {selectedProject ? (
                           <div className="flex items-center gap-2">
                             <div 
-                              className="w-6 h-6 rounded-md flex items-center justify-center"
-                              style={{ backgroundColor: `${selectedProject.color}20` }}
-                            >
-                              <div 
-                                className="w-3 h-3 rounded-full" 
-                                style={{ backgroundColor: selectedProject.color }}
-                              />
-                            </div>
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: selectedProject.color }}
+                            />
                             <span className="text-sm font-medium">{selectedProject.name}</span>
                           </div>
                         ) : (
@@ -472,19 +467,15 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                               setShowProjects(false);
                             }}
                             className={cn(
-                              "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
+                              "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors",
                               !projectId ? "bg-primary/10" : "hover:bg-muted"
                             )}
                           >
-                            <div className="w-6 h-6 rounded-md bg-muted flex items-center justify-center">
-                              <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
-                            </div>
-                            <span className="flex-1 text-muted-foreground">None</span>
-                            <Check size={14} className={cn("text-primary shrink-0", !projectId ? "opacity-100" : "opacity-0")} />
+                            No Project
                           </button>
-                          {projects.length > 0 ? (
+                          {projects.filter(p => !p.archived).length > 0 ? (
                             <>
-                              {projects.map((proj) => (
+                              {projects.filter(p => !p.archived).map((proj) => (
                                 <button
                                   key={proj.id}
                                   onClick={() => {
@@ -492,20 +483,15 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                     setShowProjects(false);
                                   }}
                                   className={cn(
-                                    "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
+                                    "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-2",
                                     projectId === proj.id ? "bg-primary/10" : "hover:bg-muted"
                                   )}
                                 >
                                   <div 
-                                    className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                                    style={{ backgroundColor: `${proj.color}20` }}
-                                  >
-                                    <div 
-                                      className="w-3 h-3 rounded-full" 
-                                      style={{ backgroundColor: proj.color }}
-                                    />
-                                  </div>
-                                  <span className="flex-1">{proj.name}</span>
+                                    className="w-3 h-3 rounded-full shrink-0" 
+                                    style={{ backgroundColor: proj.color }}
+                                  />
+                                  <span className="font-medium flex-1">{proj.name}</span>
                                   <Check size={14} className={cn("text-primary shrink-0", projectId === proj.id ? "opacity-100" : "opacity-0")} />
                                 </button>
                               ))}
@@ -555,17 +541,19 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                     className="mt-1"
                   />
                 </div>
-                
-                {/* Submit Button */}
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!amount || !categoryId}
-                  className="w-full py-5 text-base font-semibold gradient-primary text-primary-foreground rounded-xl"
-                >
-                  Save Changes →
-                </Button>
               </div>
             </ScrollArea>
+            
+            {/* Sticky Save Button */}
+            <div className="p-4 border-t border-border bg-card">
+              <Button
+                onClick={handleSubmit}
+                disabled={!amount || !categoryId}
+                className="w-full py-5 text-base font-semibold gradient-primary text-primary-foreground rounded-xl"
+              >
+                Save Changes →
+              </Button>
+            </div>
           </motion.div>
         </>
       )}
