@@ -8,6 +8,25 @@ interface CategoryIconProps {
   className?: string;
 }
 
+// Map short icon IDs (stored in DB) to actual Lucide icon names (PascalCase)
+const ICON_ID_TO_LUCIDE: Record<string, string> = {
+  shopping: 'ShoppingBag',
+  food: 'Utensils',
+  transport: 'Car',
+  bills: 'Zap',
+  entertainment: 'Film',
+  health: 'Stethoscope',
+  education: 'GraduationCap',
+  travel: 'Plane',
+  salary: 'Wallet',
+  investment: 'TrendingUp',
+  freelance: 'Briefcase',
+  gift: 'Gift',
+  home: 'Home',
+  coffee: 'Coffee',
+  other: 'MoreHorizontal',
+};
+
 const sizeClasses = {
   sm: "w-8 h-8",
   md: "w-10 h-10",
@@ -21,8 +40,9 @@ const iconSizes = {
 };
 
 export const CategoryIcon = ({ iconName, colorClass, size = "md", className }: CategoryIconProps) => {
-  // Dynamically get the icon from lucide-react's icons object
-  const Icon: LucideIcon = (icons[iconName as keyof typeof icons] as LucideIcon) || icons.Circle;
+  // First check mapping, then try direct lookup, then fallback to Circle
+  const lucideName = ICON_ID_TO_LUCIDE[iconName] || iconName;
+  const Icon: LucideIcon = (icons[lucideName as keyof typeof icons] as LucideIcon) || icons.Circle;
   
   return (
     <div className={cn(
