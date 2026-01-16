@@ -161,7 +161,7 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-3">
             <AnimatePresence>
               {displayedProjects.map((project) => {
                 const spent = getProjectSpending(project.id);
