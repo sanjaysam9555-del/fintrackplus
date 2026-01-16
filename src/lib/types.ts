@@ -15,6 +15,7 @@ export interface Project {
   name: string;
   description?: string;
   budgetLimit: number;
+  margin: number;
   color: string;
   createdAt: string;
 }

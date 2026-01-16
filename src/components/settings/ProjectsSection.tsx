@@ -19,7 +19,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', budgetLimit: 0, color: '#10B981' });
+  const [formData, setFormData] = useState({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' });
 
   const handleAdd = () => {
     if (!formData.name.trim()) {
@@ -30,11 +30,12 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       name: formData.name.trim(),
       description: formData.description.trim(),
       budgetLimit: formData.budgetLimit,
+      margin: formData.margin,
       color: formData.color,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', budgetLimit: 0, color: '#10B981' });
+    setFormData({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' });
   };
 
   const handleUpdate = (id: string) => {
@@ -46,6 +47,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       name: formData.name.trim(),
       description: formData.description.trim(),
       budgetLimit: formData.budgetLimit,
+      margin: formData.margin,
       color: formData.color,
     }, userId);
     toast.success("Project updated");
@@ -66,6 +68,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       name: project.name,
       description: project.description || '',
       budgetLimit: project.budgetLimit,
+      margin: project.margin || 0,
       color: project.color,
     });
   };
@@ -79,7 +82,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           </button>
           <h1 className="text-xl font-bold">Project Labels</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', budgetLimit: 0, color: '#10B981' }); }}>
+        <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' }); }}>
           <Plus size={16} className="mr-1" /> Add
         </Button>
       </div>
@@ -115,6 +118,12 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                 placeholder="Budget limit (₹)"
                 value={formData.budgetLimit || ''}
                 onChange={(e) => setFormData({ ...formData, budgetLimit: Number(e.target.value) || 0 })}
+              />
+              <Input
+                type="number"
+                placeholder="Expected margin / savings (₹)"
+                value={formData.margin || ''}
+                onChange={(e) => setFormData({ ...formData, margin: Number(e.target.value) || 0 })}
               />
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Color</p>
@@ -169,6 +178,12 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                       value={formData.budgetLimit || ''}
                       onChange={(e) => setFormData({ ...formData, budgetLimit: Number(e.target.value) || 0 })}
                       placeholder="Budget limit (₹)"
+                    />
+                    <Input
+                      type="number"
+                      value={formData.margin || ''}
+                      onChange={(e) => setFormData({ ...formData, margin: Number(e.target.value) || 0 })}
+                      placeholder="Expected margin (₹)"
                     />
                     <div className="flex gap-2">
                       {COLOR_OPTIONS.map((color) => (

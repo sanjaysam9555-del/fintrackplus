@@ -439,6 +439,7 @@ export const useFinanceStore = create<FinanceStore>()(
               name: project.name,
               description: project.description || null,
               budget_limit: project.budgetLimit,
+              margin: project.margin || 0,
               color: project.color,
             },
             userId: uid,
@@ -469,6 +470,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.name) dbUpdates.name = updates.name;
           if (updates.description !== undefined) dbUpdates.description = updates.description;
           if (updates.budgetLimit !== undefined) dbUpdates.budget_limit = updates.budgetLimit;
+          if (updates.margin !== undefined) dbUpdates.margin = updates.margin;
           if (updates.color) dbUpdates.color = updates.color;
           
           addToSyncQueue({
