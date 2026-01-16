@@ -137,13 +137,6 @@ export const DesktopSidebar = ({
                 >
                   <item.icon size={18} />
                   {!isCollapsed && item.label}
-                  {isActive && !isCollapsed && (
-                    <motion.div
-                      layoutId="desktopActiveNav"
-                      className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full"
-                      transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                    />
-                  )}
                 </button>
               );
             })}
