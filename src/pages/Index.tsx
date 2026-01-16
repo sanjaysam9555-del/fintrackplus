@@ -17,7 +17,7 @@ const OnboardingFlow = lazy(() => import("@/components/OnboardingFlow").then(m =
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
 type ViewMode = TabId | 'settings' | 'ai';
-type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
+type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | 'notifications' | null;
 
 // Skeleton loader for transaction lists
 const TransactionListSkeleton = () => (
