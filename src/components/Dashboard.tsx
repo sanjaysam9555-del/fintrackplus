@@ -135,7 +135,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   }
   
   return (
-    <div className="min-h-screen pb-24 lg:pb-8 lg:px-6">
+    <div className="min-h-screen pb-24 md:pb-8 md:px-6">
       {/* Header */}
       <div className="p-4 pt-6">
         <div className="flex items-center justify-between">

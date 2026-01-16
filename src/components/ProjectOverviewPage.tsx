@@ -90,7 +90,7 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-8 lg:px-6">
+    <div className="min-h-screen bg-background pb-24 md:pb-8 md:px-6">
       {/* Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border">
         <h1 className="text-xl font-bold">Projects</h1>
