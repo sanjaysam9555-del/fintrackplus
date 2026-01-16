@@ -135,7 +135,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   }
   
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-24 lg:pb-8 lg:px-6">
       {/* Header */}
       <div className="p-4 pt-6">
         <div className="flex items-center justify-between">
@@ -348,11 +348,11 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
       </div>
       
       {/* Summary Cards - 3 Column Grid */}
-      <div className="px-4 mb-6">
+      <div className="px-4 lg:px-0 mb-6">
         <motion.div
           initial={false}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-3 gap-3"
+          className="grid grid-cols-3 gap-3 lg:gap-4"
         >
           <SummaryCard
             title="Income"
@@ -375,7 +375,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
       </div>
       
       {/* Cash Flow Chart */}
-      <div className="px-4 mb-6">
+      <div className="px-4 lg:px-0 mb-6">
         <CashFlowChart 
           transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
           timeFilter={timeFilter}
@@ -384,11 +384,11 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
       </div>
       
       {/* Quick Actions */}
-      <div className="px-4 mb-6">
+      <div className="px-4 lg:px-0 mb-6">
         <motion.div
           initial={false}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-4 gap-2"
+          className="grid grid-cols-4 gap-2 lg:gap-3"
         >
           <button
             onClick={() => onNavigate?.('categories')}

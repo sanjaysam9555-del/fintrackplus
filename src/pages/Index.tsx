@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense, useRef } from "react";
 import { GlassDock } from "@/components/GlassDock";
+import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardSkeleton, TransactionSkeleton } from "@/components/ui/skeleton-loader";
 import { useFinanceStore } from "@/lib/store";
@@ -107,6 +108,12 @@ const Index = () => {
     setSettingsSection(null);
   };
   
+  const handleTabChange = (tab: TabId) => {
+    setActiveTab(tab);
+    setViewMode(tab);
+    setSettingsSection(null);
+  };
+  
   const renderContent = () => {
     switch (viewMode) {
       case 'home':
@@ -174,34 +181,42 @@ const Index = () => {
         )}
       </AnimatePresence>
       
-      {/* Main Content Area - No pull-to-refresh, stable layout */}
-      <div 
-        ref={scrollContainerRef}
-        className="h-screen overflow-y-auto overscroll-contain scroll-smooth"
-      >
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={viewMode}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="max-w-md mx-auto will-change-transform"
-          >
-            {renderContent()}
-          </motion.div>
-        </AnimatePresence>
+      {/* Desktop Layout with Sidebar */}
+      <div className="flex w-full">
+        {/* Desktop Sidebar - Hidden on mobile */}
+        <DesktopSidebar
+          activeTab={activeTab}
+          viewMode={viewMode}
+          onTabChange={handleTabChange}
+          onAddClick={handleOpenAddSheet}
+          onNavigate={handleNavigate}
+        />
+        
+        {/* Main Content Area */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 h-screen overflow-y-auto overscroll-contain scroll-smooth"
+        >
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={viewMode}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="max-w-md mx-auto lg:max-w-none lg:mx-0 will-change-transform"
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
       
-      {/* Glass Dock Navigation - Hidden in settings sub-sections */}
+      {/* Glass Dock Navigation - Hidden on desktop and in settings/ai on mobile */}
       {showDock && (
         <GlassDock
           activeTab={activeTab}
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            setViewMode(tab);
-            setSettingsSection(null);
-          }}
+          onTabChange={handleTabChange}
           onAddClick={() => setIsAddSheetOpen(true)}
         />
       )}
