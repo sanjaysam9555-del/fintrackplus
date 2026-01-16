@@ -231,7 +231,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   }
   
   return (
-    <div className="min-h-screen pb-24 lg:pb-8 lg:px-6 lg:max-w-4xl">
+    <div className="min-h-screen pb-24 md:pb-8 md:px-6 md:max-w-4xl">
       {/* Header */}
       <div className="p-4 pt-6">
         <div className="flex items-center gap-3">

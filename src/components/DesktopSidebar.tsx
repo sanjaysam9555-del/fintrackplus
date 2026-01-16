@@ -48,7 +48,7 @@ export const DesktopSidebar = ({
   };
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 h-screen bg-card border-r border-border sticky top-0">
+    <aside className="hidden md:flex flex-col w-64 h-screen bg-card border-r border-border sticky top-0">
       {/* Profile Section */}
       <div className="p-4 border-b border-border">
         <div className="flex items-center gap-3">

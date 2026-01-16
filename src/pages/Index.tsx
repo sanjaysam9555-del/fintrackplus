@@ -204,7 +204,7 @@ const Index = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.15 }}
-              className="max-w-md mx-auto lg:max-w-none lg:mx-0 will-change-transform"
+              className="max-w-md mx-auto md:max-w-none md:mx-0 will-change-transform"
             >
               {renderContent()}
             </motion.div>
