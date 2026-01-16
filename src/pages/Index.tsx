@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useRef } from "react";
 import { GlassDock } from "@/components/GlassDock";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardSkeleton, TransactionSkeleton } from "@/components/ui/skeleton-loader";
@@ -67,9 +67,17 @@ const Index = () => {
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
   const { syncStatus } = useFinanceStore();
   const { user } = useAuth();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Initialize airtight sync engine (all syncing happens silently in background)
   const { showOnboarding, userName, completeOnboarding, refreshData, isOnline, pendingCount } = useSyncEngine();
+  
+  // Scroll to top when view changes
+  useEffect(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [viewMode]);
   
   // Only show loading on initial mount, not during syncs
   useEffect(() => {
@@ -167,15 +175,18 @@ const Index = () => {
       </AnimatePresence>
       
       {/* Main Content Area - No pull-to-refresh, stable layout */}
-      <div className="h-screen overflow-y-auto">
-        <AnimatePresence mode="wait">
+      <div 
+        ref={scrollContainerRef}
+        className="h-screen overflow-y-auto overscroll-contain scroll-smooth"
+      >
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={viewMode}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.2 }}
-            className="max-w-md mx-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="max-w-md mx-auto will-change-transform"
           >
             {renderContent()}
           </motion.div>

@@ -350,7 +350,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
       {/* Summary Cards - 3 Column Grid */}
       <div className="px-4 mb-6">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-3 gap-3"
         >
@@ -386,9 +386,8 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
       {/* Quick Actions */}
       <div className="px-4 mb-6">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
           className="grid grid-cols-4 gap-2"
         >
           <button
@@ -446,19 +445,13 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
               </p>
             </div>
           ) : (
-            filteredTransactions.map((transaction, index) => (
-              <motion.div
+            filteredTransactions.map((transaction) => (
+              <TransactionItem
                 key={transaction.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <TransactionItem
-                  transaction={transaction}
-                  category={categories.find(c => c.id === transaction.categoryId)}
-                  userId={userId}
-                />
-              </motion.div>
+                transaction={transaction}
+                category={categories.find(c => c.id === transaction.categoryId)}
+                userId={userId}
+              />
             ))
           )}
         </div>

@@ -3,7 +3,7 @@ import { Transaction, Category } from "@/lib/types";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
 import { ChevronDown, Pencil, Trash2, CreditCard, Banknote } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ export const TransactionItem = ({ transaction, category, userId }: TransactionIt
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const x = useMotionValue(0);
+  const controls = useAnimation();
   const background = useTransform(
     x,
     [-100, 0],
@@ -47,11 +48,12 @@ export const TransactionItem = ({ transaction, category, userId }: TransactionIt
     setIsEditing(true);
   };
   
-  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (info.offset.x < -100) {
       setShowDeleteConfirm(true);
     }
-    x.set(0);
+    // Always animate back to original position smoothly
+    await controls.start({ x: 0 }, { type: "spring", stiffness: 500, damping: 30 });
   };
   
   return (
@@ -73,13 +75,12 @@ export const TransactionItem = ({ transaction, category, userId }: TransactionIt
         {/* Main Card */}
         <motion.div
           style={{ x }}
+          animate={controls}
           drag="x"
           dragConstraints={{ left: -100, right: 0 }}
           dragElastic={0.1}
           onDragEnd={handleDragEnd}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="bg-card rounded-xl shadow-md border border-border/50 overflow-hidden relative hover:shadow-lg transition-shadow"
+          className="bg-card rounded-xl shadow-md border border-border/50 overflow-hidden relative hover:shadow-lg transition-shadow will-change-transform"
         >
           {/* Main Row */}
           <div

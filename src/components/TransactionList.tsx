@@ -285,7 +285,7 @@ export const TransactionList = ({ type, userId }: TransactionListProps) => {
       {/* Summary Card with Chart */}
       <div className="px-4 mb-4">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
           className="bg-card rounded-2xl p-4 shadow-card"
         >
