@@ -126,20 +126,20 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl max-h-[85vh] overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl max-h-[85vh] flex flex-col"
           >
-            <div className="flex justify-center pt-3">
+            <div className="flex justify-center pt-3 shrink-0">
               <div className="w-10 h-1 bg-muted rounded-full" />
             </div>
             
-            <div className="flex items-center justify-between p-4 border-b border-border">
+            <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
               <h2 className="text-xl font-bold">Edit Transaction</h2>
               <button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
                 <X size={20} />
               </button>
             </div>
             
-            <ScrollArea className="h-[calc(85vh-180px)]">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="p-4 space-y-4 pb-4">
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">
@@ -545,7 +545,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             </ScrollArea>
             
             {/* Sticky Save Button */}
-            <div className="p-4 border-t border-border bg-card">
+            <div className="p-4 border-t border-border bg-card shrink-0">
               <Button
                 onClick={handleSubmit}
                 disabled={!amount || !categoryId}
