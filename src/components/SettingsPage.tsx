@@ -10,7 +10,8 @@ import {
   FolderKanban,
   FileBarChart,
   ArrowLeft,
-  LogOut
+  LogOut,
+  Bell
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -21,8 +22,103 @@ import { VendorsSection } from "./settings/VendorsSection";
 import { ProjectsSection } from "./settings/ProjectsSection";
 import { ReportsSection } from "./settings/ReportsSection";
 import { Button } from "./ui/button";
+import { formatDistanceToNow } from "date-fns";
+import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
 
-type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | null;
+// Inline notification content for settings page
+const NotificationsContent = () => {
+  const { notifications, markNotificationRead, markAllNotificationsRead } = useFinanceStore();
+  
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'transaction': return ArrowUpRight;
+      case 'export': return FileDown;
+      case 'profile': return User;
+      case 'category': return Grid3X3;
+      case 'vendor': return Store;
+      case 'project': return FolderKanban;
+      case 'delete': return Trash2;
+      case 'edit': return Pencil;
+      default: return Bell;
+    }
+  };
+  
+  const getIconColor = (type: string) => {
+    switch (type) {
+      case 'transaction': return 'bg-primary/10 text-primary';
+      case 'export': return 'bg-success/10 text-success';
+      case 'profile': return 'bg-purple-500/10 text-purple-500';
+      case 'category': return 'bg-blue-500/10 text-blue-500';
+      case 'vendor': return 'bg-emerald-500/10 text-emerald-500';
+      case 'project': return 'bg-amber-500/10 text-amber-500';
+      case 'delete': return 'bg-destructive/10 text-destructive';
+      case 'edit': return 'bg-orange-500/10 text-orange-500';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+  
+  const unreadCount = notifications.filter(n => !n.read).length;
+  
+  return (
+    <div className="px-4">
+      {unreadCount > 0 && (
+        <div className="flex justify-end mb-3">
+          <Button variant="ghost" size="sm" onClick={markAllNotificationsRead}>
+            <Check size={14} className="mr-1" />
+            Mark all read
+          </Button>
+        </div>
+      )}
+      <div className="space-y-2">
+        {notifications.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+              <Bell size={24} className="text-muted-foreground" />
+            </div>
+            <p className="text-muted-foreground">No notifications yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Your activity will appear here</p>
+          </div>
+        ) : (
+          notifications.map((notification, index) => {
+            const Icon = getIcon(notification.type);
+            const iconColor = getIconColor(notification.type);
+            
+            return (
+              <motion.div
+                key={notification.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                onClick={() => !notification.read && markNotificationRead(notification.id)}
+                className={`p-4 rounded-xl border transition-colors cursor-pointer ${
+                  notification.read ? 'bg-card border-border' : 'bg-primary/5 border-primary/20'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconColor}`}>
+                    <Icon size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm">{notification.title}</p>
+                      {!notification.read && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5 truncate">{notification.message}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+};
+
+type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | 'notifications' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -64,6 +160,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   const { transactions, vendors } = useFinanceStore();
   const vendorCount = vendors.length || new Set(transactions.map(t => t.vendor)).size;
   
+  const { notifications } = useFinanceStore();
+  const unreadNotifications = notifications.filter(n => !n.read).length;
+  
   const menuItems = [
     {
       section: "Data Management",
@@ -92,6 +191,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
           sublabel: "View & export",
           onClick: () => handleSectionChange('reports')
         },
+        { 
+          icon: Bell, 
+          label: "Notifications", 
+          sublabel: unreadNotifications > 0 ? `${unreadNotifications} unread` : "All caught up",
+          onClick: () => handleSectionChange('notifications')
+        },
       ]
     },
   ];
@@ -108,6 +213,21 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   }
   if (activeSection === 'reports') {
     return <ReportsSection onBack={handleBack} />;
+  }
+  if (activeSection === 'notifications') {
+    return (
+      <div className="min-h-screen pb-24">
+        <div className="p-4 pt-6">
+          <div className="flex items-center gap-3">
+            <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
+              <ArrowLeft size={20} />
+            </button>
+            <h1 className="text-2xl font-bold">Notifications</h1>
+          </div>
+        </div>
+        <NotificationsContent />
+      </div>
+    );
   }
   
   return (
