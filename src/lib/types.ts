@@ -32,7 +32,7 @@ export interface Transaction {
   time: string;
   notes?: string;
   isRecurring?: boolean;
-  recurringFrequency?: 'weekly' | 'monthly';
+  recurringFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
 }
 
 export interface FinanceState {

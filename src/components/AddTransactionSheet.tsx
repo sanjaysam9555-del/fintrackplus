@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons, Settings } from "lucide-react";
+import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons, Settings, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,6 +51,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [showVendors, setShowVendors] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [vendorSearch, setVendorSearch] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringFrequency, setRecurringFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>("monthly");
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
@@ -123,6 +125,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       date: format(date, 'yyyy-MM-dd'),
       time: format(new Date(), 'HH:mm'),
       notes: notes || undefined,
+      isRecurring: isRecurring || undefined,
+      recurringFrequency: isRecurring ? recurringFrequency : undefined,
     }, userId);
     
     setAmount("");
@@ -132,6 +136,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setProjectId("");
     setNotes("");
     setVendorSearch("");
+    setIsRecurring(false);
+    setRecurringFrequency("monthly");
     onClose();
   };
   
@@ -349,6 +355,68 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                       />
                     </PopoverContent>
                   </Popover>
+                </div>
+                
+                {/* Recurring Toggle */}
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Recurring <span className="text-muted-foreground/60">(optional)</span>
+                  </Label>
+                  <button
+                    onClick={() => setIsRecurring(!isRecurring)}
+                    className={cn(
+                      "w-full mt-1 p-3 rounded-xl flex items-center justify-between min-h-[48px] border-2 transition-colors",
+                      isRecurring 
+                        ? "border-primary bg-primary/5" 
+                        : "border-transparent bg-muted"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Repeat size={16} className={isRecurring ? "text-primary" : "text-muted-foreground"} />
+                      <span className={cn("text-sm font-medium", isRecurring ? "text-foreground" : "text-muted-foreground")}>
+                        {isRecurring ? "This is a recurring transaction" : "Make this recurring"}
+                      </span>
+                    </div>
+                    <div className={cn(
+                      "w-10 h-6 rounded-full transition-colors flex items-center px-0.5",
+                      isRecurring ? "bg-primary" : "bg-muted-foreground/30"
+                    )}>
+                      <div className={cn(
+                        "w-5 h-5 rounded-full bg-white shadow transition-transform",
+                        isRecurring ? "translate-x-4" : "translate-x-0"
+                      )} />
+                    </div>
+                  </button>
+                  
+                  {/* Frequency Options */}
+                  {isRecurring && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-2 grid grid-cols-4 gap-2"
+                    >
+                      {([
+                        { value: "daily" as const, label: "Daily" },
+                        { value: "weekly" as const, label: "Weekly" },
+                        { value: "monthly" as const, label: "Monthly" },
+                        { value: "yearly" as const, label: "Yearly" },
+                      ]).map((freq) => (
+                        <button
+                          key={freq.value}
+                          onClick={() => setRecurringFrequency(freq.value)}
+                          className={cn(
+                            "p-2 rounded-lg text-xs font-medium transition-colors border-2",
+                            recurringFrequency === freq.value
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-muted text-muted-foreground hover:border-primary/50"
+                          )}
+                        >
+                          {freq.label}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
                 </div>
                 
                 {/* Vendor Dropdown */}
