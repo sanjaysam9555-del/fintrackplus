@@ -403,39 +403,43 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         >
           <button
             onClick={() => onNavigate?.('categories')}
-            className="flex flex-col items-center gap-1.5 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+            className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Grid3X3 size={16} className="text-primary" />
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Grid3X3 size={16} className="text-primary lg:hidden" />
+              <Grid3X3 size={20} className="text-primary hidden lg:block" />
             </div>
-            <span className="text-[10px] font-medium text-muted-foreground">Categories</span>
+            <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Categories</span>
           </button>
           <button
             onClick={() => onNavigate?.('vendors')}
-            className="flex flex-col items-center gap-1.5 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+            className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
           >
-            <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center">
-              <Store size={16} className="text-success" />
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-success/10 flex items-center justify-center">
+              <Store size={16} className="text-success lg:hidden" />
+              <Store size={20} className="text-success hidden lg:block" />
             </div>
-            <span className="text-[10px] font-medium text-muted-foreground">Vendors</span>
+            <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Vendors</span>
           </button>
           <button
             onClick={() => onNavigate?.('projects')}
-            className="flex flex-col items-center gap-1.5 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+            className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
           >
-            <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <FolderKanban size={16} className="text-amber-500" />
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <FolderKanban size={16} className="text-amber-500 lg:hidden" />
+              <FolderKanban size={20} className="text-amber-500 hidden lg:block" />
             </div>
-            <span className="text-[10px] font-medium text-muted-foreground">Projects</span>
+            <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Projects</span>
           </button>
           <button
             onClick={() => onNavigate?.('reports')}
-            className="flex flex-col items-center gap-1.5 p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+            className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
           >
-            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <FileBarChart size={16} className="text-purple-500" />
+            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <FileBarChart size={16} className="text-purple-500 lg:hidden" />
+              <FileBarChart size={20} className="text-purple-500 hidden lg:block" />
             </div>
-            <span className="text-[10px] font-medium text-muted-foreground">Reports</span>
+            <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Reports</span>
           </button>
         </motion.div>
       </div>
