@@ -148,6 +148,7 @@ export type Database = {
       }
       projects: {
         Row: {
+          archived: boolean
           budget_limit: number
           color: string
           created_at: string
@@ -158,6 +159,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived?: boolean
           budget_limit?: number
           color?: string
           created_at?: string
@@ -168,6 +170,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived?: boolean
           budget_limit?: number
           color?: string
           created_at?: string

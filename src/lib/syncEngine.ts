@@ -321,6 +321,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           description: p.description || undefined,
           budgetLimit: Number(p.budget_limit),
           margin: Number((p as unknown as { margin?: number }).margin) || 0,
+          archived: (p as unknown as { archived?: boolean }).archived || false,
           color: p.color,
           createdAt: p.created_at.split('T')[0]
         })),
