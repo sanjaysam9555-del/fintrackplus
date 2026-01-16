@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, ChevronRight } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
@@ -20,27 +20,11 @@ const getHealthStatus = (actualMargin: number, expectedMargin: number): HealthSt
   return 'critical';
 };
 
-const getHealthColor = (status: HealthStatus): string => {
+const getHealthBorderColor = (status: HealthStatus): string => {
   switch (status) {
-    case 'healthy': return 'text-green-500';
-    case 'at-risk': return 'text-yellow-500';
-    case 'critical': return 'text-red-500';
-  }
-};
-
-const getHealthBgColor = (status: HealthStatus): string => {
-  switch (status) {
-    case 'healthy': return 'bg-green-500/10';
-    case 'at-risk': return 'bg-yellow-500/10';
-    case 'critical': return 'bg-red-500/10';
-  }
-};
-
-const getHealthIcon = (status: HealthStatus) => {
-  switch (status) {
-    case 'healthy': return CheckCircle2;
-    case 'at-risk': return AlertTriangle;
-    case 'critical': return TrendingDown;
+    case 'healthy': return 'border-l-green-500';
+    case 'at-risk': return 'border-l-yellow-500';
+    case 'critical': return 'border-l-red-500';
   }
 };
 
@@ -82,96 +66,99 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <div className="sticky top-0 bg-background z-10 p-4 border-b border-border">
-        <h1 className="text-2xl font-bold">Projects</h1>
-        <p className="text-sm text-muted-foreground mt-1">Track project budgets and margins</p>
+      <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border">
+        <h1 className="text-xl font-bold">Projects</h1>
       </div>
 
-      {/* Summary Cards */}
-      <div className="p-4 grid grid-cols-3 gap-3">
-        <div className="bg-card rounded-xl p-3 border border-border">
-          <p className="text-xs text-muted-foreground">Total Budget</p>
-          <p className="text-lg font-bold mt-1">₹{totalBudget.toLocaleString()}</p>
+      {/* Summary Section */}
+      <div className="px-4 pt-4">
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="grid grid-cols-3 divide-x divide-border">
+            <div className="p-4 text-center">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Budget</p>
+              <p className="text-base font-bold mt-1">₹{totalBudget.toLocaleString()}</p>
+            </div>
+            <div className="p-4 text-center">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Spent</p>
+              <p className="text-base font-bold mt-1">₹{totalSpent.toLocaleString()}</p>
+            </div>
+            <div className="p-4 text-center">
+              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Margin</p>
+              <p className="text-base font-bold mt-1">₹{totalMargin.toLocaleString()}</p>
+            </div>
+          </div>
         </div>
-        <div className="bg-card rounded-xl p-3 border border-border">
-          <p className="text-xs text-muted-foreground">Total Spent</p>
-          <p className="text-lg font-bold mt-1">₹{totalSpent.toLocaleString()}</p>
-        </div>
-        <div className="bg-card rounded-xl p-3 border border-border">
-          <p className="text-xs text-muted-foreground">Exp. Margin</p>
-          <p className="text-lg font-bold mt-1">₹{totalMargin.toLocaleString()}</p>
-        </div>
+      </div>
+
+      {/* Section Title */}
+      <div className="px-4 pt-5 pb-2">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          {projects.length} Project{projects.length !== 1 ? 's' : ''}
+        </p>
       </div>
 
       {/* Project Cards */}
-      <div className="p-4 space-y-3">
+      <div className="px-4 space-y-3">
         {projects.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <FolderKanban size={48} className="mx-auto mb-3 opacity-50" />
-            <p>No projects yet</p>
-            <p className="text-sm">Add projects from Settings</p>
+          <div className="text-center py-16">
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-4">
+              <FolderKanban size={28} className="text-muted-foreground" />
+            </div>
+            <p className="font-medium text-foreground">No projects yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Add projects from Settings</p>
           </div>
         ) : (
           <AnimatePresence>
             {projects.map((project) => {
               const spent = getProjectSpending(project.id);
+              const remaining = project.budgetLimit - spent;
               const actualMargin = project.budgetLimit - spent;
               const expectedMargin = project.margin || 0;
               const healthStatus = getHealthStatus(actualMargin, expectedMargin);
-              const HealthIcon = getHealthIcon(healthStatus);
-              const budgetPercent = project.budgetLimit > 0 ? (spent / project.budgetLimit) * 100 : 0;
+              const budgetPercent = project.budgetLimit > 0 ? Math.min((spent / project.budgetLimit) * 100, 100) : 0;
               const transactionCount = getProjectTransactions(project.id).length;
 
               return (
                 <motion.button
                   key={project.id}
                   layout
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
+                  exit={{ opacity: 0, y: -8 }}
                   onClick={() => setSelectedProject(project)}
-                  className="w-full bg-card rounded-2xl border border-border p-4 text-left hover:border-primary/50 transition-colors"
+                  className={cn(
+                    "w-full bg-card rounded-xl border border-border p-4 text-left",
+                    "hover:bg-accent/50 transition-colors",
+                    "border-l-4",
+                    getHealthBorderColor(healthStatus)
+                  )}
                 >
-                  {/* Header Row */}
-                  <div className="flex items-start gap-3">
+                  {/* Top Row: Icon, Name, Arrow */}
+                  <div className="flex items-center gap-3">
                     <div
-                      className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ backgroundColor: `${project.color}20` }}
+                      className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: `${project.color}15` }}
                     >
-                      <FolderKanban size={22} style={{ color: project.color }} />
+                      <FolderKanban size={18} style={{ color: project.color }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold truncate">{project.name}</p>
-                        <div className={cn("p-1 rounded-full", getHealthBgColor(healthStatus))}>
-                          <HealthIcon size={14} className={getHealthColor(healthStatus)} />
-                        </div>
-                      </div>
+                      <p className="text-sm font-semibold truncate">{project.name}</p>
                       {project.description && (
-                        <p className="text-xs text-muted-foreground truncate mt-0.5">{project.description}</p>
+                        <p className="text-xs text-muted-foreground truncate">{project.description}</p>
                       )}
                     </div>
+                    <ChevronRight size={18} className="text-muted-foreground shrink-0" />
                   </div>
 
-                  {/* Budget Progress */}
+                  {/* Progress Bar */}
                   {project.budgetLimit > 0 && (
-                    <div className="mt-4">
-                      <div className="flex justify-between text-xs mb-1.5">
-                        <span className="text-muted-foreground">
-                          ₹{spent.toLocaleString()} spent
-                        </span>
-                        <span className="text-muted-foreground">
-                          ₹{project.budgetLimit.toLocaleString()} budget
-                        </span>
-                      </div>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(budgetPercent, 100)}%` }}
-                          transition={{ duration: 0.5, ease: "easeOut" }}
-                          className="h-full rounded-full"
+                    <div className="mt-3">
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
                           style={{
-                            backgroundColor: budgetPercent > 100 ? '#EF4444' : project.color,
+                            width: `${budgetPercent}%`,
+                            backgroundColor: budgetPercent > 90 ? '#EF4444' : project.color,
                           }}
                         />
                       </div>
@@ -179,25 +166,36 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
                   )}
 
                   {/* Stats Row */}
-                  <div className="mt-4 flex items-center gap-4 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      {actualMargin >= expectedMargin ? (
-                        <TrendingUp size={14} className="text-green-500" />
-                      ) : (
-                        <TrendingDown size={14} className="text-red-500" />
-                      )}
-                      <span className={actualMargin >= expectedMargin ? "text-green-500" : "text-red-500"}>
-                        ₹{actualMargin.toLocaleString()} margin
-                      </span>
+                  <div className="mt-3 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase">Spent</p>
+                        <p className="text-xs font-medium">₹{spent.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase">Budget</p>
+                        <p className="text-xs font-medium">₹{project.budgetLimit.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground uppercase">Margin</p>
+                        <div className="flex items-center gap-1">
+                          {actualMargin >= expectedMargin ? (
+                            <TrendingUp size={10} className="text-green-500" />
+                          ) : (
+                            <TrendingDown size={10} className="text-red-500" />
+                          )}
+                          <p className={cn(
+                            "text-xs font-medium",
+                            actualMargin >= expectedMargin ? "text-green-600" : "text-red-600"
+                          )}>
+                            ₹{actualMargin.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    {expectedMargin > 0 && (
-                      <span className="text-muted-foreground">
-                        / ₹{expectedMargin.toLocaleString()} expected
-                      </span>
-                    )}
-                    <span className="text-muted-foreground ml-auto">
-                      {transactionCount} payment{transactionCount !== 1 ? 's' : ''}
-                    </span>
+                    <p className="text-[10px] text-muted-foreground">
+                      {transactionCount} txn{transactionCount !== 1 ? 's' : ''}
+                    </p>
                   </div>
                 </motion.button>
               );
