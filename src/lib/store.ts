@@ -471,6 +471,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.description !== undefined) dbUpdates.description = updates.description;
           if (updates.budgetLimit !== undefined) dbUpdates.budget_limit = updates.budgetLimit;
           if (updates.margin !== undefined) dbUpdates.margin = updates.margin;
+          if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
           if (updates.color) dbUpdates.color = updates.color;
           
           addToSyncQueue({

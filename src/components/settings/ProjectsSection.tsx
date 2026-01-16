@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,7 +19,13 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' });
+
+  // Filter projects
+  const activeProjects = projects.filter(p => !p.archived);
+  const archivedProjects = projects.filter(p => p.archived);
+  const displayedProjects = showArchived ? archivedProjects : activeProjects;
 
   const handleAdd = () => {
     if (!formData.name.trim()) {
@@ -62,6 +68,11 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
     }
   };
 
+  const handleArchiveToggle = (project: typeof projects[0]) => {
+    updateProject(project.id, { archived: !project.archived }, userId);
+    toast.success(project.archived ? 'Project restored' : 'Project archived');
+  };
+
   const startEdit = (project: typeof projects[0]) => {
     setEditingId(project.id);
     setFormData({
@@ -82,15 +93,38 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           </button>
           <h1 className="text-xl font-bold">Project Labels</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' }); }}>
-          <Plus size={16} className="mr-1" /> Add
+        {!showArchived && (
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' }); }}>
+            <Plus size={16} className="mr-1" /> Add
+          </Button>
+        )}
+      </div>
+
+      {/* Toggle Tabs */}
+      <div className="p-4 flex gap-2">
+        <Button
+          variant={!showArchived ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowArchived(false)}
+          className="flex-1"
+        >
+          Active ({activeProjects.length})
+        </Button>
+        <Button
+          variant={showArchived ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowArchived(true)}
+          className="flex-1"
+        >
+          <Archive size={14} className="mr-1.5" />
+          Archived ({archivedProjects.length})
         </Button>
       </div>
 
-      <div className="p-4 space-y-3">
+      <div className="px-4 pb-4 space-y-3">
         {/* Add Form */}
         <AnimatePresence>
-          {showAddForm && (
+          {showAddForm && !showArchived && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -146,12 +180,12 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
         </AnimatePresence>
 
         {/* Projects List */}
-        {projects.length === 0 ? (
+        {displayedProjects.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
-            No projects yet. Add your first project!
+            {showArchived ? 'No archived projects' : 'No projects yet. Add your first project!'}
           </div>
         ) : (
-          projects.map((project) => {
+          displayedProjects.map((project) => {
             const spent = getProjectSpending(project.id);
             const percentage = project.budgetLimit > 0 ? (spent / project.budgetLimit) * 100 : 0;
             
@@ -159,7 +193,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
               <motion.div
                 key={project.id}
                 layout
-                className="bg-card rounded-xl border border-border p-4"
+                className={`bg-card rounded-xl border border-border p-4 ${project.archived ? 'opacity-70' : ''}`}
               >
                 {editingId === project.id ? (
                   <div className="space-y-4">
@@ -214,11 +248,27 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                         <FolderKanban size={18} style={{ color: project.color }} />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium">{project.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{project.name}</p>
+                          {project.archived && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground">Archived</span>
+                          )}
+                        </div>
                         {project.description && (
                           <p className="text-sm text-muted-foreground">{project.description}</p>
                         )}
                       </div>
+                      <button 
+                        onClick={() => handleArchiveToggle(project)} 
+                        className="p-2 hover:bg-muted rounded-lg"
+                        title={project.archived ? 'Restore' : 'Archive'}
+                      >
+                        {project.archived ? (
+                          <ArchiveRestore size={16} className="text-muted-foreground" />
+                        ) : (
+                          <Archive size={16} className="text-muted-foreground" />
+                        )}
+                      </button>
                       <button onClick={() => startEdit(project)} className="p-2 hover:bg-muted rounded-lg">
                         <Pencil size={16} className="text-muted-foreground" />
                       </button>

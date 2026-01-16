@@ -17,6 +17,7 @@ export interface Project {
   budgetLimit: number;
   margin: number;
   color: string;
+  archived?: boolean;
   createdAt: string;
 }
 
