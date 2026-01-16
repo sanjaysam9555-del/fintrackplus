@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, ChevronRight, Archive, ArchiveRestore } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
+import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { cn } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
@@ -22,11 +23,19 @@ const getHealthStatus = (actualMargin: number, expectedMargin: number): HealthSt
   return 'critical';
 };
 
-const getHealthBorderColor = (status: HealthStatus): string => {
+const getHealthGradient = (status: HealthStatus): string => {
   switch (status) {
-    case 'healthy': return 'border-l-green-500';
-    case 'at-risk': return 'border-l-yellow-500';
-    case 'critical': return 'border-l-red-500';
+    case 'healthy': return 'from-green-500/20 to-green-500/5';
+    case 'at-risk': return 'from-yellow-500/20 to-yellow-500/5';
+    case 'critical': return 'from-red-500/20 to-red-500/5';
+  }
+};
+
+const getHealthDot = (status: HealthStatus): string => {
+  switch (status) {
+    case 'healthy': return 'bg-green-500';
+    case 'at-risk': return 'bg-yellow-500';
+    case 'critical': return 'bg-red-500';
   }
 };
 
@@ -34,6 +43,7 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
   const { projects, getProjectSpending, transactions, updateProject } = useFinanceStore();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [archiveProject, setArchiveProject] = useState<Project | null>(null);
 
   // Filter projects
   const activeProjects = projects.filter(p => !p.archived);
@@ -71,10 +81,12 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
       .sort((a, b) => b.amount - a.amount);
   };
 
-  const handleArchiveToggle = (e: React.MouseEvent, project: Project) => {
-    e.stopPropagation();
-    updateProject(project.id, { archived: !project.archived }, userId);
-    toast.success(project.archived ? 'Project restored' : 'Project archived');
+  const handleArchiveConfirm = () => {
+    if (archiveProject) {
+      updateProject(archiveProject.id, { archived: !archiveProject.archived }, userId);
+      toast.success(archiveProject.archived ? 'Project restored' : 'Project archived');
+      setArchiveProject(null);
+    }
   };
 
   return (
@@ -86,19 +98,28 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
 
       {/* Summary Section */}
       <div className="px-4 pt-4">
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
-          <div className="grid grid-cols-3 divide-x divide-border">
-            <div className="p-3 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Budget</p>
-              <p className="text-sm font-bold mt-0.5">₹{totalBudget.toLocaleString()}</p>
+        <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-1">
+                <Wallet size={14} className="text-primary" />
+              </div>
+              <p className="text-[10px] text-muted-foreground uppercase">Budget</p>
+              <p className="text-sm font-bold">₹{totalBudget.toLocaleString()}</p>
             </div>
-            <div className="p-3 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Spent</p>
-              <p className="text-sm font-bold mt-0.5">₹{totalSpent.toLocaleString()}</p>
+            <div className="text-center">
+              <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center mx-auto mb-1">
+                <Receipt size={14} className="text-orange-500" />
+              </div>
+              <p className="text-[10px] text-muted-foreground uppercase">Spent</p>
+              <p className="text-sm font-bold">₹{totalSpent.toLocaleString()}</p>
             </div>
-            <div className="p-3 text-center">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Margin</p>
-              <p className="text-sm font-bold mt-0.5">₹{totalMargin.toLocaleString()}</p>
+            <div className="text-center">
+              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-1">
+                <PiggyBank size={14} className="text-green-500" />
+              </div>
+              <p className="text-[10px] text-muted-foreground uppercase">Margin</p>
+              <p className="text-sm font-bold">₹{totalMargin.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -144,10 +165,13 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
             <AnimatePresence>
               {displayedProjects.map((project) => {
                 const spent = getProjectSpending(project.id);
+                const remaining = project.budgetLimit - spent;
                 const actualMargin = project.budgetLimit - spent;
                 const expectedMargin = project.margin || 0;
                 const healthStatus = getHealthStatus(actualMargin, expectedMargin);
                 const budgetPercent = project.budgetLimit > 0 ? Math.min((spent / project.budgetLimit) * 100, 100) : 0;
+                const transactionCount = getProjectTransactions(project.id).length;
+                const isOverBudget = spent > project.budgetLimit && project.budgetLimit > 0;
 
                 return (
                   <motion.div
@@ -157,84 +181,128 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
                     className={cn(
-                      "bg-card rounded-xl border border-border overflow-hidden",
-                      "border-l-4",
-                      project.archived ? "border-l-muted-foreground opacity-70" : getHealthBorderColor(healthStatus)
+                      "bg-card rounded-2xl border border-border overflow-hidden",
+                      project.archived && "opacity-60"
                     )}
                   >
-                    {/* Card Content - Clickable */}
+                    {/* Health Indicator Strip */}
+                    <div className={cn(
+                      "h-1 w-full bg-gradient-to-r",
+                      project.archived ? "from-muted to-muted" : getHealthGradient(healthStatus)
+                    )} style={{ backgroundColor: project.archived ? undefined : project.color }} />
+                    
+                    {/* Card Content */}
                     <button
                       onClick={() => setSelectedProject(project)}
-                      className="w-full p-3 text-left hover:bg-accent/50 transition-colors"
+                      className="w-full p-3 text-left hover:bg-accent/30 transition-colors"
                     >
-                      {/* Icon & Name */}
-                      <div className="flex items-start gap-2">
+                      {/* Header: Icon + Name + Status */}
+                      <div className="flex items-start gap-2.5 mb-3">
                         <div
-                          className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: `${project.color}15` }}
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ backgroundColor: `${project.color}20` }}
                         >
-                          <FolderKanban size={14} style={{ color: project.color }} />
+                          <FolderKanban size={16} style={{ color: project.color }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold truncate">{project.name}</p>
-                          {project.description && (
-                            <p className="text-[10px] text-muted-foreground truncate">{project.description}</p>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-semibold truncate leading-tight">{project.name}</p>
+                            {!project.archived && (
+                              <span className={cn("w-2 h-2 rounded-full shrink-0", getHealthDot(healthStatus))} />
+                            )}
+                          </div>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
+                          </p>
                         </div>
                       </div>
 
-                      {/* Progress Bar */}
+                      {/* Budget Progress */}
                       {project.budgetLimit > 0 && (
-                        <div className="mt-2">
-                          <div className="h-1 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-300"
+                        <div className="mb-3">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] text-muted-foreground">
+                              {Math.round(budgetPercent)}% used
+                            </span>
+                            <span className={cn(
+                              "text-[10px] font-medium",
+                              isOverBudget ? "text-red-500" : "text-muted-foreground"
+                            )}>
+                              {isOverBudget ? 'Over budget!' : `₹${remaining.toLocaleString()} left`}
+                            </span>
+                          </div>
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${budgetPercent}%` }}
+                              transition={{ duration: 0.5, ease: "easeOut" }}
+                              className="h-full rounded-full"
                               style={{
-                                width: `${budgetPercent}%`,
-                                backgroundColor: budgetPercent > 90 ? '#EF4444' : project.color,
+                                backgroundColor: isOverBudget ? '#EF4444' : project.color,
                               }}
                             />
                           </div>
                         </div>
                       )}
 
-                      {/* Stats */}
-                      <div className="mt-2 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] text-muted-foreground">Spent</span>
-                          <span className="text-[10px] font-medium">₹{spent.toLocaleString()}</span>
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Budget</p>
+                          <p className="text-xs font-semibold mt-0.5">₹{project.budgetLimit.toLocaleString()}</p>
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] text-muted-foreground">Margin</span>
-                          <span className={cn(
-                            "text-[10px] font-medium flex items-center gap-0.5",
-                            actualMargin >= expectedMargin ? "text-green-600" : "text-red-600"
-                          )}>
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Spent</p>
+                          <p className="text-xs font-semibold mt-0.5">₹{spent.toLocaleString()}</p>
+                        </div>
+                        <div className="bg-muted/50 rounded-lg p-2">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Exp. Margin</p>
+                          <p className="text-xs font-semibold mt-0.5">₹{expectedMargin.toLocaleString()}</p>
+                        </div>
+                        <div className={cn(
+                          "rounded-lg p-2",
+                          actualMargin >= expectedMargin ? "bg-green-500/10" : "bg-red-500/10"
+                        )}>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Actual</p>
+                          <div className="flex items-center gap-1 mt-0.5">
                             {actualMargin >= expectedMargin ? (
-                              <TrendingUp size={8} />
+                              <TrendingUp size={10} className="text-green-600" />
                             ) : (
-                              <TrendingDown size={8} />
+                              <TrendingDown size={10} className="text-red-600" />
                             )}
-                            ₹{actualMargin.toLocaleString()}
-                          </span>
+                            <p className={cn(
+                              "text-xs font-semibold",
+                              actualMargin >= expectedMargin ? "text-green-600" : "text-red-600"
+                            )}>
+                              ₹{actualMargin.toLocaleString()}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </button>
 
-                    {/* Archive Button */}
-                    <div className="px-3 pb-2">
+                    {/* Archive/Restore Button */}
+                    <div className="px-3 pb-3">
                       <button
-                        onClick={(e) => handleArchiveToggle(e, project)}
-                        className="w-full flex items-center justify-center gap-1 py-1.5 text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setArchiveProject(project);
+                        }}
+                        className={cn(
+                          "w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-lg transition-colors",
+                          project.archived 
+                            ? "bg-primary/10 text-primary hover:bg-primary/20" 
+                            : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                        )}
                       >
                         {project.archived ? (
                           <>
-                            <ArchiveRestore size={12} />
-                            Restore
+                            <ArchiveRestore size={14} />
+                            Restore Project
                           </>
                         ) : (
                           <>
-                            <Archive size={12} />
+                            <Archive size={14} />
                             Archive
                           </>
                         )}
@@ -256,6 +324,20 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
         spent={selectedProject ? getProjectSpending(selectedProject.id) : 0}
         transactions={selectedProject ? getProjectTransactions(selectedProject.id) : []}
         vendorBreakdown={selectedProject ? getVendorBreakdown(selectedProject.id) : []}
+      />
+
+      {/* Archive Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={!!archiveProject}
+        onClose={() => setArchiveProject(null)}
+        onConfirm={handleArchiveConfirm}
+        title={archiveProject?.archived ? "Restore Project" : "Archive Project"}
+        description={
+          archiveProject?.archived 
+            ? `Are you sure you want to restore "${archiveProject?.name}"? It will appear in your active projects.`
+            : `Are you sure you want to archive "${archiveProject?.name}"? You can restore it anytime from the Archived tab.`
+        }
+        variant={archiveProject?.archived ? 'restore' : 'archive'}
       />
     </div>
   );

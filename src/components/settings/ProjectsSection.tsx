@@ -19,6 +19,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [archiveProject, setArchiveProject] = useState<typeof projects[0] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [formData, setFormData] = useState({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' });
 
@@ -68,9 +69,12 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
     }
   };
 
-  const handleArchiveToggle = (project: typeof projects[0]) => {
-    updateProject(project.id, { archived: !project.archived }, userId);
-    toast.success(project.archived ? 'Project restored' : 'Project archived');
+  const handleArchiveConfirm = () => {
+    if (archiveProject) {
+      updateProject(archiveProject.id, { archived: !archiveProject.archived }, userId);
+      toast.success(archiveProject.archived ? 'Project restored' : 'Project archived');
+      setArchiveProject(null);
+    }
   };
 
   const startEdit = (project: typeof projects[0]) => {
@@ -259,7 +263,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                         )}
                       </div>
                       <button 
-                        onClick={() => handleArchiveToggle(project)} 
+                        onClick={() => setArchiveProject(project)} 
                         className="p-2 hover:bg-muted rounded-lg"
                         title={project.archived ? 'Restore' : 'Archive'}
                       >
@@ -307,6 +311,20 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
         onConfirm={handleDelete}
         title="Delete Project"
         description="This will remove the project. Transactions linked to this project won't be deleted."
+      />
+
+      {/* Archive Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={!!archiveProject}
+        onClose={() => setArchiveProject(null)}
+        onConfirm={handleArchiveConfirm}
+        title={archiveProject?.archived ? "Restore Project" : "Archive Project"}
+        description={
+          archiveProject?.archived 
+            ? `Are you sure you want to restore "${archiveProject?.name}"? It will appear in your active projects.`
+            : `Are you sure you want to archive "${archiveProject?.name}"? You can restore it anytime from the Archived tab.`
+        }
+        variant={archiveProject?.archived ? 'restore' : 'archive'}
       />
     </div>
   );
