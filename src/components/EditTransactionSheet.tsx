@@ -117,7 +117,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 z-50"
+            className="fixed inset-0 bg-black/40 z-[60]"
             onClick={onClose}
           />
           
@@ -126,7 +126,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-[60] bg-card rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden"
           >
             <div className="flex justify-center pt-3 shrink-0">
               <div className="w-10 h-1 bg-muted rounded-full" />
