@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons, Settings, Repeat } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
+import { useDuplicateDetection } from "@/hooks/useDuplicateDetection";
+import { DuplicateWarning } from "./DuplicateWarning";
+
 // Helper to render dynamic icons
 const renderVendorIcon = (iconName: string | undefined, color: string, size: number = 12) => {
   const name = iconName || 'Store';
@@ -35,6 +38,7 @@ interface AddTransactionSheetProps {
 export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId }: AddTransactionSheetProps) => {
   const navigate = useNavigate();
   const { categories, projects, transactions, vendors, addTransaction } = useFinanceStore();
+  const { checkForDuplicates } = useDuplicateDetection();
   
   const [type, setType] = useState<TransactionType>(defaultType);
   const [amount, setAmount] = useState("");
@@ -53,6 +57,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [vendorSearch, setVendorSearch] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurringFrequency, setRecurringFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>("monthly");
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [duplicates, setDuplicates] = useState<ReturnType<typeof checkForDuplicates>>([]);
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
@@ -111,9 +117,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setMagicInput("");
   };
   
-  const handleSubmit = () => {
-    if (!amount || !categoryId) return;
-    
+  const doAddTransaction = useCallback(() => {
     addTransaction({
       type,
       amount: parseFloat(amount),
@@ -138,7 +142,38 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setVendorSearch("");
     setIsRecurring(false);
     setRecurringFrequency("monthly");
+    setShowDuplicateWarning(false);
+    setDuplicates([]);
     onClose();
+  }, [type, amount, title, vendor, categoryId, projectId, paymentMethod, date, notes, isRecurring, recurringFrequency, userId, addTransaction, onClose]);
+  
+  const handleSubmit = () => {
+    if (!amount || !categoryId) return;
+    
+    // Check for duplicates
+    const potentialDuplicates = checkForDuplicates(
+      vendor || 'Not Specified',
+      parseFloat(amount),
+      format(date, 'yyyy-MM-dd')
+    );
+    
+    if (potentialDuplicates.length > 0) {
+      setDuplicates(potentialDuplicates);
+      setShowDuplicateWarning(true);
+      return;
+    }
+    
+    doAddTransaction();
+  };
+  
+  const handleDismissDuplicate = () => {
+    setShowDuplicateWarning(false);
+    setDuplicates([]);
+  };
+  
+  const handleProceedAnyway = () => {
+    setShowDuplicateWarning(false);
+    doAddTransaction();
   };
   
   return (
@@ -175,6 +210,15 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
             
             <ScrollArea className="h-[calc(85vh-100px)]">
               <div className="p-4 space-y-4 pb-8">
+                {/* Duplicate Warning */}
+                {showDuplicateWarning && (
+                  <DuplicateWarning
+                    duplicates={duplicates}
+                    onDismiss={handleDismissDuplicate}
+                    onProceed={handleProceedAnyway}
+                  />
+                )}
+                
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">
                   <button

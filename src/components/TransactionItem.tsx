@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Transaction, Category } from "@/lib/types";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
@@ -9,6 +9,7 @@ import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { EditTransactionSheet } from "./EditTransactionSheet";
+import { toast } from "sonner";
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -18,7 +19,7 @@ interface TransactionItemProps {
 }
 
 export const TransactionItem = ({ transaction, category, userId }: TransactionItemProps) => {
-  const { deleteTransaction, projects } = useFinanceStore();
+  const { deleteTransaction, addTransaction, projects } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -39,9 +40,39 @@ export const TransactionItem = ({ transaction, category, userId }: TransactionIt
     setShowDeleteConfirm(true);
   };
   
-  const confirmDelete = () => {
+  const confirmDelete = useCallback(() => {
+    // Store the transaction data for potential undo
+    const deletedTransaction = { ...transaction };
+    
+    // Delete the transaction
     deleteTransaction(transaction.id, userId);
-  };
+    
+    // Show undo toast
+    toast(`${deletedTransaction.title || deletedTransaction.vendor} deleted`, {
+      duration: 5000,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          // Restore the transaction
+          addTransaction({
+            type: deletedTransaction.type,
+            amount: deletedTransaction.amount,
+            title: deletedTransaction.title,
+            vendor: deletedTransaction.vendor,
+            categoryId: deletedTransaction.categoryId,
+            projectId: deletedTransaction.projectId,
+            paymentMethod: deletedTransaction.paymentMethod,
+            date: deletedTransaction.date,
+            time: deletedTransaction.time,
+            notes: deletedTransaction.notes,
+            isRecurring: deletedTransaction.isRecurring,
+            recurringFrequency: deletedTransaction.recurringFrequency,
+          }, userId);
+          toast.success('Transaction restored');
+        },
+      },
+    });
+  }, [transaction, deleteTransaction, addTransaction, userId]);
   
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();

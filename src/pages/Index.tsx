@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense, useRef } from "react";
+import { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
 import { GlassDock } from "@/components/GlassDock";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { Dashboard } from "@/components/Dashboard";
@@ -7,6 +7,8 @@ import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { useSyncEngine } from "@/hooks/useSyncEngine";
 import { motion, AnimatePresence } from "framer-motion";
+import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
+import { Search } from "lucide-react";
 
 // Lazy load heavy components that aren't needed immediately
 const TransactionList = lazy(() => import("@/components/TransactionList").then(m => ({ default: m.TransactionList })));
@@ -64,6 +66,7 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
   const { syncStatus } = useFinanceStore();
@@ -72,6 +75,25 @@ const Index = () => {
   
   // Initialize airtight sync engine (all syncing happens silently in background)
   const { showOnboarding, userName, completeOnboarding, refreshData, isOnline, pendingCount } = useSyncEngine();
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K for search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+      // Cmd/Ctrl + N for new transaction
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        setIsAddSheetOpen(true);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
   
   // Scroll to top when view changes
   useEffect(() => {
@@ -89,6 +111,7 @@ const Index = () => {
   }, [syncStatus]);
   
   const handleOpenAddSheet = () => setIsAddSheetOpen(true);
+  const handleOpenSearch = useCallback(() => setIsSearchOpen(true), []);
   
   const handleNavigate = (section: string) => {
     if (section === 'settings') {
@@ -96,6 +119,8 @@ const Index = () => {
       setSettingsSection(null);
     } else if (section === 'ai') {
       setViewMode('ai');
+    } else if (section === 'search') {
+      setIsSearchOpen(true);
     } else {
       setSettingsSection(section as SettingsSection);
       setViewMode('settings');
@@ -127,6 +152,7 @@ const Index = () => {
             isOnline={isOnline}
             pendingCount={pendingCount}
             userId={user?.id}
+            onSearchClick={handleOpenSearch}
           />
         );
       case 'expenses':
@@ -231,6 +257,13 @@ const Index = () => {
           />
         </Suspense>
       )}
+      
+      {/* Global Search Dialog */}
+      <GlobalSearchDialog
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onNavigate={handleNavigate}
+      />
     </div>
   );
 };

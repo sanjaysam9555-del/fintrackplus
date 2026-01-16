@@ -4,8 +4,9 @@ import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
+import { UpcomingRecurringCard } from "./UpcomingRecurringCard";
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
-import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff } from "lucide-react";
+import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search } from "lucide-react";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -20,11 +21,12 @@ interface DashboardProps {
   isOnline?: boolean;
   pendingCount?: number;
   userId?: string;
+  onSearchClick?: () => void;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId }: DashboardProps) => {
+export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick }: DashboardProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -282,6 +284,15 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 </div>
               </PopoverContent>
             </Popover>
+            {onSearchClick && (
+              <button 
+                onClick={onSearchClick}
+                className="p-2 rounded-full hover:bg-muted transition-colors"
+                title="Search (⌘K)"
+              >
+                <Search size={22} className="text-muted-foreground" />
+              </button>
+            )}
             <button 
               onClick={() => onNavigate?.('ai')}
               className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -427,6 +438,11 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             <span className="text-[10px] font-medium text-muted-foreground">Reports</span>
           </button>
         </motion.div>
+      </div>
+      
+      {/* Upcoming Recurring Payments */}
+      <div className="px-4 lg:px-0 mb-6">
+        <UpcomingRecurringCard />
       </div>
       
       {/* Recent Transactions */}
