@@ -69,6 +69,7 @@ const Index = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const { syncStatus } = useFinanceStore();
   const { user } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -153,24 +154,25 @@ const Index = () => {
             pendingCount={pendingCount}
             userId={user?.id}
             onSearchClick={handleOpenSearch}
+            onEditSheetChange={setIsEditSheetOpen}
           />
         );
       case 'expenses':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="expense" userId={user?.id} />
+            <TransactionList type="expense" userId={user?.id} onEditSheetChange={setIsEditSheetOpen} />
           </Suspense>
         );
       case 'income':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="income" userId={user?.id} />
+            <TransactionList type="income" userId={user?.id} onEditSheetChange={setIsEditSheetOpen} />
           </Suspense>
         );
       case 'projects':
         return (
           <Suspense fallback={<ContentSkeleton />}>
-            <ProjectOverviewPage userId={user?.id} />
+            <ProjectOverviewPage userId={user?.id} onEditSheetChange={setIsEditSheetOpen} />
           </Suspense>
         );
       case 'ai':
@@ -190,8 +192,8 @@ const Index = () => {
     }
   };
   
-  // Hide dock when viewing settings or AI (accessed from home page buttons)
-  const showDock = viewMode !== 'settings' && viewMode !== 'ai';
+  // Hide dock when viewing settings, AI, or when any transaction sheet is open
+  const showDock = viewMode !== 'settings' && viewMode !== 'ai' && !isAddSheetOpen && !isEditSheetOpen;
   
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">

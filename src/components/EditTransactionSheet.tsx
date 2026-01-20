@@ -126,13 +126,13 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[60] bg-card rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-[60] bg-card rounded-t-3xl max-h-[85vh] overflow-hidden"
           >
-            <div className="flex justify-center pt-3 shrink-0">
+            <div className="flex justify-center pt-3">
               <div className="w-10 h-1 bg-muted rounded-full" />
             </div>
             
-            <div className="flex items-center justify-between p-4 border-b border-border shrink-0">
+            <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className="text-xl font-bold">Edit Transaction</h2>
               <div className="flex items-center gap-2">
                 <Button
@@ -149,8 +149,8 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
               </div>
             </div>
             
-            <div className="flex-1 overflow-y-auto overscroll-contain">
-              <div className="p-4 space-y-4 pb-4">
+            <ScrollArea className="h-[calc(85vh-100px)]">
+              <div className="p-4 space-y-4 pb-8">
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">
                   <button
@@ -552,7 +552,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                   />
                 </div>
               </div>
-            </div>
+            </ScrollArea>
             
             {/* Sticky Save Button */}
             <div className="p-4 border-t border-border bg-card shrink-0">

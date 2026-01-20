@@ -22,11 +22,12 @@ interface DashboardProps {
   pendingCount?: number;
   userId?: string;
   onSearchClick?: () => void;
+  onEditSheetChange?: (isOpen: boolean) => void;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick }: DashboardProps) => {
+export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange }: DashboardProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -137,7 +138,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   }
   
   return (
-    <div className="min-h-screen pb-24 md:pb-8 md:px-6">
+    <div className="min-h-screen pb-32 md:pb-8 md:px-6">
       {/* Header */}
       <div className="p-4 pt-6">
         {/* Mobile Layout */}
@@ -696,6 +697,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 transaction={transaction}
                 category={categories.find(c => c.id === transaction.categoryId)}
                 userId={userId}
+                onEditSheetChange={onEditSheetChange}
               />
             ))
           )}
