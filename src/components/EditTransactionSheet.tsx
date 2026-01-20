@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
-
 
 interface EditTransactionSheetProps {
   isOpen: boolean;
@@ -99,7 +99,9 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     onClose();
   };
   
-  return (
+  // Use portal to render at document body level, ensuring fixed positioning works correctly
+  // regardless of scroll position in parent containers
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -556,6 +558,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
