@@ -9,7 +9,7 @@ import { Input } from "./ui/input";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
@@ -60,9 +60,11 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
         start.setMonth(today.getMonth() - 1);
     }
     
+    // Use LOCAL date strings (not UTC via toISOString) to match our stored transaction.date format.
+    // Using toISOString() causes off-by-one-day bugs for users in non-UTC timezones.
     return {
-      start: start.toISOString().split('T')[0],
-      end: today.toISOString().split('T')[0],
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(today, 'yyyy-MM-dd'),
     };
   }, [timeFilter, customStartDate, customEndDate]);
   
@@ -97,8 +99,9 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
   }, [filteredTransactions]);
   
   const chartData = useMemo(() => {
-    const startDate = new Date(dateRange.start);
-    const endDate = new Date(dateRange.end);
+    // Parse as local dates to keep chart in sync with list filtering
+    const startDate = parseISO(dateRange.start);
+    const endDate = parseISO(dateRange.end);
     const daysDiff = differenceInDays(endDate, startDate);
     
     const dataPoints: { name: string; value: number }[] = [];
@@ -108,7 +111,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
       for (let i = 6; i >= 0; i--) {
         const day = new Date(endDate);
         day.setDate(endDate.getDate() - i);
-        const dayStr = day.toISOString().split('T')[0];
+        const dayStr = format(day, 'yyyy-MM-dd');
         
         const dayTransactions = filteredTransactions.filter(t => t.date === dayStr);
         
@@ -126,7 +129,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
         weekStart.setDate(weekEnd.getDate() - 6);
         
         const weekTransactions = filteredTransactions.filter(t => {
-          const date = new Date(t.date);
+          const date = parseISO(t.date);
           return date >= weekStart && date <= weekEnd;
         });
         
@@ -144,7 +147,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
         const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
         
         const monthTransactions = filteredTransactions.filter(t => {
-          const date = new Date(t.date);
+          const date = parseISO(t.date);
           return date >= monthStart && date <= monthEnd;
         });
         
@@ -160,7 +163,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
         for (let i = daysDiff; i >= 0; i--) {
           const day = new Date(endDate);
           day.setDate(endDate.getDate() - i);
-          const dayStr = day.toISOString().split('T')[0];
+          const dayStr = format(day, 'yyyy-MM-dd');
           
           if (day >= startDate) {
             const dayTransactions = filteredTransactions.filter(t => t.date === dayStr);
@@ -181,7 +184,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
           weekStart.setDate(weekEnd.getDate() - 6);
           
           const weekTransactions = filteredTransactions.filter(t => {
-            const date = new Date(t.date);
+            const date = parseISO(t.date);
             return date >= weekStart && date <= weekEnd && date >= startDate;
           });
           
