@@ -16,6 +16,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
 import { useDuplicateDetection } from "@/hooks/useDuplicateDetection";
 import { DuplicateWarning } from "./DuplicateWarning";
+import { toast } from "sonner";
 
 interface AddTransactionSheetProps {
   isOpen: boolean;
@@ -106,8 +107,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setMagicInput("");
   };
   
-  const doAddTransaction = useCallback(() => {
-    addTransaction({
+  const doAddTransaction = useCallback(async () => {
+    await addTransaction({
       type,
       amount: parseFloat(amount),
       title: title || undefined,
@@ -121,6 +122,12 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       isRecurring: isRecurring || undefined,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
     }, userId);
+    
+    // Show success confirmation
+    toast.success(type === 'expense' ? 'Expense Added' : 'Income Added', {
+      description: `₹${parseFloat(amount).toLocaleString()} ${title ? `- ${title}` : ''}`,
+      duration: 3000,
+    });
     
     setAmount("");
     setTitle("");
