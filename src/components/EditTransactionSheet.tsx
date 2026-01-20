@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, icons, Settings } from "lucide-react";
+import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,23 +8,13 @@ import { useFinanceStore } from "@/lib/store";
 import { Transaction, TransactionType, PaymentMethod } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
-import { CategoryIcon } from "./CategoryIcon";
+import { renderCategoryIcon, renderVendorIcon } from "@/lib/iconUtils";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
 
-// Helper to render dynamic icons
-const renderVendorIcon = (iconName: string | undefined, color: string, size: number = 12) => {
-  const name = iconName || 'Store';
-  const IconComponent = icons[name as keyof typeof icons];
-  if (!IconComponent) {
-    const FallbackIcon = icons['Store'];
-    return <FallbackIcon size={size} style={{ color }} />;
-  }
-  return <IconComponent size={size} style={{ color }} />;
-};
 
 interface EditTransactionSheetProps {
   isOpen: boolean;
@@ -218,12 +208,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                               className="w-6 h-6 rounded-md flex items-center justify-center"
                               style={{ backgroundColor: `${selectedCategory.color}20` }}
                             >
-                              {(() => {
-                                const iconName = selectedCategory.icon;
-                                const lucideName = iconName.charAt(0).toUpperCase() + iconName.slice(1);
-                                const IconComponent = icons[lucideName as keyof typeof icons] || icons[iconName as keyof typeof icons] || icons.Circle;
-                                return <IconComponent size={14} style={{ color: selectedCategory.color }} />;
-                              })()}
+                              {renderCategoryIcon(selectedCategory.icon, selectedCategory.color)}
                             </div>
                             <span className="text-sm font-medium truncate">{selectedCategory.name}</span>
                           </div>
@@ -251,12 +236,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                   )}
                                 >
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: `${cat.color}20` }}>
-                                    {(() => {
-                                      const iconName = cat.icon;
-                                      const lucideName = iconName.charAt(0).toUpperCase() + iconName.slice(1);
-                                      const IconComponent = icons[lucideName as keyof typeof icons] || icons[iconName as keyof typeof icons] || icons.Circle;
-                                      return <IconComponent size={14} style={{ color: cat.color }} />;
-                                    })()}
+                                    {renderCategoryIcon(cat.icon, cat.color)}
                                   </div>
                                   <span className="text-sm font-medium flex-1 text-left">{cat.name}</span>
                                   <Check size={14} className={cn("text-primary shrink-0", categoryId === cat.id ? "opacity-100" : "opacity-0")} />
