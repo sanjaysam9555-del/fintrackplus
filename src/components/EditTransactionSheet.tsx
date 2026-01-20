@@ -15,6 +15,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface EditTransactionSheetProps {
   isOpen: boolean;
@@ -81,10 +82,10 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     return allVendors.find(v => v.name.toLowerCase() === vendor.toLowerCase());
   }, [allVendors, vendor]);
   
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!amount || !categoryId) return;
     
-    updateTransaction(transaction.id, {
+    await updateTransaction(transaction.id, {
       type,
       amount: parseFloat(amount),
       title: title || undefined,
@@ -95,6 +96,12 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
       date: format(date, 'yyyy-MM-dd'),
       notes: notes || undefined,
     }, userId);
+    
+    // Show success confirmation
+    toast.success('Transaction Updated', {
+      description: `₹${parseFloat(amount).toLocaleString()} ${title ? `- ${title}` : ''}`,
+      duration: 3000,
+    });
     
     onClose();
   };
