@@ -4,7 +4,7 @@ import { Transaction } from "@/lib/types";
 import { formatCurrency } from "@/lib/constants";
 import { motion } from "framer-motion";
 import { TrendingUp } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
+import { format, differenceInDays, parseISO } from "date-fns";
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
@@ -27,8 +27,9 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
   const [selectedPoint, setSelectedPoint] = useState<ChartDataPoint | null>(null);
   
   const chartData = useMemo(() => {
-    const startDate = new Date(dateRange.start);
-    const endDate = new Date(dateRange.end);
+    // Parse as local dates to match stored transaction.date format
+    const startDate = parseISO(dateRange.start);
+    const endDate = parseISO(dateRange.end);
     const daysDiff = differenceInDays(endDate, startDate);
     
     const dataPoints: ChartDataPoint[] = [];
@@ -38,7 +39,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
       for (let i = 6; i >= 0; i--) {
         const day = new Date(endDate);
         day.setDate(endDate.getDate() - i);
-        const dayStr = day.toISOString().split('T')[0];
+        const dayStr = format(day, 'yyyy-MM-dd');
         
         const dayTransactions = transactions.filter(t => t.date === dayStr);
         const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
@@ -61,7 +62,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         weekStart.setDate(weekEnd.getDate() - 6);
         
         const weekTransactions = transactions.filter(t => {
-          const date = new Date(t.date);
+          const date = parseISO(t.date);
           return date >= weekStart && date <= weekEnd;
         });
         
@@ -73,7 +74,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
           income,
           expense,
           net: income - expense,
-          date: weekEnd.toISOString().split('T')[0],
+          date: format(weekEnd, 'yyyy-MM-dd'),
         });
       }
     } else if (timeFilter === 'year' || daysDiff > 31) {
@@ -85,7 +86,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
         
         const monthTransactions = transactions.filter(t => {
-          const date = new Date(t.date);
+          const date = parseISO(t.date);
           return date >= monthStart && date <= monthEnd;
         });
         
@@ -97,7 +98,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
           income,
           expense,
           net: income - expense,
-          date: monthDate.toISOString().split('T')[0],
+          date: format(monthDate, 'yyyy-MM-dd'),
         });
       }
     } else {
@@ -107,7 +108,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         for (let i = daysDiff; i >= 0; i--) {
           const day = new Date(endDate);
           day.setDate(endDate.getDate() - i);
-          const dayStr = day.toISOString().split('T')[0];
+          const dayStr = format(day, 'yyyy-MM-dd');
           
           if (day >= startDate) {
             const dayTransactions = transactions.filter(t => t.date === dayStr);
@@ -133,7 +134,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
           weekStart.setDate(weekEnd.getDate() - 6);
           
           const weekTransactions = transactions.filter(t => {
-            const date = new Date(t.date);
+            const date = parseISO(t.date);
             return date >= weekStart && date <= weekEnd && date >= startDate;
           });
           
@@ -145,7 +146,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
             income,
             expense,
             net: income - expense,
-            date: weekEnd.toISOString().split('T')[0],
+            date: format(weekEnd, 'yyyy-MM-dd'),
           });
         }
       }

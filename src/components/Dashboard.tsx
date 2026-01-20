@@ -7,7 +7,7 @@ import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { UpcomingRecurringCard } from "./UpcomingRecurringCard";
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -64,24 +64,25 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         start.setDate(1);
     }
     
+    // Use LOCAL date strings (not UTC) to match stored transaction.date format
     return {
-      start: start.toISOString().split('T')[0],
-      end: todayDate.toISOString().split('T')[0],
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(todayDate, 'yyyy-MM-dd'),
     };
   }, [timeFilter, customStartDate, customEndDate]);
   
   // Previous period for comparison
   const previousDateRange = useMemo(() => {
-    const startDate = new Date(dateRange.start);
-    const endDate = new Date(dateRange.end);
+    const startDate = parseISO(dateRange.start);
+    const endDate = parseISO(dateRange.end);
     const duration = endDate.getTime() - startDate.getTime();
     
     const prevEnd = new Date(startDate.getTime() - 1);
     const prevStart = new Date(prevEnd.getTime() - duration);
     
     return {
-      start: prevStart.toISOString().split('T')[0],
-      end: prevEnd.toISOString().split('T')[0],
+      start: format(prevStart, 'yyyy-MM-dd'),
+      end: format(prevEnd, 'yyyy-MM-dd'),
     };
   }, [dateRange]);
   
