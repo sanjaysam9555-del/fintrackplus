@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 interface ProjectOverviewPageProps {
   userId?: string;
+  onEditSheetChange?: (isOpen: boolean) => void;
 }
 
 type HealthStatus = 'healthy' | 'at-risk' | 'critical';
@@ -39,7 +40,7 @@ const getHealthDot = (status: HealthStatus): string => {
   }
 };
 
-export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
+export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOverviewPageProps) => {
   const { projects, getProjectSpending, transactions, updateProject } = useFinanceStore();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -90,7 +91,7 @@ export const ProjectOverviewPage = ({ userId }: ProjectOverviewPageProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-8 md:px-6">
+    <div className="min-h-screen bg-background pb-32 md:pb-8 md:px-6">
       {/* Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border">
         <h1 className="text-xl font-bold">Projects</h1>

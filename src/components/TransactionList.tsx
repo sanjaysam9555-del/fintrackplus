@@ -17,11 +17,12 @@ import { Button } from "@/components/ui/button";
 interface TransactionListProps {
   type: TransactionType;
   userId?: string;
+  onEditSheetChange?: (isOpen: boolean) => void;
 }
 
 type TimeFilter = 'week' | 'month' | 'year' | 'custom';
 
-export const TransactionList = ({ type, userId }: TransactionListProps) => {
+export const TransactionList = ({ type, userId, onEditSheetChange }: TransactionListProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
@@ -196,7 +197,7 @@ export const TransactionList = ({ type, userId }: TransactionListProps) => {
   }, [filteredTransactions, timeFilter, dateRange]);
   
   return (
-    <div className="min-h-screen pb-24 md:pb-8 md:px-6">
+    <div className="min-h-screen pb-32 md:pb-8 md:px-6">
       {/* Header */}
       <div className="p-4 pt-6">
         <h1 className="text-2xl font-bold">
@@ -423,6 +424,7 @@ export const TransactionList = ({ type, userId }: TransactionListProps) => {
                     transaction={t}
                     category={categories.find(c => c.id === t.categoryId)}
                     userId={userId}
+                    onEditSheetChange={onEditSheetChange}
                   />
                 ))}
               </div>

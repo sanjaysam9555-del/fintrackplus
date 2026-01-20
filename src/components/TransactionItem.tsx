@@ -16,9 +16,10 @@ interface TransactionItemProps {
   category?: Category;
   onClick?: () => void;
   userId?: string;
+  onEditSheetChange?: (isOpen: boolean) => void;
 }
 
-export const TransactionItem = ({ transaction, category, userId }: TransactionItemProps) => {
+export const TransactionItem = ({ transaction, category, userId, onEditSheetChange }: TransactionItemProps) => {
   const { deleteTransaction, addTransaction, projects } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -77,6 +78,7 @@ export const TransactionItem = ({ transaction, category, userId }: TransactionIt
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsEditing(true);
+    onEditSheetChange?.(true);
   };
   
   const handleDragEnd = async (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -256,7 +258,10 @@ export const TransactionItem = ({ transaction, category, userId }: TransactionIt
       
       <EditTransactionSheet
         isOpen={isEditing}
-        onClose={() => setIsEditing(false)}
+        onClose={() => {
+          setIsEditing(false);
+          onEditSheetChange?.(false);
+        }}
         transaction={transaction}
         userId={userId}
       />
