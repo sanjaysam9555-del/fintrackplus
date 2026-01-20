@@ -303,12 +303,16 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                         {selectedCategory ? (
                           <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ backgroundColor: `${selectedCategory.color}20` }}>
-                              <CategoryIcon 
-                                iconName={selectedCategory.icon} 
-                                colorClass={selectedCategory.color} 
-                                size="sm"
-                              />
+                            <div 
+                              className="w-6 h-6 rounded-md flex items-center justify-center"
+                              style={{ backgroundColor: `${selectedCategory.color}20` }}
+                            >
+                              {(() => {
+                                const iconName = selectedCategory.icon;
+                                const lucideName = iconName.charAt(0).toUpperCase() + iconName.slice(1);
+                                const IconComponent = icons[lucideName as keyof typeof icons] || icons[iconName as keyof typeof icons] || icons.Circle;
+                                return <IconComponent size={14} style={{ color: selectedCategory.color }} />;
+                              })()}
                             </div>
                             <span className="text-sm font-medium truncate">{selectedCategory.name}</span>
                           </div>
@@ -336,7 +340,12 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                   )}
                                 >
                                   <div className="w-6 h-6 rounded-md flex items-center justify-center shrink-0" style={{ backgroundColor: `${cat.color}20` }}>
-                                    <CategoryIcon iconName={cat.icon} colorClass={cat.color} size="sm" />
+                                    {(() => {
+                                      const iconName = cat.icon;
+                                      const lucideName = iconName.charAt(0).toUpperCase() + iconName.slice(1);
+                                      const IconComponent = icons[lucideName as keyof typeof icons] || icons[iconName as keyof typeof icons] || icons.Circle;
+                                      return <IconComponent size={14} style={{ color: cat.color }} />;
+                                    })()}
                                   </div>
                                   <span className="text-sm font-medium flex-1 text-left">{cat.name}</span>
                                   <Check size={14} className={cn("text-primary shrink-0", categoryId === cat.id ? "opacity-100" : "opacity-0")} />
