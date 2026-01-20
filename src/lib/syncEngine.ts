@@ -41,12 +41,14 @@ export interface SyncState {
 
 const PENDING_OPS_KEY = 'fintrack_sync_queue';
 const SYNC_STATE_KEY = 'fintrack_sync_state';
+const RECENTLY_SYNCED_KEY = 'fintrack_recently_synced';
 
 // ============ Retry Configuration ============
 
 const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 1000;
 const MAX_DELAY_MS = 60000;
+const RECENTLY_SYNCED_TTL_MS = 10000; // Keep recently synced items for 10 seconds
 
 // ============ Helper Functions ============
 
@@ -68,6 +70,41 @@ const getTableName = (entity: SyncEntityType): 'transactions' | 'categories' | '
     case 'vendor': return 'vendors';
     case 'project': return 'projects';
   }
+};
+
+// ============ Recently Synced Tracking ============
+// Prevents race condition where cloud refresh happens before DB propagation
+
+interface RecentlySyncedItem {
+  entityType: string;
+  entityId: string;
+  syncedAt: number;
+}
+
+export const loadRecentlySynced = (): RecentlySyncedItem[] => {
+  try {
+    const stored = localStorage.getItem(RECENTLY_SYNCED_KEY);
+    const items: RecentlySyncedItem[] = stored ? JSON.parse(stored) : [];
+    // Filter out expired items
+    const now = Date.now();
+    return items.filter(item => now - item.syncedAt < RECENTLY_SYNCED_TTL_MS);
+  } catch {
+    return [];
+  }
+};
+
+const saveRecentlySynced = (items: RecentlySyncedItem[]): void => {
+  try {
+    localStorage.setItem(RECENTLY_SYNCED_KEY, JSON.stringify(items));
+  } catch (error) {
+    console.error('[SyncEngine] Failed to save recently synced:', error);
+  }
+};
+
+export const addToRecentlySynced = (entityType: string, entityId: string): void => {
+  const items = loadRecentlySynced();
+  items.push({ entityType, entityId, syncedAt: Date.now() });
+  saveRecentlySynced(items);
 };
 
 // ============ Queue Management ============
@@ -231,6 +268,8 @@ export const processSyncQueue = async (): Promise<{ synced: number; failed: numb
     
     if (success) {
       synced++;
+      // Track recently synced items to prevent race condition with cloud refresh
+      addToRecentlySynced(operation.entity, operation.entityId);
       // Don't add to updatedQueue (removes from queue)
     } else {
       failed++;

@@ -3,7 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
-import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue } from './syncEngine';
+import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 
@@ -92,11 +92,15 @@ export const useFinanceStore = create<FinanceStore>()(
     setCloudData: (data) => {
       // CRITICAL: Merge cloud data with pending local operations to prevent data loss
       const pendingQueue = loadSyncQueue();
+      const recentlySynced = loadRecentlySynced();
       
       // Get sets of entity IDs that are pending insert/update (should be preserved locally)
       const pendingInserts = new Map<string, Set<string>>();
       const pendingUpdates = new Map<string, Set<string>>();
       const pendingDeletes = new Map<string, Set<string>>();
+      
+      // Also track recently synced items (within last 10s) to prevent race condition
+      const recentInserts = new Map<string, Set<string>>();
       
       pendingQueue.forEach(op => {
         const key = op.entity;
@@ -112,24 +116,38 @@ export const useFinanceStore = create<FinanceStore>()(
         }
       });
       
+      // Track recently synced items to prevent race condition
+      recentlySynced.forEach(item => {
+        if (!recentInserts.has(item.entityType)) recentInserts.set(item.entityType, new Set());
+        recentInserts.get(item.entityType)!.add(item.entityId);
+      });
+      
       const currentState = get();
       
-      // Helper to merge arrays: keep pending inserts from local, exclude pending deletes from cloud
+      // Helper to merge arrays: keep pending/recently-synced inserts from local, exclude pending deletes from cloud
       const mergeData = <T extends { id: string }>(
         cloudItems: T[],
         localItems: T[],
         entityType: string
       ): T[] => {
         const insertIds = pendingInserts.get(entityType) || new Set();
+        const recentIds = recentInserts.get(entityType) || new Set();
         const deleteIds = pendingDeletes.get(entityType) || new Set();
         
         // Start with cloud items, excluding ones pending delete
         const merged = cloudItems.filter(item => !deleteIds.has(item.id));
         
-        // Add locally inserted items that aren't in cloud yet
+        // Build set of IDs already in cloud
         const cloudIds = new Set(cloudItems.map(c => c.id));
+        
+        // Add locally inserted items that aren't in cloud yet
+        // Include both pending inserts AND recently synced items (prevents race condition)
         localItems.forEach(localItem => {
-          if (insertIds.has(localItem.id) && !cloudIds.has(localItem.id)) {
+          const isPending = insertIds.has(localItem.id);
+          const isRecentlysynced = recentIds.has(localItem.id);
+          const notInCloud = !cloudIds.has(localItem.id);
+          
+          if ((isPending || isRecentlysynced) && notInCloud) {
             merged.push(localItem);
           }
         });
