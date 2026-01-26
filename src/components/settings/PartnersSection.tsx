@@ -122,9 +122,12 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       
       <div>
         <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-          Initial Cash Balance
+          Starting Cash Balance
         </Label>
-        <div className="flex items-center gap-2 mt-1">
+        <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
+          Amount before any recorded transactions
+        </p>
+        <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
           <Input
             type="number"
@@ -137,9 +140,12 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       
       <div>
         <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-          Initial Online Balance
+          Starting Online Balance
         </Label>
-        <div className="flex items-center gap-2 mt-1">
+        <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
+          Amount before any recorded transactions
+        </p>
+        <div className="flex items-center gap-2">
           <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
           <Input
             type="number"
@@ -190,7 +196,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             <p className="text-sm text-muted-foreground mt-1">Add partners to track who holds the money</p>
           </div>
         ) : (
-          partnerBalances.map(({ partner, cashBalance, onlineBalance }) => (
+          partnerBalances.map(({ partner, cashBalance, onlineBalance, cashIncome, cashExpense, onlineIncome, onlineExpense, cashTransactionCount, onlineTransactionCount }) => (
             <motion.div
               key={partner.id}
               initial={{ opacity: 0, y: 10 }}
@@ -237,25 +243,59 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <Banknote size={14} />
                         <span className="text-xs">Cash</span>
+                        <span className="text-[10px] text-muted-foreground ml-auto">
+                          {cashTransactionCount} txn{cashTransactionCount !== 1 ? 's' : ''}
+                        </span>
                       </div>
                       <p className={cn(
                         "text-lg font-bold",
                         cashBalance >= 0 ? "text-success" : "text-destructive"
                       )}>
-                        {CURRENCY_SYMBOL}{Math.abs(cashBalance).toLocaleString()}
+                        {cashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(cashBalance).toLocaleString()}
                       </p>
+                      <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5 text-[10px] text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>Starting</span>
+                          <span>{CURRENCY_SYMBOL}{partner.initialCashBalance.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-success">
+                          <span>+ Income</span>
+                          <span>{CURRENCY_SYMBOL}{cashIncome.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-destructive">
+                          <span>− Expense</span>
+                          <span>{CURRENCY_SYMBOL}{cashExpense.toLocaleString()}</span>
+                        </div>
+                      </div>
                     </div>
                     <div className="bg-muted/50 rounded-xl p-3">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <CreditCard size={14} />
                         <span className="text-xs">Online</span>
+                        <span className="text-[10px] text-muted-foreground ml-auto">
+                          {onlineTransactionCount} txn{onlineTransactionCount !== 1 ? 's' : ''}
+                        </span>
                       </div>
                       <p className={cn(
                         "text-lg font-bold",
                         onlineBalance >= 0 ? "text-success" : "text-destructive"
                       )}>
-                        {CURRENCY_SYMBOL}{Math.abs(onlineBalance).toLocaleString()}
+                        {onlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(onlineBalance).toLocaleString()}
                       </p>
+                      <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5 text-[10px] text-muted-foreground">
+                        <div className="flex justify-between">
+                          <span>Starting</span>
+                          <span>{CURRENCY_SYMBOL}{partner.initialOnlineBalance.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-success">
+                          <span>+ Income</span>
+                          <span>{CURRENCY_SYMBOL}{onlineIncome.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between text-destructive">
+                          <span>− Expense</span>
+                          <span>{CURRENCY_SYMBOL}{onlineExpense.toLocaleString()}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </>

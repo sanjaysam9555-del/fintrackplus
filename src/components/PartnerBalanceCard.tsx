@@ -71,7 +71,7 @@ export const PartnerBalanceCard = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="border-t border-border"
               >
-                {partnerBalances.map(({ partner, cashBalance, onlineBalance }, index) => (
+                {partnerBalances.map(({ partner, cashBalance, onlineBalance, cashTransactionCount, onlineTransactionCount }, index) => (
                   <div 
                     key={partner.id}
                     className={cn(
@@ -94,6 +94,9 @@ export const PartnerBalanceCard = () => {
                         <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
                           <Banknote size={12} />
                           <span className="text-[10px] uppercase tracking-wide">Cash</span>
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {cashTransactionCount} txn{cashTransactionCount !== 1 ? 's' : ''}
+                          </span>
                         </div>
                         <p className={cn(
                           "text-base font-bold",
@@ -106,6 +109,9 @@ export const PartnerBalanceCard = () => {
                         <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
                           <CreditCard size={12} />
                           <span className="text-[10px] uppercase tracking-wide">Online</span>
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {onlineTransactionCount} txn{onlineTransactionCount !== 1 ? 's' : ''}
+                          </span>
                         </div>
                         <p className={cn(
                           "text-base font-bold",
