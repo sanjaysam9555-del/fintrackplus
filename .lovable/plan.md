@@ -1,143 +1,130 @@
 
-# UI Cleanup Changes
+
+# Logs Section Rename & Calendar Fix
 
 ## Overview
 
-This plan implements three UI cleanup changes to streamline the home page and search experience:
+This plan addresses two issues:
 
-1. **Move Partner Balances and Transfer section from Home to Settings**
-2. **Remove the "See All" button on the home page**
-3. **Remove filter button icons from search boxes**
-
----
-
-## Changes Summary
-
-### 1. Move Partner Balances to Settings
-
-**Current behavior:**
-- `PartnerBalanceCard` component is rendered on the Dashboard (Home tab) at line 617-619
-- It shows partner balances and includes the "Transfer Between Partners" button
-
-**Target behavior:**
-- Remove `PartnerBalanceCard` from Dashboard
-- Add it to the Settings page under the Partners section (or as a separate visible card on the main settings page)
-
-**Files to modify:**
-- `src/components/Dashboard.tsx` - Remove the PartnerBalanceCard import and usage
-- `src/components/settings/PartnersSection.tsx` - Add PartnerBalanceCard display
+1. **Rename "Notifications" to "Logs"** - The notifications section in settings should be renamed to "Logs" to better reflect its purpose as an activity log of all add/delete/edit operations
+2. **Fix Calendar Button on Home Page** - The calendar popover button isn't opening properly
 
 ---
 
-### 2. Remove "See All" Button
+## Issue Analysis
 
-**Current location:**
-- `src/components/Dashboard.tsx` line 689:
-  ```jsx
-  <button className="text-sm text-primary font-medium">See All</button>
-  ```
+### 1. Notifications to Logs Rename
 
-**Change:**
-- Remove this button entirely from the Recent Transactions header
+**Current state:**
+- The section is called "Notifications" throughout the codebase
+- The feature already logs all CRUD operations (add, edit, delete) for transactions, categories, vendors, projects, and partners
+- The store already creates log entries via `addNotification()` for all these actions
 
----
+**What needs to change:**
+- Rename the menu item label from "Notifications" to "Logs" in `SettingsPage.tsx`
+- Update the section header title from "Notifications" to "Activity Logs"
+- Update empty state text to reflect "logs" terminology
+- Change the icon from `Bell` to `FileText` or `ScrollText` (more appropriate for logs)
 
-### 3. Remove Filter Button Icons from Search Boxes
+### 2. Calendar Button Not Opening
 
-**Current location:**
-- `src/components/TransactionList.tsx` lines 372-374:
-  ```jsx
-  <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-    <Filter size={18} />
-  </button>
-  ```
+**Root cause identified:**
+The Calendar component in `src/components/ui/calendar.tsx` is missing the `pointer-events-auto` class in its default className. While it's added when used in Dashboard.tsx (`className="p-2 pointer-events-auto"`), the base Calendar component should include it.
 
-**Change:**
-- Remove the Filter button from the search input in TransactionList
-- Also update the Input `className` from `pl-10 pr-10` to just `pl-10` since there won't be a right element
+Looking at the console logs, there are also React warnings about refs on function components which may cause rendering issues. However, the primary issue is likely that the popover's calendar doesn't have proper pointer events enabled.
+
+**Current code in calendar.tsx (line 14):**
+```typescript
+className={cn("p-3", className)}
+```
+
+**Should be:**
+```typescript
+className={cn("p-3 pointer-events-auto", className)}
+```
+
+This ensures the calendar is always interactive inside popovers and dialogs.
 
 ---
 
 ## Implementation Details
 
-### File: `src/components/Dashboard.tsx`
+### File 1: `src/components/SettingsPage.tsx`
 
-1. **Remove PartnerBalanceCard import** (line 8)
-2. **Remove PartnerBalanceCard section** (lines 616-619):
-   ```jsx
-   {/* Partner Balance Card */}
-   <div className="px-4 lg:px-0 mb-6">
-     <PartnerBalanceCard />
-   </div>
+**Changes:**
+
+1. **Update icon import** (line 14):
+   - Replace `Bell` with `ScrollText` from lucide-react
+
+2. **Update menu item** (lines 209-213):
+   - Change label from "Notifications" to "Logs"
+   - Change sublabel from "X unread" to "Activity history"
+   - Update the icon from `Bell` to `ScrollText`
+
+3. **Update section header** (line 242):
+   - Change title from "Notifications" to "Activity Logs"
+
+4. **Update empty state text** in `NotificationsContent` (lines 82-85):
+   - Change "No notifications yet" to "No activity logs yet"
+   - Change "Your activity will appear here" to "Your actions will be logged here"
+
+5. **Update section type** (line 127):
+   - Change `'notifications'` to `'logs'` in the union type
+
+### File 2: `src/components/ui/calendar.tsx`
+
+**Changes:**
+
+1. **Add pointer-events-auto** (line 14):
+   ```typescript
+   className={cn("p-3 pointer-events-auto", className)}
    ```
-3. **Remove "See All" button** (line 689):
-   ```jsx
-   <button className="text-sm text-primary font-medium">See All</button>
-   ```
 
-### File: `src/components/TransactionList.tsx`
+This ensures the calendar is always interactive inside popovers and dialogs, fixing the click issue.
 
-1. **Remove Filter icon import** (line 7): Remove `Filter` from the lucide-react import
-2. **Remove Filter button** (lines 372-374)
-3. **Update Input className** (line 370): Change from `pl-10 pr-10` to `pl-10`
+---
 
-### File: `src/components/settings/PartnersSection.tsx`
+## Files to Modify
 
-1. **Import PartnerBalanceCard** component
-2. **Add PartnerBalanceCard** at the top of the section (before the partner list) so users can see their current balances and access the transfer feature
+| File | Changes |
+|------|---------|
+| `src/components/SettingsPage.tsx` | Rename "Notifications" to "Logs", update icon, update section type and strings |
+| `src/components/ui/calendar.tsx` | Add `pointer-events-auto` to default className |
 
 ---
 
 ## Visual Changes
 
-**Home Page (Before):**
+**Settings Menu (Before):**
 ```text
-[Summary Cards]
-[Partner Balances Card]  <-- REMOVED
-[Cash Flow Chart]
-[Quick Actions]
-[Upcoming Recurring]
-[Recent Transactions]
-  Header: "Recent Transactions" | "See All"  <-- "See All" REMOVED
-  [Transaction list...]
+[Bell icon] Notifications
+           X unread
 ```
 
-**Home Page (After):**
+**Settings Menu (After):**
 ```text
-[Summary Cards]
-[Cash Flow Chart]
-[Quick Actions]
-[Upcoming Recurring]
-[Recent Transactions]
-  Header: "Recent Transactions"
-  [Transaction list...]
+[ScrollText icon] Logs
+                  Activity history
 ```
 
-**Settings > Partners (After):**
+**Logs Section Header (After):**
 ```text
-[Back] Partners                    [Add]
-[Partner Balance Card]  <-- ADDED HERE
-  - Shows balances per partner
-  - Transfer Between Partners button
-[Partner list...]
+[Back] Activity Logs
 ```
 
-**Transaction List Search (Before):**
+**Empty State (After):**
 ```text
-[🔍 Search vendor or category...      [Filter icon]]
-```
-
-**Transaction List Search (After):**
-```text
-[🔍 Search vendor or category...                  ]
+[ScrollText icon]
+No activity logs yet
+Your actions will be logged here
 ```
 
 ---
 
-## Files Modified
+## Technical Notes
 
-| File | Changes |
-|------|---------|
-| `src/components/Dashboard.tsx` | Remove PartnerBalanceCard import and usage, remove "See All" button |
-| `src/components/TransactionList.tsx` | Remove Filter icon import and button, update Input className |
-| `src/components/settings/PartnersSection.tsx` | Import and add PartnerBalanceCard at top of section |
+- The existing notification/log system already captures all CRUD operations with appropriate types and messages
+- No changes needed to the store's `addNotification` function - it continues to work the same way
+- The feature is essentially an activity log, and this rename makes its purpose clearer to users
+- The calendar fix ensures proper interactivity by adding the required `pointer-events-auto` class that prevents pointer events from being blocked by parent containers
+
