@@ -320,10 +320,15 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             animate={{ opacity: 1, y: 0 }}
             className="mt-2.5 flex items-center gap-2 flex-wrap"
           >
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full">
+            <button
+              type="button"
+              onClick={() => setShowDatePicker(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full hover:bg-primary/15 transition-colors"
+              aria-label="Choose time frame"
+            >
               <CalendarDays size={12} />
               {getTimeFilterLabel()}
-            </span>
+            </button>
             
             {/* Sync Status Chip */}
             {(!isOnline || syncStatus === 'syncing' || isRefreshing || syncStatus === 'error' || pendingCount > 0) && (
@@ -417,7 +422,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                     )} />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56 p-3 bg-card z-[60]" align="end" sideOffset={8}>
+                <PopoverContent className="w-56 p-3 bg-card z-[60] pointer-events-auto" align="end" sideOffset={8}>
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground mb-2">Time Frame</p>
                     
