@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { PartnerBalanceCard } from "@/components/PartnerBalanceCard";
 import {
   Dialog,
   DialogContent,
@@ -171,6 +172,11 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         <p className="text-sm text-muted-foreground mt-1 ml-8">
           Track money held by each partner
         </p>
+      </div>
+      
+      {/* Partner Balance Card */}
+      <div className="px-4 mb-4">
+        <PartnerBalanceCard />
       </div>
       
       {/* Partner List */}

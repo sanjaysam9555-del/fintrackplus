@@ -4,7 +4,7 @@ import { useFinanceStore } from "@/lib/store";
 import { formatDate as formatDateLabel, formatCurrency } from "@/lib/constants";
 import { TransactionItem } from "./TransactionItem";
 import { TransactionSkeleton } from "./ui/skeleton-loader";
-import { Search, Filter, CalendarIcon } from "lucide-react";
+import { Search, CalendarIcon } from "lucide-react";
 import { Input } from "./ui/input";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -367,11 +367,8 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
             placeholder="Search vendor or category..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 pr-10"
+            className="pl-10"
           />
-          <button className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-            <Filter size={18} />
-          </button>
         </div>
       </div>
       
