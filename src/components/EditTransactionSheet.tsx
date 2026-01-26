@@ -143,7 +143,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                   onClick={handleSubmit}
                   disabled={!amount || !categoryId}
                   size="sm"
-                  className="hidden lg:flex gradient-primary text-primary-foreground"
+                  className="gradient-primary text-primary-foreground"
                 >
                   Save Changes
                 </Button>
