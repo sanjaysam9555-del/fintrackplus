@@ -1,11 +1,17 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor } from './types';
+import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor, Partner } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+
+interface PartnerBalance {
+  partner: Partner;
+  cashBalance: number;
+  onlineBalance: number;
+}
 
 interface CloudData {
   profile?: UserProfile;
@@ -13,6 +19,7 @@ interface CloudData {
   vendors: Vendor[];
   projects: Project[];
   transactions: Transaction[];
+  partners: Partner[];
 }
 
 interface FinanceStore extends FinanceState {
@@ -47,6 +54,13 @@ interface FinanceStore extends FinanceState {
   updateVendor: (id: string, updates: Partial<Vendor>, userId?: string) => void;
   deleteVendor: (id: string, userId?: string) => void;
   
+  // Partner actions
+  partners: Partner[];
+  addPartner: (partner: Omit<Partner, 'id' | 'createdAt'>, userId?: string) => void;
+  updatePartner: (id: string, partner: Partial<Partner>, userId?: string) => void;
+  deletePartner: (id: string, userId?: string) => void;
+  getPartnerBalances: () => PartnerBalance[];
+  
   // Cloud sync
   syncStatus: SyncStatus;
   lastSyncedAt: string | null;
@@ -78,6 +92,7 @@ export const useFinanceStore = create<FinanceStore>()(
       categories: [],
       projects: [],
       vendors: [],
+      partners: [],
       userProfile: { name: 'User' },
       notifications: [],
       syncStatus: 'idle',
@@ -160,6 +175,7 @@ export const useFinanceStore = create<FinanceStore>()(
         categories: mergeData(data.categories, currentState.categories, 'category'),
         vendors: mergeData(data.vendors, currentState.vendors, 'vendor'),
         projects: mergeData(data.projects, currentState.projects, 'project'),
+        partners: mergeData(data.partners, currentState.partners, 'partner'),
         userProfile: data.profile || currentState.userProfile || { name: 'User' },
       });
     },
@@ -220,6 +236,7 @@ export const useFinanceStore = create<FinanceStore>()(
           vendor: transaction.vendor,
           category_id: transaction.categoryId || null,
           project_id: transaction.projectId || null,
+          partner_id: transaction.partnerId || null,
           payment_method: transaction.paymentMethod,
           date: transaction.date,
           time: transaction.time,
@@ -279,6 +296,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.vendor) dbUpdates.vendor = updates.vendor;
           if (updates.categoryId !== undefined) dbUpdates.category_id = updates.categoryId || null;
           if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId || null;
+          if (updates.partnerId !== undefined) dbUpdates.partner_id = updates.partnerId || null;
           if (updates.paymentMethod) dbUpdates.payment_method = updates.paymentMethod;
           if (updates.date) dbUpdates.date = updates.date;
           if (updates.time) dbUpdates.time = updates.time;
@@ -641,6 +659,115 @@ export const useFinanceStore = create<FinanceStore>()(
         }
       },
       
+      // Partner actions - Optimistic local-first with background sync
+      addPartner: async (partner, userId) => {
+        const id = uuidv4();
+        const createdAt = new Date().toISOString().split('T')[0];
+        
+        set((state) => ({
+          partners: [...state.partners, { ...partner, id, createdAt }]
+        }));
+
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+         
+        if (uid) {
+          addToSyncQueue({
+            type: 'insert',
+            entity: 'partner',
+            entityId: id,
+            data: {
+              name: partner.name,
+              color: partner.color,
+              initial_cash_balance: partner.initialCashBalance,
+              initial_online_balance: partner.initialOnlineBalance,
+            },
+            userId: uid,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+      },
+      
+      updatePartner: async (id, updates, userId) => {
+        set((state) => ({
+          partners: state.partners.map((p) => 
+            p.id === id ? { ...p, ...updates } : p
+          )
+        }));
+        
+        if (userId) {
+          const dbUpdates: Record<string, unknown> = {};
+          if (updates.name) dbUpdates.name = updates.name;
+          if (updates.color) dbUpdates.color = updates.color;
+          if (updates.initialCashBalance !== undefined) dbUpdates.initial_cash_balance = updates.initialCashBalance;
+          if (updates.initialOnlineBalance !== undefined) dbUpdates.initial_online_balance = updates.initialOnlineBalance;
+          
+          addToSyncQueue({
+            type: 'update',
+            entity: 'partner',
+            entityId: id,
+            data: dbUpdates,
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+      },
+      
+      deletePartner: async (id, userId) => {
+        set((state) => ({
+          partners: state.partners.filter((p) => p.id !== id)
+        }));
+        
+        if (userId) {
+          addToSyncQueue({
+            type: 'delete',
+            entity: 'partner',
+            entityId: id,
+            data: {},
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+      },
+      
+      getPartnerBalances: () => {
+        const { transactions, partners } = get();
+        
+        return partners.map(partner => {
+          const partnerTxns = transactions.filter(t => t.partnerId === partner.id);
+          
+          const cashIncome = partnerTxns
+            .filter(t => t.type === 'income' && t.paymentMethod === 'cash')
+            .reduce((sum, t) => sum + t.amount, 0);
+          const cashExpense = partnerTxns
+            .filter(t => t.type === 'expense' && t.paymentMethod === 'cash')
+            .reduce((sum, t) => sum + t.amount, 0);
+          const onlineIncome = partnerTxns
+            .filter(t => t.type === 'income' && t.paymentMethod === 'online')
+            .reduce((sum, t) => sum + t.amount, 0);
+          const onlineExpense = partnerTxns
+            .filter(t => t.type === 'expense' && t.paymentMethod === 'online')
+            .reduce((sum, t) => sum + t.amount, 0);
+          
+          return {
+            partner,
+            cashBalance: partner.initialCashBalance + cashIncome - cashExpense,
+            onlineBalance: partner.initialOnlineBalance + onlineIncome - onlineExpense,
+          };
+        });
+      },
+      
       // Data management
       loadDemoData: () => {
         set({
@@ -648,6 +775,7 @@ export const useFinanceStore = create<FinanceStore>()(
           categories: [],
           projects: [],
           vendors: [],
+          partners: [],
         });
       },
       
@@ -656,6 +784,7 @@ export const useFinanceStore = create<FinanceStore>()(
         categories: [],
         projects: [],
         vendors: [],
+        partners: [],
       }),
       
       // Computed helpers
@@ -705,6 +834,7 @@ export const useFinanceStore = create<FinanceStore>()(
         categories: state.categories,
         projects: state.projects,
         vendors: state.vendors,
+        partners: state.partners,
         userProfile: state.userProfile,
         notifications: state.notifications,
         lastSyncedAt: state.lastSyncedAt,

@@ -13,7 +13,8 @@ import {
   LogOut,
   Bell,
   Monitor,
-  Smartphone
+  Smartphone,
+  Users
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,6 +24,7 @@ import { CategoriesSection } from "./settings/CategoriesSection";
 import { VendorsSection } from "./settings/VendorsSection";
 import { ProjectsSection } from "./settings/ProjectsSection";
 import { ReportsSection } from "./settings/ReportsSection";
+import { PartnersSection } from "./settings/PartnersSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
@@ -122,7 +124,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | 'notifications' | null;
+type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | 'notifications' | 'partners' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -131,7 +133,7 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }: SettingsPageProps) => {
-  const { categories, projects, userProfile } = useFinanceStore();
+  const { categories, projects, userProfile, partners } = useFinanceStore();
   const { signOut, user } = useAuth();
   const { mode, setTheme, isDark, isOled } = useTheme();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
@@ -174,6 +176,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
       section: "Data Management",
       items: [
         { 
+          icon: Users, 
+          label: "Partners", 
+          sublabel: `${partners.length} partner${partners.length !== 1 ? 's' : ''}`,
+          onClick: () => handleSectionChange('partners')
+        },
+        { 
           icon: Grid3X3, 
           label: "Categories", 
           sublabel: `${categories.length} categories`,
@@ -208,6 +216,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   ];
   
   // Render section sub-pages using dedicated components
+  if (activeSection === 'partners') {
+    return <PartnersSection onBack={handleBack} userId={user?.id} />;
+  }
   if (activeSection === 'categories') {
     return <CategoriesSection onBack={handleBack} userId={user?.id} />;
   }

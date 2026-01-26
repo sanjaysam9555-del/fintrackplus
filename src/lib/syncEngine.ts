@@ -13,7 +13,7 @@ import { Transaction, Category, Vendor, Project } from './types';
 
 // ============ Types ============
 
-export type SyncEntityType = 'transaction' | 'category' | 'vendor' | 'project';
+export type SyncEntityType = 'transaction' | 'category' | 'vendor' | 'project' | 'partner';
 export type SyncOperationType = 'insert' | 'update' | 'delete';
 
 export interface SyncOperation {
@@ -63,12 +63,13 @@ const getBackoffDelay = (retryCount: number): number => {
   return Math.floor(delay + jitter);
 };
 
-const getTableName = (entity: SyncEntityType): 'transactions' | 'categories' | 'vendors' | 'projects' => {
+const getTableName = (entity: SyncEntityType): 'transactions' | 'categories' | 'vendors' | 'projects' | 'partners' => {
   switch (entity) {
     case 'transaction': return 'transactions';
     case 'category': return 'categories';
     case 'vendor': return 'vendors';
     case 'project': return 'projects';
+    case 'partner': return 'partners';
   }
 };
 
@@ -297,12 +298,15 @@ export const processSyncQueue = async (): Promise<{ synced: number; failed: numb
 
 // ============ Cloud Data Fetching ============
 
+import { Partner } from './types';
+
 export interface CloudData {
   profile?: { name: string; avatar?: string | null };
   categories: Category[];
   vendors: Vendor[];
   projects: Project[];
   transactions: Transaction[];
+  partners: Partner[];
 }
 
 export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudData | null; error: string | null }> => {
@@ -312,13 +316,15 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       categoriesResult,
       vendorsResult,
       projectsResult,
-      transactionsResult
+      transactionsResult,
+      partnersResult
     ] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('categories').select('*').eq('user_id', userId),
       supabase.from('vendors').select('*').eq('user_id', userId),
       supabase.from('projects').select('*').eq('user_id', userId),
-      supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false })
+      supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
+      supabase.from('partners').select('*').eq('user_id', userId)
     ]);
 
     const firstError =
@@ -326,7 +332,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       categoriesResult.error ||
       vendorsResult.error ||
       projectsResult.error ||
-      transactionsResult.error;
+      transactionsResult.error ||
+      partnersResult.error;
 
     if (firstError) {
       return { data: null, error: firstError.message };
@@ -337,6 +344,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
     const cloudVendors = vendorsResult.data || [];
     const cloudProjects = projectsResult.data || [];
     const cloudTransactions = transactionsResult.data || [];
+    const cloudPartners = partnersResult.data || [];
 
     return {
       data: {
@@ -372,12 +380,21 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           vendor: t.vendor,
           categoryId: t.category_id || '',
           projectId: t.project_id || undefined,
+          partnerId: (t as unknown as { partner_id?: string }).partner_id || undefined,
           paymentMethod: t.payment_method as 'cash' | 'online',
           date: t.date,
           time: t.time,
           notes: t.notes || undefined,
           isRecurring: t.is_recurring || false,
           recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined
+        })),
+        partners: cloudPartners.map(p => ({
+          id: (p as { id: string }).id,
+          name: (p as { name: string }).name,
+          color: (p as { color: string }).color,
+          initialCashBalance: Number((p as { initial_cash_balance: number }).initial_cash_balance) || 0,
+          initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
+          createdAt: (p as { created_at: string }).created_at.split('T')[0]
         }))
       },
       error: null
