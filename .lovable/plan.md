@@ -1,185 +1,187 @@
 
-# Partner Balance Tracking System
+# Partner Features Enhancement
 
 ## Overview
 
-This plan adds a comprehensive partner balance tracking system that solves the confusion of tracking who holds how much money (cash vs online) between two partners. Each transaction will be tagged with which partner handled it, and a new dashboard card will show real-time balances per partner broken down by payment method.
+This plan adds three key enhancements to the partner balance tracking system:
+
+1. **Show partner on all transactions** - Display partner name/badge in transaction list items and expanded details
+2. **Partner selector in EditTransactionSheet** - Add the missing partner dropdown (already exists in AddTransactionSheet)
+3. **Partner-to-Partner Transfers** - New feature to transfer money between partners with a single action
 
 ---
 
-## Database Changes
+## Current State Analysis
 
-### New Table: `partners`
-Stores partner profiles for the business.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| user_id | uuid | Owner of this partner record (for RLS) |
-| name | text | Partner name (e.g., "You", "Partner 2") |
-| color | text | Display color |
-| initial_cash_balance | numeric | Starting cash balance |
-| initial_online_balance | numeric | Starting online balance |
-| created_at | timestamp | Creation timestamp |
-
-### Update: `transactions` table
-Add a new column to track which partner handled each transaction.
-
-| Column | Type | Description |
-|--------|------|-------------|
-| partner_id | uuid (nullable) | References partners table |
+After reviewing the codebase:
+- `AddTransactionSheet.tsx` already has the partner selector (lines 600-670)
+- `EditTransactionSheet.tsx` is missing the partner selector entirely (no `partnerId` state or dropdown)
+- `TransactionItem.tsx` doesn't display partner info in the list or expanded view
+- `UpcomingRecurringCard.tsx` could show partner info but currently doesn't
+- No transfer functionality exists between partners
 
 ---
 
-## New Features
+## Implementation Details
 
-### 1. Partner Management in Settings
-A new "Partners" section in Settings where you can:
-- Add/edit partner names and colors
-- Set initial cash and online balances for each partner
-- View summary of each partner's current balance
+### 1. Update EditTransactionSheet.tsx
 
-### 2. Partner Selection in Transaction Forms
-- Add a partner selector dropdown in both Add and Edit transaction sheets
-- Shows partner name with color indicator
-- Optional field (for backwards compatibility with existing transactions)
+Add partner selector functionality:
+- Import `Users` icon from lucide-react
+- Add `partnerId` state initialized from `transaction.partnerId`
+- Add `showPartners` state for the dropdown
+- Add `selectedPartner` lookup from partners array
+- Add partner field to `handleSubmit` update call
+- Add partner reset in useEffect when transaction changes
+- Add partner dropdown UI (same pattern as AddTransactionSheet)
 
-### 3. Partner Balance Dashboard Card
-A new expandable card on the home page showing:
+**Key changes:**
+```typescript
+// New state
+const [partnerId, setPartnerId] = useState(transaction.partnerId || "");
+const [showPartners, setShowPartners] = useState(false);
 
-```text
-┌──────────────────────────────────────┐
-│  Partner Balances                    │
-├──────────────────────────────────────┤
-│  You                                 │
-│    💵 Cash:    ₹12,500              │
-│    💳 Online:  ₹45,000              │
-├──────────────────────────────────────┤
-│  Partner 2                           │
-│    💵 Cash:    ₹8,200               │
-│    💳 Online:  ₹22,000              │
-└──────────────────────────────────────┘
+// In useEffect reset
+setPartnerId(transaction.partnerId || "");
+
+// In handleSubmit
+partnerId: partnerId || undefined,
 ```
 
-### 4. Balance Calculation Logic
-For each partner, the balance is calculated as:
+### 2. Update TransactionItem.tsx
 
-**Cash Balance** = Initial Cash + Cash Income - Cash Expenses
-**Online Balance** = Initial Online + Online Income - Online Expenses
+Show partner indicator in both collapsed and expanded views:
+- Import `partners` from useFinanceStore
+- Look up partner by `transaction.partnerId`
+- Add small colored badge next to payment method in subtitle
+- Add partner row in expanded details section
 
-Only transactions tagged with that partner are included.
+**Display pattern:**
+- Collapsed view: Add partner initial badge after time
+- Expanded view: Add "Handled by: Partner Name" row with colored indicator
+
+### 3. Update UpcomingRecurringCard.tsx
+
+Show partner on upcoming recurring transactions:
+- Import partners from store
+- Look up partner for each upcoming item
+- Display small partner badge if assigned
+
+### 4. Add Partner Transfer Feature
+
+Create new component `PartnerTransferSheet.tsx`:
+- Modal/sheet for creating transfers between partners
+- Fields: From Partner, To Partner, Amount, Payment Method, Date, Notes
+- Creates TWO transactions atomically:
+  - Expense from source partner
+  - Income to destination partner
+- Both use same amount, date, and linked via notes or a special category
+
+**UI Flow:**
+- Access from PartnerBalanceCard "Transfer" button
+- Select source partner (who is giving money)
+- Select destination partner (who is receiving)
+- Enter amount
+- Select payment method (cash/online)
+- Submit creates both transactions
+
+### 5. Update PartnerBalanceCard.tsx
+
+Add transfer action button:
+- Add "Transfer" button that opens PartnerTransferSheet
+- Only show when 2+ partners exist
 
 ---
 
-## Files to Create/Modify
+## Files to Modify
 
-### New Files
-1. **`src/components/settings/PartnersSection.tsx`** - Partner management UI
-2. **`src/components/PartnerBalanceCard.tsx`** - Dashboard balance display card
-
-### Modified Files
-1. **`src/lib/types.ts`** - Add Partner interface
-2. **`src/lib/store.ts`** - Add partner state and actions
-3. **`src/lib/syncEngine.ts`** - Add partner sync logic
-4. **`src/components/AddTransactionSheet.tsx`** - Add partner selector
-5. **`src/components/EditTransactionSheet.tsx`** - Add partner selector
-6. **`src/components/Dashboard.tsx`** - Add PartnerBalanceCard
-7. **`src/components/SettingsPage.tsx`** - Add Partners menu item
-8. **`src/components/TransactionItem.tsx`** - Show partner indicator
+| File | Changes |
+|------|---------|
+| `src/components/EditTransactionSheet.tsx` | Add partner selector state, dropdown UI, and submit logic |
+| `src/components/TransactionItem.tsx` | Display partner badge in list and expanded view |
+| `src/components/UpcomingRecurringCard.tsx` | Show partner indicator on upcoming items |
+| `src/components/PartnerBalanceCard.tsx` | Add Transfer button |
+| `src/components/PartnerTransferSheet.tsx` | **NEW** - Transfer form component |
 
 ---
 
 ## Technical Details
 
-### Database Migration SQL
+### Partner Selector Pattern (for EditTransactionSheet)
 
-```sql
--- Create partners table
-CREATE TABLE public.partners (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  name text NOT NULL,
-  color text NOT NULL DEFAULT '#3B82F6',
-  initial_cash_balance numeric NOT NULL DEFAULT 0,
-  initial_online_balance numeric NOT NULL DEFAULT 0,
-  created_at timestamp with time zone NOT NULL DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.partners ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies
-CREATE POLICY "Users can view their own partners" 
-  ON public.partners FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can create their own partners" 
-  ON public.partners FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update their own partners" 
-  ON public.partners FOR UPDATE USING (auth.uid() = user_id);
-CREATE POLICY "Users can delete their own partners" 
-  ON public.partners FOR DELETE USING (auth.uid() = user_id);
-
--- Add partner_id to transactions
-ALTER TABLE public.transactions 
-  ADD COLUMN partner_id uuid REFERENCES public.partners(id) ON DELETE SET NULL;
+```text
++----------------------------------+
+| Handled By (optional)            |
++----------------------------------+
+| [Partner avatar] Partner Name  v |
++----------------------------------+
 ```
 
-### Store Balance Calculation
+Dropdown options:
+- "None" option (clears selection)
+- List of partners with color indicators
 
-```typescript
-getPartnerBalances: () => {
-  const { transactions, partners } = get();
-  
-  return partners.map(partner => {
-    const partnerTxns = transactions.filter(t => t.partnerId === partner.id);
-    
-    const cashIncome = partnerTxns
-      .filter(t => t.type === 'income' && t.paymentMethod === 'cash')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const cashExpense = partnerTxns
-      .filter(t => t.type === 'expense' && t.paymentMethod === 'cash')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const onlineIncome = partnerTxns
-      .filter(t => t.type === 'income' && t.paymentMethod === 'online')
-      .reduce((sum, t) => sum + t.amount, 0);
-    const onlineExpense = partnerTxns
-      .filter(t => t.type === 'expense' && t.paymentMethod === 'online')
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    return {
-      partner,
-      cashBalance: partner.initialCashBalance + cashIncome - cashExpense,
-      onlineBalance: partner.initialOnlineBalance + onlineIncome - onlineExpense,
-    };
-  });
-}
+### Transaction Item Partner Display
+
+**Collapsed row subtitle:**
+```text
+Vendor Name • Category • 10:30 AM • [S]
+                                     ^-- Partner initial badge
 ```
 
-### UI Component Structure
+**Expanded details:**
+```text
+Date:     Jan 26, 2026
+Payment:  💳 Online
+Partner:  [S] Sanjay    <-- New row
+Project:  Event Name
+Notes:    Payment details
+```
 
-**Partner Selector (in transaction forms):**
-- Appears after Payment Method selection
-- Shows list of partners with color indicators
-- Optional - can leave unassigned for legacy transactions
+### Transfer Sheet Fields
 
-**Partner Balance Card:**
-- Collapsible card in Dashboard
-- Shows each partner with their cash and online balances
-- Tapping a partner could filter transactions to show only theirs
+```text
+┌──────────────────────────────────┐
+│  Transfer Between Partners       │
+├──────────────────────────────────┤
+│  From Partner:  [Dropdown]       │
+│  To Partner:    [Dropdown]       │
+│  Amount:        ₹ ________       │
+│  Payment:       [Cash] [Online]  │
+│  Date:          [Date picker]    │
+│  Notes:         [Optional]       │
+│                                  │
+│  [Cancel]        [Transfer]      │
+└──────────────────────────────────┘
+```
+
+### Transfer Transaction Creation
+
+When transferring 10,000 from Partner A to Partner B:
+
+**Transaction 1 (Expense):**
+- type: 'expense'
+- amount: 10000
+- partnerId: Partner A's ID
+- title: "Transfer to Partner B"
+- category: "Partner Transfer" (or misc expense)
+- paymentMethod: selected method
+
+**Transaction 2 (Income):**
+- type: 'income'
+- amount: 10000
+- partnerId: Partner B's ID
+- title: "Transfer from Partner A"
+- category: "Partner Transfer" (or misc income)
+- paymentMethod: selected method
 
 ---
 
-## User Workflow
+## User Experience
 
-1. **Initial Setup**: Go to Settings → Partners → Add your two partner names and set starting balances
-2. **Logging Transactions**: When adding income/expense, select which partner handled it
-3. **Viewing Balances**: Dashboard shows real-time balance for each partner split by cash/online
-4. **Reconciliation**: If balances seem off, check transaction history filtered by partner
+1. **Viewing transactions**: Partner badge visible on each transaction
+2. **Editing transactions**: Can assign/change partner via dropdown
+3. **Adding transactions**: Partner selector already works
+4. **Transferring money**: Quick action from Partner Balance card
+5. **Balance tracking**: Transfers correctly debit/credit respective partners
 
----
-
-## Edge Cases Handled
-
-- **Existing transactions**: Will have null partner_id - shown as "Unassigned" in reports
-- **Partner deletion**: Transactions keep partner_id but show as "Deleted Partner"
-- **No partners set up**: Balance card hidden until at least one partner is added
-- **Transfers between partners**: Can be logged as expense from one, income to other (same amount)
