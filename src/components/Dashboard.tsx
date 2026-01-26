@@ -5,7 +5,6 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { UpcomingRecurringCard } from "./UpcomingRecurringCard";
-import { PartnerBalanceCard } from "./PartnerBalanceCard";
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -613,11 +612,6 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         </motion.div>
       </div>
       
-      {/* Partner Balance Card */}
-      <div className="px-4 lg:px-0 mb-6">
-        <PartnerBalanceCard />
-      </div>
-      
       {/* Cash Flow Chart */}
       <div className="px-4 lg:px-0 mb-6">
         <CashFlowChart 
@@ -686,7 +680,6 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
       <div className="px-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold">Recent Transactions</h2>
-          <button className="text-sm text-primary font-medium">See All</button>
         </div>
         
         <div className="space-y-2">
