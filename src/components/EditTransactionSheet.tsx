@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings } from "lucide-react";
+import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ interface EditTransactionSheetProps {
 
 export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: EditTransactionSheetProps) => {
   const navigate = useNavigate();
-  const { categories, projects, transactions, vendors, updateTransaction } = useFinanceStore();
+  const { categories, projects, transactions, vendors, partners, updateTransaction } = useFinanceStore();
   
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [amount, setAmount] = useState(transaction.amount.toString());
@@ -34,11 +34,13 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [vendor, setVendor] = useState(transaction.vendor);
   const [categoryId, setCategoryId] = useState(transaction.categoryId);
   const [projectId, setProjectId] = useState(transaction.projectId || "");
+  const [partnerId, setPartnerId] = useState(transaction.partnerId || "");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(transaction.paymentMethod);
   const [date, setDate] = useState<Date>(parseISO(transaction.date));
   const [notes, setNotes] = useState(transaction.notes || "");
   const [showCategories, setShowCategories] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
+  const [showPartners, setShowPartners] = useState(false);
   const [showVendors, setShowVendors] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [vendorSearch, setVendorSearch] = useState("");
@@ -51,6 +53,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     setVendor(transaction.vendor);
     setCategoryId(transaction.categoryId);
     setProjectId(transaction.projectId || "");
+    setPartnerId(transaction.partnerId || "");
     setPaymentMethod(transaction.paymentMethod);
     setDate(parseISO(transaction.date));
     setNotes(transaction.notes || "");
@@ -59,6 +62,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
+  const selectedPartner = partners.find(p => p.id === partnerId);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
@@ -92,6 +96,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
       vendor: vendor || 'Not Specified',
       categoryId,
       projectId: projectId || undefined,
+      partnerId: partnerId || undefined,
       paymentMethod,
       date: format(date, 'yyyy-MM-dd'),
       notes: notes || undefined,
@@ -536,6 +541,78 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                     </PopoverContent>
                   </Popover>
                 </div>
+                
+                {/* Partner Dropdown */}
+                {partners.length > 0 && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                      Handled By <span className="text-muted-foreground/60">(optional)</span>
+                    </Label>
+                    <Popover open={showPartners} onOpenChange={setShowPartners}>
+                      <PopoverTrigger asChild>
+                        <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
+                          {selectedPartner ? (
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                style={{ backgroundColor: selectedPartner.color }}
+                              >
+                                {selectedPartner.name.charAt(0).toUpperCase()}
+                              </div>
+                              <span className="text-sm font-medium">{selectedPartner.name}</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <Users size={16} className="text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">Select partner...</span>
+                            </div>
+                          )}
+                          <ChevronDown size={16} className="text-muted-foreground" />
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 p-2 bg-card z-[70]" align="start">
+                        <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y">
+                          <div className="space-y-1">
+                            <button
+                              onClick={() => {
+                                setPartnerId("");
+                                setShowPartners(false);
+                              }}
+                              className={cn(
+                                "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors",
+                                !partnerId ? "bg-primary/10" : "hover:bg-muted"
+                              )}
+                            >
+                              None
+                            </button>
+                            {partners.map((p) => (
+                              <button
+                                key={p.id}
+                                onClick={() => {
+                                  setPartnerId(p.id);
+                                  setShowPartners(false);
+                                }}
+                                className={cn(
+                                  "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-2",
+                                  partnerId === p.id ? "bg-primary/10" : "hover:bg-muted"
+                                )}
+                              >
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                                  style={{ backgroundColor: p.color }}
+                                >
+                                  {p.name.charAt(0).toUpperCase()}
+                                </div>
+                                <span className="font-medium flex-1">{p.name}</span>
+                                <Check size={14} className={cn("text-primary shrink-0", partnerId === p.id ? "opacity-100" : "opacity-0")} />
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                )}
                 
                 {/* Notes */}
                 <div>

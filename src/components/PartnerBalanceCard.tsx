@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, ChevronDown, Banknote, CreditCard } from "lucide-react";
+import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
+import { PartnerTransferSheet } from "./PartnerTransferSheet";
+import { useAuth } from "@/hooks/useAuth";
 
 export const PartnerBalanceCard = () => {
   const { partners, getPartnerBalances } = useFinanceStore();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(true);
+  const [showTransferSheet, setShowTransferSheet] = useState(false);
   
   const partnerBalances = getPartnerBalances();
   
@@ -112,11 +117,31 @@ export const PartnerBalanceCard = () => {
                     </div>
                   </div>
                 ))}
+                
+                {/* Transfer Button */}
+                {partners.length >= 2 && (
+                  <div className="p-4 border-t border-border">
+                    <Button
+                      onClick={() => setShowTransferSheet(true)}
+                      variant="outline"
+                      className="w-full gap-2"
+                    >
+                      <ArrowLeftRight size={16} />
+                      Transfer Between Partners
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </CollapsibleContent>
       </motion.div>
+      
+      <PartnerTransferSheet
+        isOpen={showTransferSheet}
+        onClose={() => setShowTransferSheet(false)}
+        userId={user?.id}
+      />
     </Collapsible>
   );
 };

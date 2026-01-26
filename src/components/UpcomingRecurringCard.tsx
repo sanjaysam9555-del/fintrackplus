@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { Repeat, Calendar, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
-import { useRecurringTransactions, UpcomingRecurring } from '@/hooks/useRecurringTransactions';
+import { useRecurringTransactions } from '@/hooks/useRecurringTransactions';
+import { useFinanceStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -11,6 +12,7 @@ interface UpcomingRecurringCardProps {
 
 export const UpcomingRecurringCard = ({ onViewAll }: UpcomingRecurringCardProps) => {
   const { upcomingRecurring, upcomingExpenseTotal, upcomingIncomeTotal } = useRecurringTransactions();
+  const { partners } = useFinanceStore();
 
   if (upcomingRecurring.length === 0) return null;
 
@@ -54,56 +56,71 @@ export const UpcomingRecurringCard = ({ onViewAll }: UpcomingRecurringCardProps)
       </div>
 
       <div className="space-y-2">
-        {displayItems.map((item, index) => (
-          <div
-            key={`${item.baseTransaction.id}-${item.nextDate}`}
-            className="flex items-center gap-3 p-2 rounded-lg bg-muted/30"
-          >
-            <div className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
-              item.baseTransaction.type === 'expense' 
-                ? "bg-destructive/10" 
-                : "bg-success/10"
-            )}>
-              {item.baseTransaction.type === 'expense' ? (
-                <ArrowUpRight size={14} className="text-destructive" />
-              ) : (
-                <ArrowDownLeft size={14} className="text-success" />
-              )}
-            </div>
-            
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">
-                {item.baseTransaction.title || item.baseTransaction.vendor}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Calendar size={10} />
-                  {format(parseISO(item.nextDate), 'MMM d')}
-                </span>
-                <span>•</span>
-                <span>{getFrequencyLabel(item.frequency)}</span>
+        {displayItems.map((item) => {
+          const partner = partners.find(p => p.id === item.baseTransaction.partnerId);
+          return (
+            <div
+              key={`${item.baseTransaction.id}-${item.nextDate}`}
+              className="flex items-center gap-3 p-2 rounded-lg bg-muted/30"
+            >
+              <div className={cn(
+                "w-8 h-8 rounded-lg flex items-center justify-center",
+                item.baseTransaction.type === 'expense' 
+                  ? "bg-destructive/10" 
+                  : "bg-success/10"
+              )}>
+                {item.baseTransaction.type === 'expense' ? (
+                  <ArrowUpRight size={14} className="text-destructive" />
+                ) : (
+                  <ArrowDownLeft size={14} className="text-success" />
+                )}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {item.baseTransaction.title || item.baseTransaction.vendor}
+                </p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <Calendar size={10} />
+                    {format(parseISO(item.nextDate), 'MMM d')}
+                  </span>
+                  <span>•</span>
+                  <span>{getFrequencyLabel(item.frequency)}</span>
+                  {partner && (
+                    <>
+                      <span>•</span>
+                      <span 
+                        className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-bold text-white"
+                        style={{ backgroundColor: partner.color }}
+                        title={partner.name}
+                      >
+                        {partner.name.charAt(0).toUpperCase()}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              <div className="text-right shrink-0">
+                <p className={cn(
+                  "text-sm font-semibold",
+                  item.baseTransaction.type === 'expense' ? "text-destructive" : "text-success"
+                )}>
+                  {item.baseTransaction.type === 'expense' ? '-' : '+'}
+                  {formatCurrency(item.baseTransaction.amount)}
+                </p>
+                {item.daysUntil <= 3 && (
+                  <span className="text-[10px] text-warning font-medium">
+                    {item.daysUntil === 0 ? 'Today' : 
+                     item.daysUntil === 1 ? 'Tomorrow' : 
+                     `In ${item.daysUntil} days`}
+                  </span>
+                )}
               </div>
             </div>
-            
-            <div className="text-right shrink-0">
-              <p className={cn(
-                "text-sm font-semibold",
-                item.baseTransaction.type === 'expense' ? "text-destructive" : "text-success"
-              )}>
-                {item.baseTransaction.type === 'expense' ? '-' : '+'}
-                {formatCurrency(item.baseTransaction.amount)}
-              </p>
-              {item.daysUntil <= 3 && (
-                <span className="text-[10px] text-warning font-medium">
-                  {item.daysUntil === 0 ? 'Today' : 
-                   item.daysUntil === 1 ? 'Tomorrow' : 
-                   `In ${item.daysUntil} days`}
-                </span>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {upcomingRecurring.length > 3 && (
