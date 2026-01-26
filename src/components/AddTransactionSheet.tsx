@@ -597,8 +597,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                   </div>
                 </div>
                 
-                {/* Partner Selector */}
-                {partners.length > 0 && (
+                {/* Partner Selector - Always show, even if no partners yet */}
+                {partners && partners.length > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground uppercase tracking-wide">
                       Handled By <span className="text-muted-foreground/60">(optional)</span>

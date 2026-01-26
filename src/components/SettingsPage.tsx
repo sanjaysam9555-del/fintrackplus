@@ -178,7 +178,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
         { 
           icon: Users, 
           label: "Partners", 
-          sublabel: `${partners.length} partner${partners.length !== 1 ? 's' : ''}`,
+          sublabel: `${partners?.length || 0} partner${(partners?.length || 0) !== 1 ? 's' : ''}`,
           onClick: () => handleSectionChange('partners')
         },
         { 
