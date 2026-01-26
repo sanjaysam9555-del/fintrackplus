@@ -1,86 +1,81 @@
 
 
-# Logs Section Rename & Calendar Fix
+# Fix Missing Partners Realtime Subscription
 
 ## Overview
 
-This plan addresses two issues:
-
-1. **Rename "Notifications" to "Logs"** - The notifications section in settings should be renamed to "Logs" to better reflect its purpose as an activity log of all add/delete/edit operations
-2. **Fix Calendar Button on Home Page** - The calendar popover button isn't opening properly
+The partners feature code is all in place, but the realtime subscription in `useCloudSync.ts` is missing the `partners` table. This means when partners are added, updated, or deleted, the app doesn't receive live updates from the database.
 
 ---
 
 ## Issue Analysis
 
-### 1. Notifications to Logs Rename
+After investigating the codebase, I found that:
 
-**Current state:**
-- The section is called "Notifications" throughout the codebase
-- The feature already logs all CRUD operations (add, edit, delete) for transactions, categories, vendors, projects, and partners
-- The store already creates log entries via `addNotification()` for all these actions
+1. **All partner components exist and are correctly implemented:**
+   - `PartnerBalanceCard.tsx` - Shows partner balances and transfer button
+   - `PartnerTransferSheet.tsx` - Handles transfers between partners
+   - `PartnersSection.tsx` - Settings page for managing partners (includes `PartnerBalanceCard`)
+   - `TransactionItem.tsx` - Shows partner badge on transactions
+   - `EditTransactionSheet.tsx` - Has partner selector dropdown
 
-**What needs to change:**
-- Rename the menu item label from "Notifications" to "Logs" in `SettingsPage.tsx`
-- Update the section header title from "Notifications" to "Activity Logs"
-- Update empty state text to reflect "logs" terminology
-- Change the icon from `Bell` to `FileText` or `ScrollText` (more appropriate for logs)
+2. **The store has all partner functions:**
+   - `addPartner`, `updatePartner`, `deletePartner`
+   - `getPartnerBalances()`
+   - Partners are correctly synced via the sync queue
 
-### 2. Calendar Button Not Opening
-
-**Root cause identified:**
-The Calendar component in `src/components/ui/calendar.tsx` is missing the `pointer-events-auto` class in its default className. While it's added when used in Dashboard.tsx (`className="p-2 pointer-events-auto"`), the base Calendar component should include it.
-
-Looking at the console logs, there are also React warnings about refs on function components which may cause rendering issues. However, the primary issue is likely that the popover's calendar doesn't have proper pointer events enabled.
-
-**Current code in calendar.tsx (line 14):**
-```typescript
-className={cn("p-3", className)}
-```
-
-**Should be:**
-```typescript
-className={cn("p-3 pointer-events-auto", className)}
-```
-
-This ensures the calendar is always interactive inside popovers and dialogs.
+3. **The issue: Missing realtime subscription**
+   - In `useCloudSync.ts`, the realtime channel subscribes to: `transactions`, `categories`, `vendors`, `projects`
+   - The `partners` table is **NOT** included in the realtime subscription
+   - This means changes to partners from other devices or direct database operations won't be reflected in the app
 
 ---
 
-## Implementation Details
+## Implementation
 
-### File 1: `src/components/SettingsPage.tsx`
+### File: `src/hooks/useCloudSync.ts`
 
-**Changes:**
+Add the missing realtime subscription for the `partners` table.
 
-1. **Update icon import** (line 14):
-   - Replace `Bell` with `ScrollText` from lucide-react
+**Current code (lines 271-281):**
+```typescript
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `user_id=eq.${user.id}`,
+        },
+        debouncedFetch
+      )
+      .subscribe();
+```
 
-2. **Update menu item** (lines 209-213):
-   - Change label from "Notifications" to "Logs"
-   - Change sublabel from "X unread" to "Activity history"
-   - Update the icon from `Bell` to `ScrollText`
-
-3. **Update section header** (line 242):
-   - Change title from "Notifications" to "Activity Logs"
-
-4. **Update empty state text** in `NotificationsContent` (lines 82-85):
-   - Change "No notifications yet" to "No activity logs yet"
-   - Change "Your activity will appear here" to "Your actions will be logged here"
-
-5. **Update section type** (line 127):
-   - Change `'notifications'` to `'logs'` in the union type
-
-### File 2: `src/components/ui/calendar.tsx`
-
-**Changes:**
-
-1. **Add pointer-events-auto** (line 14):
-   ```typescript
-   className={cn("p-3 pointer-events-auto", className)}
-   ```
-
-This ensures the calendar is always interactive inside popovers and dialogs, fixing the click issue.
+**Updated code:**
+```typescript
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'projects',
+          filter: `user_id=eq.${user.id}`,
+        },
+        debouncedFetch
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'partners',
+          filter: `user_id=eq.${user.id}`,
+        },
+        debouncedFetch
+      )
+      .subscribe();
+```
 
 ---
 
@@ -88,43 +83,23 @@ This ensures the calendar is always interactive inside popovers and dialogs, fix
 
 | File | Changes |
 |------|---------|
-| `src/components/SettingsPage.tsx` | Rename "Notifications" to "Logs", update icon, update section type and strings |
-| `src/components/ui/calendar.tsx` | Add `pointer-events-auto` to default className |
+| `src/hooks/useCloudSync.ts` | Add realtime subscription for `partners` table |
 
 ---
 
-## Visual Changes
+## Verification Steps
 
-**Settings Menu (Before):**
-```text
-[Bell icon] Notifications
-           X unread
-```
-
-**Settings Menu (After):**
-```text
-[ScrollText icon] Logs
-                  Activity history
-```
-
-**Logs Section Header (After):**
-```text
-[Back] Activity Logs
-```
-
-**Empty State (After):**
-```text
-[ScrollText icon]
-No activity logs yet
-Your actions will be logged here
-```
+After implementation, partners will:
+1. Show in Settings → Partners
+2. Display the Partner Balance Card with individual balances
+3. Show the "Transfer Between Partners" button when 2+ partners exist
+4. Display partner badges on transactions
+5. Allow selecting partners in the Edit Transaction form
+6. Receive realtime updates when partners are modified
 
 ---
 
-## Technical Notes
+## Note on PartnerBalanceCard Visibility
 
-- The existing notification/log system already captures all CRUD operations with appropriate types and messages
-- No changes needed to the store's `addNotification` function - it continues to work the same way
-- The feature is essentially an activity log, and this rename makes its purpose clearer to users
-- The calendar fix ensures proper interactivity by adding the required `pointer-events-auto` class that prevents pointer events from being blocked by parent containers
+The `PartnerBalanceCard` component returns `null` when no partners exist (`partners.length === 0`). This is intentional design - the card only appears when at least one partner has been added. The empty state is handled in `PartnersSection.tsx` which shows "No partners added yet" message with instructions.
 
