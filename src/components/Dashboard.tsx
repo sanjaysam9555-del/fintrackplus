@@ -32,8 +32,16 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  // IMPORTANT: Both mobile + desktop header sections are mounted (one is CSS-hidden).
+  // If they share the same popover open state, Radix can fail to anchor/render the visible popover.
+  const [showDatePickerMobile, setShowDatePickerMobile] = useState(false);
+  const [showDatePickerDesktop, setShowDatePickerDesktop] = useState(false);
   const [showCustomCalendar, setShowCustomCalendar] = useState<'start' | 'end' | null>(null);
+
+  const closeDatePicker = useCallback(() => {
+    setShowDatePickerMobile(false);
+    setShowDatePickerDesktop(false);
+  }, []);
   
   const today = new Date();
   
@@ -188,12 +196,18 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                   />
                 </button>
               )}
-              <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+              <Popover
+                open={showDatePickerMobile}
+                onOpenChange={(open) => {
+                  setShowDatePickerMobile(open);
+                  if (open) setShowDatePickerDesktop(false);
+                }}
+              >
                 <PopoverTrigger asChild>
                   <button className="p-1.5 rounded-full hover:bg-muted transition-colors">
                     <CalendarDays size={18} className={cn(
                       "transition-colors",
-                      showDatePicker ? "text-primary" : "text-muted-foreground"
+                      showDatePickerMobile ? "text-primary" : "text-muted-foreground"
                     )} />
                   </button>
                 </PopoverTrigger>
@@ -209,7 +223,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                           onClick={() => {
                             setTimeFilter(filter);
                             setShowCustomCalendar(null);
-                            setShowDatePicker(false);
+                            closeDatePicker();
                           }}
                           className={cn(
                             "flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors",
@@ -269,7 +283,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                                 setCustomEndDate(date);
                                 if (date && customStartDate) {
                                   setTimeFilter('custom');
-                                  setShowDatePicker(false);
+                                  closeDatePicker();
                                 }
                               }}
                               disabled={(date) => customStartDate ? date < customStartDate : false}
@@ -280,7 +294,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                       </div>
                       {timeFilter === 'custom' && customStartDate && customEndDate && (
                         <button
-                          onClick={() => setShowDatePicker(false)}
+                          onClick={closeDatePicker}
                           className="w-full mt-2 px-2 py-1.5 bg-primary text-primary-foreground text-xs rounded-md font-medium"
                         >
                           Apply
@@ -322,7 +336,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           >
             <button
               type="button"
-              onClick={() => setShowDatePicker(true)}
+              onClick={() => setShowDatePickerMobile(true)}
               className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full hover:bg-primary/15 transition-colors"
               aria-label="Choose time frame"
             >
@@ -413,12 +427,18 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                   />
                 </button>
               )}
-              <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+              <Popover
+                open={showDatePickerDesktop}
+                onOpenChange={(open) => {
+                  setShowDatePickerDesktop(open);
+                  if (open) setShowDatePickerMobile(false);
+                }}
+              >
                 <PopoverTrigger asChild>
                   <button className="p-2 rounded-full hover:bg-muted transition-colors">
                     <CalendarDays size={22} className={cn(
                       "transition-colors",
-                      showDatePicker ? "text-primary" : "text-muted-foreground"
+                      showDatePickerDesktop ? "text-primary" : "text-muted-foreground"
                     )} />
                   </button>
                 </PopoverTrigger>
@@ -434,7 +454,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                           onClick={() => {
                             setTimeFilter(filter);
                             setShowCustomCalendar(null);
-                            setShowDatePicker(false);
+                            closeDatePicker();
                           }}
                           className={cn(
                             "flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors",
@@ -494,7 +514,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                                 setCustomEndDate(date);
                                 if (date && customStartDate) {
                                   setTimeFilter('custom');
-                                  setShowDatePicker(false);
+                                  closeDatePicker();
                                 }
                               }}
                               disabled={(date) => customStartDate ? date < customStartDate : false}
@@ -505,7 +525,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                       </div>
                       {timeFilter === 'custom' && customStartDate && customEndDate && (
                         <button
-                          onClick={() => setShowDatePicker(false)}
+                          onClick={closeDatePicker}
                           className="w-full mt-2 px-2 py-1.5 bg-primary text-primary-foreground text-xs rounded-md font-medium"
                         >
                           Apply
