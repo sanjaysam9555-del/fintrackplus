@@ -11,7 +11,7 @@ import {
   FileBarChart,
   ArrowLeft,
   LogOut,
-  Bell,
+  ScrollText,
   Monitor,
   Smartphone,
   Users
@@ -45,7 +45,7 @@ const NotificationsContent = () => {
       case 'project': return FolderKanban;
       case 'delete': return Trash2;
       case 'edit': return Pencil;
-      default: return Bell;
+      default: return ScrollText;
     }
   };
   
@@ -79,10 +79,10 @@ const NotificationsContent = () => {
         {notifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-              <Bell size={24} className="text-muted-foreground" />
+              <ScrollText size={24} className="text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">No notifications yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Your activity will appear here</p>
+            <p className="text-muted-foreground">No activity logs yet</p>
+            <p className="text-sm text-muted-foreground mt-1">Your actions will be logged here</p>
           </div>
         ) : (
           notifications.map((notification, index) => {
@@ -124,7 +124,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | 'notifications' | 'partners' | null;
+type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | 'logs' | 'partners' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -206,10 +206,10 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
           onClick: () => handleSectionChange('reports')
         },
         { 
-          icon: Bell, 
-          label: "Notifications", 
-          sublabel: unreadNotifications > 0 ? `${unreadNotifications} unread` : "All caught up",
-          onClick: () => handleSectionChange('notifications')
+          icon: ScrollText, 
+          label: "Logs", 
+          sublabel: "Activity history",
+          onClick: () => handleSectionChange('logs')
         },
       ]
     },
@@ -231,7 +231,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   if (activeSection === 'reports') {
     return <ReportsSection onBack={handleBack} />;
   }
-  if (activeSection === 'notifications') {
+  if (activeSection === 'logs') {
     return (
       <div className="min-h-screen pb-24">
         <div className="p-4 pt-6">
@@ -239,7 +239,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
             <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
               <ArrowLeft size={20} />
             </button>
-            <h1 className="text-2xl font-bold">Notifications</h1>
+            <h1 className="text-2xl font-bold">Activity Logs</h1>
           </div>
         </div>
         <NotificationsContent />
