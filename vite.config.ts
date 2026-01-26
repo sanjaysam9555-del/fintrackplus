@@ -18,6 +18,10 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
+      // Avoid stale bundles during preview/dev sessions.
+      devOptions: {
+        enabled: false,
+      },
       includeAssets: ['app-icon-192.png', 'app-icon-512.png', 'favicon.ico'],
       manifest: {
         name: 'FinTrack Pro',
@@ -45,6 +49,10 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        // Ensure updates activate promptly.
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true,
         // Increase limit for large icons
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5 MB
         // Cache strategies for different resource types
@@ -69,17 +77,6 @@ export default defineConfig(({ mode }) => ({
               expiration: {
                 maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
-              }
-            }
-          },
-          {
-            urlPattern: /\.(?:js|css)$/,
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'static-resources',
-              expiration: {
-                maxEntries: 30,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
               }
             }
           },
