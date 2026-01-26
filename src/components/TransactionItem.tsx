@@ -4,7 +4,7 @@ import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
-import { ChevronDown, Pencil, Trash2, CreditCard, Banknote } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
@@ -20,8 +20,10 @@ interface TransactionItemProps {
 }
 
 export const TransactionItem = ({ transaction, category, userId, onEditSheetChange }: TransactionItemProps) => {
-  const { deleteTransaction, addTransaction, projects } = useFinanceStore();
+  const { deleteTransaction, addTransaction, projects, partners } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  const partner = partners.find(p => p.id === transaction.partnerId);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
@@ -160,6 +162,15 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                   
                   return parts.join(' • ');
                 })()}
+                {partner && (
+                  <span 
+                    className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white ml-1"
+                    style={{ backgroundColor: partner.color }}
+                    title={partner.name}
+                  >
+                    {partner.name.charAt(0).toUpperCase()}
+                  </span>
+                )}
               </p>
             </div>
             
@@ -207,6 +218,20 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                           )}
                         </span>
                       </div>
+                      {partner && (
+                        <div className="flex items-center gap-2 col-span-2">
+                          <span className="text-muted-foreground">Handled by:</span>
+                          <div className="flex items-center gap-1.5">
+                            <div 
+                              className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold"
+                              style={{ backgroundColor: partner.color }}
+                            >
+                              {partner.name.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="font-medium">{partner.name}</span>
+                          </div>
+                        </div>
+                      )}
                       {project && (
                         <div className="flex items-center gap-2 col-span-2">
                           <span className="text-muted-foreground">Project:</span>
