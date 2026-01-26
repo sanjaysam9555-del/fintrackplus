@@ -21,6 +21,15 @@ export interface Project {
   createdAt: string;
 }
 
+export interface Partner {
+  id: string;
+  name: string;
+  color: string;
+  initialCashBalance: number;
+  initialOnlineBalance: number;
+  createdAt: string;
+}
+
 export interface Transaction {
   id: string;
   type: TransactionType;
@@ -29,6 +38,7 @@ export interface Transaction {
   vendor: string;
   categoryId: string;
   projectId?: string;
+  partnerId?: string;
   paymentMethod: PaymentMethod;
   date: string;
   time: string;

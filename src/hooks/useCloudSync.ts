@@ -39,13 +39,15 @@ export const useCloudSync = () => {
         categoriesResult,
         vendorsResult,
         projectsResult,
-        transactionsResult
+        transactionsResult,
+        partnersResult
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
         supabase.from('categories').select('*').eq('user_id', user.id),
         supabase.from('vendors').select('*').eq('user_id', user.id),
         supabase.from('projects').select('*').eq('user_id', user.id),
-        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false })
+        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+        supabase.from('partners').select('*').eq('user_id', user.id)
       ]);
 
       const firstError =
@@ -53,7 +55,8 @@ export const useCloudSync = () => {
         categoriesResult.error ||
         vendorsResult.error ||
         projectsResult.error ||
-        transactionsResult.error;
+        transactionsResult.error ||
+        partnersResult.error;
 
       if (firstError) {
         throw firstError;
@@ -64,6 +67,7 @@ export const useCloudSync = () => {
       const cloudVendors = vendorsResult.data;
       const cloudProjects = projectsResult.data;
       const cloudTransactions = transactionsResult.data;
+      const cloudPartners = partnersResult.data;
 
       // Check if onboarding should be shown
       if (profile && !profile.onboarding_completed) {
@@ -104,12 +108,21 @@ export const useCloudSync = () => {
           vendor: t.vendor,
           categoryId: t.category_id || '',
           projectId: t.project_id || undefined,
+          partnerId: (t as unknown as { partner_id?: string }).partner_id || undefined,
           paymentMethod: t.payment_method as 'cash' | 'online',
           date: t.date,
           time: t.time,
           notes: t.notes || undefined,
           isRecurring: t.is_recurring || false,
           recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined
+        })) || [],
+        partners: cloudPartners?.map(p => ({
+          id: (p as { id: string }).id,
+          name: (p as { name: string }).name,
+          color: (p as { color: string }).color,
+          initialCashBalance: Number((p as { initial_cash_balance: number }).initial_cash_balance) || 0,
+          initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
+          createdAt: (p as { created_at: string }).created_at.split('T')[0]
         })) || []
       });
 

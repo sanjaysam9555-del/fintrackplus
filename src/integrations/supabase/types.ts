@@ -116,6 +116,36 @@ export type Database = {
         }
         Relationships: []
       }
+      partners: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          initial_cash_balance: number
+          initial_online_balance: number
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          initial_cash_balance?: number
+          initial_online_balance?: number
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          initial_cash_balance?: number
+          initial_online_balance?: number
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -191,6 +221,7 @@ export type Database = {
           id: string
           is_recurring: boolean | null
           notes: string | null
+          partner_id: string | null
           payment_method: string
           project_id: string | null
           recurring_frequency: string | null
@@ -208,6 +239,7 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           notes?: string | null
+          partner_id?: string | null
           payment_method: string
           project_id?: string | null
           recurring_frequency?: string | null
@@ -225,6 +257,7 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           notes?: string | null
+          partner_id?: string | null
           payment_method?: string
           project_id?: string | null
           recurring_frequency?: string | null
@@ -240,6 +273,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
             referencedColumns: ["id"]
           },
           {
