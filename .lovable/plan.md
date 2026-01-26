@@ -1,66 +1,49 @@
 
-# Partner Balance Clarification & UX Improvements
+# Add Save Changes Button to Mobile Edit Transaction Form
 
-## Current State Analysis
+## Overview
 
-After thoroughly investigating the codebase, I found that **the partner balance system is already working correctly**:
-
-### How It Currently Works
-
-1. **Dynamic Balance Calculation** - The `getPartnerBalances()` function in `store.ts` already calculates balances automatically:
-   ```
-   Cash Balance = Initial Cash Balance + Cash Income - Cash Expense
-   Online Balance = Initial Online Balance + Online Income - Online Expense
-   ```
-
-2. **Transaction-Based** - Balances are derived from transactions tagged with a partner, not manually entered
-
-3. **Real-Time Updates** - When a transaction is added/updated with a partner, the balance recalculates immediately
-
-### The Confusion
-
-The current form labels say "Initial Cash Balance" and "Initial Online Balance" - these are **starting balances** (the money the partner had before you started tracking). The displayed balance shows the **calculated total** after factoring in all transactions.
+The Edit Transaction form already has a "Save Changes" button in the header next to the close button, but it's currently hidden on mobile screens (`hidden lg:flex`). We need to make it visible on all screen sizes.
 
 ---
 
-## Proposed Improvements
+## Current State
 
-### 1. Improve Form Labels with Helper Text
+The header section at lines 139-154 has:
+- Title "Edit Transaction" on the left
+- A "Save Changes" button that's **hidden on mobile** (`hidden lg:flex`)
+- An X close button on the right
 
-**File: `src/components/settings/PartnersSection.tsx`**
+---
 
-Update the labels to be clearer:
+## Implementation
 
-```
-Initial Cash Balance → "Starting Cash Balance"
-(with helper text: "Amount before any recorded transactions")
+### File: `src/components/EditTransactionSheet.tsx`
 
-Initial Online Balance → "Starting Online Balance"  
-(with helper text: "Amount before any recorded transactions")
-```
+**Change**: Remove the `hidden lg:flex` class from the Save Changes button to make it visible on all screen sizes.
 
-### 2. Add Balance Breakdown in Partner Card
-
-**File: `src/components/settings/PartnersSection.tsx`**
-
-Show users how the balance is calculated by displaying a mini breakdown under each balance:
-
-```
-Cash Balance: ₹15,000
-  ├─ Starting: ₹10,000
-  ├─ Income: +₹8,000
-  └─ Expense: -₹3,000
+**Current code (line 146):**
+```typescript
+className="hidden lg:flex gradient-primary text-primary-foreground"
 ```
 
-This makes it clear that balances update automatically based on transactions.
+**Updated code:**
+```typescript
+className="gradient-primary text-primary-foreground"
+```
 
-### 3. Update PartnerBalanceCard with Transaction Counts
+---
 
-**File: `src/components/PartnerBalanceCard.tsx`**
+## Visual Result
 
-Show how many transactions contribute to each balance:
-- "Cash: ₹15,000 (5 transactions)"
-- "Online: ₹8,000 (3 transactions)"
+**Mobile Header (After):**
+```
+┌─────────────────────────────────────┐
+│  Edit Transaction    [Save Changes] [X]
+└─────────────────────────────────────┘
+```
+
+The button will be compact (`size="sm"`) so it fits well next to the close button without crowding the header on mobile.
 
 ---
 
@@ -68,53 +51,13 @@ Show how many transactions contribute to each balance:
 
 | File | Changes |
 |------|---------|
-| `src/components/settings/PartnersSection.tsx` | Update labels, add helper text, show balance breakdown |
-| `src/components/PartnerBalanceCard.tsx` | Add transaction count indicators |
-
----
-
-## Visual Changes
-
-### Partner Form (Before):
-```
-Initial Cash Balance
-[₹ 10000]
-
-Initial Online Balance
-[₹ 5000]
-```
-
-### Partner Form (After):
-```
-Starting Cash Balance
-Balance before any recorded transactions
-[₹ 10000]
-
-Starting Online Balance
-Balance before any recorded transactions
-[₹ 5000]
-```
-
-### Partner Balance Card (After):
-```
-┌─────────────────────────────────────┐
-│ Partner Name                        │
-├─────────────────────────────────────┤
-│  Cash           │  Online           │
-│  ₹15,000        │  ₹8,000           │
-│  Starting:10k   │  Starting:5k      │
-│  +Inc: 8k       │  +Inc: 4k         │
-│  -Exp: 3k       │  -Exp: 1k         │
-│  ─────────────  │  ─────────────    │
-│  = ₹15,000      │  = ₹8,000         │
-└─────────────────────────────────────┘
-```
+| `src/components/EditTransactionSheet.tsx` | Remove `hidden lg:flex` from Save Changes button (line 146) |
 
 ---
 
 ## Technical Notes
 
-- The core balance calculation logic is already correct and doesn't need changes
-- Balances automatically update when transactions are added/modified
-- The realtime subscription for partners (added earlier) ensures cross-device sync
-- These UI improvements help users understand that balances are transaction-derived, not manually entered
+- The button already uses `size="sm"` which is appropriate for mobile
+- The button styling (`gradient-primary text-primary-foreground`) matches the app's design system
+- The button is already properly wired to `handleSubmit` and has disabled state logic
+- This follows the project memory guideline for desktop form accessibility but extends it to mobile for convenience
