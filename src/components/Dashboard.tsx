@@ -197,7 +197,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                     )} />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56 p-3 bg-card z-[60]" align="end" sideOffset={8}>
+                <PopoverContent className="w-56 p-3 bg-card z-[60] pointer-events-auto" align="end" sideOffset={8}>
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground mb-2">Time Frame</p>
                     
@@ -237,7 +237,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                               {customStartDate ? format(customStartDate, "MMM dd") : "From"}
                             </button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-card z-[70]" align="start" side="bottom">
+                          <PopoverContent className="w-auto p-0 bg-card z-[70] pointer-events-auto" align="start" side="bottom">
                             <Calendar
                               mode="single"
                               selected={customStartDate}
@@ -261,7 +261,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                               {customEndDate ? format(customEndDate, "MMM dd") : "To"}
                             </button>
                           </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-card z-[70]" align="end" side="bottom">
+                          <PopoverContent className="w-auto p-0 bg-card z-[70] pointer-events-auto" align="end" side="bottom">
                             <Calendar
                               mode="single"
                               selected={customEndDate}
