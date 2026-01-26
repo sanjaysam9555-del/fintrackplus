@@ -11,6 +11,13 @@ interface PartnerBalance {
   partner: Partner;
   cashBalance: number;
   onlineBalance: number;
+  // Breakdown details
+  cashIncome: number;
+  cashExpense: number;
+  onlineIncome: number;
+  onlineExpense: number;
+  cashTransactionCount: number;
+  onlineTransactionCount: number;
 }
 
 interface CloudData {
@@ -747,23 +754,32 @@ export const useFinanceStore = create<FinanceStore>()(
         return partners.map(partner => {
           const partnerTxns = transactions.filter(t => t.partnerId === partner.id);
           
-          const cashIncome = partnerTxns
-            .filter(t => t.type === 'income' && t.paymentMethod === 'cash')
+          const cashTxns = partnerTxns.filter(t => t.paymentMethod === 'cash');
+          const onlineTxns = partnerTxns.filter(t => t.paymentMethod === 'online');
+          
+          const cashIncome = cashTxns
+            .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
-          const cashExpense = partnerTxns
-            .filter(t => t.type === 'expense' && t.paymentMethod === 'cash')
+          const cashExpense = cashTxns
+            .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + t.amount, 0);
-          const onlineIncome = partnerTxns
-            .filter(t => t.type === 'income' && t.paymentMethod === 'online')
+          const onlineIncome = onlineTxns
+            .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
-          const onlineExpense = partnerTxns
-            .filter(t => t.type === 'expense' && t.paymentMethod === 'online')
+          const onlineExpense = onlineTxns
+            .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + t.amount, 0);
           
           return {
             partner,
             cashBalance: partner.initialCashBalance + cashIncome - cashExpense,
             onlineBalance: partner.initialOnlineBalance + onlineIncome - onlineExpense,
+            cashIncome,
+            cashExpense,
+            onlineIncome,
+            onlineExpense,
+            cashTransactionCount: cashTxns.length,
+            onlineTransactionCount: onlineTxns.length,
           };
         });
       },
