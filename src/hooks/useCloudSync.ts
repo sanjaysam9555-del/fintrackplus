@@ -278,6 +278,16 @@ export const useCloudSync = () => {
         },
         debouncedFetch
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'partners',
+          filter: `user_id=eq.${user.id}`,
+        },
+        debouncedFetch
+      )
       .subscribe();
 
     return () => {
