@@ -4,7 +4,7 @@ import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
-import { UpcomingRecurringCard } from "./UpcomingRecurringCard";
+
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -694,11 +694,6 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Reports</span>
           </button>
         </motion.div>
-      </div>
-      
-      {/* Upcoming Recurring Payments */}
-      <div className="px-4 lg:px-0 mb-6">
-        <UpcomingRecurringCard />
       </div>
       
       {/* Recent Transactions */}

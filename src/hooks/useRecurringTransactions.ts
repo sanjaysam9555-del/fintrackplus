@@ -83,23 +83,30 @@ export const useRecurringTransactions = () => {
     return upcoming.sort((a, b) => a.nextDate.localeCompare(b.nextDate));
   }, [recurringTransactions]);
 
+  // Filter by type for respective pages
+  const upcomingExpenses = useMemo(() => {
+    return upcomingRecurring.filter(r => r.baseTransaction.type === 'expense');
+  }, [upcomingRecurring]);
+
+  const upcomingIncome = useMemo(() => {
+    return upcomingRecurring.filter(r => r.baseTransaction.type === 'income');
+  }, [upcomingRecurring]);
+
   // Get total upcoming recurring expenses
   const upcomingExpenseTotal = useMemo(() => {
-    return upcomingRecurring
-      .filter(r => r.baseTransaction.type === 'expense')
-      .reduce((sum, r) => sum + r.baseTransaction.amount, 0);
-  }, [upcomingRecurring]);
+    return upcomingExpenses.reduce((sum, r) => sum + r.baseTransaction.amount, 0);
+  }, [upcomingExpenses]);
 
   // Get total upcoming recurring income
   const upcomingIncomeTotal = useMemo(() => {
-    return upcomingRecurring
-      .filter(r => r.baseTransaction.type === 'income')
-      .reduce((sum, r) => sum + r.baseTransaction.amount, 0);
-  }, [upcomingRecurring]);
+    return upcomingIncome.reduce((sum, r) => sum + r.baseTransaction.amount, 0);
+  }, [upcomingIncome]);
 
   return {
     recurringTransactions,
     upcomingRecurring,
+    upcomingExpenses,
+    upcomingIncome,
     upcomingExpenseTotal,
     upcomingIncomeTotal,
     getNextOccurrence,
