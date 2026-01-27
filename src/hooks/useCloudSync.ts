@@ -114,7 +114,9 @@ export const useCloudSync = () => {
           time: t.time,
           notes: t.notes || undefined,
           isRecurring: t.is_recurring || false,
-          recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined
+          recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined,
+          receiptUrl: (t as unknown as { receipt_url?: string }).receipt_url || undefined,
+          isGst: (t as unknown as { is_gst?: boolean }).is_gst || false
         })) || [],
         partners: cloudPartners?.map(p => ({
           id: (p as { id: string }).id,

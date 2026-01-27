@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { ArrowLeft, Download, FileText, CalendarDays } from "lucide-react";
+import { ArrowLeft, Download, FileText, CalendarDays, Package, Loader2 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -7,6 +7,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { format, subDays, startOfMonth, endOfMonth, startOfYear } from "date-fns";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import JSZip from "jszip";
 
 interface ReportsSectionProps {
   onBack: () => void;
@@ -15,10 +17,11 @@ interface ReportsSectionProps {
 type TimeFrame = 'week' | 'month' | 'year' | 'custom';
 
 export const ReportsSection = ({ onBack }: ReportsSectionProps) => {
-  const { transactions, categories, addNotification } = useFinanceStore();
+  const { transactions, categories, addNotification, projects } = useFinanceStore();
   const [timeFrame, setTimeFrame] = useState<TimeFrame>('month');
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const [isExportingCA, setIsExportingCA] = useState(false);
 
   const dateRange = useMemo(() => {
     const today = new Date();
@@ -87,6 +90,116 @@ export const ReportsSection = ({ onBack }: ReportsSectionProps) => {
       message: `${filteredTransactions.length} transactions exported`,
     });
     toast.success('CSV exported successfully!');
+  };
+
+  const handleExportCAPackage = async () => {
+    if (filteredTransactions.length === 0) {
+      toast.error("No transactions to export in this period");
+      return;
+    }
+
+    setIsExportingCA(true);
+    
+    try {
+      const zip = new JSZip();
+      const receiptFolder = zip.folder("receipts");
+      
+      // 1. Create main transactions CSV
+      const csvHeaders = ['Date', 'Time', 'Type', 'Title', 'Vendor', 'Category', 'Project', 'Amount', 'Payment Method', 'GST', 'Receipt File', 'Notes'];
+      const csvRows = filteredTransactions.map((t, index) => {
+        const category = categories.find(c => c.id === t.categoryId);
+        const project = projects.find(p => p.id === t.projectId);
+        const receiptFileName = t.receiptUrl ? `receipt_${String(index + 1).padStart(3, '0')}.jpg` : '';
+        return [
+          t.date,
+          t.time,
+          t.type,
+          t.title || '',
+          t.vendor,
+          category?.name || 'Other',
+          project?.name || '',
+          t.amount.toString(),
+          t.paymentMethod,
+          t.isGst ? 'Yes' : 'No',
+          receiptFileName,
+          (t.notes || '').replace(/"/g, '""')
+        ].map(field => `"${field}"`).join(',');
+      });
+      
+      const transactionsCsv = [csvHeaders.join(','), ...csvRows].join('\n');
+      zip.file('transactions.csv', transactionsCsv);
+      
+      // 2. Create GST summary CSV
+      const gstTransactions = filteredTransactions.filter(t => t.isGst);
+      const gstExpenses = gstTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+      const gstIncome = gstTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+      
+      const gstSummaryCsv = [
+        'Period Start,Period End,GST Expenses,GST Income,Net GST Amount,Total GST Transactions',
+        `"${format(dateRange.start, 'yyyy-MM-dd')}","${format(dateRange.end, 'yyyy-MM-dd')}",${gstExpenses},${gstIncome},${gstIncome - gstExpenses},${gstTransactions.length}`
+      ].join('\n');
+      zip.file('gst_summary.csv', gstSummaryCsv);
+      
+      // 3. Download and add receipts
+      const receiptsToDownload = filteredTransactions
+        .filter(t => t.receiptUrl)
+        .map((t, index) => ({ url: t.receiptUrl!, fileName: `receipt_${String(index + 1).padStart(3, '0')}.jpg` }));
+      
+      for (const receipt of receiptsToDownload) {
+        try {
+          const response = await fetch(receipt.url);
+          if (response.ok) {
+            const blob = await response.blob();
+            receiptFolder?.file(receipt.fileName, blob);
+          }
+        } catch (err) {
+          console.warn(`Failed to download receipt: ${receipt.url}`, err);
+        }
+      }
+      
+      // 4. Create README
+      const readme = `CA Export Package
+================
+
+Export Date: ${format(new Date(), 'yyyy-MM-dd HH:mm')}
+Period: ${format(dateRange.start, 'MMM dd, yyyy')} to ${format(dateRange.end, 'MMM dd, yyyy')}
+
+Contents:
+- transactions.csv: All ${filteredTransactions.length} transactions
+- gst_summary.csv: GST transaction summary
+- receipts/: ${receiptsToDownload.length} receipt images
+
+Summary:
+- Total Income: ₹${stats.income.toLocaleString()}
+- Total Expenses: ₹${stats.expense.toLocaleString()}
+- Net Balance: ₹${stats.balance.toLocaleString()}
+- GST Transactions: ${gstTransactions.length}
+
+Generated by FinTrack
+`;
+      zip.file('README.txt', readme);
+      
+      // 5. Generate and download ZIP
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(zipBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ca-export-${format(dateRange.start, 'yyyyMMdd')}-to-${format(dateRange.end, 'yyyyMMdd')}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      addNotification({
+        type: 'export',
+        title: 'CA Package Exported',
+        message: `${filteredTransactions.length} transactions + ${receiptsToDownload.length} receipts`,
+      });
+      toast.success('CA package exported successfully!');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export CA package');
+    } finally {
+      setIsExportingCA(false);
+    }
   };
 
   const handleExportPDF = () => {
@@ -212,6 +325,28 @@ export const ReportsSection = ({ onBack }: ReportsSectionProps) => {
         {/* Export Options */}
         <div className="space-y-3">
           <p className="text-sm font-medium">Export Options</p>
+          
+          {/* CA Export Package - Primary */}
+          <button
+            onClick={handleExportCAPackage}
+            disabled={isExportingCA}
+            className="w-full flex items-center gap-3 p-4 bg-primary/5 rounded-xl border-2 border-primary/20 hover:bg-primary/10 transition-colors"
+          >
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              {isExportingCA ? (
+                <Loader2 size={18} className="text-primary animate-spin" />
+              ) : (
+                <Package size={18} className="text-primary" />
+              )}
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-medium">Download CA Package</p>
+              <p className="text-sm text-muted-foreground">
+                {isExportingCA ? 'Preparing export...' : `ZIP with CSV + ${filteredTransactions.filter(t => t.receiptUrl).length} receipts`}
+              </p>
+            </div>
+          </button>
+          
           <button
             onClick={handleExportCSV}
             className="w-full flex items-center gap-3 p-4 bg-card rounded-xl border border-border hover:bg-muted/50 transition-colors"

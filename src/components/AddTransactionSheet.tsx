@@ -17,6 +17,8 @@ import { useNavigate } from "react-router-dom";
 import { useDuplicateDetection } from "@/hooks/useDuplicateDetection";
 import { DuplicateWarning } from "./DuplicateWarning";
 import { toast } from "sonner";
+import { ReceiptUpload } from "./ReceiptUpload";
+import { GstToggle } from "./GstToggle";
 
 interface AddTransactionSheetProps {
   isOpen: boolean;
@@ -51,6 +53,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [recurringFrequency, setRecurringFrequency] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>("monthly");
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicates, setDuplicates] = useState<ReturnType<typeof checkForDuplicates>>([]);
+  const [receiptUrl, setReceiptUrl] = useState<string | undefined>();
+  const [isGst, setIsGst] = useState(false);
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
@@ -125,6 +129,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       notes: notes || undefined,
       isRecurring: isRecurring || undefined,
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
+      receiptUrl: receiptUrl || undefined,
+      isGst: isGst || undefined,
     }, userId);
     
     // Show success confirmation
@@ -145,8 +151,10 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setRecurringFrequency("monthly");
     setShowDuplicateWarning(false);
     setDuplicates([]);
+    setReceiptUrl(undefined);
+    setIsGst(false);
     onClose();
-  }, [type, amount, title, vendor, categoryId, projectId, partnerId, paymentMethod, date, notes, isRecurring, recurringFrequency, userId, addTransaction, onClose]);
+  }, [type, amount, title, vendor, categoryId, projectId, partnerId, paymentMethod, date, notes, isRecurring, recurringFrequency, receiptUrl, isGst, userId, addTransaction, onClose]);
   
   const handleSubmit = () => {
     if (!amount || !categoryId) return;
@@ -787,6 +795,21 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     className="mt-1"
                   />
                 </div>
+                
+                {/* Receipt Upload */}
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">
+                    Receipt/Invoice <span className="text-muted-foreground/60">(optional)</span>
+                  </Label>
+                  <ReceiptUpload
+                    value={receiptUrl}
+                    onChange={setReceiptUrl}
+                    userId={userId}
+                  />
+                </div>
+                
+                {/* GST Toggle */}
+                <GstToggle value={isGst} onChange={setIsGst} />
                 
                 {/* Submit Button */}
                 <Button

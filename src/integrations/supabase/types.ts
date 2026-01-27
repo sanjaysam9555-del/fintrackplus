@@ -219,11 +219,13 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          is_gst: boolean | null
           is_recurring: boolean | null
           notes: string | null
           partner_id: string | null
           payment_method: string
           project_id: string | null
+          receipt_url: string | null
           recurring_frequency: string | null
           time: string
           title: string | null
@@ -237,11 +239,13 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          is_gst?: boolean | null
           is_recurring?: boolean | null
           notes?: string | null
           partner_id?: string | null
           payment_method: string
           project_id?: string | null
+          receipt_url?: string | null
           recurring_frequency?: string | null
           time?: string
           title?: string | null
@@ -255,11 +259,13 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          is_gst?: boolean | null
           is_recurring?: boolean | null
           notes?: string | null
           partner_id?: string | null
           payment_method?: string
           project_id?: string | null
+          receipt_url?: string | null
           recurring_frequency?: string | null
           time?: string
           title?: string | null
