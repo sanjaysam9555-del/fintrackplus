@@ -4,6 +4,7 @@ import { useFinanceStore } from "@/lib/store";
 import { formatDate as formatDateLabel, formatCurrency } from "@/lib/constants";
 import { TransactionItem } from "./TransactionItem";
 import { TransactionSkeleton } from "./ui/skeleton-loader";
+import { UpcomingRecurringBanner } from "./UpcomingRecurringBanner";
 import { Search, CalendarIcon } from "lucide-react";
 import { Input } from "./ui/input";
 import { motion } from "framer-motion";
@@ -13,7 +14,6 @@ import { format, differenceInDays, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-
 interface TransactionListProps {
   type: TransactionType;
   userId?: string;
@@ -357,6 +357,11 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
             </ResponsiveContainer>
           </div>
         </motion.div>
+      </div>
+      
+      {/* Upcoming Recurring Banner */}
+      <div className="px-4 mb-4">
+        <UpcomingRecurringBanner type={type} />
       </div>
       
       {/* Search */}
