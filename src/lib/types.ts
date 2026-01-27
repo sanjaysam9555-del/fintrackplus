@@ -45,6 +45,8 @@ export interface Transaction {
   notes?: string;
   isRecurring?: boolean;
   recurringFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  receiptUrl?: string;
+  isGst?: boolean;
 }
 
 export interface FinanceState {

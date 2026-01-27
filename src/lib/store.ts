@@ -250,6 +250,8 @@ export const useFinanceStore = create<FinanceStore>()(
           notes: transaction.notes || null,
           is_recurring: transaction.isRecurring || false,
           recurring_frequency: transaction.recurringFrequency || null,
+          receipt_url: transaction.receiptUrl || null,
+          is_gst: transaction.isGst || false,
         };
         
         // 1. Add to local state immediately (optimistic)
@@ -308,6 +310,8 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.date) dbUpdates.date = updates.date;
           if (updates.time) dbUpdates.time = updates.time;
           if (updates.notes !== undefined) dbUpdates.notes = updates.notes || null;
+          if (updates.receiptUrl !== undefined) dbUpdates.receipt_url = updates.receiptUrl || null;
+          if (updates.isGst !== undefined) dbUpdates.is_gst = updates.isGst || false;
           
           addToSyncQueue({
             type: 'update',

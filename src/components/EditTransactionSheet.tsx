@@ -16,6 +16,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { ReceiptUpload } from "./ReceiptUpload";
+import { GstToggle } from "./GstToggle";
 
 interface EditTransactionSheetProps {
   isOpen: boolean;
@@ -44,6 +46,8 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [showVendors, setShowVendors] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [vendorSearch, setVendorSearch] = useState("");
+  const [receiptUrl, setReceiptUrl] = useState<string | undefined>(transaction.receiptUrl);
+  const [isGst, setIsGst] = useState(transaction.isGst || false);
   
   // Reset state when transaction changes
   useEffect(() => {
@@ -57,6 +61,8 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     setPaymentMethod(transaction.paymentMethod);
     setDate(parseISO(transaction.date));
     setNotes(transaction.notes || "");
+    setReceiptUrl(transaction.receiptUrl);
+    setIsGst(transaction.isGst || false);
   }, [transaction]);
   
   const filteredCategories = categories.filter(c => c.type === type);
@@ -100,6 +106,8 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
       paymentMethod,
       date: format(date, 'yyyy-MM-dd'),
       notes: notes || undefined,
+      receiptUrl: receiptUrl || undefined,
+      isGst: isGst || undefined,
     }, userId);
     
     // Show success confirmation
@@ -626,6 +634,22 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                     className="mt-1"
                   />
                 </div>
+                
+                {/* Receipt Upload */}
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">
+                    Receipt/Invoice <span className="text-muted-foreground/60">(optional)</span>
+                  </Label>
+                  <ReceiptUpload
+                    value={receiptUrl}
+                    onChange={setReceiptUrl}
+                    userId={userId}
+                    transactionId={transaction.id}
+                  />
+                </div>
+                
+                {/* GST Toggle */}
+                <GstToggle value={isGst} onChange={setIsGst} />
               </div>
             </ScrollArea>
             

@@ -4,12 +4,13 @@ import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
-import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users, Paperclip, Receipt } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { EditTransactionSheet } from "./EditTransactionSheet";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -175,6 +176,19 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
             </div>
             
             <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Receipt & GST indicators */}
+              <div className="flex items-center gap-1">
+                {transaction.receiptUrl && (
+                  <span title="Receipt attached">
+                    <Paperclip size={12} className="text-primary" />
+                  </span>
+                )}
+                {transaction.isGst && (
+                  <Badge variant="outline" className="px-1.5 py-0 text-[10px] h-4 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                    GST
+                  </Badge>
+                )}
+              </div>
               <p className={cn(
                 "font-bold text-right whitespace-nowrap",
                 isExpense ? "text-destructive" : "text-success"
