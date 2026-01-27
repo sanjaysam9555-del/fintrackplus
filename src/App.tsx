@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useStatusBar } from "@/hooks/useStatusBar";
+import { AnimatePresence } from "framer-motion";
+import { SplashScreen } from "@/components/SplashScreen";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -78,9 +80,35 @@ const AppSkeleton = () => (
 
 const AppRoutes = () => {
   const { user, loading } = useAuth();
+  const [showSplash, setShowSplash] = useState(true);
+  const [hasSeenSplash, setHasSeenSplash] = useState(false);
   
   // Configure native status bar
   useStatusBar();
+  
+  // Check if splash was shown in this session
+  useEffect(() => {
+    const splashShown = sessionStorage.getItem('splashShown');
+    if (splashShown) {
+      setShowSplash(false);
+      setHasSeenSplash(true);
+    }
+  }, []);
+  
+  const handleSplashComplete = () => {
+    setShowSplash(false);
+    setHasSeenSplash(true);
+    sessionStorage.setItem('splashShown', 'true');
+  };
+
+  // Show splash only on first load of session
+  if (showSplash && !hasSeenSplash) {
+    return (
+      <AnimatePresence mode="wait">
+        <SplashScreen onComplete={handleSplashComplete} />
+      </AnimatePresence>
+    );
+  }
 
   if (loading) {
     return <AuthPageSkeleton />;

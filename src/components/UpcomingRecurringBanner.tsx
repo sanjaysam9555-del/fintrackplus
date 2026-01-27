@@ -5,7 +5,7 @@ import { useFinanceStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { TransactionType } from '@/lib/types';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { format, parseISO } from 'date-fns';
 
 interface UpcomingRecurringBannerProps {
@@ -60,15 +60,15 @@ export const UpcomingRecurringBanner = ({ type }: UpcomingRecurringBannerProps) 
       </button>
 
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
-        <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl">
-          <SheetHeader className="pb-4">
-            <SheetTitle className="flex items-center gap-2">
+        <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl" aria-describedby={undefined}>
+          <div className="pb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
               <Repeat size={18} className={cn(
                 type === 'expense' ? "text-destructive" : "text-success"
               )} />
               Upcoming {type === 'expense' ? 'Expenses' : 'Income'}
-            </SheetTitle>
-          </SheetHeader>
+            </h2>
+          </div>
 
           {/* Summary */}
           <div className={cn(
