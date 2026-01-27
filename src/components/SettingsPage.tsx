@@ -157,12 +157,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
     handleSectionChange(null);
   };
 
-  const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
-    { value: 'light', label: 'Light', icon: Sun, description: 'Light theme' },
-    { value: 'dark', label: 'Dark', icon: Moon, description: 'Dark theme' },
-    { value: 'oled', label: 'OLED', icon: Smartphone, description: 'Pure black' },
-    { value: 'system', label: 'System', icon: Monitor, description: 'Follow system' },
-  ];
+  // themeOptions moved below menuItems
 
   // Get unique vendors count from transactions
   const { transactions, vendors } = useFinanceStore();
@@ -213,6 +208,13 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
         },
       ]
     },
+  ];
+  
+  const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
+    { value: 'light', label: 'Light', icon: Sun, description: 'Light theme' },
+    { value: 'dark', label: 'Dark', icon: Moon, description: 'Dark theme' },
+    { value: 'oled', label: 'OLED', icon: Smartphone, description: 'Pure black' },
+    { value: 'system', label: 'System', icon: Monitor, description: 'Follow system' },
   ];
   
   // Render section sub-pages using dedicated components
@@ -298,7 +300,41 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
         </motion.div>
       </div>
       
-      {/* Theme Selector */}
+      {/* Menu Sections */}
+      {menuItems.map((section, sectionIndex) => (
+        <div key={section.section} className="px-4 mb-6">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+            {section.section}
+          </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: sectionIndex * 0.1 }}
+            className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
+          >
+            {section.items.map((item, index) => (
+              <button
+                key={item.label}
+                onClick={item.onClick}
+                className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${
+                  index !== section.items.length - 1 ? 'border-b border-border' : ''
+                }`}
+              >
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted">
+                  <item.icon size={20} className="text-muted-foreground" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-medium">{item.label}</p>
+                  <p className="text-sm text-muted-foreground">{item.sublabel}</p>
+                </div>
+                <ChevronRight size={18} className="text-muted-foreground" />
+              </button>
+            ))}
+          </motion.div>
+        </div>
+      ))}
+      
+      {/* Theme Selector - Now under Data Management */}
       <div className="px-4 mb-6">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
           Appearance
@@ -306,6 +342,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
           className="bg-card rounded-2xl p-4 shadow-card border border-border"
         >
           <div className="grid grid-cols-4 gap-2">
@@ -344,40 +381,6 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
           </p>
         </motion.div>
       </div>
-      
-      {/* Menu Sections */}
-      {menuItems.map((section, sectionIndex) => (
-        <div key={section.section} className="px-4 mb-6">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            {section.section}
-          </p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: sectionIndex * 0.1 }}
-            className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
-          >
-            {section.items.map((item, index) => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${
-                  index !== section.items.length - 1 ? 'border-b border-border' : ''
-                }`}
-              >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted">
-                  <item.icon size={20} className="text-muted-foreground" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium">{item.label}</p>
-                  <p className="text-sm text-muted-foreground">{item.sublabel}</p>
-                </div>
-                <ChevronRight size={18} className="text-muted-foreground" />
-              </button>
-            ))}
-          </motion.div>
-        </div>
-      ))}
       
       {/* Logout Button */}
       <div className="px-4 mb-6">

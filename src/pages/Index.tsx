@@ -3,12 +3,12 @@ import { GlassDock } from "@/components/GlassDock";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardSkeleton, TransactionSkeleton } from "@/components/ui/skeleton-loader";
+import { PageTransition } from "@/components/PageTransition";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { useSyncEngine } from "@/hooks/useSyncEngine";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
-import { Search } from "lucide-react";
 
 // Lazy load heavy components that aren't needed immediately
 const TransactionList = lazy(() => import("@/components/TransactionList").then(m => ({ default: m.TransactionList })));
@@ -21,6 +21,46 @@ const OnboardingFlow = lazy(() => import("@/components/OnboardingFlow").then(m =
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
 type ViewMode = TabId | 'settings' | 'ai';
 type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | 'logs' | 'partners' | null;
+
+// Enhanced skeleton with logo animation
+const LogoSkeleton = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <motion.div
+      className="flex flex-col items-center gap-3"
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.2 }}
+    >
+      <motion.div
+        className="w-12 h-12 rounded-xl bg-primary/20"
+        animate={{ 
+          scale: [1, 1.05, 1],
+          opacity: [0.5, 1, 0.5],
+        }}
+        transition={{ 
+          duration: 1, 
+          repeat: Infinity,
+          ease: 'easeInOut'
+        }}
+      />
+      <motion.div className="flex gap-1">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="w-1.5 h-1.5 rounded-full bg-primary/50"
+            animate={{ y: [0, -3, 0] }}
+            transition={{
+              duration: 0.4,
+              repeat: Infinity,
+              delay: i * 0.1,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+      </motion.div>
+    </motion.div>
+  </div>
+);
 
 // Skeleton loader for transaction lists
 const TransactionListSkeleton = () => (
@@ -68,6 +108,7 @@ const Index = () => {
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const { syncStatus } = useFinanceStore();
@@ -135,9 +176,16 @@ const Index = () => {
   };
   
   const handleTabChange = (tab: TabId) => {
+    if (tab === activeTab && viewMode === tab) return;
+    
+    // Show brief transition for tab changes
+    setIsTransitioning(true);
     setActiveTab(tab);
     setViewMode(tab);
     setSettingsSection(null);
+    
+    // Quick transition
+    setTimeout(() => setIsTransitioning(false), 150);
   };
   
   const renderContent = () => {
@@ -223,15 +271,20 @@ const Index = () => {
         {/* Main Content Area */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 h-screen overflow-y-auto overscroll-contain scroll-smooth"
+          className="flex-1 h-screen overflow-y-auto overscroll-contain scroll-smooth relative"
         >
+          {/* Page transition overlay */}
+          <AnimatePresence>
+            {isTransitioning && <PageTransition isLoading={true} />}
+          </AnimatePresence>
+          
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={viewMode}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
               className="max-w-md mx-auto md:max-w-none md:mx-0 will-change-transform"
             >
               {renderContent()}
