@@ -166,10 +166,10 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOvervi
             <AnimatePresence>
               {displayedProjects.map((project) => {
                 const spent = getProjectSpending(project.id);
+                const income = getProjectIncome(project.id);
+                const net = income - spent;
                 const remaining = project.budgetLimit - spent;
-                const actualMargin = project.budgetLimit - spent;
-                const expectedMargin = project.margin || 0;
-                const healthStatus = getHealthStatus(actualMargin, expectedMargin);
+                const healthStatus: HealthStatus = net >= 0 ? 'healthy' : net >= -(project.budgetLimit * 0.2) ? 'at-risk' : 'critical';
                 const budgetPercent = project.budgetLimit > 0 ? Math.min((spent / project.budgetLimit) * 100, 100) : 0;
                 const transactionCount = getProjectTransactions(project.id).length;
                 const isOverBudget = spent > project.budgetLimit && project.budgetLimit > 0;
@@ -248,34 +248,34 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOvervi
 
                       {/* Stats Grid */}
                       <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-green-500/10 rounded-lg p-2">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Income</p>
+                          <p className="text-xs font-semibold mt-0.5 text-green-600">₹{income.toLocaleString()}</p>
+                        </div>
+                        <div className="bg-red-500/10 rounded-lg p-2">
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Expenses</p>
+                          <p className="text-xs font-semibold mt-0.5 text-red-600">₹{spent.toLocaleString()}</p>
+                        </div>
                         <div className="bg-muted/50 rounded-lg p-2">
                           <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Budget</p>
                           <p className="text-xs font-semibold mt-0.5">₹{project.budgetLimit.toLocaleString()}</p>
                         </div>
-                        <div className="bg-muted/50 rounded-lg p-2">
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Spent</p>
-                          <p className="text-xs font-semibold mt-0.5">₹{spent.toLocaleString()}</p>
-                        </div>
-                        <div className="bg-muted/50 rounded-lg p-2">
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Exp. Margin</p>
-                          <p className="text-xs font-semibold mt-0.5">₹{expectedMargin.toLocaleString()}</p>
-                        </div>
                         <div className={cn(
                           "rounded-lg p-2",
-                          actualMargin >= expectedMargin ? "bg-green-500/10" : "bg-red-500/10"
+                          net >= 0 ? "bg-green-500/10" : "bg-red-500/10"
                         )}>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Actual</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Net</p>
                           <div className="flex items-center gap-1 mt-0.5">
-                            {actualMargin >= expectedMargin ? (
+                            {net >= 0 ? (
                               <TrendingUp size={10} className="text-green-600" />
                             ) : (
                               <TrendingDown size={10} className="text-red-600" />
                             )}
                             <p className={cn(
                               "text-xs font-semibold",
-                              actualMargin >= expectedMargin ? "text-green-600" : "text-red-600"
+                              net >= 0 ? "text-green-600" : "text-red-600"
                             )}>
-                              ₹{actualMargin.toLocaleString()}
+                              {net >= 0 ? '+' : ''}₹{net.toLocaleString()}
                             </p>
                           </div>
                         </div>
