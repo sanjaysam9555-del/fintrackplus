@@ -94,6 +94,7 @@ export const useCloudSync = () => {
           id: p.id,
           name: p.name,
           description: p.description || undefined,
+          notes: (p as unknown as { notes?: string }).notes || undefined,
           budgetLimit: Number(p.budget_limit),
           margin: Number((p as unknown as { margin?: number }).margin) || 0,
           archived: (p as unknown as { archived?: boolean }).archived || false,

@@ -1,5 +1,6 @@
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { X, FolderKanban, TrendingUp, TrendingDown, Store, Calendar, Receipt, ArrowRight } from "lucide-react";
+import { X, FolderKanban, TrendingUp, TrendingDown, Store, Calendar, Receipt, ArrowRight, ArrowDown, ArrowUp, StickyNote, Loader2 } from "lucide-react";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
 import { format } from "date-fns";
@@ -11,6 +12,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
 
 interface VendorBreakdown {
   vendor: string;
@@ -24,8 +26,10 @@ interface ProjectDetailSheetProps {
   isOpen: boolean;
   onClose: () => void;
   spent: number;
+  income: number;
   transactions: Transaction[];
   vendorBreakdown: VendorBreakdown[];
+  userId?: string;
 }
 
 export const ProjectDetailSheet = ({
@@ -33,16 +37,60 @@ export const ProjectDetailSheet = ({
   isOpen,
   onClose,
   spent,
+  income,
   transactions,
   vendorBreakdown,
+  userId,
 }: ProjectDetailSheetProps) => {
-  const { getCategoryById } = useFinanceStore();
+  const { getCategoryById, updateProject } = useFinanceStore();
+  const [notes, setNotes] = useState("");
+  const [isSavingNotes, setIsSavingNotes] = useState(false);
+  
+  // Sync notes state with project
+  useEffect(() => {
+    if (project) {
+      setNotes(project.notes || "");
+    }
+  }, [project]);
+  
+  // Debounced save for notes
+  const saveNotes = useCallback((newNotes: string) => {
+    if (!project || !userId) return;
+    
+    setIsSavingNotes(true);
+    updateProject(project.id, { notes: newNotes }, userId);
+    
+    // Show saving indicator briefly
+    setTimeout(() => setIsSavingNotes(false), 500);
+  }, [project, userId, updateProject]);
+  
+  // Debounce notes updates
+  useEffect(() => {
+    if (!project) return;
+    
+    const timer = setTimeout(() => {
+      if (notes !== (project.notes || "")) {
+        saveNotes(notes);
+      }
+    }, 500);
+    
+    return () => clearTimeout(timer);
+  }, [notes, project, saveNotes]);
   
   if (!project) return null;
 
+  // Sort transactions by date descending
+  const sortedTransactions = [...transactions].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+  
+  // Separate income and expense transactions
+  const incomeTransactions = sortedTransactions.filter(t => t.type === 'income');
+  const expenseTransactions = sortedTransactions.filter(t => t.type === 'expense');
+
+  const net = income - spent;
   const actualMargin = project.budgetLimit - spent;
   const expectedMargin = project.margin || 0;
-  const remaining = project.budgetLimit - spent;
   const isHealthy = actualMargin >= expectedMargin;
 
   return (
@@ -73,34 +121,31 @@ export const ProjectDetailSheet = ({
 
         <ScrollArea className="flex-1 overflow-auto">
           <div className="p-4 space-y-6">
-            {/* Financial Summary */}
+            {/* Financial Summary - 2x2 Grid */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-muted/50 rounded-xl p-3">
                 <p className="text-xs text-muted-foreground">Budget</p>
                 <p className="text-lg font-bold">₹{project.budgetLimit.toLocaleString()}</p>
               </div>
-              <div className="bg-muted/50 rounded-xl p-3">
-                <p className="text-xs text-muted-foreground">Spent</p>
-                <p className="text-lg font-bold">₹{spent.toLocaleString()}</p>
-              </div>
-              <div className="bg-muted/50 rounded-xl p-3">
-                <p className="text-xs text-muted-foreground">Remaining</p>
-                <p className={cn("text-lg font-bold", remaining < 0 ? "text-red-500" : "text-green-500")}>
-                  ₹{remaining.toLocaleString()}
-                </p>
-              </div>
-              <div className={cn("rounded-xl p-3", isHealthy ? "bg-green-500/10" : "bg-red-500/10")}>
-                <p className="text-xs text-muted-foreground">Actual Margin</p>
+              <div className="bg-green-500/10 rounded-xl p-3">
+                <p className="text-xs text-muted-foreground">Income</p>
                 <div className="flex items-center gap-1">
-                  {isHealthy ? (
-                    <TrendingUp size={16} className="text-green-500" />
-                  ) : (
-                    <TrendingDown size={16} className="text-red-500" />
-                  )}
-                  <p className={cn("text-lg font-bold", isHealthy ? "text-green-500" : "text-red-500")}>
-                    ₹{actualMargin.toLocaleString()}
-                  </p>
+                  <ArrowDown size={14} className="text-green-500" />
+                  <p className="text-lg font-bold text-green-500">₹{income.toLocaleString()}</p>
                 </div>
+              </div>
+              <div className="bg-red-500/10 rounded-xl p-3">
+                <p className="text-xs text-muted-foreground">Expenses</p>
+                <div className="flex items-center gap-1">
+                  <ArrowUp size={14} className="text-red-500" />
+                  <p className="text-lg font-bold text-red-500">₹{spent.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className={cn("rounded-xl p-3", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
+                <p className="text-xs text-muted-foreground">Net</p>
+                <p className={cn("text-lg font-bold", net >= 0 ? "text-green-500" : "text-red-500")}>
+                  {net >= 0 ? '+' : ''}₹{net.toLocaleString()}
+                </p>
               </div>
             </div>
 
@@ -123,6 +168,119 @@ export const ProjectDetailSheet = ({
                   <span className={cn("font-bold", actualMargin >= expectedMargin ? "text-green-500" : "text-red-500")}>
                     {actualMargin >= expectedMargin ? '+' : ''}₹{(actualMargin - expectedMargin).toLocaleString()}
                   </span>
+                </div>
+              </div>
+            )}
+
+            {/* Project Notes */}
+            <div>
+              <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <StickyNote size={18} className="text-muted-foreground" />
+                Project Notes
+                {isSavingNotes && (
+                  <Loader2 size={14} className="animate-spin text-muted-foreground" />
+                )}
+              </h3>
+              <Textarea
+                placeholder="Add notes about this project..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                className="min-h-[100px] resize-none"
+              />
+            </div>
+
+            {/* Income Entries */}
+            {incomeTransactions.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <ArrowDown size={18} className="text-green-500" />
+                  Income Entries ({incomeTransactions.length})
+                </h3>
+                <div className="space-y-2">
+                  {incomeTransactions.slice(0, 10).map((transaction) => {
+                    const category = getCategoryById(transaction.categoryId);
+                    return (
+                      <motion.div
+                        key={transaction.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="bg-green-500/5 border border-green-500/20 rounded-xl p-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-muted-foreground" />
+                            <span className="text-sm">{format(new Date(transaction.date), 'MMM d, yyyy')}</span>
+                          </div>
+                          <span className="font-semibold text-green-500">+₹{transaction.amount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <ArrowRight size={12} className="text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">{transaction.vendor}</span>
+                          {category && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-background">
+                              {category.name}
+                            </span>
+                          )}
+                        </div>
+                        {transaction.notes && (
+                          <p className="text-xs text-muted-foreground mt-1 pl-5">{transaction.notes}</p>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                  {incomeTransactions.length > 10 && (
+                    <p className="text-center text-sm text-muted-foreground py-2">
+                      +{incomeTransactions.length - 10} more income entries
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Expense Entries */}
+            {expenseTransactions.length > 0 && (
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <ArrowUp size={18} className="text-red-500" />
+                  Expense Entries ({expenseTransactions.length})
+                </h3>
+                <div className="space-y-2">
+                  {expenseTransactions.slice(0, 10).map((transaction) => {
+                    const category = getCategoryById(transaction.categoryId);
+                    return (
+                      <motion.div
+                        key={transaction.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="bg-red-500/5 border border-red-500/20 rounded-xl p-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-muted-foreground" />
+                            <span className="text-sm">{format(new Date(transaction.date), 'MMM d, yyyy')}</span>
+                          </div>
+                          <span className="font-semibold text-red-500">-₹{transaction.amount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <ArrowRight size={12} className="text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">{transaction.vendor}</span>
+                          {category && (
+                            <span className="text-xs px-2 py-0.5 rounded-full bg-background">
+                              {category.name}
+                            </span>
+                          )}
+                        </div>
+                        {transaction.notes && (
+                          <p className="text-xs text-muted-foreground mt-1 pl-5">{transaction.notes}</p>
+                        )}
+                      </motion.div>
+                    );
+                  })}
+                  {expenseTransactions.length > 10 && (
+                    <p className="text-center text-sm text-muted-foreground py-2">
+                      +{expenseTransactions.length - 10} more expense entries
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -155,58 +313,10 @@ export const ProjectDetailSheet = ({
               </div>
             )}
 
-            {/* Transaction History */}
-            {transactions.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Receipt size={18} className="text-muted-foreground" />
-                  Payment History
-                </h3>
-                <div className="space-y-2">
-                  {transactions.slice(0, 10).map((transaction) => {
-                    const category = getCategoryById(transaction.categoryId);
-                    return (
-                      <motion.div
-                        key={transaction.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="bg-muted/50 rounded-xl p-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Calendar size={14} className="text-muted-foreground" />
-                            <span className="text-sm">{format(new Date(transaction.date), 'MMM d, yyyy')}</span>
-                          </div>
-                          <span className="font-semibold text-red-500">-₹{transaction.amount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <ArrowRight size={12} className="text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">{transaction.vendor}</span>
-                          {category && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-background">
-                              {category.name}
-                            </span>
-                          )}
-                        </div>
-                        {transaction.notes && (
-                          <p className="text-xs text-muted-foreground mt-1 pl-5">{transaction.notes}</p>
-                        )}
-                      </motion.div>
-                    );
-                  })}
-                  {transactions.length > 10 && (
-                    <p className="text-center text-sm text-muted-foreground py-2">
-                      +{transactions.length - 10} more transactions
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
             {transactions.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Receipt size={40} className="mx-auto mb-2 opacity-50" />
-                <p>No payments yet for this project</p>
+                <p>No transactions yet for this project</p>
               </div>
             )}
           </div>

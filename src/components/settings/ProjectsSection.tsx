@@ -21,7 +21,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [archiveProject, setArchiveProject] = useState<typeof projects[0] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' });
+  const [formData, setFormData] = useState({ name: '', description: '', notes: '', budgetLimit: 0, margin: 0, color: '#10B981' });
 
   // Filter projects
   const activeProjects = projects.filter(p => !p.archived);
@@ -36,13 +36,14 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
     addProject({
       name: formData.name.trim(),
       description: formData.description.trim(),
+      notes: formData.notes.trim() || undefined,
       budgetLimit: formData.budgetLimit,
       margin: formData.margin,
       color: formData.color,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' });
+    setFormData({ name: '', description: '', notes: '', budgetLimit: 0, margin: 0, color: '#10B981' });
   };
 
   const handleUpdate = (id: string) => {
@@ -53,6 +54,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
     updateProject(id, {
       name: formData.name.trim(),
       description: formData.description.trim(),
+      notes: formData.notes.trim() || undefined,
       budgetLimit: formData.budgetLimit,
       margin: formData.margin,
       color: formData.color,
@@ -82,6 +84,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
     setFormData({
       name: project.name,
       description: project.description || '',
+      notes: project.notes || '',
       budgetLimit: project.budgetLimit,
       margin: project.margin || 0,
       color: project.color,
@@ -98,7 +101,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           <h1 className="text-xl font-bold">Project Labels</h1>
         </div>
         {!showArchived && (
-          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', budgetLimit: 0, margin: 0, color: '#10B981' }); }}>
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', budgetLimit: 0, margin: 0, color: '#10B981' }); }}>
             <Plus size={16} className="mr-1" /> Add
           </Button>
         )}

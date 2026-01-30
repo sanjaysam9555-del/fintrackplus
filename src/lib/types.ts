@@ -14,6 +14,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
+  notes?: string;
   budgetLimit: number;
   margin: number;
   color: string;

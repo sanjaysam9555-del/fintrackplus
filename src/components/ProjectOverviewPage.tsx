@@ -41,7 +41,7 @@ const getHealthDot = (status: HealthStatus): string => {
 };
 
 export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOverviewPageProps) => {
-  const { projects, getProjectSpending, transactions, updateProject } = useFinanceStore();
+  const { projects, getProjectSpending, getProjectIncome, transactions, updateProject } = useFinanceStore();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [archiveProject, setArchiveProject] = useState<Project | null>(null);
@@ -56,14 +56,14 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOvervi
   const totalMargin = activeProjects.reduce((sum, p) => sum + (p.margin || 0), 0);
   const totalSpent = activeProjects.reduce((sum, p) => sum + getProjectSpending(p.id), 0);
 
-  // Get transactions for a project
+  // Get ALL transactions for a project (not just expenses)
   const getProjectTransactions = (projectId: string) => {
-    return transactions.filter(t => t.projectId === projectId && t.type === 'expense');
+    return transactions.filter(t => t.projectId === projectId);
   };
 
-  // Get vendor breakdown for a project
+  // Get vendor breakdown for a project (expenses only for vendor payments)
   const getVendorBreakdown = (projectId: string) => {
-    const projectTransactions = getProjectTransactions(projectId);
+    const projectTransactions = transactions.filter(t => t.projectId === projectId && t.type === 'expense');
     const vendorMap = new Map<string, { amount: number; count: number; lastDate: string }>();
     
     projectTransactions.forEach(t => {
@@ -323,8 +323,10 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOvervi
         isOpen={!!selectedProject}
         onClose={() => setSelectedProject(null)}
         spent={selectedProject ? getProjectSpending(selectedProject.id) : 0}
+        income={selectedProject ? getProjectIncome(selectedProject.id) : 0}
         transactions={selectedProject ? getProjectTransactions(selectedProject.id) : []}
         vendorBreakdown={selectedProject ? getVendorBreakdown(selectedProject.id) : []}
+        userId={userId}
       />
 
       {/* Archive Confirmation Dialog */}

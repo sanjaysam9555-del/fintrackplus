@@ -87,6 +87,7 @@ interface FinanceStore extends FinanceState {
   getCategoryById: (id: string) => Category | undefined;
   getProjectById: (id: string) => Project | undefined;
   getProjectSpending: (projectId: string) => number;
+  getProjectIncome: (projectId: string) => number;
   getTotalIncome: (startDate?: string, endDate?: string) => number;
   getTotalExpense: (startDate?: string, endDate?: string) => number;
   getUniqueVendors: () => string[];
@@ -516,6 +517,7 @@ export const useFinanceStore = create<FinanceStore>()(
           const dbUpdates: Record<string, unknown> = {};
           if (updates.name) dbUpdates.name = updates.name;
           if (updates.description !== undefined) dbUpdates.description = updates.description;
+          if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
           if (updates.budgetLimit !== undefined) dbUpdates.budget_limit = updates.budgetLimit;
           if (updates.margin !== undefined) dbUpdates.margin = updates.margin;
           if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
@@ -823,6 +825,11 @@ export const useFinanceStore = create<FinanceStore>()(
       getProjectSpending: (projectId) => 
         get().transactions
           .filter((t) => t.projectId === projectId && t.type === 'expense')
+          .reduce((sum, t) => sum + t.amount, 0),
+      
+      getProjectIncome: (projectId) => 
+        get().transactions
+          .filter((t) => t.projectId === projectId && t.type === 'income')
           .reduce((sum, t) => sum + t.amount, 0),
       
       getTotalIncome: (startDate, endDate) => {
