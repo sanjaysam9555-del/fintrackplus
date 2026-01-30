@@ -1,142 +1,157 @@
 
-# Fix Project Cards Data Display & Mobile Receipt Upload
+# Rename App: FinTrack Pro → FinTrack⁺
 
-## Issues Found
+## Visual Design
 
-### Issue 1: Project Cards Show Wrong Data
-The project cards in the Projects tab display incorrect calculations that don't match the data shown in project details.
+The new name displays "FinTrack" with a superscript "+" at the top-right of the "k":
 
-**Root Cause:**
-In `ProjectOverviewPage.tsx`, the cards show:
-- Budget, Spent, Expected Margin, and "Actual Margin"
-- But "Actual Margin" is calculated as `Budget - Spent` which is **meaningless** for projects that have income
-
-The `ProjectDetailSheet.tsx` correctly shows Income vs Expenses and Net, but the cards don't display income at all.
-
-**Example from database:**
-- Project "Nikunj Kanika": Income = ₹930,000, Expenses = ₹27,500
-- Card shows: Budget ₹1,100,000, Spent ₹27,500, Actual ₹1,072,500 (budget - spent)
-- Should show: Income ₹930,000, Expenses ₹27,500, Net +₹902,500 (income - expenses)
-
-### Issue 2: Mobile Camera Opens Without Choice
-When tapping "Attach Receipt" on mobile, the camera opens immediately without giving the option to choose from photo library.
-
-**Root Cause:**
-The `capture="environment"` attribute on the file input forces camera-only mode on mobile browsers.
-
----
-
-## Solution
-
-### Fix 1: Update Project Card Stats Grid
-
-Change the 2x2 stats grid from:
-
-```text
-BEFORE                    AFTER
-┌─────────┬──────────┐   ┌─────────┬──────────┐
-│ Budget  │ Spent    │   │ Income  │ Expenses │
-├─────────┼──────────┤   ├─────────┼──────────┤
-│Exp.Margin│ Actual  │   │ Budget  │ Net      │
-└─────────┴──────────┘   └─────────┴──────────┘
+```
+    FinTrack⁺
+            ↑
+       superscript +
 ```
 
-**New calculations:**
-- **Income**: Total income from `getProjectIncome(project.id)`
-- **Expenses**: Total expenses from `getProjectSpending(project.id)`
-- **Budget**: Project's budget limit
-- **Net**: Income - Expenses (color-coded green/red)
-
-This matches what's shown in the project details sheet.
-
-### Fix 2: Remove Camera-Only Restriction
-
-Remove the `capture="environment"` attribute from the receipt upload input. This allows mobile browsers to show their native file picker which includes both:
-- Take Photo (Camera)
-- Photo Library
-- Browse Files
+**In React/HTML:** `FinTrack<sup>+</sup>` with styling for proper sizing
+**In plain text:** `FinTrack+` (for config files, meta tags, etc.)
 
 ---
 
-## Files to Modify
+## Files to Update
 
-| File | Change |
-|------|--------|
-| `src/components/ProjectOverviewPage.tsx` | Update stats grid to show Income/Expenses/Budget/Net instead of Budget/Spent/Margin/Actual |
-| `src/components/ReceiptUpload.tsx` | Remove `capture="environment"` attribute to enable photo library choice |
+| File | Current | New | Type |
+|------|---------|-----|------|
+| `index.html` | FinTrack Pro | FinTrack+ (plain) | Meta/Title |
+| `public/manifest.json` | FinTrack Pro | FinTrack+ | PWA Config |
+| `capacitor.config.ts` | FinTrack Pro | FinTrack+ | Native App |
+| `vite.config.ts` | FinTrack Pro | FinTrack+ | Build Config |
+| `src/pages/Auth.tsx` | FinTrack Pro | FinTrack⁺ (styled) | UI Component |
+| `src/pages/Install.tsx` | FinTrack Pro | FinTrack⁺ (styled) | UI Component |
+| `src/components/SplashScreen.tsx` | FinTrack Pro | FinTrack⁺ (styled) | Animation |
+| `src/components/OnboardingFlow.tsx` | FinTrack Pro | FinTrack⁺ (styled) | UI Component |
+| `src/components/DesktopSidebar.tsx` | FinTrack Pro v1.0.0 | FinTrack⁺ v1.0.0 | UI Component |
+| `src/components/SettingsPage.tsx` | FinTrack Pro v1.0.0 | FinTrack⁺ v1.0.0 | UI Component |
+| `src/components/settings/ReportsSection.tsx` | FinTrack | FinTrack+ | Export/Reports |
 
 ---
 
-## Technical Details
+## Implementation Details
 
-### ProjectOverviewPage.tsx Changes
+### 1. Config Files (Plain Text)
 
-**Lines to update (approximately 167-282):**
+These files cannot render HTML, so we use plain `FinTrack+`:
 
-1. Add income calculation for each project card:
+**index.html**
+```html
+<title>FinTrack+ - By Saffron Events</title>
+<meta name="description" content="FinTrack+ - By Saffron Events | Track your finances with ease" />
+<meta name="author" content="FinTrack+" />
+<meta property="og:title" content="FinTrack+" />
+<meta name="apple-mobile-web-app-title" content="FinTrack+" />
+<meta name="twitter:site" content="@FinTrackPlus" />
+```
+
+**public/manifest.json**
+```json
+{
+  "name": "FinTrack+",
+  "short_name": "FinTrack+"
+}
+```
+
+**capacitor.config.ts**
 ```typescript
-const income = getProjectIncome(project.id);
-const net = income - spent;
+appId: 'app.lovable.fintrackplus',
+appName: 'FinTrack+',
 ```
 
-2. Update the stats grid (lines 250-282) to show:
-```tsx
-<div className="grid grid-cols-2 gap-2">
-  {/* Income */}
-  <div className="bg-green-500/10 rounded-lg p-2">
-    <p className="text-[9px] text-muted-foreground uppercase">Income</p>
-    <p className="text-xs font-semibold text-green-600">₹{income.toLocaleString()}</p>
-  </div>
-  {/* Expenses */}
-  <div className="bg-red-500/10 rounded-lg p-2">
-    <p className="text-[9px] text-muted-foreground uppercase">Expenses</p>
-    <p className="text-xs font-semibold text-red-600">₹{spent.toLocaleString()}</p>
-  </div>
-  {/* Budget */}
-  <div className="bg-muted/50 rounded-lg p-2">
-    <p className="text-[9px] text-muted-foreground uppercase">Budget</p>
-    <p className="text-xs font-semibold">₹{project.budgetLimit.toLocaleString()}</p>
-  </div>
-  {/* Net */}
-  <div className={cn("rounded-lg p-2", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-    <p className="text-[9px] text-muted-foreground uppercase">Net</p>
-    <p className={cn("text-xs font-semibold", net >= 0 ? "text-green-600" : "text-red-600")}>
-      {net >= 0 ? '+' : ''}₹{net.toLocaleString()}
-    </p>
-  </div>
-</div>
+**vite.config.ts**
+```typescript
+manifest: {
+  name: 'FinTrack+',
+  short_name: 'FinTrack+',
+}
 ```
 
-3. Update health status calculation to use Net instead of budget-based margin
+### 2. React Components (Styled Superscript)
 
-### ReceiptUpload.tsx Changes
-
-**Line 140:** Remove the `capture` attribute:
+Create a reusable brand component pattern:
 
 ```tsx
-// Before
-<input
-  type="file"
-  accept="image/*"
-  capture="environment"  // Remove this
-  ...
-/>
-
-// After
-<input
-  type="file"
-  accept="image/*"
-  ...
-/>
+// Styled superscript pattern for all UI components:
+<span>
+  FinTrack
+  <sup className="text-[0.6em] ml-0.5 font-bold">+</sup>
+</span>
 ```
+
+**Auth.tsx** (Login page heading)
+```tsx
+<h1 className="text-3xl font-bold ...">
+  FinTrack<sup className="text-[0.6em] ml-0.5">+</sup>
+</h1>
+```
+
+**SplashScreen.tsx** (App launch animation)
+```tsx
+<h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+  FinTrack<sup className="text-[0.5em] ml-0.5 text-primary">+</sup>
+</h1>
+```
+
+**OnboardingFlow.tsx** (Welcome message)
+```tsx
+title: 'Welcome to FinTrack+!',
+// Note: Plain text since it's in a data object
+```
+
+**Install.tsx** (PWA install prompt)
+```tsx
+<h1 className="text-2xl font-bold mb-2">
+  Install FinTrack<sup className="text-[0.6em] ml-0.5">+</sup>
+</h1>
+```
+
+**DesktopSidebar.tsx** (Version footer)
+```tsx
+<p className="text-[10px] text-muted-foreground text-center mt-3">
+  FinTrack<sup className="text-[0.5em]">+</sup> v1.0.0
+</p>
+```
+
+**SettingsPage.tsx** (Version footer)
+```tsx
+<p className="text-xs text-muted-foreground">
+  FinTrack<sup className="text-[0.5em]">+</sup> v1.0.0
+</p>
+```
+
+### 3. Export/Reports
+
+**ReportsSection.tsx**
+```typescript
+a.download = `fintrackplus-${format(...)}.csv`;
+// and
+Generated by FinTrack+
+```
+
+### 4. Storage Keys (Optional - Internal)
+
+These are internal storage keys that users never see. For consistency:
+- `fintrack_sync_queue` → keep as-is (no breaking change)
+- `fintrack_pending_operations` → keep as-is
+- `fintrack-theme` → keep as-is
 
 ---
 
-## Receipt Sync Confirmation
+## Summary of Changes
 
-Receipts ARE correctly synced to cloud and associated with projects:
-- Receipts upload to: `receipts/{userId}/{transactionId}.jpg`
-- URL saved in: `transactions.receipt_url`
-- Transactions link to projects via: `transactions.project_id`
+| Category | Count | Files |
+|----------|-------|-------|
+| HTML/Meta | 1 | index.html |
+| PWA Config | 1 | manifest.json |
+| Build Config | 2 | capacitor.config.ts, vite.config.ts |
+| UI Components | 6 | Auth, Install, SplashScreen, Onboarding, DesktopSidebar, SettingsPage |
+| Reports | 1 | ReportsSection.tsx |
+| **Total** | **11** | |
 
-The database shows receipts are being saved (example: transaction `d25e5208...` has receipt URL). This is working correctly.
+Alt attributes for images will also be updated from "FinTrack Pro" to "FinTrack+".
