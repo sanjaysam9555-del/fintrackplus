@@ -145,7 +145,7 @@ const AlreadyInstalled = () => (
     </div>
     <h2 className="text-xl font-bold mb-2">Already Installed!</h2>
     <p className="text-muted-foreground">
-      You're already using FinTrack Pro as an installed app. Enjoy!
+      You're already using FinTrack<sup className="text-[0.5em]">+</sup> as an installed app. Enjoy!
     </p>
   </motion.div>
 );
@@ -208,11 +208,11 @@ export const InstallPage = () => {
             <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl" />
             <img 
               src="/app-icon-192.png" 
-              alt="FinTrack Pro" 
+              alt="FinTrack+" 
               className="w-20 h-20 rounded-2xl shadow-lg relative z-10"
             />
           </div>
-          <h1 className="text-2xl font-bold mb-2">Install FinTrack Pro</h1>
+          <h1 className="text-2xl font-bold mb-2">Install FinTrack<sup className="text-[0.6em] ml-0.5">+</sup></h1>
           <p className="text-muted-foreground text-sm">
             Add to your home screen for the best experience
           </p>

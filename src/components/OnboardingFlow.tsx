@@ -20,7 +20,7 @@ interface OnboardingFlowProps {
 const steps = [
   {
     icon: Sparkles,
-    title: 'Welcome to FinTrack Pro!',
+    title: 'Welcome to FinTrack+!',
     description: 'Your personal finance companion. Let\'s take a quick tour to help you get started.',
     color: 'bg-primary',
   },

@@ -24,8 +24,8 @@ export default defineConfig(({ mode }) => ({
       },
       includeAssets: ['app-icon-192.png', 'app-icon-512.png', 'favicon.ico'],
       manifest: {
-        name: 'FinTrack Pro',
-        short_name: 'FinTrack',
+        name: 'FinTrack+',
+        short_name: 'FinTrack+',
         description: 'Track your finances with ease - An App by Saffron Events',
         theme_color: '#3b82f6',
         background_color: '#f8fafc',

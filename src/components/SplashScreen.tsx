@@ -44,7 +44,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         >
           <motion.img
             src={appIcon}
-            alt="FinTrack Pro"
+            alt="FinTrack+"
             className="w-24 h-24 rounded-3xl shadow-2xl"
             initial={{ rotate: -10 }}
             animate={{ rotate: 0 }}
@@ -73,7 +73,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           transition={{ delay: 0.3, duration: 0.4 }}
         >
           <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            FinTrack Pro
+            FinTrack<sup className="text-[0.5em] ml-0.5 text-primary">+</sup>
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Smart Finance Management

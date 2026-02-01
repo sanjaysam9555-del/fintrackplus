@@ -397,7 +397,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
       {/* App Info */}
       <div className="px-4 text-center">
         <p className="text-xs text-muted-foreground">
-          FinTrack Pro v1.0.0
+          FinTrack<sup className="text-[0.5em]">+</sup> v1.0.0
         </p>
         <p className="text-xs text-muted-foreground mt-1">
           {user?.email}
