@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { TrendingUp } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 
-type TimeFilter = 'week' | 'month' | 'year' | 'custom';
+type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
 
 interface CashFlowChartProps {
   transactions: Transaction[];
@@ -34,7 +34,35 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
     
     const dataPoints: ChartDataPoint[] = [];
     
-    if (timeFilter === 'week' || daysDiff <= 7) {
+    if (timeFilter === 'fy') {
+      // Financial Year: Show 12 months from April to March
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+      
+      for (let i = 0; i < 12; i++) {
+        const monthIndex = (3 + i) % 12; // Start from April (month 3)
+        const year = monthIndex < 3 ? fyStartYear + 1 : fyStartYear;
+        const monthStart = new Date(year, monthIndex, 1);
+        const monthEnd = new Date(year, monthIndex + 1, 0);
+        
+        const monthTransactions = transactions.filter(t => {
+          const date = parseISO(t.date);
+          return date >= monthStart && date <= monthEnd;
+        });
+        
+        const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        const expense = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        
+        dataPoints.push({
+          name: format(monthStart, 'MMM'),
+          income,
+          expense,
+          net: income - expense,
+          date: format(monthStart, 'yyyy-MM-dd'),
+        });
+      }
+    } else if (timeFilter === 'week' || daysDiff <= 7) {
       // Show 7 days
       for (let i = 6; i >= 0; i--) {
         const day = new Date(endDate);
