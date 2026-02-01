@@ -25,11 +25,11 @@ interface DashboardProps {
   onEditSheetChange?: (isOpen: boolean) => void;
 }
 
-type TimeFilter = 'week' | 'month' | 'year' | 'custom';
+type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
 
 export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange }: DashboardProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   // IMPORTANT: Both mobile + desktop header sections are mounted (one is CSS-hidden).
@@ -50,6 +50,17 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
     const start = new Date();
     
     switch (timeFilter) {
+      case 'fy': {
+        // Financial Year: April 1st to March 31st
+        const currentMonth = todayDate.getMonth(); // 0-11
+        const currentYear = todayDate.getFullYear();
+        // If Jan-Mar (0-2), FY started previous year; Apr-Dec (3-11), FY started this year
+        const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+        return {
+          start: `${fyStartYear}-04-01`,
+          end: `${fyStartYear + 1}-03-31`,
+        };
+      }
       case 'week':
         start.setDate(todayDate.getDate() - 7);
         break;
@@ -130,6 +141,12 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   
   const getTimeFilterLabel = () => {
     switch (timeFilter) {
+      case 'fy': {
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+        const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+        return `FY ${fyStartYear}-${String(fyStartYear + 1).slice(-2)}`;
+      }
       case 'week': return 'This Week';
       case 'month': return format(today, 'MMMM yyyy');
       case 'year': return format(today, 'yyyy');
@@ -217,7 +234,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                     
                     {/* Quick Filters */}
                     <div className="flex gap-1">
-                      {(['week', 'month', 'year'] as TimeFilter[]).map((filter) => (
+                      {(['fy', 'week', 'month', 'year'] as TimeFilter[]).map((filter) => (
                         <button
                           key={filter}
                           onClick={() => {
@@ -232,7 +249,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                               : "bg-muted text-muted-foreground hover:bg-muted/80"
                           )}
                         >
-                          {filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : 'Year'}
+                          {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : 'Year'}
                         </button>
                       ))}
                     </div>
@@ -448,7 +465,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                     
                     {/* Quick Filters */}
                     <div className="flex gap-1">
-                      {(['week', 'month', 'year'] as TimeFilter[]).map((filter) => (
+                      {(['fy', 'week', 'month', 'year'] as TimeFilter[]).map((filter) => (
                         <button
                           key={filter}
                           onClick={() => {
@@ -463,7 +480,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                               : "bg-muted text-muted-foreground hover:bg-muted/80"
                           )}
                         >
-                          {filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : 'Year'}
+                          {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : 'Year'}
                         </button>
                       ))}
                     </div>

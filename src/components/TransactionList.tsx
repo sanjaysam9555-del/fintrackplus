@@ -20,12 +20,12 @@ interface TransactionListProps {
   onEditSheetChange?: (isOpen: boolean) => void;
 }
 
-type TimeFilter = 'week' | 'month' | 'year' | 'custom';
+type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
 
 export const TransactionList = ({ type, userId, onEditSheetChange }: TransactionListProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
   const [searchQuery, setSearchQuery] = useState("");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('month');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -38,6 +38,17 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
     const start = new Date();
     
     switch (timeFilter) {
+      case 'fy': {
+        // Financial Year: April 1st to March 31st
+        const currentMonth = today.getMonth(); // 0-11
+        const currentYear = today.getFullYear();
+        // If Jan-Mar (0-2), FY started previous year; Apr-Dec (3-11), FY started this year
+        const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+        return {
+          start: `${fyStartYear}-04-01`,
+          end: `${fyStartYear + 1}-03-31`,
+        };
+      }
       case 'week':
         start.setDate(today.getDate() - 7);
         break;
@@ -211,7 +222,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
       {/* Time Filter Tabs */}
       <div className="px-4 mb-4">
         <div className="flex p-1 bg-muted rounded-xl">
-          {(['week', 'month', 'year', 'custom'] as TimeFilter[]).map((filter) => (
+          {(['fy', 'week', 'month', 'year', 'custom'] as TimeFilter[]).map((filter) => (
             <button
               key={filter}
               onClick={() => setTimeFilter(filter)}
@@ -222,7 +233,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
                   : "text-muted-foreground"
               )}
             >
-              {filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : filter === 'year' ? 'Year' : 'Custom'}
+              {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : filter === 'year' ? 'Year' : 'Custom'}
             </button>
           ))}
         </div>
@@ -295,6 +306,13 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
         >
           <p className="text-sm text-muted-foreground">
             Total {type === 'income' ? 'Income' : 'Expenses'} ({
+              timeFilter === 'fy' ? (() => {
+                const today = new Date();
+                const currentMonth = today.getMonth();
+                const currentYear = today.getFullYear();
+                const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+                return `FY ${fyStartYear}-${String(fyStartYear + 1).slice(-2)}`;
+              })() :
               timeFilter === 'week' ? 'This Week' : 
               timeFilter === 'month' ? 'This Month' : 
               timeFilter === 'year' ? 'This Year' : 
