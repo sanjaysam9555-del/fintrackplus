@@ -1,157 +1,194 @@
 
-# Rename App: FinTrack Pro → FinTrack⁺
 
-## Visual Design
+# Default to Financial Year View & Clarify Project Data Display
 
-The new name displays "FinTrack" with a superscript "+" at the top-right of the "k":
+## Overview
 
-```
-    FinTrack⁺
-            ↑
-       superscript +
-```
-
-**In React/HTML:** `FinTrack<sup>+</sup>` with styling for proper sizing
-**In plain text:** `FinTrack+` (for config files, meta tags, etc.)
+This plan addresses two issues:
+1. **Default Time Filter**: Change the default view on Home, Expense, and Income tabs to show the current **Financial Year (April 1st to March 31st)** instead of the current calendar month
+2. **Project Data Visibility**: Clarify that project data IS correct - the issue is that main tabs filter by time period, while project detail shows ALL transactions for that project
 
 ---
 
-## Files to Update
+## Issue 1: Financial Year as Default View
 
-| File | Current | New | Type |
-|------|---------|-----|------|
-| `index.html` | FinTrack Pro | FinTrack+ (plain) | Meta/Title |
-| `public/manifest.json` | FinTrack Pro | FinTrack+ | PWA Config |
-| `capacitor.config.ts` | FinTrack Pro | FinTrack+ | Native App |
-| `vite.config.ts` | FinTrack Pro | FinTrack+ | Build Config |
-| `src/pages/Auth.tsx` | FinTrack Pro | FinTrack⁺ (styled) | UI Component |
-| `src/pages/Install.tsx` | FinTrack Pro | FinTrack⁺ (styled) | UI Component |
-| `src/components/SplashScreen.tsx` | FinTrack Pro | FinTrack⁺ (styled) | Animation |
-| `src/components/OnboardingFlow.tsx` | FinTrack Pro | FinTrack⁺ (styled) | UI Component |
-| `src/components/DesktopSidebar.tsx` | FinTrack Pro v1.0.0 | FinTrack⁺ v1.0.0 | UI Component |
-| `src/components/SettingsPage.tsx` | FinTrack Pro v1.0.0 | FinTrack⁺ v1.0.0 | UI Component |
-| `src/components/settings/ReportsSection.tsx` | FinTrack | FinTrack+ | Export/Reports |
+### What's Happening Now
+- **Dashboard** defaults to `'month'` (current calendar month - Jan 1 to Jan 31)
+- **Transaction Lists** (Income/Expense tabs) default to `'month'` (last 30 days)
+- Users see only recent transactions by default
+
+### The Fix
+Add a new **"FY" (Financial Year)** time filter option that:
+- Defaults to the current Indian Financial Year (April 1 to March 31)
+- If today is Feb 1, 2026 → shows April 1, 2025 to March 31, 2026
+- Becomes the new **default** filter instead of 'month'
+
+### Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/components/Dashboard.tsx` | Add 'fy' filter type, change default from 'month' to 'fy', add FY calculation logic |
+| `src/components/TransactionList.tsx` | Add 'fy' filter type, change default from 'month' to 'fy', add FY calculation logic |
+| `src/components/CashFlowChart.tsx` | Handle 'fy' filter type for chart display |
+
+### Implementation Details
+
+**New TimeFilter Type:**
+```typescript
+type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
+```
+
+**Financial Year Calculation Logic:**
+```typescript
+// Get current FY bounds
+const getFYRange = () => {
+  const today = new Date();
+  const currentMonth = today.getMonth(); // 0-11
+  const currentYear = today.getFullYear();
+  
+  // FY starts April 1st (month = 3)
+  // If we're in Jan-Mar, FY started previous year
+  // If we're in Apr-Dec, FY started this year
+  const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+  
+  return {
+    start: `${fyStartYear}-04-01`,
+    end: `${fyStartYear + 1}-03-31`
+  };
+};
+```
+
+**Filter Button Changes:**
+- Current: `Week | Month | Year | Custom`
+- New: `FY | Week | Month | Year | Custom`
+
+**Default Filter:**
+- Change: `useState<TimeFilter>('month')` → `useState<TimeFilter>('fy')`
+
+**Label Display:**
+- "FY 2025-26" format when FY is selected
 
 ---
 
-## Implementation Details
+## Issue 2: Project Data Clarification
 
-### 1. Config Files (Plain Text)
+### Investigation Results
 
-These files cannot render HTML, so we use plain `FinTrack+`:
+I analyzed the database and found that **project data IS correct**:
 
-**index.html**
-```html
-<title>FinTrack+ - By Saffron Events</title>
-<meta name="description" content="FinTrack+ - By Saffron Events | Track your finances with ease" />
-<meta name="author" content="FinTrack+" />
-<meta property="og:title" content="FinTrack+" />
-<meta name="apple-mobile-web-app-title" content="FinTrack+" />
-<meta name="twitter:site" content="@FinTrackPlus" />
+| Project | Income | Expenses | Transactions |
+|---------|--------|----------|--------------|
+| Nikunj Kanika | ₹930,000 | ₹27,500 | 7 |
+| Prathamesh Sunday Manesar | ₹400,000 | ₹131,440 | 14 |
+| Shreya Nitin | ₹300,000 | ₹101,650 | 9 |
+| Jayant Anubhuti | ₹300,000 | ₹35,750 | 5 |
+
+### Why Users See "Missing" Entries
+
+The confusion stems from different behaviors:
+1. **Project Cards** → Show ALL transactions for that project (regardless of date)
+2. **Income/Expense Tabs** → Show only transactions within the selected time filter
+
+For example:
+- A project transaction from December 2025 appears in the project detail
+- But if the Income tab is set to "Month" (January), that transaction won't appear there
+
+### This Is Actually Correct Behavior
+- Projects should show their full financial picture (all-time)
+- Main tabs should allow filtering by time period
+
+### The Real Fix
+Changing the default to **Financial Year** will show almost all transactions by default, reducing confusion. Currently:
+- Transaction date range: Nov 12, 2025 → Feb 1, 2026
+- FY 2025-26 range: Apr 1, 2025 → Mar 31, 2026
+- **All existing transactions will be visible by default**
+
+---
+
+## Technical Changes
+
+### 1. Dashboard.tsx (Lines 28, 32, 48-80, 131-143, 219-237)
+
+**Add FY to TimeFilter type:**
+```typescript
+type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
 ```
 
-**public/manifest.json**
-```json
-{
-  "name": "FinTrack+",
-  "short_name": "FinTrack+"
+**Change default:**
+```typescript
+const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
+```
+
+**Update dateRange calculation:**
+```typescript
+const dateRange = useMemo(() => {
+  const todayDate = new Date();
+  
+  switch (timeFilter) {
+    case 'fy': {
+      const currentMonth = todayDate.getMonth();
+      const currentYear = todayDate.getFullYear();
+      const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+      return {
+        start: `${fyStartYear}-04-01`,
+        end: `${fyStartYear + 1}-03-31`,
+      };
+    }
+    case 'week':
+      // existing logic...
+```
+
+**Update getTimeFilterLabel:**
+```typescript
+case 'fy': {
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+  return `FY ${fyStartYear}-${String(fyStartYear + 1).slice(-2)}`;
 }
 ```
 
-**capacitor.config.ts**
+**Update filter buttons to include FY:**
 ```typescript
-appId: 'app.lovable.fintrackplus',
-appName: 'FinTrack+',
+{(['fy', 'week', 'month', 'year'] as TimeFilter[]).map((filter) => (
+  <button ...>
+    {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : ...}
+  </button>
+))}
 ```
 
-**vite.config.ts**
-```typescript
-manifest: {
-  name: 'FinTrack+',
-  short_name: 'FinTrack+',
-}
-```
+### 2. TransactionList.tsx (Lines 23, 28, 36-69, 214-227)
 
-### 2. React Components (Styled Superscript)
+Same changes as Dashboard:
+- Add 'fy' to TimeFilter type
+- Change default to 'fy'
+- Add FY calculation in dateRange
+- Update filter tabs UI
 
-Create a reusable brand component pattern:
+### 3. CashFlowChart.tsx (Lines 26, 41-124)
 
-```tsx
-// Styled superscript pattern for all UI components:
-<span>
-  FinTrack
-  <sup className="text-[0.6em] ml-0.5 font-bold">+</sup>
-</span>
-```
-
-**Auth.tsx** (Login page heading)
-```tsx
-<h1 className="text-3xl font-bold ...">
-  FinTrack<sup className="text-[0.6em] ml-0.5">+</sup>
-</h1>
-```
-
-**SplashScreen.tsx** (App launch animation)
-```tsx
-<h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-  FinTrack<sup className="text-[0.5em] ml-0.5 text-primary">+</sup>
-</h1>
-```
-
-**OnboardingFlow.tsx** (Welcome message)
-```tsx
-title: 'Welcome to FinTrack+!',
-// Note: Plain text since it's in a data object
-```
-
-**Install.tsx** (PWA install prompt)
-```tsx
-<h1 className="text-2xl font-bold mb-2">
-  Install FinTrack<sup className="text-[0.6em] ml-0.5">+</sup>
-</h1>
-```
-
-**DesktopSidebar.tsx** (Version footer)
-```tsx
-<p className="text-[10px] text-muted-foreground text-center mt-3">
-  FinTrack<sup className="text-[0.5em]">+</sup> v1.0.0
-</p>
-```
-
-**SettingsPage.tsx** (Version footer)
-```tsx
-<p className="text-xs text-muted-foreground">
-  FinTrack<sup className="text-[0.5em]">+</sup> v1.0.0
-</p>
-```
-
-### 3. Export/Reports
-
-**ReportsSection.tsx**
-```typescript
-a.download = `fintrackplus-${format(...)}.csv`;
-// and
-Generated by FinTrack+
-```
-
-### 4. Storage Keys (Optional - Internal)
-
-These are internal storage keys that users never see. For consistency:
-- `fintrack_sync_queue` → keep as-is (no breaking change)
-- `fintrack_pending_operations` → keep as-is
-- `fintrack-theme` → keep as-is
+Add handling for 'fy' time filter:
+- Treat it like 'year' for chart display (show 12 months)
+- Use FY bounds for data filtering
 
 ---
 
 ## Summary of Changes
 
-| Category | Count | Files |
-|----------|-------|-------|
-| HTML/Meta | 1 | index.html |
-| PWA Config | 1 | manifest.json |
-| Build Config | 2 | capacitor.config.ts, vite.config.ts |
-| UI Components | 6 | Auth, Install, SplashScreen, Onboarding, DesktopSidebar, SettingsPage |
-| Reports | 1 | ReportsSection.tsx |
-| **Total** | **11** | |
+| Change | Impact |
+|--------|--------|
+| Default to FY | All transactions from Apr-Mar visible by default |
+| Add FY option | Users can toggle to FY at any time |
+| Keep existing options | Week, Month, Year, Custom still available |
+| No project changes needed | Projects already show all-time data correctly |
 
-Alt attributes for images will also be updated from "FinTrack Pro" to "FinTrack+".
+---
+
+## User Experience After Changes
+
+1. Open app → See "FY 2025-26" badge in header
+2. Dashboard shows all income/expenses from April 2025 onwards
+3. Income/Expense tabs show full financial year by default
+4. Can still filter to Week/Month/Year/Custom as needed
+5. Projects continue to show their complete transaction history
+
