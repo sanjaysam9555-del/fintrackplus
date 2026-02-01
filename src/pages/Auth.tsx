@@ -98,12 +98,12 @@ export const AuthPage = () => {
             <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl" />
             <img 
               src="/app-icon-192.png" 
-              alt="FinTrack Pro" 
+              alt="FinTrack+" 
               className="w-20 h-20 mx-auto mb-4 rounded-2xl shadow-lg relative z-10"
             />
           </motion.div>
           <h1 className="text-3xl font-bold bg-gradient-to-r from-foreground via-foreground to-primary bg-clip-text">
-            FinTrack Pro
+            FinTrack<sup className="text-[0.6em] ml-0.5">+</sup>
           </h1>
           <p className="text-muted-foreground text-xs mt-1 flex items-center justify-center gap-1">
             <Sparkles size={12} className="text-primary" />

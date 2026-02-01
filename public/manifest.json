@@ -1,6 +1,6 @@
 {
-  "name": "FinTrack Pro",
-  "short_name": "FinTrack",
+  "name": "FinTrack+",
+  "short_name": "FinTrack+",
   "description": "Track your finances with ease",
   "start_url": "/",
   "display": "standalone",

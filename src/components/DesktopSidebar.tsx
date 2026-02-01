@@ -211,7 +211,7 @@ export const DesktopSidebar = ({
           </button>
           {!isCollapsed && (
             <p className="text-[10px] text-muted-foreground text-center mt-3">
-              FinTrack Pro v1.0.0
+              FinTrack<sup className="text-[0.5em]">+</sup> v1.0.0
             </p>
           )}
         </div>
