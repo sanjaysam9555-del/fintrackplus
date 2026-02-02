@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { X, FolderKanban, TrendingUp, TrendingDown, Store, Calendar, Receipt, ArrowRight, ArrowDown, ArrowUp, StickyNote, Loader2 } from "lucide-react";
+import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2 } from "lucide-react";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
 import { format } from "date-fns";
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/drawer";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import { TransactionItem } from "./TransactionItem";
 
 interface VendorBreakdown {
   vendor: string;
@@ -30,6 +31,7 @@ interface ProjectDetailSheetProps {
   transactions: Transaction[];
   vendorBreakdown: VendorBreakdown[];
   userId?: string;
+  onEditSheetChange?: (isOpen: boolean) => void;
 }
 
 export const ProjectDetailSheet = ({
@@ -41,6 +43,7 @@ export const ProjectDetailSheet = ({
   transactions,
   vendorBreakdown,
   userId,
+  onEditSheetChange,
 }: ProjectDetailSheetProps) => {
   const { getCategoryById, updateProject } = useFinanceStore();
   const [notes, setNotes] = useState("");
@@ -197,37 +200,15 @@ export const ProjectDetailSheet = ({
                   Income Entries ({incomeTransactions.length})
                 </h3>
                 <div className="space-y-2">
-                  {incomeTransactions.slice(0, 10).map((transaction) => {
-                    const category = getCategoryById(transaction.categoryId);
-                    return (
-                      <motion.div
-                        key={transaction.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="bg-green-500/5 border border-green-500/20 rounded-xl p-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Calendar size={14} className="text-muted-foreground" />
-                            <span className="text-sm">{format(new Date(transaction.date), 'MMM d, yyyy')}</span>
-                          </div>
-                          <span className="font-semibold text-green-500">+₹{transaction.amount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <ArrowRight size={12} className="text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">{transaction.vendor}</span>
-                          {category && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-background">
-                              {category.name}
-                            </span>
-                          )}
-                        </div>
-                        {transaction.notes && (
-                          <p className="text-xs text-muted-foreground mt-1 pl-5">{transaction.notes}</p>
-                        )}
-                      </motion.div>
-                    );
-                  })}
+                  {incomeTransactions.slice(0, 10).map((transaction) => (
+                    <TransactionItem
+                      key={transaction.id}
+                      transaction={transaction}
+                      category={getCategoryById(transaction.categoryId)}
+                      userId={userId}
+                      onEditSheetChange={onEditSheetChange}
+                    />
+                  ))}
                   {incomeTransactions.length > 10 && (
                     <p className="text-center text-sm text-muted-foreground py-2">
                       +{incomeTransactions.length - 10} more income entries
@@ -245,37 +226,15 @@ export const ProjectDetailSheet = ({
                   Expense Entries ({expenseTransactions.length})
                 </h3>
                 <div className="space-y-2">
-                  {expenseTransactions.slice(0, 10).map((transaction) => {
-                    const category = getCategoryById(transaction.categoryId);
-                    return (
-                      <motion.div
-                        key={transaction.id}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="bg-red-500/5 border border-red-500/20 rounded-xl p-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Calendar size={14} className="text-muted-foreground" />
-                            <span className="text-sm">{format(new Date(transaction.date), 'MMM d, yyyy')}</span>
-                          </div>
-                          <span className="font-semibold text-red-500">-₹{transaction.amount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <ArrowRight size={12} className="text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">{transaction.vendor}</span>
-                          {category && (
-                            <span className="text-xs px-2 py-0.5 rounded-full bg-background">
-                              {category.name}
-                            </span>
-                          )}
-                        </div>
-                        {transaction.notes && (
-                          <p className="text-xs text-muted-foreground mt-1 pl-5">{transaction.notes}</p>
-                        )}
-                      </motion.div>
-                    );
-                  })}
+                  {expenseTransactions.slice(0, 10).map((transaction) => (
+                    <TransactionItem
+                      key={transaction.id}
+                      transaction={transaction}
+                      category={getCategoryById(transaction.categoryId)}
+                      userId={userId}
+                      onEditSheetChange={onEditSheetChange}
+                    />
+                  ))}
                   {expenseTransactions.length > 10 && (
                     <p className="text-center text-sm text-muted-foreground py-2">
                       +{expenseTransactions.length - 10} more expense entries

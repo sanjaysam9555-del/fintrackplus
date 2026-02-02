@@ -211,7 +211,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
   }, [filteredTransactions, timeFilter, dateRange]);
   
   return (
-    <div className="min-h-screen pb-32 md:pb-8 md:px-6">
+    <div className="min-h-screen pb-40 md:pb-8 md:px-6">
       {/* Header */}
       <div className="p-4 pt-6">
         <h1 className="text-2xl font-bold">
