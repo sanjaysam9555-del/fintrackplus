@@ -91,7 +91,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOvervi
   };
 
   return (
-    <div className="min-h-screen bg-background pb-32 md:pb-8 md:px-6">
+    <div className="min-h-screen bg-background pb-40 md:pb-8 md:px-6">
       {/* Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border">
         <h1 className="text-xl font-bold">Projects</h1>
@@ -327,6 +327,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOvervi
         transactions={selectedProject ? getProjectTransactions(selectedProject.id) : []}
         vendorBreakdown={selectedProject ? getVendorBreakdown(selectedProject.id) : []}
         userId={userId}
+        onEditSheetChange={onEditSheetChange}
       />
 
       {/* Archive Confirmation Dialog */}

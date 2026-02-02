@@ -27,7 +27,7 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         }}
         onAnimationComplete={() => {
           // After the logo animates in, wait a moment then trigger complete
-          setTimeout(onComplete, 800);
+          setTimeout(onComplete, 1500);
         }}
       >
         {/* Logo with pulse animation */}
