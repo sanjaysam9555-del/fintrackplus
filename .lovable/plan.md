@@ -1,194 +1,134 @@
 
-
-# Default to Financial Year View & Clarify Project Data Display
-
-## Overview
-
-This plan addresses two issues:
-1. **Default Time Filter**: Change the default view on Home, Expense, and Income tabs to show the current **Financial Year (April 1st to March 31st)** instead of the current calendar month
-2. **Project Data Visibility**: Clarify that project data IS correct - the issue is that main tabs filter by time period, while project detail shows ALL transactions for that project
-
----
-
-## Issue 1: Financial Year as Default View
-
-### What's Happening Now
-- **Dashboard** defaults to `'month'` (current calendar month - Jan 1 to Jan 31)
-- **Transaction Lists** (Income/Expense tabs) default to `'month'` (last 30 days)
-- Users see only recent transactions by default
-
-### The Fix
-Add a new **"FY" (Financial Year)** time filter option that:
-- Defaults to the current Indian Financial Year (April 1 to March 31)
-- If today is Feb 1, 2026 → shows April 1, 2025 to March 31, 2026
-- Becomes the new **default** filter instead of 'month'
-
-### Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/components/Dashboard.tsx` | Add 'fy' filter type, change default from 'month' to 'fy', add FY calculation logic |
-| `src/components/TransactionList.tsx` | Add 'fy' filter type, change default from 'month' to 'fy', add FY calculation logic |
-| `src/components/CashFlowChart.tsx` | Handle 'fy' filter type for chart display |
-
-### Implementation Details
-
-**New TimeFilter Type:**
-```typescript
-type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
-```
-
-**Financial Year Calculation Logic:**
-```typescript
-// Get current FY bounds
-const getFYRange = () => {
-  const today = new Date();
-  const currentMonth = today.getMonth(); // 0-11
-  const currentYear = today.getFullYear();
-  
-  // FY starts April 1st (month = 3)
-  // If we're in Jan-Mar, FY started previous year
-  // If we're in Apr-Dec, FY started this year
-  const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-  
-  return {
-    start: `${fyStartYear}-04-01`,
-    end: `${fyStartYear + 1}-03-31`
-  };
-};
-```
-
-**Filter Button Changes:**
-- Current: `Week | Month | Year | Custom`
-- New: `FY | Week | Month | Year | Custom`
-
-**Default Filter:**
-- Change: `useState<TimeFilter>('month')` → `useState<TimeFilter>('fy')`
-
-**Label Display:**
-- "FY 2025-26" format when FY is selected
-
----
-
-## Issue 2: Project Data Clarification
-
-### Investigation Results
-
-I analyzed the database and found that **project data IS correct**:
-
-| Project | Income | Expenses | Transactions |
-|---------|--------|----------|--------------|
-| Nikunj Kanika | ₹930,000 | ₹27,500 | 7 |
-| Prathamesh Sunday Manesar | ₹400,000 | ₹131,440 | 14 |
-| Shreya Nitin | ₹300,000 | ₹101,650 | 9 |
-| Jayant Anubhuti | ₹300,000 | ₹35,750 | 5 |
-
-### Why Users See "Missing" Entries
-
-The confusion stems from different behaviors:
-1. **Project Cards** → Show ALL transactions for that project (regardless of date)
-2. **Income/Expense Tabs** → Show only transactions within the selected time filter
-
-For example:
-- A project transaction from December 2025 appears in the project detail
-- But if the Income tab is set to "Month" (January), that transaction won't appear there
-
-### This Is Actually Correct Behavior
-- Projects should show their full financial picture (all-time)
-- Main tabs should allow filtering by time period
-
-### The Real Fix
-Changing the default to **Financial Year** will show almost all transactions by default, reducing confusion. Currently:
-- Transaction date range: Nov 12, 2025 → Feb 1, 2026
-- FY 2025-26 range: Apr 1, 2025 → Mar 31, 2026
-- **All existing transactions will be visible by default**
-
----
-
-## Technical Changes
-
-### 1. Dashboard.tsx (Lines 28, 32, 48-80, 131-143, 219-237)
-
-**Add FY to TimeFilter type:**
-```typescript
-type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
-```
-
-**Change default:**
-```typescript
-const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
-```
-
-**Update dateRange calculation:**
-```typescript
-const dateRange = useMemo(() => {
-  const todayDate = new Date();
-  
-  switch (timeFilter) {
-    case 'fy': {
-      const currentMonth = todayDate.getMonth();
-      const currentYear = todayDate.getFullYear();
-      const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-      return {
-        start: `${fyStartYear}-04-01`,
-        end: `${fyStartYear + 1}-03-31`,
-      };
-    }
-    case 'week':
-      // existing logic...
-```
-
-**Update getTimeFilterLabel:**
-```typescript
-case 'fy': {
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-  return `FY ${fyStartYear}-${String(fyStartYear + 1).slice(-2)}`;
-}
-```
-
-**Update filter buttons to include FY:**
-```typescript
-{(['fy', 'week', 'month', 'year'] as TimeFilter[]).map((filter) => (
-  <button ...>
-    {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : ...}
-  </button>
-))}
-```
-
-### 2. TransactionList.tsx (Lines 23, 28, 36-69, 214-227)
-
-Same changes as Dashboard:
-- Add 'fy' to TimeFilter type
-- Change default to 'fy'
-- Add FY calculation in dateRange
-- Update filter tabs UI
-
-### 3. CashFlowChart.tsx (Lines 26, 41-124)
-
-Add handling for 'fy' time filter:
-- Treat it like 'year' for chart display (show 12 months)
-- Use FY bounds for data filtering
-
----
+# Fix Project Transactions, Mobile Scrolling, and Splash Screen Duration
 
 ## Summary of Changes
 
-| Change | Impact |
-|--------|--------|
-| Default to FY | All transactions from Apr-Mar visible by default |
-| Add FY option | Users can toggle to FY at any time |
-| Keep existing options | Week, Month, Year, Custom still available |
-| No project changes needed | Projects already show all-time data correctly |
+Three issues need to be addressed:
+1. Project Detail transactions should show the same format as Income/Expense tabs and be editable
+2. Last entry on mobile is overlapped by the bottom tab bar
+3. Splash screen animation is too brief (currently ~1.3 seconds total)
 
 ---
 
-## User Experience After Changes
+## Issue 1: Use TransactionItem in Project Details
 
-1. Open app → See "FY 2025-26" badge in header
-2. Dashboard shows all income/expenses from April 2025 onwards
-3. Income/Expense tabs show full financial year by default
-4. Can still filter to Week/Month/Year/Custom as needed
-5. Projects continue to show their complete transaction history
+### Current Problem
+The Project Detail Sheet displays transactions using custom inline JSX with minimal information:
+- Shows only: date, amount, vendor, category badge
+- No ability to edit or delete
+- Different visual format from Income/Expense tabs
 
+### Solution
+Replace the custom transaction rendering with the `TransactionItem` component that is already used in Home, Income, and Expense tabs.
+
+### File: `src/components/ProjectDetailSheet.tsx`
+
+**Changes needed:**
+
+1. Import the `TransactionItem` component
+2. Replace the custom inline transaction cards (lines 200-228 for income, 248-276 for expenses) with `TransactionItem`
+3. Pass required props: `transaction`, `category`, `userId`, and `onEditSheetChange`
+4. Add `onEditSheetChange` prop to the component interface to support edit sheet state tracking
+
+**Before (custom rendering):**
+```tsx
+<motion.div className="bg-green-500/5 border border-green-500/20 rounded-xl p-3">
+  <div className="flex items-center justify-between">
+    <span>{format(new Date(transaction.date), 'MMM d, yyyy')}</span>
+    <span>+₹{transaction.amount.toLocaleString()}</span>
+  </div>
+  <div>{transaction.vendor}</div>
+</motion.div>
+```
+
+**After (using TransactionItem):**
+```tsx
+<TransactionItem
+  transaction={transaction}
+  category={getCategoryById(transaction.categoryId)}
+  userId={userId}
+  onEditSheetChange={onEditSheetChange}
+/>
+```
+
+This gives users:
+- Swipe-to-delete functionality
+- Expandable details view
+- Edit and Delete buttons
+- Consistent visual styling across the app
+- Receipt/GST indicators
+
+---
+
+## Issue 2: Fix Mobile Scrolling - Bottom Padding
+
+### Current Problem
+The last transaction is partially covered by the bottom tab bar on mobile devices.
+
+### Analysis
+- GlassDock height: ~68px (py-2 + icon/text + pb-safe)
+- Current padding: `pb-32` = 128px on mobile
+- Safe area: iOS notch devices have additional ~34px safe area at bottom
+
+The issue is that `pb-32` (128px) should theoretically be enough, but there may be inconsistency with the safe area calculation.
+
+### Solution
+Increase bottom padding to ensure the last entry is fully visible with ample room above the dock.
+
+**Change from `pb-32` to `pb-40`** (160px) on all main content pages to provide more breathing room.
+
+### Files to Update
+
+| File | Line | Change |
+|------|------|--------|
+| `src/components/Dashboard.tsx` | 167 | `pb-32 md:pb-8` → `pb-40 md:pb-8` |
+| `src/components/TransactionList.tsx` | 214 | `pb-32 md:pb-8` → `pb-40 md:pb-8` |
+| `src/components/ProjectOverviewPage.tsx` | 94 | `pb-32 md:pb-8` → `pb-40 md:pb-8` |
+
+---
+
+## Issue 3: Increase Splash Screen Duration
+
+### Current Problem
+Splash screen appears for only ~1.3 seconds total:
+- 0.5s for logo animation to complete
+- 0.8s delay before calling `onComplete`
+- Total: ~1.3 seconds
+
+### Solution
+Increase the `setTimeout` delay from 800ms to 1500ms for a total display time of ~2 seconds.
+
+### File: `src/components/SplashScreen.tsx`
+
+**Line 30:** Change from:
+```tsx
+setTimeout(onComplete, 800);
+```
+To:
+```tsx
+setTimeout(onComplete, 1500);
+```
+
+This makes the splash screen visible for approximately 2 seconds total (0.5s animation + 1.5s hold).
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/ProjectDetailSheet.tsx` | Import TransactionItem, add onEditSheetChange prop, replace custom transaction rendering with TransactionItem component |
+| `src/components/Dashboard.tsx` | Change `pb-32` to `pb-40` |
+| `src/components/TransactionList.tsx` | Change `pb-32` to `pb-40` |
+| `src/components/ProjectOverviewPage.tsx` | Change `pb-32` to `pb-40`, pass onEditSheetChange to ProjectDetailSheet |
+| `src/components/SplashScreen.tsx` | Change setTimeout from 800 to 1500 |
+
+---
+
+## Result After Changes
+
+1. **Project Transactions**: Will display with full detail (title, amount, vendor, category, date, payment method) and support edit/delete just like Income/Expense tabs
+
+2. **Mobile Scrolling**: 160px bottom padding ensures last entry is clearly visible above the 68px dock + safe area
+
+3. **Splash Screen**: Displays for ~2 seconds, giving users time to see the branding animation
