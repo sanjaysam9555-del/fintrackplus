@@ -1,238 +1,220 @@
 
+# Fix Charts, Partner Balances, and Duplicate Detection
 
-# Redesign AI Summary Page - Meaningful & Attractive Insights
+## Overview
 
-## Current Problems
+Three critical issues need to be addressed:
 
-| Issue | Current State |
-|-------|---------------|
-| **Wrong Date Range** | Uses calendar month, not Financial Year default |
-| **Generic Insights** | "You spent ₹X at vendor Y" - not actionable |
-| **Boring Design** | Plain colored cards, no visual hierarchy |
-| **No Comparisons** | Missing period-over-period trends |
-| **No Charts** | Only text-based insights |
-| **Basic Stats** | Just counts, no meaningful metrics |
+1. **Charts not aligned with time filter** - Charts display data outside the selected date range
+2. **Partner balances confusing/not useful** - Need time-filtered balances with clearer logic  
+3. **Duplicate detection too aggressive** - Shows warnings for completely different entries
 
 ---
 
-## Proposed Redesign
+## Issue 1: Chart Data Not Matching Time Filter
 
-### 1. Hero Summary Card (New)
+### Current Problem
 
-A visually striking top section showing FY overview:
+Looking at the code, I found **mixed behaviors**:
 
+**Dashboard (Line 660)**:
+```typescript
+<CashFlowChart 
+  transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
+  timeFilter={timeFilter}
+  dateRange={dateRange}
+/>
 ```
-┌─────────────────────────────────────────────┐
-│  FY 2025-26 Overview                        │
-│  ┌─────────────┐ ┌─────────────┐            │
-│  │ ₹19.3L      │ │ ₹8.7L       │            │
-│  │ Total Income│ │ Total Spent │            │
-│  │ ▲ 15% vs FY │ │ ▲ 8% vs FY  │            │
-│  └─────────────┘ └─────────────┘            │
-│                                             │
-│  Net Profit: ₹10.6L  │  Margin: 55%         │
-│  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━     │
-└─────────────────────────────────────────────┘
-```
+The Dashboard correctly filters transactions before passing to chart.
 
-### 2. Spending Trend Chart (New)
+**TransactionList (Lines 112-211)**:
+The chart uses `filteredTransactions` which IS filtered by date range, but then the chart logic generates data points that may extend beyond the date range.
 
-Mini bar chart showing monthly spending trend:
-- 6-month rolling view
-- Income vs Expense comparison
-- Visual trend indicator
+**Problem**: The chart generation logic inside both components creates fixed-period data points (always 7 days for week, 4 weeks for month, 12 months for year/FY) that don't respect the actual `dateRange` boundaries.
 
-### 3. Smart Insights (Improved)
+For example:
+- FY filter sets range as `2025-04-01` to `2026-03-31`
+- But the chart shows 12 months starting from April based on a hardcoded calculation
+- The chart's internal filtering may not align perfectly with the passed transactions
 
-More meaningful, actionable insights:
+### Solution
 
-| Old Insight | New Insight |
-|-------------|-------------|
-| "Top category is Vendor" | "Vendor Payments ↑23% this month vs last 3-month avg" |
-| "Daily average ₹X" | "You're spending 15% faster than last month's pace" |
-| "X transactions at vendor Y" | "Top 3 vendors account for 45% of expenses - consolidate?" |
-| Basic savings rate | "At current pace, FY profit margin: 52% (target: 30%) ✓" |
+Refactor chart data generation to:
+1. Use the exact `dateRange.start` and `dateRange.end` boundaries
+2. Only show data points within the selected time frame
+3. Ensure transactions are filtered consistently across all tabs
 
-**New insight types:**
-- **Month-over-Month trends** with percentage changes
-- **Project health alerts** with budget consumption rate
-- **Cash flow warnings** if expenses exceed income pace
-- **Vendor concentration analysis**
-- **Category distribution pie** with top 5
+**Files to modify:**
+- `src/components/CashFlowChart.tsx`
+- `src/components/TransactionList.tsx`
 
-### 4. Visual Design Improvements
+---
 
-**Color-coded insight cards:**
-```
-┌──────────────────────────────────┐
-│ 🎯 Project Health                │
-│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━    │
-│                                  │
-│ Nikunj Wedding     ▓▓▓▓▓▓░░░░ 65%│
-│ Budget: ₹4L  Spent: ₹2.6L        │
-│ On Track ✓                       │
-│                                  │
-│ Prathamesh Wedding ▓▓▓▓▓▓▓▓░░ 82%│
-│ Budget: ₹3.5L  Spent: ₹2.9L      │
-│ ⚠ Approaching limit              │
-└──────────────────────────────────┘
+## Issue 2: Partner Balances - Complete Redesign
+
+### Current Problem
+
+The current `getPartnerBalances()` function calculates ALL-TIME balances:
+
+```typescript
+// store.ts lines 757-791
+getPartnerBalances: () => {
+  const { transactions, partners } = get();
+  return partners.map(partner => {
+    const partnerTxns = transactions.filter(t => t.partnerId === partner.id);
+    // ... calculates from ALL transactions
+  });
+}
 ```
 
-**Gradient backgrounds** instead of flat colors:
-- Success: Green gradient with glow
-- Warning: Amber gradient
-- Alert: Red gradient
-- Neutral: Blue/Purple gradient
+**User's confusion about negative balances:**
+The user is correct - if expenses come from income received, a partner shouldn't have a negative balance in practice. The current system allows this because:
+1. "Starting Balance" is meant to represent money the partner had BEFORE any tracked transactions
+2. If starting balance is 0 but they made expenses, it shows negative
 
-### 5. Category Breakdown (New Section)
+### What the User Actually Needs
 
-Visual pie/donut chart showing expense distribution:
-```
-┌─────────────────────────────────────┐
-│ Where Your Money Goes               │
-│                                     │
-│     ┌────┐                          │
-│    ╱      ╲   Vendor: 68%           │
-│   │  PIE  │   Rent: 15%             │
-│    ╲      ╱   Food: 8%              │
-│     └────┘    Other: 9%             │
-│                                     │
-└─────────────────────────────────────┘
+For a selected time period, show:
+1. **Opening Balance** - The balance the partner had at the START of the selected period
+2. **Income Received** - Total income in the period
+3. **Expenses Made** - Total expenses in the period  
+4. **Closing Balance** - Opening + Income - Expenses
+
+The "Starting Balance" field should represent money BEFORE the first tracked transaction (for initial app setup).
+
+### Solution
+
+1. **Add date-range aware balance calculation** to the store
+2. **Update PartnersSection** to accept and use date range filters
+3. **Show period-aware balances** with opening/closing breakdown
+4. **Clarify UI** to explain the calculation
+
+**New store function:**
+```typescript
+getPartnerBalancesForPeriod: (startDate: string, endDate: string) => {
+  // Calculate opening balance = initialBalance + all transactions BEFORE startDate
+  // Calculate period income/expense = transactions IN the period
+  // Calculate closing balance = opening + period income - period expense
+}
 ```
 
-### 6. Cash vs Online Split (New)
+**Files to modify:**
+- `src/lib/store.ts` - Add new function
+- `src/components/settings/PartnersSection.tsx` - Add time filter, use new function
+- `src/components/PartnerBalanceCard.tsx` - Update to show period info
 
-Payment method analysis:
-```
-Cash:   ━━━━━━━━━━━━░░░░  72%  ₹6.3L
-Online: ━━━━━━░░░░░░░░░░  28%  ₹2.4L
-```
+---
+
+## Issue 3: Duplicate Detection Too Aggressive
+
+### Current Problem
+
+The duplicate detection algorithm (lines 17-76 in `useDuplicateDetection.ts`) triggers on:
+
+| Factor | Points | Threshold |
+|--------|--------|-----------|
+| Same vendor | +40 | |
+| Similar vendor (substring match) | +20 | |
+| Same amount | +35 | |
+| Similar amount (±10%) | +15 | |
+| Same date | +25 | |
+| Within 3 days | +10 | |
+| **Total needed to warn** | | **50** |
+
+**Problem scenarios:**
+- Different vendor with same amount = 35 points (OK, no warning)
+- Same vendor + different amount + within 3 days = 40 + 10 = **50 points → Warning!**
+- Any substring match + same amount + within 3 days = 20 + 35 + 10 = **65 points → Warning!**
+
+This is too aggressive. Two transactions at the same vendor days apart with different amounts are clearly NOT duplicates.
+
+### Solution
+
+1. **Increase threshold from 50 to 65** - Require stronger matches
+2. **Require amount match as minimum** - Don't warn if amounts are significantly different
+3. **Reduce date proximity points** - Being within 3 days is normal behavior
+4. **Tighten "similar vendor" logic** - Substring matching is too loose
+
+**New scoring:**
+| Factor | Old Points | New Points |
+|--------|------------|------------|
+| Same vendor | 40 | 35 |
+| Similar vendor | 20 | 10 |
+| Same amount | 35 | 40 |
+| Similar amount (±5%) | 15 | 20 |
+| Same date | 25 | 30 |
+| Within 3 days | 10 | 5 |
+| **Threshold** | **50** | **70** |
+
+**Additional rule**: Only show warning if amount is exactly the same OR within 5%
+
+**File to modify:**
+- `src/hooks/useDuplicateDetection.ts`
 
 ---
 
 ## Technical Implementation
 
-### Files to Modify
+### 1. Store Changes (`src/lib/store.ts`)
+
+Add new function for period-aware partner balances:
+
+```typescript
+interface PartnerPeriodBalance {
+  partner: Partner;
+  openingCashBalance: number;
+  openingOnlineBalance: number;
+  periodCashIncome: number;
+  periodCashExpense: number;
+  periodOnlineIncome: number;
+  periodOnlineExpense: number;
+  closingCashBalance: number;
+  closingOnlineBalance: number;
+}
+
+getPartnerBalancesForPeriod: (startDate?: string, endDate?: string) => PartnerPeriodBalance[]
+```
+
+### 2. Chart Fixes (`src/components/CashFlowChart.tsx`)
+
+Ensure data points are generated ONLY within the passed `dateRange`:
+- For FY: Only show months from FY start to current date (not future months)
+- For week/month/year: Only show days/weeks/months within the exact date range
+
+### 3. TransactionList Chart (`src/components/TransactionList.tsx`)
+
+Same fix - ensure the mini-chart respects the exact date range selected.
+
+### 4. Partner Section with Filters (`src/components/settings/PartnersSection.tsx`)
+
+Add time filter UI matching Dashboard/TransactionList:
+- FY | Week | Month | Year | Custom
+- Display period-aware balances
+
+### 5. Duplicate Detection (`src/hooks/useDuplicateDetection.ts`)
+
+Adjust scoring and add minimum requirements:
+- Raise threshold to 70
+- Require exact/similar amount as a prerequisite
+- Reduce false positive rate
+
+---
+
+## Summary of Changes
 
 | File | Changes |
 |------|---------|
-| `src/components/AISummaryPage.tsx` | Complete redesign with new sections |
-
-### New Data Calculations
-
-```typescript
-// FY-aligned calculations (matching Dashboard)
-const fyRange = useMemo(() => {
-  const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
-  const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-  return {
-    start: `${fyStartYear}-04-01`,
-    end: `${fyStartYear + 1}-03-31`,
-  };
-}, []);
-
-// Month-over-month comparison
-const currentMonthExpense = getTotalExpense(monthStart, monthEnd);
-const lastMonthExpense = getTotalExpense(lastMonthStart, lastMonthEnd);
-const expenseChange = ((currentMonthExpense - lastMonthExpense) / lastMonthExpense) * 100;
-
-// Category distribution with percentages
-const categoryBreakdown = transactions
-  .filter(t => t.type === 'expense')
-  .reduce((acc, t) => {
-    const category = getCategoryById(t.categoryId);
-    acc[category?.name || 'Other'] = (acc[category?.name || 'Other'] || 0) + t.amount;
-    return acc;
-  }, {});
-
-// Payment method split
-const cashTotal = transactions.filter(t => t.paymentMethod === 'cash' && t.type === 'expense').reduce(...);
-const onlineTotal = transactions.filter(t => t.paymentMethod === 'online' && t.type === 'expense').reduce(...);
-```
-
-### Visual Components Used
-
-- **Recharts PieChart** for category distribution (already installed)
-- **Progress bars** for project budget consumption
-- **Gradient backgrounds** using Tailwind utilities
-- **Framer Motion** for smooth animations
+| `src/lib/store.ts` | Add `getPartnerBalancesForPeriod()` function |
+| `src/components/CashFlowChart.tsx` | Fix data generation to respect exact date range |
+| `src/components/TransactionList.tsx` | Fix chart to respect exact date range |
+| `src/components/settings/PartnersSection.tsx` | Add time filter, use period balances |
+| `src/components/PartnerBalanceCard.tsx` | Update display for period balances |
+| `src/hooks/useDuplicateDetection.ts` | Adjust scoring, raise threshold, add prerequisites |
 
 ---
 
-## New Section Layout
+## Expected Results
 
-```
-┌─────────────────────────────────────┐
-│ 📊 AI Summary                       │  ← Header (keep)
-├─────────────────────────────────────┤
-│ FY Overview Hero Card               │  ← NEW
-│ Income | Expense | Net | Margin     │
-├─────────────────────────────────────┤
-│ 📈 Spending Trend (6-month chart)   │  ← NEW
-├─────────────────────────────────────┤
-│ 🎯 Smart Insights                   │  ← IMPROVED
-│ - MoM trends with % changes         │
-│ - Actionable recommendations        │
-├─────────────────────────────────────┤
-│ 💰 Where Your Money Goes            │  ← NEW
-│ - Pie chart with top 5 categories   │
-├─────────────────────────────────────┤
-│ 📁 Project Health                   │  ← NEW
-│ - Progress bars with budget status  │
-├─────────────────────────────────────┤
-│ 💳 Payment Methods                  │  ← NEW
-│ - Cash vs Online breakdown          │
-└─────────────────────────────────────┘
-```
-
----
-
-## Visual Styling
-
-**Card Design:**
-```tsx
-// Gradient hero card
-<div className="bg-gradient-to-br from-primary/20 via-primary/10 to-transparent 
-               border border-primary/20 rounded-2xl p-5 backdrop-blur-sm">
-```
-
-**Insight cards with icons:**
-```tsx
-// Positive insight
-<div className="bg-gradient-to-r from-emerald-500/10 to-emerald-500/5 
-               border border-emerald-500/20 rounded-xl p-4">
-  <div className="flex items-center gap-2">
-    <TrendingUp className="text-emerald-500" />
-    <span className="font-semibold">Profit margin up 12%</span>
-  </div>
-</div>
-```
-
-**Progress bars with colors:**
-```tsx
-<div className="h-2 bg-muted rounded-full overflow-hidden">
-  <div 
-    className={cn(
-      "h-full rounded-full transition-all",
-      percentage > 90 ? "bg-red-500" : percentage > 70 ? "bg-amber-500" : "bg-emerald-500"
-    )}
-    style={{ width: `${percentage}%` }}
-  />
-</div>
-```
-
----
-
-## Summary
-
-| Before | After |
-|--------|-------|
-| Calendar month data | Financial Year aligned |
-| 4-5 basic text insights | 8+ rich visual sections |
-| Plain colored cards | Gradient cards with icons |
-| No charts | Pie chart, progress bars, trend indicators |
-| Static counts | Dynamic comparisons with % changes |
-| No project visibility | Project health with budget tracking |
-
+1. **Charts**: Will only show data for the exact selected time period
+2. **Partner Balances**: Will show opening/closing balances for selected period with clear breakdown
+3. **Duplicates**: Will only warn for genuine duplicates (same vendor + same/similar amount + same date)
