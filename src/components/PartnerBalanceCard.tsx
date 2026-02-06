@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
@@ -9,13 +9,32 @@ import { Button } from "@/components/ui/button";
 import { PartnerTransferSheet } from "./PartnerTransferSheet";
 import { useAuth } from "@/hooks/useAuth";
 
-export const PartnerBalanceCard = () => {
-  const { partners, getPartnerBalances } = useFinanceStore();
+interface PartnerBalanceCardProps {
+  dateRange?: { start: string; end: string };
+}
+
+export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
+  const { partners, getPartnerBalancesForPeriod } = useFinanceStore();
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(true);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
   
-  const partnerBalances = getPartnerBalances();
+  // Default to current FY if no dateRange provided
+  const range = useMemo(() => {
+    if (dateRange) return dateRange;
+    const today = new Date();
+    const currentMonth = today.getMonth();
+    const currentYear = today.getFullYear();
+    const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+    return {
+      start: `${fyStartYear}-04-01`,
+      end: `${fyStartYear + 1}-03-31`,
+    };
+  }, [dateRange]);
+  
+  const partnerBalances = useMemo(() => {
+    return getPartnerBalancesForPeriod(range.start, range.end);
+  }, [getPartnerBalancesForPeriod, range]);
   
   // Don't render if no partners
   if (partners.length === 0) {
@@ -23,8 +42,8 @@ export const PartnerBalanceCard = () => {
   }
   
   // Calculate totals
-  const totalCash = partnerBalances.reduce((sum, pb) => sum + pb.cashBalance, 0);
-  const totalOnline = partnerBalances.reduce((sum, pb) => sum + pb.onlineBalance, 0);
+  const totalClosingCash = partnerBalances.reduce((sum, pb) => sum + pb.closingCashBalance, 0);
+  const totalClosingOnline = partnerBalances.reduce((sum, pb) => sum + pb.closingOnlineBalance, 0);
   
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -41,7 +60,7 @@ export const PartnerBalanceCard = () => {
             <div className="text-left">
               <h3 className="font-semibold text-sm">Partner Balances</h3>
               <p className="text-xs text-muted-foreground">
-                {partnerBalances.length} partner{partnerBalances.length !== 1 ? 's' : ''}
+                {partnerBalances.length} partner{partnerBalances.length !== 1 ? 's' : ''} • Closing
               </p>
             </div>
           </div>
@@ -49,7 +68,7 @@ export const PartnerBalanceCard = () => {
             <div className="text-right">
               <p className="text-xs text-muted-foreground">Total</p>
               <p className="font-bold text-sm">
-                {CURRENCY_SYMBOL}{(totalCash + totalOnline).toLocaleString()}
+                {CURRENCY_SYMBOL}{(totalClosingCash + totalClosingOnline).toLocaleString()}
               </p>
             </div>
             <ChevronDown 
@@ -71,7 +90,13 @@ export const PartnerBalanceCard = () => {
                 exit={{ opacity: 0, height: 0 }}
                 className="border-t border-border"
               >
-                {partnerBalances.map(({ partner, cashBalance, onlineBalance, cashTransactionCount, onlineTransactionCount }, index) => (
+                {partnerBalances.map(({ 
+                  partner, 
+                  closingCashBalance, 
+                  closingOnlineBalance, 
+                  periodCashTxnCount, 
+                  periodOnlineTxnCount 
+                }, index) => (
                   <div 
                     key={partner.id}
                     className={cn(
@@ -95,14 +120,14 @@ export const PartnerBalanceCard = () => {
                           <Banknote size={12} />
                           <span className="text-[10px] uppercase tracking-wide">Cash</span>
                           <span className="text-[10px] text-muted-foreground ml-auto">
-                            {cashTransactionCount} txn{cashTransactionCount !== 1 ? 's' : ''}
+                            {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <p className={cn(
                           "text-base font-bold",
-                          cashBalance >= 0 ? "text-foreground" : "text-destructive"
+                          closingCashBalance >= 0 ? "text-foreground" : "text-destructive"
                         )}>
-                          {cashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(cashBalance).toLocaleString()}
+                          {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
                         </p>
                       </div>
                       <div className="bg-muted/50 rounded-xl p-3">
@@ -110,14 +135,14 @@ export const PartnerBalanceCard = () => {
                           <CreditCard size={12} />
                           <span className="text-[10px] uppercase tracking-wide">Online</span>
                           <span className="text-[10px] text-muted-foreground ml-auto">
-                            {onlineTransactionCount} txn{onlineTransactionCount !== 1 ? 's' : ''}
+                            {periodOnlineTxnCount} txn{periodOnlineTxnCount !== 1 ? 's' : ''}
                           </span>
                         </div>
                         <p className={cn(
                           "text-base font-bold",
-                          onlineBalance >= 0 ? "text-foreground" : "text-destructive"
+                          closingOnlineBalance >= 0 ? "text-foreground" : "text-destructive"
                         )}>
-                          {onlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(onlineBalance).toLocaleString()}
+                          {closingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingOnlineBalance).toLocaleString()}
                         </p>
                       </div>
                     </div>
