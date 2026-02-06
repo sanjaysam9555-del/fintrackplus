@@ -1,251 +1,262 @@
 
 
-# Revamp Projects Tab UI & Unify Search Behavior
+# Enhanced Activity Logs with Change Details
 
-## Overview
+## Problem
 
-This plan addresses two issues:
-1. The Projects tab UI feels underwhelming compared to other pages
-2. Search bars in the Expenses/Income tabs should open the global search dialog instead of filtering locally
+Currently, the activity logs in Settings only show basic information like:
+- **Transaction Updated**: "Vendor Name - ₹1,000"
 
----
-
-## Part 1: Projects Tab UI Improvements
-
-### Current Issues
-- Plain header with just "Projects" text
-- Summary card lacks visual polish
-- Project cards are dense without visual breathing room
-- No search functionality
-- Toggle tabs look basic
-
-### Proposed Changes
-
-| Element | Current | Proposed |
-|---------|---------|----------|
-| Header | Plain "Projects" text | Icon + title + subtitle (like AI Summary page) |
-| Summary Card | 3-column grid in a box | Enhanced card with better spacing and visual hierarchy |
-| Toggle Tabs | Basic buttons | Pill-style segmented control with animation |
-| Project Cards | Dense layout | More breathing room, refined typography |
-| Search | None | Add search button that opens global search |
-
-### Header Enhancement
-
-```
-Current:                    Proposed:
-+-------------------+       +-------------------+
-| Projects          |       | [icon] Projects   |
-+-------------------+       | Track project     |
-                            | financials        |
-                            +-------------------+
-```
-
-### Summary Card Enhancement
-
-```
-Current:                        Proposed:
-+---------------------------+   +---------------------------+
-| [Budget] [Spent] [Margin] |   | Total Portfolio           |
-| icons are small           |   | ₹5,00,000 budget         |
-+---------------------------+   +---------------------------+
-                                | Budget | Spent  | Margin  |
-                                | ₹5L    | ₹3.2L  | ₹50K   |
-                                +---------------------------+
-```
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/ProjectOverviewPage.tsx` | Enhanced header, refined summary card, improved toggle tabs, add search button |
+This doesn't explain **what changed**. Users can't understand:
+- Which fields were modified
+- What the old values were vs new values
+- Context about the change (category, project, payment method, etc.)
 
 ---
 
-## Part 2: Unify Search Bar Behavior
+## Solution
 
-### Current Behavior
-- Dashboard: Search icon opens global search dialog (Ctrl+K)
-- TransactionList (Expenses/Income): Has inline `<Input>` that filters locally
+Enhance the notification system to capture and display detailed change information:
 
-### Proposed Behavior
-All search interactions should open the global search dialog for consistency.
-
-### Changes
-
-**TransactionList.tsx:**
-- Replace the local search `<Input>` with a clickable search button/bar
-- When clicked, it will trigger the global search dialog
-- This requires passing `onSearchClick` prop from Index.tsx
-
-**Index.tsx:**
-- Pass `onSearchClick` to `TransactionList` component
-
-**Visual Change:**
-```
-Current (TransactionList):
-+----------------------------------+
-| [🔍] Search vendor or category...|  <- Actual input field
-+----------------------------------+
-
-Proposed:
-+----------------------------------+
-| [🔍] Search transactions...  ⌘K |  <- Clickable button that opens dialog
-+----------------------------------+
-```
-
-### Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/pages/Index.tsx` | Pass `onSearchClick` prop to TransactionList |
-| `src/components/TransactionList.tsx` | Replace local search input with clickable search button |
+1. **Expand the Notification type** to include an optional `details` field for structured change data
+2. **Capture "before" state** when updating entities and compare with "after" state
+3. **Display change details** in the logs UI with a "from → to" format
+4. **Add relevant context** like category names, project names, payment methods
 
 ---
 
-## Technical Implementation
+## Visual Design
 
-### ProjectOverviewPage.tsx Changes
-
-**1. Enhanced Header (lines 96-98)**
-```tsx
-<div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border">
-  <div className="flex items-center gap-3">
-    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-      <FolderKanban size={20} className="text-primary" />
-    </div>
-    <div className="flex-1">
-      <h1 className="text-xl font-bold">Projects</h1>
-      <p className="text-xs text-muted-foreground">Track project financials</p>
-    </div>
-    {/* Search button */}
-    <button 
-      onClick={onSearchClick}
-      className="p-2 rounded-full hover:bg-muted transition-colors"
-      title="Search (⌘K)"
-    >
-      <Search size={18} className="text-muted-foreground" />
-    </button>
-  </div>
-</div>
+### Current Log Entry
+```
++------------------------------------------+
+| [📝] Transaction Updated                 |
+|       Amazon - ₹5,000                    |
+|       2 hours ago                        |
++------------------------------------------+
 ```
 
-**2. Summary Card Enhancement (lines 101-127)**
-- Add a header row with "Portfolio Overview" title
-- Use larger icons with better spacing
-- Add subtle dividers between stats
-
-**3. Toggle Tabs Enhancement (lines 129-148)**
-- Use a more polished pill-style container
-- Add subtle shadow to active state
-- Include count badges with better styling
+### Enhanced Log Entry
+```
++------------------------------------------+
+| [📝] Transaction Updated                 |
+|       Amazon - ₹5,000                    |
+|       ┌─────────────────────────────┐    |
+|       │ Amount: ₹3,000 → ₹5,000     │    |
+|       │ Category: Food → Shopping   │    |
+|       │ Payment: Cash → Online      │    |
+|       └─────────────────────────────┘    |
+|       2 hours ago                        |
++------------------------------------------+
+```
 
 ---
 
-### TransactionList.tsx Changes
+## Technical Changes
 
-**1. Add onSearchClick prop to interface (line 17-21)**
-```tsx
-interface TransactionListProps {
-  type: TransactionType;
-  userId?: string;
-  onEditSheetChange?: (isOpen: boolean) => void;
-  onSearchClick?: () => void;  // New prop
+### 1. Update Notification Type
+
+**File: `src/lib/types.ts`**
+
+Add an optional `details` field to store structured change information:
+
+```typescript
+export interface NotificationChange {
+  field: string;      // e.g., "Amount", "Category", "Vendor"
+  from: string;       // Previous value (formatted for display)
+  to: string;         // New value (formatted for display)
+}
+
+export interface Notification {
+  id: string;
+  type: 'transaction' | 'export' | 'profile' | 'category' | 'vendor' | 'project' | 'delete' | 'edit' | 'partner';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  details?: NotificationChange[];  // Optional array of changes
+  entityType?: string;             // 'transaction', 'category', etc.
+  entityId?: string;               // ID of the affected entity
 }
 ```
 
-**2. Replace search input with clickable button (lines 413-424)**
+### 2. Modify Store to Capture Changes
+
+**File: `src/lib/store.ts`**
+
+Update the `updateTransaction` function to compare old vs new values and generate detailed change descriptions.
+
+**Key changes to `updateTransaction` (lines 305-353):**
+
+```typescript
+updateTransaction: async (id, updates, userId) => {
+  const transaction = get().transactions.find(t => t.id === id);
+  const { categories, projects, partners } = get();
+  
+  // Helper to get readable names
+  const getCategoryName = (catId?: string) => 
+    categories.find(c => c.id === catId)?.name || 'None';
+  const getProjectName = (projId?: string) => 
+    projects.find(p => p.id === projId)?.name || 'None';
+  const getPartnerName = (partnerId?: string) => 
+    partners.find(p => p.id === partnerId)?.name || 'None';
+  
+  // Build change details
+  const changes: Array<{ field: string; from: string; to: string }> = [];
+  
+  if (transaction) {
+    if (updates.amount !== undefined && updates.amount !== transaction.amount) {
+      changes.push({
+        field: 'Amount',
+        from: `₹${transaction.amount.toLocaleString()}`,
+        to: `₹${updates.amount.toLocaleString()}`
+      });
+    }
+    if (updates.type && updates.type !== transaction.type) {
+      changes.push({
+        field: 'Type',
+        from: transaction.type === 'income' ? 'Income' : 'Expense',
+        to: updates.type === 'income' ? 'Income' : 'Expense'
+      });
+    }
+    if (updates.vendor && updates.vendor !== transaction.vendor) {
+      changes.push({
+        field: 'Vendor',
+        from: transaction.vendor,
+        to: updates.vendor
+      });
+    }
+    if (updates.categoryId !== undefined && updates.categoryId !== transaction.categoryId) {
+      changes.push({
+        field: 'Category',
+        from: getCategoryName(transaction.categoryId),
+        to: getCategoryName(updates.categoryId)
+      });
+    }
+    if (updates.projectId !== undefined && updates.projectId !== transaction.projectId) {
+      changes.push({
+        field: 'Project',
+        from: getProjectName(transaction.projectId),
+        to: getProjectName(updates.projectId)
+      });
+    }
+    if (updates.partnerId !== undefined && updates.partnerId !== transaction.partnerId) {
+      changes.push({
+        field: 'Partner',
+        from: getPartnerName(transaction.partnerId),
+        to: getPartnerName(updates.partnerId)
+      });
+    }
+    if (updates.paymentMethod && updates.paymentMethod !== transaction.paymentMethod) {
+      changes.push({
+        field: 'Payment',
+        from: transaction.paymentMethod === 'cash' ? 'Cash' : 'Online',
+        to: updates.paymentMethod === 'cash' ? 'Cash' : 'Online'
+      });
+    }
+    if (updates.date && updates.date !== transaction.date) {
+      changes.push({
+        field: 'Date',
+        from: transaction.date,
+        to: updates.date
+      });
+    }
+    if (updates.isGst !== undefined && updates.isGst !== transaction.isGst) {
+      changes.push({
+        field: 'GST',
+        from: transaction.isGst ? 'Yes' : 'No',
+        to: updates.isGst ? 'Yes' : 'No'
+      });
+    }
+  }
+  
+  // Update local state
+  set((state) => ({
+    transactions: state.transactions.map((t) => 
+      t.id === id ? { ...t, ...updates } : t
+    )
+  }));
+  
+  // ... sync queue logic ...
+  
+  if (transaction) {
+    get().addNotification({
+      type: 'edit',
+      title: 'Transaction Updated',
+      message: `${updates.vendor || transaction.vendor} - ₹${(updates.amount || transaction.amount).toLocaleString()}`,
+      details: changes.length > 0 ? changes : undefined,
+      entityType: 'transaction',
+      entityId: id,
+    });
+  }
+};
+```
+
+### 3. Apply Similar Logic to Other Entity Updates
+
+**Category, Vendor, Project, Partner updates** will also capture:
+- Name changes: "Old Name → New Name"
+- Color changes (shown as a visual indicator)
+- Budget/Margin changes for projects
+- Balance changes for partners
+
+### 4. Update SettingsPage to Display Changes
+
+**File: `src/components/SettingsPage.tsx`**
+
+Enhance the `NotificationsContent` component to render the `details` array:
+
 ```tsx
-{/* Search Button - Opens Global Search */}
-<div className="px-4 mb-4">
-  <button
-    onClick={onSearchClick}
-    className="w-full flex items-center gap-3 px-4 py-3 bg-muted/50 rounded-xl text-muted-foreground hover:bg-muted transition-colors"
-  >
-    <Search size={18} />
-    <span className="flex-1 text-left text-sm">Search transactions...</span>
-    <kbd className="hidden md:inline-flex px-1.5 py-0.5 bg-background rounded text-xs font-mono">⌘K</kbd>
-  </button>
-</div>
+{notification.details && notification.details.length > 0 && (
+  <div className="mt-2 p-2 bg-muted/50 rounded-lg space-y-1">
+    {notification.details.map((change, i) => (
+      <div key={i} className="flex items-center gap-2 text-xs">
+        <span className="text-muted-foreground w-16 shrink-0">{change.field}:</span>
+        <span className="text-muted-foreground line-through">{change.from}</span>
+        <span className="text-muted-foreground">→</span>
+        <span className="text-foreground font-medium">{change.to}</span>
+      </div>
+    ))}
+  </div>
+)}
 ```
 
-**3. Remove local search state**
-- Remove `const [searchQuery, setSearchQuery] = useState("");`
-- Remove search filtering from `filteredTransactions` useMemo
+### 5. Enhanced Delete Notifications
 
----
+For delete actions, include relevant entity details:
 
-### Index.tsx Changes
-
-**Pass onSearchClick to TransactionList (lines ~170, ~177)**
-```tsx
-case 'expenses':
-  return (
-    <TransactionList 
-      type="expense" 
-      userId={user?.id} 
-      onEditSheetChange={setIsEditSheetOpen}
-      onSearchClick={handleOpenSearch}  // Add this
-    />
-  );
-case 'income':
-  return (
-    <TransactionList 
-      type="income" 
-      userId={user?.id} 
-      onEditSheetChange={setIsEditSheetOpen}
-      onSearchClick={handleOpenSearch}  // Add this
-    />
-  );
+```typescript
+// Transaction delete
+get().addNotification({
+  type: 'delete',
+  title: 'Transaction Deleted',
+  message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+  details: [
+    { field: 'Type', from: transaction.type === 'income' ? 'Income' : 'Expense', to: 'Deleted' },
+    { field: 'Date', from: transaction.date, to: 'Deleted' },
+    { field: 'Category', from: getCategoryName(transaction.categoryId), to: 'Deleted' },
+  ],
+});
 ```
 
 ---
 
-## Visual Summary
+## Summary of Changes
 
-### Projects Tab Before → After
-
-```
-BEFORE:                           AFTER:
-+--------------------+            +------------------------+
-| Projects           |            | [📁] Projects     [🔍] |
-+--------------------+            |  Track project finances|
-| +-----------------+|            +------------------------+
-| |Budget|Spent|Marg||            |   Portfolio Overview   |
-| +-----------------+|            | +----+-----+--------+  |
-|                    |            | |Bdgt|Spent| Margin |  |
-| [Active][Archived] |            | |₹5L |₹3.2L| ₹50K   |  |
-|                    |            | +----+-----+--------+  |
-| +----------------+ |            |                        |
-| | Project Card   | |            | ●Active (3) ○Archived  |
-| | (dense)        | |            |                        |
-| +----------------+ |            | +--------------------+ |
-+--------------------+            | | Project Card       | |
-                                  | | (refined)          | |
-                                  | +--------------------+ |
-                                  +------------------------+
-```
-
-### Transaction List Search Before → After
-
-```
-BEFORE:                           AFTER:
-+---------------------------+     +---------------------------+
-| [🔍] Search vendor or... |     | 🔍 Search transactions ⌘K |
-| (input field)            |     | (clickable button)        |
-+---------------------------+     +---------------------------+
-         ↓                                   ↓
-   Filters list locally           Opens Global Search Dialog
-```
+| File | Changes |
+|------|---------|
+| `src/lib/types.ts` | Add `NotificationChange` interface, update `Notification` type with `details`, `entityType`, `entityId` |
+| `src/lib/store.ts` | Capture before/after changes in all update functions, enhance delete notifications |
+| `src/components/SettingsPage.tsx` | Render change details in logs with "from → to" formatting |
 
 ---
 
-## Summary
+## Example Log Entries After Implementation
 
-| Change | Files Affected |
-|--------|----------------|
-| Projects header with icon + subtitle + search | `ProjectOverviewPage.tsx` |
-| Enhanced summary card | `ProjectOverviewPage.tsx` |
-| Polished toggle tabs | `ProjectOverviewPage.tsx` |
-| Replace local search with global search button | `TransactionList.tsx` |
-| Pass onSearchClick prop | `Index.tsx` |
+| Action | Before | After |
+|--------|--------|-------|
+| Edit Amount | "Amazon - ₹5,000" | "Amazon - ₹5,000" + details: "Amount: ₹3,000 → ₹5,000" |
+| Change Category | "Amazon - ₹5,000" | "Amazon - ₹5,000" + details: "Category: Food → Shopping" |
+| Multiple Changes | "Amazon - ₹5,000" | Shows all changed fields in a compact list |
+| Delete Transaction | "Amazon - ₹5,000" | "Amazon - ₹5,000" + details: Type, Date, Category info |
 
