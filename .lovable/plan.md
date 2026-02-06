@@ -1,186 +1,122 @@
 
-# Center and Enhance Search Dialog Aesthetics
+
+# Fix Horizontal Overflow in Project Detail Sheet (Mobile View)
 
 ## Problem Identified
 
-The search dialog currently uses `fixed` positioning with `left-1/2 -translate-x-1/2`, which centers it relative to the **entire viewport**. On desktop with the sidebar (72px-256px wide), this makes the dialog appear off-center relative to the actual content area.
+The Project Detail Sheet content is extending horizontally beyond the mobile viewport, causing:
 
-```
-Current Layout (Desktop):
-+--------+--------------------------------+
-|        |           VIEWPORT             |
-| SIDEBAR|                                |
-| (256px)|     [Search Dialog]            | <- Centered to viewport
-|        |                                |    but appears shifted right
-|        |    CONTENT AREA                |    relative to content
-+--------+--------------------------------+
+1. The **Net card** in the 2x2 financial summary grid to be clipped (only shows "Net +₹")
+2. The **Margin Analysis** monetary values to be completely invisible (pushed off-screen)
+3. **Transaction items** timestamps and amounts getting cut off at the edge
+
+## Root Cause
+
+While `DrawerContent` has `overflow-hidden`, the inner content containers lack proper width constraints:
+- The `ScrollArea` component doesn't have explicit `w-full` constraints
+- The inner `<div className="p-4 space-y-6">` allows content to grow beyond viewport
+- Currency values with Indian formatting (e.g., "₹10,67,500") are long and push flex layouts
+- The Margin Analysis uses `justify-between` but values have no `truncate` or `min-w-0` to prevent overflow
+
+---
+
+## Solution
+
+Add explicit width constraints and overflow handling to all content containers within the drawer.
+
+---
+
+## Technical Changes
+
+### File: `src/components/ProjectDetailSheet.tsx`
+
+| Section | Issue | Fix |
+|---------|-------|-----|
+| ScrollArea | No width constraint | Add `w-full` class |
+| Inner container | Content can overflow | Add `w-full max-w-full overflow-x-hidden` |
+| Financial grid | Long amounts overflow | Add `overflow-hidden` to cards, `truncate` to amounts |
+| Margin Analysis rows | Values pushed off-screen | Add `min-w-0` to value spans, `shrink-0` to labels |
+| Transaction lists | No width constraint | Add `w-full overflow-hidden` wrapper |
+
+### Specific Changes
+
+**1. ScrollArea and Inner Container (lines 152-153)**
+```tsx
+// Before
+<ScrollArea className="flex-1 overflow-auto">
+  <div className="p-4 space-y-6">
+
+// After
+<ScrollArea className="flex-1 overflow-auto w-full">
+  <div className="p-4 space-y-6 w-full max-w-full overflow-x-hidden">
 ```
 
+**2. Financial Summary Grid Cards (lines 155-180)**
+- Add `overflow-hidden` to each card container
+- Add `truncate` to all amount `<p>` elements to handle long values gracefully
+
+```tsx
+// Before
+<div className="bg-muted/50 rounded-xl p-3">
+  <p className="text-lg font-bold">₹{...}</p>
+</div>
+
+// After  
+<div className="bg-muted/50 rounded-xl p-3 overflow-hidden">
+  <p className="text-lg font-bold truncate">₹{...}</p>
+</div>
 ```
-Desired Layout:
-+--------+--------------------------------+
-|        |                                |
-| SIDEBAR|       [Search Dialog]          | <- Centered to content area
-|        |                                |
-|        |        CONTENT AREA            |
-+--------+--------------------------------+
+
+**3. Margin Analysis Section (lines 184-202)**
+- Add `overflow-hidden` to the container
+- Add `gap-2` and `min-w-0` to flex rows to prevent overlap
+- Add `shrink-0` to labels so they don't compress
+- Add `truncate` to values to handle overflow
+
+```tsx
+// Before
+<div className="flex items-center justify-between text-sm">
+  <span className="text-muted-foreground">Expected Margin</span>
+  <span className="font-medium">₹{...}</span>
+</div>
+
+// After
+<div className="flex items-center justify-between text-sm gap-2 min-w-0">
+  <span className="text-muted-foreground shrink-0">Expected Margin</span>
+  <span className="font-medium truncate">₹{...}</span>
+</div>
+```
+
+**4. Transaction List Containers (lines 229, 255)**
+Add width constraints to prevent TransactionItem overflow:
+
+```tsx
+// Before
+<div className="space-y-2">
+
+// After
+<div className="space-y-2 w-full overflow-hidden">
 ```
 
 ---
 
-## Proposed Solution
+## Why This Works
 
-### 1. Use Radix Dialog Component
-
-Replace the custom Framer Motion dialog with Radix's `Dialog` component from `@/components/ui/dialog` for better accessibility and consistent behavior across the app.
-
-### 2. Adjust Centering for Desktop
-
-Apply responsive positioning:
-- **Mobile**: Center to full viewport (current behavior)
-- **Desktop (md+)**: Account for sidebar with `md:left-[calc(50%+128px)]` or use CSS custom properties
-
-### 3. Enhance Visual Aesthetics
-
-| Element | Current | Proposed |
-|---------|---------|----------|
-| Shadow | `shadow-xl` | Enhanced layered shadow with ring |
-| Border | `border-border` | Subtle gradient or softer border |
-| Input | Plain transparent | Larger, more prominent with subtle background |
-| Results | Basic padding | Better visual hierarchy with group labels |
-| Animation | Spring bounce | Smoother, more elegant entrance |
-| Empty state | Plain text | Icon + text with better visual |
+| Constraint | Purpose |
+|------------|---------|
+| `w-full` | Ensures container doesn't exceed parent width |
+| `max-w-full` | Prevents content from growing beyond 100% |
+| `overflow-x-hidden` | Clips any content that still overflows |
+| `overflow-hidden` on cards | Contains content within card boundaries |
+| `truncate` on amounts | Shows ellipsis for very long values |
+| `min-w-0` on flex rows | Allows flex items to shrink below content size |
+| `shrink-0` on labels | Keeps labels readable, only values truncate |
 
 ---
 
-## Technical Implementation
-
-### File to Modify
+## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `src/components/GlobalSearchDialog.tsx` | Use Dialog from Radix, improve positioning and styling |
+| `src/components/ProjectDetailSheet.tsx` | Add width constraints and overflow handling |
 
-### Positioning Fix
-
-**Option A - CSS Variable Approach:**
-```tsx
-// Calculate center of content area
-className="fixed top-[15vh] left-1/2 -translate-x-1/2 md:left-[calc(50%+var(--sidebar-offset))] ..."
-```
-
-**Option B - Inset with max-width (Simpler):**
-```tsx
-// Use inset-x for symmetric margins, then center with mx-auto
-className="fixed top-[15vh] inset-x-0 mx-auto w-[calc(100%-2rem)] max-w-[520px] md:ml-[128px] ..."
-```
-
-**Option C - Dialog Overlay Centering (Recommended):**
-Use a flex container overlay that respects the sidebar:
-```tsx
-<motion.div className="fixed inset-0 md:left-[256px] z-50 flex items-start justify-center pt-[15vh]">
-  <motion.div className="w-[calc(100%-2rem)] max-w-[520px] ...">
-    {/* Dialog content */}
-  </motion.div>
-</motion.div>
-```
-
-### Visual Enhancements
-
-```tsx
-// Enhanced dialog container
-className="
-  w-full max-w-[520px]
-  bg-card/95 backdrop-blur-xl
-  rounded-2xl
-  border border-border/50
-  shadow-2xl shadow-black/10
-  ring-1 ring-white/10
-  dark:ring-white/5
-  overflow-hidden
-"
-
-// Enhanced search input area
-<div className="flex items-center gap-3 p-5 border-b border-border/50 bg-muted/30">
-  <Search size={22} className="text-primary shrink-0" />
-  <Input
-    className="flex-1 border-0 bg-transparent focus-visible:ring-0 px-0 text-lg placeholder:text-muted-foreground/60"
-    placeholder="Search everything..."
-  />
-</div>
-
-// Enhanced empty state
-<div className="p-10 text-center">
-  <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-    <Search size={24} className="text-muted-foreground" />
-  </div>
-  <p className="font-medium">Quick Search</p>
-  <p className="text-sm text-muted-foreground mt-1">
-    Find transactions, vendors, projects, and more
-  </p>
-</div>
-```
-
-### Keyboard Shortcut Badge
-
-Add a visual indicator showing the keyboard shortcut:
-```tsx
-<div className="p-3 border-t border-border/50 bg-muted/20 flex items-center justify-between">
-  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-    <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono">↑</kbd>
-    <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono">↓</kbd>
-    <span>Navigate</span>
-  </div>
-  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-    <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono">ESC</kbd>
-    <span>Close</span>
-  </div>
-</div>
-```
-
----
-
-## Visual Comparison
-
-**Before:**
-```
-+---------------------------+
-| [🔍] Search...          X |
-+---------------------------+
-| No results found          |
-|                           |
-+---------------------------+
-| Press ESC to close        |
-+---------------------------+
-```
-
-**After:**
-```
-+-----------------------------------+
-|                                   |
-|  🔍  Search everything...         |
-|                                   |
-+-----------------------------------+
-|                                   |
-|           ( 🔍 )                  |
-|                                   |
-|      Quick Search                 |
-|  Find transactions, vendors,      |
-|      projects, and more           |
-|                                   |
-+-----------------------------------+
-| ↑ ↓ Navigate        ESC Close     |
-+-----------------------------------+
-```
-
----
-
-## Summary
-
-| Issue | Fix |
-|-------|-----|
-| Off-center on desktop | Adjust positioning to account for sidebar |
-| Plain aesthetics | Enhanced shadows, borders, and spacing |
-| Small input area | Larger, more prominent search input |
-| Basic empty state | Icon-based empty state with description |
-| Limited keyboard hints | Show navigation and close shortcuts |
