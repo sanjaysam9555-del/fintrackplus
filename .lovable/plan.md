@@ -1,46 +1,55 @@
 
+# Center and Enhance Search Dialog Aesthetics
 
-# Expand Vendor Payments to Show Individual Transactions
+## Problem Identified
 
-## Current Problem
+The search dialog currently uses `fixed` positioning with `left-1/2 -translate-x-1/2`, which centers it relative to the **entire viewport**. On desktop with the sidebar (72px-256px wide), this makes the dialog appear off-center relative to the actual content area.
 
-| Issue | Current Behavior |
-|-------|-----------------|
-| **Aggregated Only** | Vendor section shows only totals: vendor name, count, amount, last date |
-| **No Transaction Details** | Cannot see individual payments to a vendor |
-| **No Edit Access** | Cannot edit/delete vendor transactions from this view |
-
-**Current Vendor Display (lines 254-270):**
 ```
-┌─────────────────────────────────────┐
-│ Vendor Name                  ₹15,000│
-│ 3 payments • Last: Jan 15          │
-└─────────────────────────────────────┘
+Current Layout (Desktop):
++--------+--------------------------------+
+|        |           VIEWPORT             |
+| SIDEBAR|                                |
+| (256px)|     [Search Dialog]            | <- Centered to viewport
+|        |                                |    but appears shifted right
+|        |    CONTENT AREA                |    relative to content
++--------+--------------------------------+
+```
+
+```
+Desired Layout:
++--------+--------------------------------+
+|        |                                |
+| SIDEBAR|       [Search Dialog]          | <- Centered to content area
+|        |                                |
+|        |        CONTENT AREA            |
++--------+--------------------------------+
 ```
 
 ---
 
 ## Proposed Solution
 
-Make each vendor card collapsible to reveal individual transactions:
+### 1. Use Radix Dialog Component
 
-```
-┌─────────────────────────────────────┐
-│ ▼ Vendor Name (3)            ₹15,000│
-│   3 payments • Last: Jan 15         │
-├─────────────────────────────────────┤
-│ [TransactionItem] Jan 15    -₹7,000 │
-│ [TransactionItem] Jan 10    -₹5,000 │
-│ [TransactionItem] Jan 5     -₹3,000 │
-└─────────────────────────────────────┘
-```
+Replace the custom Framer Motion dialog with Radix's `Dialog` component from `@/components/ui/dialog` for better accessibility and consistent behavior across the app.
 
-**Features:**
-- Vendor summary header remains visible (total amount, count, last date)
-- Chevron indicator shows expandable state
-- Clicking expands to show all transactions for that vendor
-- Uses the standard `TransactionItem` component for consistency
-- Each transaction can be edited/deleted just like in other sections
+### 2. Adjust Centering for Desktop
+
+Apply responsive positioning:
+- **Mobile**: Center to full viewport (current behavior)
+- **Desktop (md+)**: Account for sidebar with `md:left-[calc(50%+128px)]` or use CSS custom properties
+
+### 3. Enhance Visual Aesthetics
+
+| Element | Current | Proposed |
+|---------|---------|----------|
+| Shadow | `shadow-xl` | Enhanced layered shadow with ring |
+| Border | `border-border` | Subtle gradient or softer border |
+| Input | Plain transparent | Larger, more prominent with subtle background |
+| Results | Basic padding | Better visual hierarchy with group labels |
+| Animation | Spring bounce | Smoother, more elegant entrance |
+| Empty state | Plain text | Icon + text with better visual |
 
 ---
 
@@ -50,108 +59,128 @@ Make each vendor card collapsible to reveal individual transactions:
 
 | File | Changes |
 |------|---------|
-| `src/components/ProjectDetailSheet.tsx` | Replace static vendor cards with collapsible sections containing TransactionItem list |
+| `src/components/GlobalSearchDialog.tsx` | Use Dialog from Radix, improve positioning and styling |
 
-### Changes Required
+### Positioning Fix
 
-1. **Add Collapsible import** from `@/components/ui/collapsible`
-2. **Add ChevronDown icon** to vendor headers
-3. **Track expanded state** for each vendor (useState with Set or object)
-4. **Filter transactions by vendor** to get individual payments
-5. **Render TransactionItem** for each vendor's transactions inside the collapsible
+**Option A - CSS Variable Approach:**
+```tsx
+// Calculate center of content area
+className="fixed top-[15vh] left-1/2 -translate-x-1/2 md:left-[calc(50%+var(--sidebar-offset))] ..."
+```
 
-### Code Structure
+**Option B - Inset with max-width (Simpler):**
+```tsx
+// Use inset-x for symmetric margins, then center with mx-auto
+className="fixed top-[15vh] inset-x-0 mx-auto w-[calc(100%-2rem)] max-w-[520px] md:ml-[128px] ..."
+```
+
+**Option C - Dialog Overlay Centering (Recommended):**
+Use a flex container overlay that respects the sidebar:
+```tsx
+<motion.div className="fixed inset-0 md:left-[256px] z-50 flex items-start justify-center pt-[15vh]">
+  <motion.div className="w-[calc(100%-2rem)] max-w-[520px] ...">
+    {/* Dialog content */}
+  </motion.div>
+</motion.div>
+```
+
+### Visual Enhancements
 
 ```tsx
-// Track which vendors are expanded
-const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
+// Enhanced dialog container
+className="
+  w-full max-w-[520px]
+  bg-card/95 backdrop-blur-xl
+  rounded-2xl
+  border border-border/50
+  shadow-2xl shadow-black/10
+  ring-1 ring-white/10
+  dark:ring-white/5
+  overflow-hidden
+"
 
-const toggleVendor = (vendor: string) => {
-  setExpandedVendors(prev => {
-    const newSet = new Set(prev);
-    if (newSet.has(vendor)) {
-      newSet.delete(vendor);
-    } else {
-      newSet.add(vendor);
-    }
-    return newSet;
-  });
-};
+// Enhanced search input area
+<div className="flex items-center gap-3 p-5 border-b border-border/50 bg-muted/30">
+  <Search size={22} className="text-primary shrink-0" />
+  <Input
+    className="flex-1 border-0 bg-transparent focus-visible:ring-0 px-0 text-lg placeholder:text-muted-foreground/60"
+    placeholder="Search everything..."
+  />
+</div>
 
-// Get transactions for a specific vendor
-const getVendorTransactions = (vendorName: string) => {
-  return expenseTransactions.filter(t => t.vendor === vendorName);
-};
+// Enhanced empty state
+<div className="p-10 text-center">
+  <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+    <Search size={24} className="text-muted-foreground" />
+  </div>
+  <p className="font-medium">Quick Search</p>
+  <p className="text-sm text-muted-foreground mt-1">
+    Find transactions, vendors, projects, and more
+  </p>
+</div>
+```
 
-// In render:
-{vendorBreakdown.map((item) => {
-  const isExpanded = expandedVendors.has(item.vendor);
-  const vendorTxns = getVendorTransactions(item.vendor);
-  
-  return (
-    <Collapsible
-      key={item.vendor}
-      open={isExpanded}
-      onOpenChange={() => toggleVendor(item.vendor)}
-    >
-      <CollapsibleTrigger className="w-full">
-        {/* Vendor summary header with chevron */}
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        {/* List of TransactionItem components */}
-        {vendorTxns.map(txn => (
-          <TransactionItem
-            key={txn.id}
-            transaction={txn}
-            category={getCategoryById(txn.categoryId)}
-            userId={userId}
-            onEditSheetChange={onEditSheetChange}
-          />
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
-  );
-})}
+### Keyboard Shortcut Badge
+
+Add a visual indicator showing the keyboard shortcut:
+```tsx
+<div className="p-3 border-t border-border/50 bg-muted/20 flex items-center justify-between">
+  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono">↑</kbd>
+    <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono">↓</kbd>
+    <span>Navigate</span>
+  </div>
+  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+    <kbd className="px-1.5 py-0.5 bg-muted rounded font-mono">ESC</kbd>
+    <span>Close</span>
+  </div>
+</div>
 ```
 
 ---
 
-## Visual Design
+## Visual Comparison
 
-**Collapsed State:**
+**Before:**
 ```
-┌─────────────────────────────────────┐
-│ ▶ Vendor Name           (3) ₹15,000 │
-│   Last payment: Jan 15              │
-└─────────────────────────────────────┘
++---------------------------+
+| [🔍] Search...          X |
++---------------------------+
+| No results found          |
+|                           |
++---------------------------+
+| Press ESC to close        |
++---------------------------+
 ```
 
-**Expanded State:**
+**After:**
 ```
-┌─────────────────────────────────────┐
-│ ▼ Vendor Name           (3) ₹15,000 │
-│   Last payment: Jan 15              │
-├─────────────────────────────────────┤
-│ │ [Category Icon] Payment Title     │
-│ │ Vendor • Cash • 2:30 PM   -₹7,000 │
-│ ├───────────────────────────────────│
-│ │ [Category Icon] Payment Title     │
-│ │ Vendor • Online • 10:15   -₹5,000 │
-│ ├───────────────────────────────────│
-│ │ [Category Icon] Payment Title     │
-│ │ Vendor • Cash • 9:00 AM   -₹3,000 │
-└─────────────────────────────────────┘
++-----------------------------------+
+|                                   |
+|  🔍  Search everything...         |
+|                                   |
++-----------------------------------+
+|                                   |
+|           ( 🔍 )                  |
+|                                   |
+|      Quick Search                 |
+|  Find transactions, vendors,      |
+|      projects, and more           |
+|                                   |
++-----------------------------------+
+| ↑ ↓ Navigate        ESC Close     |
++-----------------------------------+
 ```
 
 ---
 
 ## Summary
 
-| Before | After |
-|--------|-------|
-| Only totals shown | Individual transactions visible |
-| No drill-down | Collapsible vendor sections |
-| Cannot see payment dates | Each payment with full date/time |
-| Cannot edit transactions | Full TransactionItem with edit/delete |
-| Static display | Interactive accordion-style UI |
-
+| Issue | Fix |
+|-------|-----|
+| Off-center on desktop | Adjust positioning to account for sidebar |
+| Plain aesthetics | Enhanced shadows, borders, and spacing |
+| Small input area | Larger, more prominent search input |
+| Basic empty state | Icon-based empty state with description |
+| Limited keyboard hints | Show navigation and close shortcuts |
