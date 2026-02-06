@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor, Partner } from './types';
+import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor, Partner, NotificationChange } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
@@ -304,6 +304,84 @@ export const useFinanceStore = create<FinanceStore>()(
       
       updateTransaction: async (id, updates, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
+        const { categories, projects, partners } = get();
+        
+        // Helper to get readable names
+        const getCategoryName = (catId?: string) => 
+          categories.find(c => c.id === catId)?.name || 'None';
+        const getProjectName = (projId?: string) => 
+          projects.find(p => p.id === projId)?.name || 'None';
+        const getPartnerName = (partnerId?: string) => 
+          partners.find(p => p.id === partnerId)?.name || 'None';
+        
+        // Build change details before update
+        const changes: NotificationChange[] = [];
+        
+        if (transaction) {
+          if (updates.amount !== undefined && updates.amount !== transaction.amount) {
+            changes.push({
+              field: 'Amount',
+              from: `₹${transaction.amount.toLocaleString()}`,
+              to: `₹${updates.amount.toLocaleString()}`
+            });
+          }
+          if (updates.type && updates.type !== transaction.type) {
+            changes.push({
+              field: 'Type',
+              from: transaction.type === 'income' ? 'Income' : 'Expense',
+              to: updates.type === 'income' ? 'Income' : 'Expense'
+            });
+          }
+          if (updates.vendor && updates.vendor !== transaction.vendor) {
+            changes.push({
+              field: 'Vendor',
+              from: transaction.vendor,
+              to: updates.vendor
+            });
+          }
+          if (updates.categoryId !== undefined && updates.categoryId !== transaction.categoryId) {
+            changes.push({
+              field: 'Category',
+              from: getCategoryName(transaction.categoryId),
+              to: getCategoryName(updates.categoryId)
+            });
+          }
+          if (updates.projectId !== undefined && updates.projectId !== transaction.projectId) {
+            changes.push({
+              field: 'Project',
+              from: getProjectName(transaction.projectId),
+              to: getProjectName(updates.projectId)
+            });
+          }
+          if (updates.partnerId !== undefined && updates.partnerId !== transaction.partnerId) {
+            changes.push({
+              field: 'Partner',
+              from: getPartnerName(transaction.partnerId),
+              to: getPartnerName(updates.partnerId)
+            });
+          }
+          if (updates.paymentMethod && updates.paymentMethod !== transaction.paymentMethod) {
+            changes.push({
+              field: 'Payment',
+              from: transaction.paymentMethod === 'cash' ? 'Cash' : 'Online',
+              to: updates.paymentMethod === 'cash' ? 'Cash' : 'Online'
+            });
+          }
+          if (updates.date && updates.date !== transaction.date) {
+            changes.push({
+              field: 'Date',
+              from: transaction.date,
+              to: updates.date
+            });
+          }
+          if (updates.isGst !== undefined && updates.isGst !== transaction.isGst) {
+            changes.push({
+              field: 'GST',
+              from: transaction.isGst ? 'Yes' : 'No',
+              to: updates.isGst ? 'Yes' : 'No'
+            });
+          }
+        }
         
         // 1. Update local state immediately (optimistic)
         set((state) => ({
@@ -347,13 +425,36 @@ export const useFinanceStore = create<FinanceStore>()(
           get().addNotification({
             type: 'edit',
             title: 'Transaction Updated',
-            message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+            message: `${updates.vendor || transaction.vendor} - ₹${(updates.amount ?? transaction.amount).toLocaleString()}`,
+            details: changes.length > 0 ? changes : undefined,
+            entityType: 'transaction',
+            entityId: id,
           });
         }
       },
       
       deleteTransaction: async (id, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
+        const { categories, projects, partners } = get();
+        
+        // Helper to get readable names
+        const getCategoryName = (catId?: string) => 
+          categories.find(c => c.id === catId)?.name || 'None';
+        const getProjectName = (projId?: string) => 
+          projects.find(p => p.id === projId)?.name || 'None';
+        const getPartnerName = (partnerId?: string) => 
+          partners.find(p => p.id === partnerId)?.name || 'None';
+        
+        // Capture details before deletion
+        const details: NotificationChange[] = transaction ? [
+          { field: 'Type', from: transaction.type === 'income' ? 'Income' : 'Expense', to: 'Deleted' },
+          { field: 'Amount', from: `₹${transaction.amount.toLocaleString()}`, to: 'Deleted' },
+          { field: 'Date', from: transaction.date, to: 'Deleted' },
+          { field: 'Category', from: getCategoryName(transaction.categoryId), to: 'Deleted' },
+          ...(transaction.projectId ? [{ field: 'Project', from: getProjectName(transaction.projectId), to: 'Deleted' }] : []),
+          ...(transaction.partnerId ? [{ field: 'Partner', from: getPartnerName(transaction.partnerId), to: 'Deleted' }] : []),
+          { field: 'Payment', from: transaction.paymentMethod === 'cash' ? 'Cash' : 'Online', to: 'Deleted' },
+        ] : [];
         
         // 1. Remove from local state immediately (optimistic)
         set((state) => ({
@@ -381,6 +482,9 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'delete',
             title: 'Transaction Deleted',
             message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+            details,
+            entityType: 'transaction',
+            entityId: id,
           });
         }
       },
@@ -423,6 +527,26 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       updateCategory: async (id, updates, userId) => {
+        const category = get().categories.find(c => c.id === id);
+        
+        // Build change details
+        const changes: NotificationChange[] = [];
+        if (category) {
+          if (updates.name && updates.name !== category.name) {
+            changes.push({ field: 'Name', from: category.name, to: updates.name });
+          }
+          if (updates.icon && updates.icon !== category.icon) {
+            changes.push({ field: 'Icon', from: category.icon, to: updates.icon });
+          }
+          if (updates.type && updates.type !== category.type) {
+            changes.push({ 
+              field: 'Type', 
+              from: category.type === 'income' ? 'Income' : 'Expense', 
+              to: updates.type === 'income' ? 'Income' : 'Expense' 
+            });
+          }
+        }
+        
         set((state) => ({
           categories: state.categories.map((c) => 
             c.id === id ? { ...c, ...updates } : c
@@ -447,12 +571,22 @@ export const useFinanceStore = create<FinanceStore>()(
         get().addNotification({
           type: 'edit',
           title: 'Category Updated',
-          message: updates.name || 'Category modified',
+          message: updates.name || category?.name || 'Category modified',
+          details: changes.length > 0 ? changes : undefined,
+          entityType: 'category',
+          entityId: id,
         });
       },
       
       deleteCategory: async (id, userId) => {
         const category = get().categories.find(c => c.id === id);
+        
+        // Capture details before deletion
+        const details: NotificationChange[] = category ? [
+          { field: 'Name', from: category.name, to: 'Deleted' },
+          { field: 'Type', from: category.type === 'income' ? 'Income' : 'Expense', to: 'Deleted' },
+          { field: 'Icon', from: category.icon, to: 'Deleted' },
+        ] : [];
         
         set((state) => ({
           categories: state.categories.filter((c) => c.id !== id)
@@ -478,6 +612,9 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'delete',
             title: 'Category Deleted',
             message: category.name,
+            details,
+            entityType: 'category',
+            entityId: id,
           });
         }
       },
@@ -522,6 +659,44 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       updateProject: async (id, updates, userId) => {
+        const project = get().projects.find(p => p.id === id);
+        
+        // Build change details
+        const changes: NotificationChange[] = [];
+        if (project) {
+          if (updates.name && updates.name !== project.name) {
+            changes.push({ field: 'Name', from: project.name, to: updates.name });
+          }
+          if (updates.budgetLimit !== undefined && updates.budgetLimit !== project.budgetLimit) {
+            changes.push({ 
+              field: 'Budget', 
+              from: `₹${project.budgetLimit.toLocaleString()}`, 
+              to: `₹${updates.budgetLimit.toLocaleString()}` 
+            });
+          }
+          if (updates.margin !== undefined && updates.margin !== project.margin) {
+            changes.push({ 
+              field: 'Margin', 
+              from: `₹${project.margin.toLocaleString()}`, 
+              to: `₹${updates.margin.toLocaleString()}` 
+            });
+          }
+          if (updates.archived !== undefined && updates.archived !== project.archived) {
+            changes.push({ 
+              field: 'Status', 
+              from: project.archived ? 'Archived' : 'Active', 
+              to: updates.archived ? 'Archived' : 'Active' 
+            });
+          }
+          if (updates.description !== undefined && updates.description !== project.description) {
+            changes.push({ 
+              field: 'Description', 
+              from: project.description || 'None', 
+              to: updates.description || 'None' 
+            });
+          }
+        }
+        
         set((state) => ({
           projects: state.projects.map((p) => 
             p.id === id ? { ...p, ...updates } : p
@@ -555,12 +730,23 @@ export const useFinanceStore = create<FinanceStore>()(
         get().addNotification({
           type: 'edit',
           title: 'Project Updated',
-          message: updates.name || 'Project modified',
+          message: updates.name || project?.name || 'Project modified',
+          details: changes.length > 0 ? changes : undefined,
+          entityType: 'project',
+          entityId: id,
         });
       },
       
       deleteProject: async (id, userId) => {
         const project = get().projects.find(p => p.id === id);
+        
+        // Capture details before deletion
+        const details: NotificationChange[] = project ? [
+          { field: 'Name', from: project.name, to: 'Deleted' },
+          { field: 'Budget', from: `₹${project.budgetLimit.toLocaleString()}`, to: 'Deleted' },
+          { field: 'Margin', from: `₹${project.margin.toLocaleString()}`, to: 'Deleted' },
+          { field: 'Status', from: project.archived ? 'Archived' : 'Active', to: 'Deleted' },
+        ] : [];
         
         set((state) => ({
           projects: state.projects.filter((p) => p.id !== id)
@@ -586,6 +772,9 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'delete',
             title: 'Project Deleted',
             message: project.name,
+            details,
+            entityType: 'project',
+            entityId: id,
           });
         }
       },
@@ -627,6 +816,19 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       updateVendor: async (id, updates, userId) => {
+        const vendor = get().vendors.find(v => v.id === id);
+        
+        // Build change details
+        const changes: NotificationChange[] = [];
+        if (vendor) {
+          if (updates.name && updates.name !== vendor.name) {
+            changes.push({ field: 'Name', from: vendor.name, to: updates.name });
+          }
+          if (updates.icon !== undefined && updates.icon !== vendor.icon) {
+            changes.push({ field: 'Icon', from: vendor.icon || 'None', to: updates.icon || 'None' });
+          }
+        }
+        
         set((state) => ({
           vendors: state.vendors.map((v) => 
             v.id === id ? { ...v, ...updates } : v
@@ -648,16 +850,24 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
-        const vendor = get().vendors.find(v => v.id === id);
         get().addNotification({
           type: 'edit',
           title: 'Vendor Updated',
           message: updates.name || vendor?.name || 'Vendor modified',
+          details: changes.length > 0 ? changes : undefined,
+          entityType: 'vendor',
+          entityId: id,
         });
       },
       
       deleteVendor: async (id, userId) => {
         const vendor = get().vendors.find(v => v.id === id);
+        
+        // Capture details before deletion
+        const details: NotificationChange[] = vendor ? [
+          { field: 'Name', from: vendor.name, to: 'Deleted' },
+          ...(vendor.icon ? [{ field: 'Icon', from: vendor.icon, to: 'Deleted' }] : []),
+        ] : [];
         
         set((state) => ({
           vendors: state.vendors.filter((v) => v.id !== id)
@@ -683,6 +893,9 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'delete',
             title: 'Vendor Deleted',
             message: vendor.name,
+            details,
+            entityType: 'vendor',
+            entityId: id,
           });
         }
       },
@@ -720,6 +933,30 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       updatePartner: async (id, updates, userId) => {
+        const partner = get().partners.find(p => p.id === id);
+        
+        // Build change details
+        const changes: NotificationChange[] = [];
+        if (partner) {
+          if (updates.name && updates.name !== partner.name) {
+            changes.push({ field: 'Name', from: partner.name, to: updates.name });
+          }
+          if (updates.initialCashBalance !== undefined && updates.initialCashBalance !== partner.initialCashBalance) {
+            changes.push({ 
+              field: 'Cash Balance', 
+              from: `₹${partner.initialCashBalance.toLocaleString()}`, 
+              to: `₹${updates.initialCashBalance.toLocaleString()}` 
+            });
+          }
+          if (updates.initialOnlineBalance !== undefined && updates.initialOnlineBalance !== partner.initialOnlineBalance) {
+            changes.push({ 
+              field: 'Online Balance', 
+              from: `₹${partner.initialOnlineBalance.toLocaleString()}`, 
+              to: `₹${updates.initialOnlineBalance.toLocaleString()}` 
+            });
+          }
+        }
+        
         set((state) => ({
           partners: state.partners.map((p) => 
             p.id === id ? { ...p, ...updates } : p
@@ -746,9 +983,29 @@ export const useFinanceStore = create<FinanceStore>()(
             processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
           }
         }
+        
+        if (partner) {
+          get().addNotification({
+            type: 'edit',
+            title: 'Partner Updated',
+            message: updates.name || partner.name,
+            details: changes.length > 0 ? changes : undefined,
+            entityType: 'partner',
+            entityId: id,
+          });
+        }
       },
       
       deletePartner: async (id, userId) => {
+        const partner = get().partners.find(p => p.id === id);
+        
+        // Capture details before deletion
+        const details: NotificationChange[] = partner ? [
+          { field: 'Name', from: partner.name, to: 'Deleted' },
+          { field: 'Cash Balance', from: `₹${partner.initialCashBalance.toLocaleString()}`, to: 'Deleted' },
+          { field: 'Online Balance', from: `₹${partner.initialOnlineBalance.toLocaleString()}`, to: 'Deleted' },
+        ] : [];
+        
         set((state) => ({
           partners: state.partners.filter((p) => p.id !== id)
         }));
@@ -766,6 +1023,17 @@ export const useFinanceStore = create<FinanceStore>()(
           if (navigator.onLine) {
             processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
           }
+        }
+        
+        if (partner) {
+          get().addNotification({
+            type: 'delete',
+            title: 'Partner Deleted',
+            message: partner.name,
+            details,
+            entityType: 'partner',
+            entityId: id,
+          });
         }
       },
       
