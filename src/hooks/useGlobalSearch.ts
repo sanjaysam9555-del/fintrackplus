@@ -26,23 +26,27 @@ export const useGlobalSearch = () => {
     const searchTerm = query.toLowerCase().trim();
     const results: SearchResult[] = [];
 
-    // Search transactions
+    // Search transactions - check each field individually for better matching
     transactions.forEach(t => {
       const category = categories.find(c => c.id === t.categoryId);
       const project = projects.find(p => p.id === t.projectId);
       
-      const matchFields = [
-        t.vendor,
-        t.title,
-        t.notes,
-        category?.name,
-        project?.name,
-        t.amount.toString(),
+      // Check each field individually for partial matches
+      const fieldsToSearch = [
+        t.vendor?.toLowerCase() || '',
+        t.title?.toLowerCase() || '',
+        t.notes?.toLowerCase() || '',
+        category?.name?.toLowerCase() || '',
+        project?.name?.toLowerCase() || '',
+        t.amount.toString(), // Raw amount: "50000"
+        formatCurrency(t.amount).toLowerCase(), // Formatted: "₹50,000"
         t.date,
-        t.paymentMethod,
-      ].filter(Boolean).join(' ').toLowerCase();
+        t.paymentMethod?.toLowerCase() || '',
+      ];
 
-      if (matchFields.includes(searchTerm)) {
+      const isMatch = fieldsToSearch.some(field => field.includes(searchTerm));
+
+      if (isMatch) {
         results.push({
           type: 'transaction',
           id: t.id,
