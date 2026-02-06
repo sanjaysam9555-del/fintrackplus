@@ -50,14 +50,20 @@ export const ProjectDetailSheet = ({
   userId,
   onEditSheetChange,
 }: ProjectDetailSheetProps) => {
-  const { getCategoryById, updateProject } = useFinanceStore();
+  const { getCategoryById, updateProject, transactions: allTransactions } = useFinanceStore();
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
   
+  // Get transactions for this project reactively from the store
+  const projectTransactions = useMemo(() => {
+    if (!project) return [];
+    return allTransactions.filter(t => t.projectId === project.id);
+  }, [allTransactions, project?.id]);
+  
   // Sort and separate transactions - memoize for use in hooks
   const { sortedTransactions, incomeTransactions, expenseTransactions } = useMemo(() => {
-    const sorted = [...transactions].sort(
+    const sorted = [...projectTransactions].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
     return {
@@ -65,7 +71,7 @@ export const ProjectDetailSheet = ({
       incomeTransactions: sorted.filter(t => t.type === 'income'),
       expenseTransactions: sorted.filter(t => t.type === 'expense'),
     };
-  }, [transactions]);
+  }, [projectTransactions]);
   
   const toggleVendor = useCallback((vendor: string) => {
     setExpandedVendors(prev => {
@@ -227,7 +233,7 @@ export const ProjectDetailSheet = ({
                   Income Entries ({incomeTransactions.length})
                 </h3>
                 <div className="space-y-2 w-full overflow-hidden">
-                  {incomeTransactions.slice(0, 10).map((transaction) => (
+                {incomeTransactions.map((transaction) => (
                     <TransactionItem
                       key={transaction.id}
                       transaction={transaction}
@@ -236,11 +242,6 @@ export const ProjectDetailSheet = ({
                       onEditSheetChange={onEditSheetChange}
                     />
                   ))}
-                  {incomeTransactions.length > 10 && (
-                    <p className="text-center text-sm text-muted-foreground py-2">
-                      +{incomeTransactions.length - 10} more income entries
-                    </p>
-                  )}
                 </div>
               </div>
             )}
@@ -253,7 +254,7 @@ export const ProjectDetailSheet = ({
                   Expense Entries ({expenseTransactions.length})
                 </h3>
                 <div className="space-y-2 w-full overflow-hidden">
-                  {expenseTransactions.slice(0, 10).map((transaction) => (
+                {expenseTransactions.map((transaction) => (
                     <TransactionItem
                       key={transaction.id}
                       transaction={transaction}
@@ -262,11 +263,6 @@ export const ProjectDetailSheet = ({
                       onEditSheetChange={onEditSheetChange}
                     />
                   ))}
-                  {expenseTransactions.length > 10 && (
-                    <p className="text-center text-sm text-muted-foreground py-2">
-                      +{expenseTransactions.length - 10} more expense entries
-                    </p>
-                  )}
                 </div>
               </div>
             )}
