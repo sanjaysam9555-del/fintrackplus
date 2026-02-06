@@ -88,7 +88,7 @@ export const GlobalSearchDialog = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed top-20 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:w-[500px] z-50 bg-card rounded-2xl shadow-xl border border-border overflow-hidden"
+            className="fixed top-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[500px] z-50 bg-card rounded-2xl shadow-xl border border-border overflow-hidden"
           >
             {/* Search Input */}
             <div className="flex items-center gap-3 p-4 border-b border-border">
