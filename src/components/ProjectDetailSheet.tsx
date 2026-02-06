@@ -149,31 +149,31 @@ export const ProjectDetailSheet = ({
           </div>
         </DrawerHeader>
 
-        <ScrollArea className="flex-1 overflow-auto">
-          <div className="p-4 space-y-6">
+        <ScrollArea className="flex-1 overflow-auto w-full">
+          <div className="p-4 space-y-6 w-full max-w-full overflow-x-hidden">
             {/* Financial Summary - 2x2 Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-muted/50 rounded-xl p-3">
+            <div className="grid grid-cols-2 gap-3 w-full">
+              <div className="bg-muted/50 rounded-xl p-3 overflow-hidden">
                 <p className="text-xs text-muted-foreground">Budget</p>
-                <p className="text-lg font-bold">₹{project.budgetLimit.toLocaleString()}</p>
+                <p className="text-lg font-bold truncate">₹{project.budgetLimit.toLocaleString()}</p>
               </div>
-              <div className="bg-green-500/10 rounded-xl p-3">
+              <div className="bg-green-500/10 rounded-xl p-3 overflow-hidden">
                 <p className="text-xs text-muted-foreground">Income</p>
-                <div className="flex items-center gap-1">
-                  <ArrowDown size={14} className="text-green-500" />
-                  <p className="text-lg font-bold text-green-500">₹{income.toLocaleString()}</p>
+                <div className="flex items-center gap-1 min-w-0">
+                  <ArrowDown size={14} className="text-green-500 shrink-0" />
+                  <p className="text-lg font-bold text-green-500 truncate">₹{income.toLocaleString()}</p>
                 </div>
               </div>
-              <div className="bg-red-500/10 rounded-xl p-3">
+              <div className="bg-red-500/10 rounded-xl p-3 overflow-hidden">
                 <p className="text-xs text-muted-foreground">Expenses</p>
-                <div className="flex items-center gap-1">
-                  <ArrowUp size={14} className="text-red-500" />
-                  <p className="text-lg font-bold text-red-500">₹{spent.toLocaleString()}</p>
+                <div className="flex items-center gap-1 min-w-0">
+                  <ArrowUp size={14} className="text-red-500 shrink-0" />
+                  <p className="text-lg font-bold text-red-500 truncate">₹{spent.toLocaleString()}</p>
                 </div>
               </div>
-              <div className={cn("rounded-xl p-3", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
+              <div className={cn("rounded-xl p-3 overflow-hidden", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
                 <p className="text-xs text-muted-foreground">Net</p>
-                <p className={cn("text-lg font-bold", net >= 0 ? "text-green-500" : "text-red-500")}>
+                <p className={cn("text-lg font-bold truncate", net >= 0 ? "text-green-500" : "text-red-500")}>
                   {net >= 0 ? '+' : ''}₹{net.toLocaleString()}
                 </p>
               </div>
@@ -181,21 +181,21 @@ export const ProjectDetailSheet = ({
 
             {/* Expected Margin Comparison */}
             {expectedMargin > 0 && (
-              <div className="bg-card rounded-xl border border-border p-4">
+              <div className="bg-card rounded-xl border border-border p-4 w-full overflow-hidden">
                 <p className="text-sm font-medium mb-2">Margin Analysis</p>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Expected Margin</span>
-                  <span className="font-medium">₹{expectedMargin.toLocaleString()}</span>
+                <div className="flex items-center justify-between text-sm gap-2 min-w-0">
+                  <span className="text-muted-foreground shrink-0">Expected Margin</span>
+                  <span className="font-medium truncate">₹{expectedMargin.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center justify-between text-sm mt-1">
-                  <span className="text-muted-foreground">Actual Margin</span>
-                  <span className={cn("font-medium", isHealthy ? "text-green-500" : "text-red-500")}>
+                <div className="flex items-center justify-between text-sm mt-1 gap-2 min-w-0">
+                  <span className="text-muted-foreground shrink-0">Actual Margin</span>
+                  <span className={cn("font-medium truncate", isHealthy ? "text-green-500" : "text-red-500")}>
                     ₹{actualMargin.toLocaleString()}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-border">
-                  <span className="text-muted-foreground">Difference</span>
-                  <span className={cn("font-bold", actualMargin >= expectedMargin ? "text-green-500" : "text-red-500")}>
+                <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-border gap-2 min-w-0">
+                  <span className="text-muted-foreground shrink-0">Difference</span>
+                  <span className={cn("font-bold truncate", actualMargin >= expectedMargin ? "text-green-500" : "text-red-500")}>
                     {actualMargin >= expectedMargin ? '+' : ''}₹{(actualMargin - expectedMargin).toLocaleString()}
                   </span>
                 </div>
@@ -226,7 +226,7 @@ export const ProjectDetailSheet = ({
                   <ArrowDown size={18} className="text-green-500" />
                   Income Entries ({incomeTransactions.length})
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-2 w-full overflow-hidden">
                   {incomeTransactions.slice(0, 10).map((transaction) => (
                     <TransactionItem
                       key={transaction.id}
@@ -252,7 +252,7 @@ export const ProjectDetailSheet = ({
                   <ArrowUp size={18} className="text-red-500" />
                   Expense Entries ({expenseTransactions.length})
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-2 w-full overflow-hidden">
                   {expenseTransactions.slice(0, 10).map((transaction) => (
                     <TransactionItem
                       key={transaction.id}
