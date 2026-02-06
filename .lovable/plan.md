@@ -1,220 +1,243 @@
 
-# Fix Charts, Partner Balances, and Duplicate Detection
 
-## Overview
+# Improve Partners Section - Transaction Detail View and Clearer UI
 
-Three critical issues need to be addressed:
+## Current Problems
 
-1. **Charts not aligned with time filter** - Charts display data outside the selected date range
-2. **Partner balances confusing/not useful** - Need time-filtered balances with clearer logic  
-3. **Duplicate detection too aggressive** - Shows warnings for completely different entries
-
----
-
-## Issue 1: Chart Data Not Matching Time Filter
-
-### Current Problem
-
-Looking at the code, I found **mixed behaviors**:
-
-**Dashboard (Line 660)**:
-```typescript
-<CashFlowChart 
-  transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
-  timeFilter={timeFilter}
-  dateRange={dateRange}
-/>
-```
-The Dashboard correctly filters transactions before passing to chart.
-
-**TransactionList (Lines 112-211)**:
-The chart uses `filteredTransactions` which IS filtered by date range, but then the chart logic generates data points that may extend beyond the date range.
-
-**Problem**: The chart generation logic inside both components creates fixed-period data points (always 7 days for week, 4 weeks for month, 12 months for year/FY) that don't respect the actual `dateRange` boundaries.
-
-For example:
-- FY filter sets range as `2025-04-01` to `2026-03-31`
-- But the chart shows 12 months starting from April based on a hardcoded calculation
-- The chart's internal filtering may not align perfectly with the passed transactions
-
-### Solution
-
-Refactor chart data generation to:
-1. Use the exact `dateRange.start` and `dateRange.end` boundaries
-2. Only show data points within the selected time frame
-3. Ensure transactions are filtered consistently across all tabs
-
-**Files to modify:**
-- `src/components/CashFlowChart.tsx`
-- `src/components/TransactionList.tsx`
+| Issue | Current State |
+|-------|---------------|
+| **No Transaction Visibility** | Clicking on a partner card doesn't show their transactions |
+| **Confusing Layout** | Too much information crammed into small cards |
+| **Unclear Purpose** | Users don't understand what the numbers mean |
+| **No Detail Drill-Down** | Can't see which specific transactions a partner handled |
 
 ---
 
-## Issue 2: Partner Balances - Complete Redesign
+## Proposed Solution
 
-### Current Problem
+### 1. Add Partner Detail Sheet (New Component)
 
-The current `getPartnerBalances()` function calculates ALL-TIME balances:
+Create a new `PartnerDetailSheet.tsx` similar to `ProjectDetailSheet.tsx` that opens when a partner card is clicked:
 
-```typescript
-// store.ts lines 757-791
-getPartnerBalances: () => {
-  const { transactions, partners } = get();
-  return partners.map(partner => {
-    const partnerTxns = transactions.filter(t => t.partnerId === partner.id);
-    // ... calculates from ALL transactions
-  });
-}
+```
++---------------------------------------+
+|  [Avatar] Partner Name          [X]   |
+|  "Money handled by this partner"      |
++---------------------------------------+
+|                                       |
+|  SUMMARY FOR: FY 2025-26              |
+|  +-------------+ +-------------+      |
+|  | Cash        | | Online      |      |
+|  | Opening: ₹X | | Opening: ₹X |      |
+|  | + Income: ₹X| | + Income: ₹X|      |
+|  | - Expense:₹X| | - Expense:₹X|      |
+|  | Closing: ₹X | | Closing: ₹X |      |
+|  +-------------+ +-------------+      |
+|                                       |
+|  INCOME ENTRIES (5)                   |
+|  [TransactionItem] (editable)         |
+|  [TransactionItem] (editable)         |
+|                                       |
+|  EXPENSE ENTRIES (12)                 |
+|  [TransactionItem] (editable)         |
+|  [TransactionItem] (editable)         |
++---------------------------------------+
 ```
 
-**User's confusion about negative balances:**
-The user is correct - if expenses come from income received, a partner shouldn't have a negative balance in practice. The current system allows this because:
-1. "Starting Balance" is meant to represent money the partner had BEFORE any tracked transactions
-2. If starting balance is 0 but they made expenses, it shows negative
+**Features:**
+- Shows all transactions handled by this partner within the selected date range
+- Uses the same `TransactionItem` component for consistency (swipe to delete, expand to edit)
+- Grouped by Income and Expense for clarity
+- Shows the balance breakdown at the top
 
-### What the User Actually Needs
+### 2. Simplify Partner Cards in the List
 
-For a selected time period, show:
-1. **Opening Balance** - The balance the partner had at the START of the selected period
-2. **Income Received** - Total income in the period
-3. **Expenses Made** - Total expenses in the period  
-4. **Closing Balance** - Opening + Income - Expenses
+Make each partner card clickable and less cluttered:
 
-The "Starting Balance" field should represent money BEFORE the first tracked transaction (for initial app setup).
-
-### Solution
-
-1. **Add date-range aware balance calculation** to the store
-2. **Update PartnersSection** to accept and use date range filters
-3. **Show period-aware balances** with opening/closing breakdown
-4. **Clarify UI** to explain the calculation
-
-**New store function:**
-```typescript
-getPartnerBalancesForPeriod: (startDate: string, endDate: string) => {
-  // Calculate opening balance = initialBalance + all transactions BEFORE startDate
-  // Calculate period income/expense = transactions IN the period
-  // Calculate closing balance = opening + period income - period expense
-}
+**Current Card (Too Dense):**
+```
++-------------------------------------------+
+| [Avatar] Partner Name      [Edit] [Delete]|
+| +------------------+ +------------------+ |
+| | Cash             | | Online           | |
+| | 5 txns           | | 3 txns           | |
+| | ₹15,000          | | ₹8,000           | |
+| | Closing Balance  | | Closing Balance  | |
+| | Opening: ₹X      | | Opening: ₹X      | |
+| | + Income: ₹X     | | + Income: ₹X     | |
+| | - Expense: ₹X    | | - Expense: ₹X    | |
+| +------------------+ +------------------+ |
++-------------------------------------------+
 ```
 
-**Files to modify:**
-- `src/lib/store.ts` - Add new function
-- `src/components/settings/PartnersSection.tsx` - Add time filter, use new function
-- `src/components/PartnerBalanceCard.tsx` - Update to show period info
+**New Card (Cleaner, Clickable):**
+```
++-------------------------------------------+
+| [Avatar] Partner Name        [Edit][Del]> |
+|                                           |
+| Cash: ₹15,000 (5 txns)  Online: ₹8,000   |
+| Total: ₹23,000          (3 txns)          |
+|                                           |
+| Tap to view transactions                  |
++-------------------------------------------+
+```
 
----
+- Simpler summary view
+- Chevron indicates it's tappable
+- "Tap to view transactions" hint
+- Full breakdown moves to the detail sheet
 
-## Issue 3: Duplicate Detection Too Aggressive
+### 3. Add Explanatory Header
 
-### Current Problem
+Add a clearer explanation of what Partners track:
 
-The duplicate detection algorithm (lines 17-76 in `useDuplicateDetection.ts`) triggers on:
-
-| Factor | Points | Threshold |
-|--------|--------|-----------|
-| Same vendor | +40 | |
-| Similar vendor (substring match) | +20 | |
-| Same amount | +35 | |
-| Similar amount (±10%) | +15 | |
-| Same date | +25 | |
-| Within 3 days | +10 | |
-| **Total needed to warn** | | **50** |
-
-**Problem scenarios:**
-- Different vendor with same amount = 35 points (OK, no warning)
-- Same vendor + different amount + within 3 days = 40 + 10 = **50 points → Warning!**
-- Any substring match + same amount + within 3 days = 20 + 35 + 10 = **65 points → Warning!**
-
-This is too aggressive. Two transactions at the same vendor days apart with different amounts are clearly NOT duplicates.
-
-### Solution
-
-1. **Increase threshold from 50 to 65** - Require stronger matches
-2. **Require amount match as minimum** - Don't warn if amounts are significantly different
-3. **Reduce date proximity points** - Being within 3 days is normal behavior
-4. **Tighten "similar vendor" logic** - Substring matching is too loose
-
-**New scoring:**
-| Factor | Old Points | New Points |
-|--------|------------|------------|
-| Same vendor | 40 | 35 |
-| Similar vendor | 20 | 10 |
-| Same amount | 35 | 40 |
-| Similar amount (±5%) | 15 | 20 |
-| Same date | 25 | 30 |
-| Within 3 days | 10 | 5 |
-| **Threshold** | **50** | **70** |
-
-**Additional rule**: Only show warning if amount is exactly the same OR within 5%
-
-**File to modify:**
-- `src/hooks/useDuplicateDetection.ts`
+```
++-------------------------------------------+
+| Partners                                  |
+|                                           |
+| Track which partner is holding the money. |
+| Each partner's balance shows:             |
+| • Opening balance (start of period)       |
+| • Income they received                    |
+| • Expenses they made                      |
+| • Closing balance (current holdings)      |
++-------------------------------------------+
+```
 
 ---
 
 ## Technical Implementation
 
-### 1. Store Changes (`src/lib/store.ts`)
-
-Add new function for period-aware partner balances:
-
-```typescript
-interface PartnerPeriodBalance {
-  partner: Partner;
-  openingCashBalance: number;
-  openingOnlineBalance: number;
-  periodCashIncome: number;
-  periodCashExpense: number;
-  periodOnlineIncome: number;
-  periodOnlineExpense: number;
-  closingCashBalance: number;
-  closingOnlineBalance: number;
-}
-
-getPartnerBalancesForPeriod: (startDate?: string, endDate?: string) => PartnerPeriodBalance[]
-```
-
-### 2. Chart Fixes (`src/components/CashFlowChart.tsx`)
-
-Ensure data points are generated ONLY within the passed `dateRange`:
-- For FY: Only show months from FY start to current date (not future months)
-- For week/month/year: Only show days/weeks/months within the exact date range
-
-### 3. TransactionList Chart (`src/components/TransactionList.tsx`)
-
-Same fix - ensure the mini-chart respects the exact date range selected.
-
-### 4. Partner Section with Filters (`src/components/settings/PartnersSection.tsx`)
-
-Add time filter UI matching Dashboard/TransactionList:
-- FY | Week | Month | Year | Custom
-- Display period-aware balances
-
-### 5. Duplicate Detection (`src/hooks/useDuplicateDetection.ts`)
-
-Adjust scoring and add minimum requirements:
-- Raise threshold to 70
-- Require exact/similar amount as a prerequisite
-- Reduce false positive rate
-
----
-
-## Summary of Changes
+### File Changes
 
 | File | Changes |
 |------|---------|
-| `src/lib/store.ts` | Add `getPartnerBalancesForPeriod()` function |
-| `src/components/CashFlowChart.tsx` | Fix data generation to respect exact date range |
-| `src/components/TransactionList.tsx` | Fix chart to respect exact date range |
-| `src/components/settings/PartnersSection.tsx` | Add time filter, use period balances |
-| `src/components/PartnerBalanceCard.tsx` | Update display for period balances |
-| `src/hooks/useDuplicateDetection.ts` | Adjust scoring, raise threshold, add prerequisites |
+| `src/components/settings/PartnerDetailSheet.tsx` | **NEW** - Detail sheet component showing partner transactions |
+| `src/components/settings/PartnersSection.tsx` | Simplify cards, add click handler to open detail sheet, add explanatory header |
+| `src/lib/store.ts` | Add `getTransactionsByPartnerId(partnerId, startDate?, endDate?)` helper |
+
+### New Store Function
+
+```typescript
+getTransactionsByPartnerId: (partnerId: string, startDate?: string, endDate?: string) => {
+  let txns = get().transactions.filter(t => t.partnerId === partnerId);
+  if (startDate && endDate) {
+    txns = txns.filter(t => t.date >= startDate && t.date <= endDate);
+  }
+  return txns.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+```
+
+### Partner Detail Sheet Structure
+
+```tsx
+// PartnerDetailSheet.tsx
+interface PartnerDetailSheetProps {
+  partner: Partner | null;
+  isOpen: boolean;
+  onClose: () => void;
+  dateRange: { start: string; end: string };
+  balanceData: PartnerPeriodBalance;
+  userId?: string;
+}
+
+export const PartnerDetailSheet = ({...}) => {
+  const { transactions, getCategoryById } = useFinanceStore();
+  
+  // Filter transactions for this partner and date range
+  const partnerTransactions = transactions.filter(t => 
+    t.partnerId === partner.id && 
+    t.date >= dateRange.start && 
+    t.date <= dateRange.end
+  );
+  
+  const incomeTransactions = partnerTransactions.filter(t => t.type === 'income');
+  const expenseTransactions = partnerTransactions.filter(t => t.type === 'expense');
+  
+  return (
+    <Drawer>
+      {/* Partner header with avatar */}
+      {/* Balance summary cards */}
+      {/* Income transactions list with TransactionItem */}
+      {/* Expense transactions list with TransactionItem */}
+    </Drawer>
+  );
+};
+```
+
+### Simplified Partner Card
+
+```tsx
+// Inside PartnersSection.tsx
+<motion.div
+  key={partner.id}
+  onClick={() => openPartnerDetail(partner.id)}
+  className="bg-card rounded-2xl p-4 border border-border cursor-pointer hover:border-primary/50 transition-colors"
+>
+  <div className="flex items-center justify-between">
+    {/* Avatar and name */}
+    <div className="flex items-center gap-3">
+      <div className="w-10 h-10 rounded-full" style={{backgroundColor: partner.color}}>
+        {partner.name.charAt(0)}
+      </div>
+      <span className="font-semibold">{partner.name}</span>
+    </div>
+    
+    {/* Edit/Delete buttons + Chevron */}
+    <div className="flex items-center gap-2">
+      <button onClick={(e) => { e.stopPropagation(); handleEdit(partner.id); }}>
+        <Edit2 />
+      </button>
+      <button onClick={(e) => { e.stopPropagation(); handleDelete(partner.id); }}>
+        <Trash2 />
+      </button>
+      <ChevronRight className="text-muted-foreground" />
+    </div>
+  </div>
+  
+  {/* Simplified balance summary */}
+  <div className="mt-3 flex items-center gap-4 text-sm">
+    <div className="flex items-center gap-1">
+      <Banknote size={14} className="text-muted-foreground" />
+      <span className="font-medium">₹{closingCash.toLocaleString()}</span>
+      <span className="text-muted-foreground">({cashTxnCount})</span>
+    </div>
+    <div className="flex items-center gap-1">
+      <CreditCard size={14} className="text-muted-foreground" />
+      <span className="font-medium">₹{closingOnline.toLocaleString()}</span>
+      <span className="text-muted-foreground">({onlineTxnCount})</span>
+    </div>
+  </div>
+  
+  <p className="text-xs text-muted-foreground mt-2">Tap to view transactions</p>
+</motion.div>
+```
 
 ---
 
-## Expected Results
+## UX Flow
 
-1. **Charts**: Will only show data for the exact selected time period
-2. **Partner Balances**: Will show opening/closing balances for selected period with clear breakdown
-3. **Duplicates**: Will only warn for genuine duplicates (same vendor + same/similar amount + same date)
+1. User opens **Settings > Partners**
+2. Sees explanatory header explaining the feature
+3. Selects time filter (FY, Week, Month, Custom)
+4. Sees list of partners with simplified balance summaries
+5. **Taps on a partner card**
+6. **Detail sheet slides up** showing:
+   - Full balance breakdown (opening/income/expense/closing)
+   - All income transactions with full `TransactionItem` functionality
+   - All expense transactions with full `TransactionItem` functionality
+7. Can edit/delete any transaction directly from the detail sheet
+8. Closing the sheet returns to the partner list
+
+---
+
+## Summary
+
+| Before | After |
+|--------|-------|
+| No way to see partner transactions | Full transaction list in detail sheet |
+| Dense, confusing cards | Clean summary cards with tap hint |
+| No explanation of feature | Clear header explaining the purpose |
+| Information overload | Layered disclosure (summary -> detail) |
+| Can only see numbers | Can see and edit actual transactions |
+
