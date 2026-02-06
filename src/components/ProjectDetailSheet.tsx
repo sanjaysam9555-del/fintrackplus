@@ -125,7 +125,7 @@ export const ProjectDetailSheet = ({
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-h-[85vh]">
+      <DrawerContent className="max-h-[85vh] overflow-hidden">
         <DrawerHeader className="border-b border-border pb-4">
           <div className="flex items-center gap-3">
             <div
@@ -316,7 +316,7 @@ export const ProjectDetailSheet = ({
                           </motion.div>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="mt-2 ml-4 space-y-2 border-l-2 border-muted pl-2">
+                          <div className="mt-2 ml-2 space-y-2 border-l-2 border-muted pl-2 overflow-hidden">
                             {vendorTxns.map((txn) => (
                               <TransactionItem
                                 key={txn.id}
