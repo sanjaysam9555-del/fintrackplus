@@ -1,262 +1,181 @@
 
 
-# Enhanced Activity Logs with Change Details
+# Fix Missing Entries in Project Details & Vendor Breakdown
 
-## Problem
+## Problem Summary
 
-Currently, the activity logs in Settings only show basic information like:
-- **Transaction Updated**: "Vendor Name - ₹1,000"
+When viewing a project's details or expanding a vendor's payments, some entries are missing even though they should be displayed. There are two core issues:
 
-This doesn't explain **what changed**. Users can't understand:
-- Which fields were modified
-- What the old values were vs new values
-- Context about the change (category, project, payment method, etc.)
+### Issue 1: Hardcoded Display Limit of 10 Entries
+
+The `ProjectDetailSheet` component limits visible transactions to **10 entries maximum** for both Income and Expense sections:
+
+```tsx
+// Lines 230 and 256 in ProjectDetailSheet.tsx
+{incomeTransactions.slice(0, 10).map((transaction) => ...)}
+{expenseTransactions.slice(0, 10).map((transaction) => ...)}
+```
+
+While the header shows the correct count (e.g., "Income Entries (15)"), only the first 10 appear with a "more entries" message below. This is confusing because users expect to see all entries.
+
+### Issue 2: Transactions Not Reactively Updating
+
+When the project detail sheet opens, the transactions are captured at that moment. If cloud sync happens afterward or there's network latency, newly synced transactions won't appear until the sheet is reopened.
 
 ---
 
 ## Solution
 
-Enhance the notification system to capture and display detailed change information:
+### Part 1: Remove the 10-Entry Limit
 
-1. **Expand the Notification type** to include an optional `details` field for structured change data
-2. **Capture "before" state** when updating entities and compare with "after" state
-3. **Display change details** in the logs UI with a "from → to" format
-4. **Add relevant context** like category names, project names, payment methods
+Replace the `.slice(0, 10)` limits with full transaction display. For better UX with large transaction lists, implement collapsible sections that show all entries when expanded.
 
----
+### Part 2: Use Store Directly for Real-Time Data
 
-## Visual Design
-
-### Current Log Entry
-```
-+------------------------------------------+
-| [📝] Transaction Updated                 |
-|       Amazon - ₹5,000                    |
-|       2 hours ago                        |
-+------------------------------------------+
-```
-
-### Enhanced Log Entry
-```
-+------------------------------------------+
-| [📝] Transaction Updated                 |
-|       Amazon - ₹5,000                    |
-|       ┌─────────────────────────────┐    |
-|       │ Amount: ₹3,000 → ₹5,000     │    |
-|       │ Category: Food → Shopping   │    |
-|       │ Payment: Cash → Online      │    |
-|       └─────────────────────────────┘    |
-|       2 hours ago                        |
-+------------------------------------------+
-```
+Instead of passing pre-filtered transactions as props, have the `ProjectDetailSheet` fetch transactions directly from the store using the `projectId`. This ensures the data is always current.
 
 ---
 
 ## Technical Changes
 
-### 1. Update Notification Type
+### File: `src/components/ProjectDetailSheet.tsx`
 
-**File: `src/lib/types.ts`**
-
-Add an optional `details` field to store structured change information:
-
-```typescript
-export interface NotificationChange {
-  field: string;      // e.g., "Amount", "Category", "Vendor"
-  from: string;       // Previous value (formatted for display)
-  to: string;         // New value (formatted for display)
-}
-
-export interface Notification {
-  id: string;
-  type: 'transaction' | 'export' | 'profile' | 'category' | 'vendor' | 'project' | 'delete' | 'edit' | 'partner';
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  details?: NotificationChange[];  // Optional array of changes
-  entityType?: string;             // 'transaction', 'category', etc.
-  entityId?: string;               // ID of the affected entity
-}
-```
-
-### 2. Modify Store to Capture Changes
-
-**File: `src/lib/store.ts`**
-
-Update the `updateTransaction` function to compare old vs new values and generate detailed change descriptions.
-
-**Key changes to `updateTransaction` (lines 305-353):**
-
-```typescript
-updateTransaction: async (id, updates, userId) => {
-  const transaction = get().transactions.find(t => t.id === id);
-  const { categories, projects, partners } = get();
-  
-  // Helper to get readable names
-  const getCategoryName = (catId?: string) => 
-    categories.find(c => c.id === catId)?.name || 'None';
-  const getProjectName = (projId?: string) => 
-    projects.find(p => p.id === projId)?.name || 'None';
-  const getPartnerName = (partnerId?: string) => 
-    partners.find(p => p.id === partnerId)?.name || 'None';
-  
-  // Build change details
-  const changes: Array<{ field: string; from: string; to: string }> = [];
-  
-  if (transaction) {
-    if (updates.amount !== undefined && updates.amount !== transaction.amount) {
-      changes.push({
-        field: 'Amount',
-        from: `₹${transaction.amount.toLocaleString()}`,
-        to: `₹${updates.amount.toLocaleString()}`
-      });
-    }
-    if (updates.type && updates.type !== transaction.type) {
-      changes.push({
-        field: 'Type',
-        from: transaction.type === 'income' ? 'Income' : 'Expense',
-        to: updates.type === 'income' ? 'Income' : 'Expense'
-      });
-    }
-    if (updates.vendor && updates.vendor !== transaction.vendor) {
-      changes.push({
-        field: 'Vendor',
-        from: transaction.vendor,
-        to: updates.vendor
-      });
-    }
-    if (updates.categoryId !== undefined && updates.categoryId !== transaction.categoryId) {
-      changes.push({
-        field: 'Category',
-        from: getCategoryName(transaction.categoryId),
-        to: getCategoryName(updates.categoryId)
-      });
-    }
-    if (updates.projectId !== undefined && updates.projectId !== transaction.projectId) {
-      changes.push({
-        field: 'Project',
-        from: getProjectName(transaction.projectId),
-        to: getProjectName(updates.projectId)
-      });
-    }
-    if (updates.partnerId !== undefined && updates.partnerId !== transaction.partnerId) {
-      changes.push({
-        field: 'Partner',
-        from: getPartnerName(transaction.partnerId),
-        to: getPartnerName(updates.partnerId)
-      });
-    }
-    if (updates.paymentMethod && updates.paymentMethod !== transaction.paymentMethod) {
-      changes.push({
-        field: 'Payment',
-        from: transaction.paymentMethod === 'cash' ? 'Cash' : 'Online',
-        to: updates.paymentMethod === 'cash' ? 'Cash' : 'Online'
-      });
-    }
-    if (updates.date && updates.date !== transaction.date) {
-      changes.push({
-        field: 'Date',
-        from: transaction.date,
-        to: updates.date
-      });
-    }
-    if (updates.isGst !== undefined && updates.isGst !== transaction.isGst) {
-      changes.push({
-        field: 'GST',
-        from: transaction.isGst ? 'Yes' : 'No',
-        to: updates.isGst ? 'Yes' : 'No'
-      });
-    }
-  }
-  
-  // Update local state
-  set((state) => ({
-    transactions: state.transactions.map((t) => 
-      t.id === id ? { ...t, ...updates } : t
-    )
-  }));
-  
-  // ... sync queue logic ...
-  
-  if (transaction) {
-    get().addNotification({
-      type: 'edit',
-      title: 'Transaction Updated',
-      message: `${updates.vendor || transaction.vendor} - ₹${(updates.amount || transaction.amount).toLocaleString()}`,
-      details: changes.length > 0 ? changes : undefined,
-      entityType: 'transaction',
-      entityId: id,
-    });
-  }
-};
-```
-
-### 3. Apply Similar Logic to Other Entity Updates
-
-**Category, Vendor, Project, Partner updates** will also capture:
-- Name changes: "Old Name → New Name"
-- Color changes (shown as a visual indicator)
-- Budget/Margin changes for projects
-- Balance changes for partners
-
-### 4. Update SettingsPage to Display Changes
-
-**File: `src/components/SettingsPage.tsx`**
-
-Enhance the `NotificationsContent` component to render the `details` array:
+**1. Import transactions directly from store (line 53)**
 
 ```tsx
-{notification.details && notification.details.length > 0 && (
-  <div className="mt-2 p-2 bg-muted/50 rounded-lg space-y-1">
-    {notification.details.map((change, i) => (
-      <div key={i} className="flex items-center gap-2 text-xs">
-        <span className="text-muted-foreground w-16 shrink-0">{change.field}:</span>
-        <span className="text-muted-foreground line-through">{change.from}</span>
-        <span className="text-muted-foreground">→</span>
-        <span className="text-foreground font-medium">{change.to}</span>
-      </div>
-    ))}
-  </div>
-)}
+// Before
+const { getCategoryById, updateProject } = useFinanceStore();
+
+// After
+const { getCategoryById, updateProject, transactions: allTransactions } = useFinanceStore();
 ```
 
-### 5. Enhanced Delete Notifications
+**2. Filter transactions inside the component (new lines after imports)**
 
-For delete actions, include relevant entity details:
+```tsx
+// Get transactions for this project reactively from the store
+const projectTransactions = useMemo(() => {
+  if (!project) return [];
+  return allTransactions.filter(t => t.projectId === project.id);
+}, [allTransactions, project?.id]);
+```
 
-```typescript
-// Transaction delete
-get().addNotification({
-  type: 'delete',
-  title: 'Transaction Deleted',
-  message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
-  details: [
-    { field: 'Type', from: transaction.type === 'income' ? 'Income' : 'Expense', to: 'Deleted' },
-    { field: 'Date', from: transaction.date, to: 'Deleted' },
-    { field: 'Category', from: getCategoryName(transaction.categoryId), to: 'Deleted' },
-  ],
-});
+**3. Update useMemo to use projectTransactions instead of props (lines 59-68)**
+
+```tsx
+// Before
+const { sortedTransactions, incomeTransactions, expenseTransactions } = useMemo(() => {
+  const sorted = [...transactions].sort(...)
+  ...
+}, [transactions]);
+
+// After
+const { sortedTransactions, incomeTransactions, expenseTransactions } = useMemo(() => {
+  const sorted = [...projectTransactions].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
+  return {
+    sortedTransactions: sorted,
+    incomeTransactions: sorted.filter(t => t.type === 'income'),
+    expenseTransactions: sorted.filter(t => t.type === 'expense'),
+  };
+}, [projectTransactions]);
+```
+
+**4. Update getVendorTransactions to use projectTransactions (lines 82-86)**
+
+```tsx
+// Before
+const getVendorTransactions = useCallback((vendorName: string) => {
+  return expenseTransactions.filter(t => t.vendor === vendorName)
+  ...
+}, [expenseTransactions]);
+
+// After - unchanged logic, just uses updated expenseTransactions
+```
+
+**5. Remove the .slice(0, 10) limit from Income section (lines 229-244)**
+
+```tsx
+// Before
+{incomeTransactions.slice(0, 10).map((transaction) => (
+  <TransactionItem ... />
+))}
+{incomeTransactions.length > 10 && (
+  <p className="text-center text-sm text-muted-foreground py-2">
+    +{incomeTransactions.length - 10} more income entries
+  </p>
+)}
+
+// After - show all entries
+{incomeTransactions.map((transaction) => (
+  <TransactionItem
+    key={transaction.id}
+    transaction={transaction}
+    category={getCategoryById(transaction.categoryId)}
+    userId={userId}
+    onEditSheetChange={onEditSheetChange}
+  />
+))}
+```
+
+**6. Remove the .slice(0, 10) limit from Expense section (lines 255-269)**
+
+```tsx
+// Before
+{expenseTransactions.slice(0, 10).map((transaction) => ...)}
+{expenseTransactions.length > 10 && (...)}
+
+// After - show all entries
+{expenseTransactions.map((transaction) => (
+  <TransactionItem
+    key={transaction.id}
+    transaction={transaction}
+    category={getCategoryById(transaction.categoryId)}
+    userId={userId}
+    onEditSheetChange={onEditSheetChange}
+  />
+))}
+```
+
+---
+
+### File: `src/components/ProjectOverviewPage.tsx`
+
+**7. Simplify the props passed to ProjectDetailSheet (lines 365-375)**
+
+The `transactions` prop can now be removed since the sheet fetches data internally, but we'll keep it for backward compatibility and as a fallback.
+
+```tsx
+// No changes required here - the sheet will prefer its internal data
+// but still accept the prop for consistency
 ```
 
 ---
 
 ## Summary of Changes
 
-| File | Changes |
-|------|---------|
-| `src/lib/types.ts` | Add `NotificationChange` interface, update `Notification` type with `details`, `entityType`, `entityId` |
-| `src/lib/store.ts` | Capture before/after changes in all update functions, enhance delete notifications |
-| `src/components/SettingsPage.tsx` | Render change details in logs with "from → to" formatting |
+| File | Change | Purpose |
+|------|--------|---------|
+| `ProjectDetailSheet.tsx` | Import `transactions` from store | Get real-time data |
+| `ProjectDetailSheet.tsx` | Filter transactions by `project.id` in useMemo | React to store updates |
+| `ProjectDetailSheet.tsx` | Remove `.slice(0, 10)` from Income entries | Show all income entries |
+| `ProjectDetailSheet.tsx` | Remove `.slice(0, 10)` from Expense entries | Show all expense entries |
 
 ---
 
-## Example Log Entries After Implementation
+## Before & After
 
-| Action | Before | After |
-|--------|--------|-------|
-| Edit Amount | "Amazon - ₹5,000" | "Amazon - ₹5,000" + details: "Amount: ₹3,000 → ₹5,000" |
-| Change Category | "Amazon - ₹5,000" | "Amazon - ₹5,000" + details: "Category: Food → Shopping" |
-| Multiple Changes | "Amazon - ₹5,000" | Shows all changed fields in a compact list |
-| Delete Transaction | "Amazon - ₹5,000" | "Amazon - ₹5,000" + details: Type, Date, Category info |
+```
+BEFORE:                              AFTER:
++----------------------------+       +----------------------------+
+| Income Entries (15)        |       | Income Entries (15)        |
+| - Entry 1                  |       | - Entry 1                  |
+| - Entry 2                  |       | - Entry 2                  |
+| - ...                      |       | - Entry 3                  |
+| - Entry 10                 |       | - ...                      |
+| +5 more income entries     |       | - Entry 15                 |
++----------------------------+       +----------------------------+
+                                     (All 15 entries visible)
+```
 
