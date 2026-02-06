@@ -110,6 +110,21 @@ const NotificationsContent = () => {
                       {!notification.read && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
                     </div>
                     <p className="text-sm text-muted-foreground mt-0.5 truncate">{notification.message}</p>
+                    
+                    {/* Change Details */}
+                    {notification.details && notification.details.length > 0 && (
+                      <div className="mt-2 p-2 bg-muted/50 rounded-lg space-y-1">
+                        {notification.details.map((change, i) => (
+                          <div key={i} className="flex items-center gap-2 text-xs flex-wrap">
+                            <span className="text-muted-foreground w-16 shrink-0 font-medium">{change.field}:</span>
+                            <span className="text-muted-foreground line-through">{change.from}</span>
+                            <span className="text-muted-foreground">→</span>
+                            <span className="text-foreground font-medium">{change.to}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
                     <p className="text-xs text-muted-foreground mt-1">
                       {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
                     </p>

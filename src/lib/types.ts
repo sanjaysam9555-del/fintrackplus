@@ -82,11 +82,20 @@ export interface Vendor {
   color?: string;
 }
 
+export interface NotificationChange {
+  field: string;
+  from: string;
+  to: string;
+}
+
 export interface Notification {
   id: string;
-  type: 'transaction' | 'export' | 'profile' | 'category' | 'vendor' | 'project' | 'delete' | 'edit';
+  type: 'transaction' | 'export' | 'profile' | 'category' | 'vendor' | 'project' | 'delete' | 'edit' | 'partner';
   title: string;
   message: string;
   timestamp: string;
   read: boolean;
+  details?: NotificationChange[];
+  entityType?: string;
+  entityId?: string;
 }
