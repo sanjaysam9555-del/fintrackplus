@@ -26,28 +26,42 @@ export const useDuplicateDetection = () => {
       const reasons: string[] = [];
       let similarity = 0;
 
+      // PREREQUISITE: Amount must match exactly OR within 5% - otherwise skip entirely
+      const amountDiff = Math.abs(t.amount - amount);
+      const amountPercent = amount > 0 ? amountDiff / amount : 1;
+      
+      if (t.amount !== amount && amountPercent >= 0.05) {
+        // Amounts differ too much - not a duplicate
+        return;
+      }
+
       // Check vendor match
-      if (t.vendor.toLowerCase().trim() === vendorLower) {
-        similarity += 40;
+      const tVendorLower = t.vendor.toLowerCase().trim();
+      if (tVendorLower === vendorLower) {
+        similarity += 35;
         reasons.push('Same vendor');
-      } else if (t.vendor.toLowerCase().includes(vendorLower) || 
-                 vendorLower.includes(t.vendor.toLowerCase())) {
-        similarity += 20;
+      } else if (
+        vendorLower.length >= 4 && tVendorLower.length >= 4 &&
+        (tVendorLower.includes(vendorLower) || vendorLower.includes(tVendorLower))
+      ) {
+        // Only match if both vendors are at least 4 chars (avoid false positives)
+        similarity += 10;
         reasons.push('Similar vendor');
       }
 
-      // Check amount match
+      // Check amount match (we already passed the prerequisite)
       if (t.amount === amount) {
-        similarity += 35;
+        similarity += 40;
         reasons.push('Same amount');
-      } else if (Math.abs(t.amount - amount) / amount < 0.1) {
-        similarity += 15;
+      } else {
+        // Within 5%
+        similarity += 20;
         reasons.push('Similar amount');
       }
 
       // Check date match
       if (t.date === date) {
-        similarity += 25;
+        similarity += 30;
         reasons.push('Same date');
       } else {
         // Check if within 3 days
@@ -57,13 +71,13 @@ export const useDuplicateDetection = () => {
           (transDate.getTime() - inputDate.getTime()) / (1000 * 60 * 60 * 24)
         );
         if (daysDiff <= 3) {
-          similarity += 10;
+          similarity += 5;
           reasons.push('Within 3 days');
         }
       }
 
-      // Only report if similarity is high enough
-      if (similarity >= 50) {
+      // Higher threshold to reduce false positives
+      if (similarity >= 70) {
         duplicates.push({
           transaction: t,
           similarity,

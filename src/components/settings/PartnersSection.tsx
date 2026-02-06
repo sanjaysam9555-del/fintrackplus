@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { PartnerBalanceCard } from "@/components/PartnerBalanceCard";
+import { format } from "date-fns";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -26,10 +28,15 @@ const PARTNER_COLORS = [
   '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
 ];
 
+type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
+
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
-  const { partners, addPartner, updatePartner, deletePartner, getPartnerBalances } = useFinanceStore();
+  const { partners, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod } = useFinanceStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   
   // Form state
   const [name, setName] = useState("");
@@ -37,7 +44,51 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [initialCash, setInitialCash] = useState("");
   const [initialOnline, setInitialOnline] = useState("");
   
-  const partnerBalances = getPartnerBalances();
+  const dateRange = useMemo(() => {
+    const today = new Date();
+    const start = new Date();
+    
+    switch (timeFilter) {
+      case 'fy': {
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+        const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+        return {
+          start: `${fyStartYear}-04-01`,
+          end: `${fyStartYear + 1}-03-31`,
+        };
+      }
+      case 'week':
+        start.setDate(today.getDate() - 7);
+        break;
+      case 'month':
+        start.setMonth(today.getMonth() - 1);
+        break;
+      case 'year':
+        start.setFullYear(today.getFullYear() - 1);
+        break;
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return {
+            start: format(customStartDate, 'yyyy-MM-dd'),
+            end: format(customEndDate, 'yyyy-MM-dd'),
+          };
+        }
+        start.setMonth(today.getMonth() - 1);
+        break;
+      default:
+        start.setMonth(today.getMonth() - 1);
+    }
+    
+    return {
+      start: format(start, 'yyyy-MM-dd'),
+      end: format(today, 'yyyy-MM-dd'),
+    };
+  }, [timeFilter, customStartDate, customEndDate]);
+  
+  const partnerBalances = useMemo(() => {
+    return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
+  }, [getPartnerBalancesForPeriod, dateRange]);
   
   const resetForm = () => {
     setName("");
@@ -89,6 +140,23 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     if (confirm('Delete this partner? Transactions will be unassigned.')) {
       deletePartner(partnerId, userId);
     }
+  };
+  
+  const getFilterLabel = () => {
+    if (timeFilter === 'fy') {
+      const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentYear = today.getFullYear();
+      const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+      return `FY ${fyStartYear}-${String(fyStartYear + 1).slice(-2)}`;
+    }
+    if (timeFilter === 'week') return 'This Week';
+    if (timeFilter === 'month') return 'This Month';
+    if (timeFilter === 'year') return 'This Year';
+    if (timeFilter === 'custom' && customStartDate && customEndDate) {
+      return `${format(customStartDate, 'MMM dd')} - ${format(customEndDate, 'MMM dd')}`;
+    }
+    return 'Custom';
   };
   
   const PartnerForm = ({ isEdit = false }: { isEdit?: boolean }) => (
@@ -180,9 +248,89 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         </p>
       </div>
       
-      {/* Partner Balance Card */}
+      {/* Time Filter Tabs */}
       <div className="px-4 mb-4">
-        <PartnerBalanceCard />
+        <div className="flex p-1 bg-muted rounded-xl">
+          {(['fy', 'week', 'month', 'year', 'custom'] as TimeFilter[]).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setTimeFilter(filter)}
+              className={cn(
+                "flex-1 py-2 rounded-lg font-medium transition-colors capitalize text-sm",
+                timeFilter === filter 
+                  ? "bg-card shadow-sm" 
+                  : "text-muted-foreground"
+              )}
+            >
+              {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : filter === 'year' ? 'Year' : 'Custom'}
+            </button>
+          ))}
+        </div>
+        
+        {/* Custom Date Range Picker */}
+        {timeFilter === 'custom' && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mt-3 flex gap-2"
+          >
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal",
+                    !customStartDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {customStartDate ? format(customStartDate, "MMM dd, yyyy") : "Start date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card z-[60]" align="start">
+                <Calendar
+                  mode="single"
+                  selected={customStartDate}
+                  onSelect={setCustomStartDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn(
+                    "flex-1 justify-start text-left font-normal",
+                    !customEndDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {customEndDate ? format(customEndDate, "MMM dd, yyyy") : "End date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-card z-[60]" align="end">
+                <Calendar
+                  mode="single"
+                  selected={customEndDate}
+                  onSelect={setCustomEndDate}
+                  initialFocus
+                  className="p-3 pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+          </motion.div>
+        )}
+      </div>
+      
+      {/* Period Label */}
+      <div className="px-4 mb-4">
+        <p className="text-sm text-muted-foreground">
+          Showing balances for: <span className="font-medium text-foreground">{getFilterLabel()}</span>
+        </p>
       </div>
       
       {/* Partner List */}
@@ -196,7 +344,19 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             <p className="text-sm text-muted-foreground mt-1">Add partners to track who holds the money</p>
           </div>
         ) : (
-          partnerBalances.map(({ partner, cashBalance, onlineBalance, cashIncome, cashExpense, onlineIncome, onlineExpense, cashTransactionCount, onlineTransactionCount }) => (
+          partnerBalances.map(({ 
+            partner, 
+            openingCashBalance, 
+            openingOnlineBalance,
+            periodCashIncome, 
+            periodCashExpense,
+            periodOnlineIncome,
+            periodOnlineExpense,
+            closingCashBalance,
+            closingOnlineBalance,
+            periodCashTxnCount,
+            periodOnlineTxnCount,
+          }) => (
             <motion.div
               key={partner.id}
               initial={{ opacity: 0, y: 10 }}
@@ -239,61 +399,78 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3">
+                    {/* Cash Balance */}
                     <div className="bg-muted/50 rounded-xl p-3">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <Banknote size={14} />
                         <span className="text-xs">Cash</span>
                         <span className="text-[10px] text-muted-foreground ml-auto">
-                          {cashTransactionCount} txn{cashTransactionCount !== 1 ? 's' : ''}
+                          {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
                         </span>
                       </div>
+                      
+                      {/* Closing Balance (Main) */}
                       <p className={cn(
                         "text-lg font-bold",
-                        cashBalance >= 0 ? "text-success" : "text-destructive"
+                        closingCashBalance >= 0 ? "text-success" : "text-destructive"
                       )}>
-                        {cashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(cashBalance).toLocaleString()}
+                        {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
                       </p>
+                      <p className="text-[10px] text-muted-foreground">Closing Balance</p>
+                      
+                      {/* Breakdown */}
                       <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5 text-[10px] text-muted-foreground">
                         <div className="flex justify-between">
-                          <span>Starting</span>
-                          <span>{CURRENCY_SYMBOL}{partner.initialCashBalance.toLocaleString()}</span>
+                          <span>Opening</span>
+                          <span className={openingCashBalance >= 0 ? "" : "text-destructive"}>
+                            {openingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(openingCashBalance).toLocaleString()}
+                          </span>
                         </div>
                         <div className="flex justify-between text-success">
                           <span>+ Income</span>
-                          <span>{CURRENCY_SYMBOL}{cashIncome.toLocaleString()}</span>
+                          <span>{CURRENCY_SYMBOL}{periodCashIncome.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-destructive">
                           <span>− Expense</span>
-                          <span>{CURRENCY_SYMBOL}{cashExpense.toLocaleString()}</span>
+                          <span>{CURRENCY_SYMBOL}{periodCashExpense.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
+                    
+                    {/* Online Balance */}
                     <div className="bg-muted/50 rounded-xl p-3">
                       <div className="flex items-center gap-2 text-muted-foreground mb-1">
                         <CreditCard size={14} />
                         <span className="text-xs">Online</span>
                         <span className="text-[10px] text-muted-foreground ml-auto">
-                          {onlineTransactionCount} txn{onlineTransactionCount !== 1 ? 's' : ''}
+                          {periodOnlineTxnCount} txn{periodOnlineTxnCount !== 1 ? 's' : ''}
                         </span>
                       </div>
+                      
+                      {/* Closing Balance (Main) */}
                       <p className={cn(
                         "text-lg font-bold",
-                        onlineBalance >= 0 ? "text-success" : "text-destructive"
+                        closingOnlineBalance >= 0 ? "text-success" : "text-destructive"
                       )}>
-                        {onlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(onlineBalance).toLocaleString()}
+                        {closingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingOnlineBalance).toLocaleString()}
                       </p>
+                      <p className="text-[10px] text-muted-foreground">Closing Balance</p>
+                      
+                      {/* Breakdown */}
                       <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5 text-[10px] text-muted-foreground">
                         <div className="flex justify-between">
-                          <span>Starting</span>
-                          <span>{CURRENCY_SYMBOL}{partner.initialOnlineBalance.toLocaleString()}</span>
+                          <span>Opening</span>
+                          <span className={openingOnlineBalance >= 0 ? "" : "text-destructive"}>
+                            {openingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(openingOnlineBalance).toLocaleString()}
+                          </span>
                         </div>
                         <div className="flex justify-between text-success">
                           <span>+ Income</span>
-                          <span>{CURRENCY_SYMBOL}{onlineIncome.toLocaleString()}</span>
+                          <span>{CURRENCY_SYMBOL}{periodOnlineIncome.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-destructive">
                           <span>− Expense</span>
-                          <span>{CURRENCY_SYMBOL}{onlineExpense.toLocaleString()}</span>
+                          <span>{CURRENCY_SYMBOL}{periodOnlineExpense.toLocaleString()}</span>
                         </div>
                       </div>
                     </div>

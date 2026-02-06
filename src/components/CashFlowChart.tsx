@@ -30,29 +30,33 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
     // Parse as local dates to match stored transaction.date format
     const startDate = parseISO(dateRange.start);
     const endDate = parseISO(dateRange.end);
+    const today = new Date();
     const daysDiff = differenceInDays(endDate, startDate);
     
     const dataPoints: ChartDataPoint[] = [];
     
+    // Helper to calculate income/expense for a date range
+    const calcForRange = (rangeStart: Date, rangeEnd: Date): { income: number; expense: number } => {
+      const rangeTxns = transactions.filter(t => {
+        const d = parseISO(t.date);
+        return d >= rangeStart && d <= rangeEnd;
+      });
+      return {
+        income: rangeTxns.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+        expense: rangeTxns.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
+      };
+    };
+    
     if (timeFilter === 'fy') {
-      // Financial Year: Show 12 months from April to March
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
-      const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
+      // Financial Year: Generate months from start to min(endDate, today)
+      const actualEnd = endDate > today ? today : endDate;
+      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
       
-      for (let i = 0; i < 12; i++) {
-        const monthIndex = (3 + i) % 12; // Start from April (month 3)
-        const year = monthIndex < 3 ? fyStartYear + 1 : fyStartYear;
-        const monthStart = new Date(year, monthIndex, 1);
-        const monthEnd = new Date(year, monthIndex + 1, 0);
+      while (current <= actualEnd) {
+        const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
+        const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
         
-        const monthTransactions = transactions.filter(t => {
-          const date = parseISO(t.date);
-          return date >= monthStart && date <= monthEnd;
-        });
-        
-        const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const expense = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        const { income, expense } = calcForRange(monthStart, monthEnd);
         
         dataPoints.push({
           name: format(monthStart, 'MMM'),
@@ -61,14 +65,18 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
           net: income - expense,
           date: format(monthStart, 'yyyy-MM-dd'),
         });
+        
+        current.setMonth(current.getMonth() + 1);
       }
     } else if (timeFilter === 'week' || daysDiff <= 7) {
-      // Show 7 days
-      for (let i = 6; i >= 0; i--) {
-        const day = new Date(endDate);
-        day.setDate(endDate.getDate() - i);
-        const dayStr = format(day, 'yyyy-MM-dd');
+      // Show exact days within the date range
+      for (let i = 0; i <= Math.min(daysDiff, 6); i++) {
+        const day = new Date(startDate);
+        day.setDate(startDate.getDate() + i);
         
+        if (day > endDate) break;
+        
+        const dayStr = format(day, 'yyyy-MM-dd');
         const dayTransactions = transactions.filter(t => t.date === dayStr);
         const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
         const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
@@ -82,99 +90,87 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         });
       }
     } else if (timeFilter === 'month' || (daysDiff > 7 && daysDiff <= 31)) {
-      // Show 4 weeks
-      for (let i = 3; i >= 0; i--) {
-        const weekEnd = new Date(endDate);
-        weekEnd.setDate(endDate.getDate() - (i * 7));
-        const weekStart = new Date(weekEnd);
-        weekStart.setDate(weekEnd.getDate() - 6);
+      // Show weeks within the exact date range
+      const numWeeks = Math.ceil(daysDiff / 7);
+      for (let i = 0; i < numWeeks; i++) {
+        const weekStart = new Date(startDate);
+        weekStart.setDate(startDate.getDate() + (i * 7));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
         
-        const weekTransactions = transactions.filter(t => {
-          const date = parseISO(t.date);
-          return date >= weekStart && date <= weekEnd;
-        });
+        // Clamp to date range
+        const clampedEnd = weekEnd > endDate ? endDate : weekEnd;
         
-        const income = weekTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const expense = weekTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        const { income, expense } = calcForRange(weekStart, clampedEnd);
         
         dataPoints.push({
-          name: `W${4 - i}`,
+          name: `W${i + 1}`,
           income,
           expense,
           net: income - expense,
-          date: format(weekEnd, 'yyyy-MM-dd'),
+          date: format(weekStart, 'yyyy-MM-dd'),
         });
       }
     } else if (timeFilter === 'year' || daysDiff > 31) {
-      // Show 12 months
-      for (let i = 11; i >= 0; i--) {
-        const monthDate = new Date(endDate);
-        monthDate.setMonth(endDate.getMonth() - i);
-        const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-        const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+      // Show months within the exact date range
+      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const actualEnd = endDate > today ? today : endDate;
+      
+      while (current <= actualEnd) {
+        const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
+        const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
         
-        const monthTransactions = transactions.filter(t => {
-          const date = parseISO(t.date);
-          return date >= monthStart && date <= monthEnd;
-        });
-        
-        const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-        const expense = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+        const { income, expense } = calcForRange(monthStart, monthEnd);
         
         dataPoints.push({
-          name: format(monthDate, 'MMM'),
+          name: format(monthStart, 'MMM'),
           income,
           expense,
           net: income - expense,
-          date: format(monthDate, 'yyyy-MM-dd'),
+          date: format(monthStart, 'yyyy-MM-dd'),
         });
+        
+        current.setMonth(current.getMonth() + 1);
       }
     } else {
       // Custom: determine based on days difference
       if (daysDiff <= 14) {
-        // Show days
-        for (let i = daysDiff; i >= 0; i--) {
-          const day = new Date(endDate);
-          day.setDate(endDate.getDate() - i);
+        // Show days within range
+        for (let i = 0; i <= daysDiff; i++) {
+          const day = new Date(startDate);
+          day.setDate(startDate.getDate() + i);
           const dayStr = format(day, 'yyyy-MM-dd');
           
-          if (day >= startDate) {
-            const dayTransactions = transactions.filter(t => t.date === dayStr);
-            const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-            const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-            
-            dataPoints.push({
-              name: format(day, 'd'),
-              income,
-              expense,
-              net: income - expense,
-              date: dayStr,
-            });
-          }
-        }
-      } else {
-        // Show weeks
-        const numWeeks = Math.ceil(daysDiff / 7);
-        for (let i = numWeeks - 1; i >= 0; i--) {
-          const weekEnd = new Date(endDate);
-          weekEnd.setDate(endDate.getDate() - (i * 7));
-          const weekStart = new Date(weekEnd);
-          weekStart.setDate(weekEnd.getDate() - 6);
-          
-          const weekTransactions = transactions.filter(t => {
-            const date = parseISO(t.date);
-            return date >= weekStart && date <= weekEnd && date >= startDate;
-          });
-          
-          const income = weekTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-          const expense = weekTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+          const dayTransactions = transactions.filter(t => t.date === dayStr);
+          const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+          const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
           
           dataPoints.push({
-            name: `W${numWeeks - i}`,
+            name: format(day, 'd'),
             income,
             expense,
             net: income - expense,
-            date: format(weekEnd, 'yyyy-MM-dd'),
+            date: dayStr,
+          });
+        }
+      } else {
+        // Show weeks within range
+        const numWeeks = Math.ceil(daysDiff / 7);
+        for (let i = 0; i < numWeeks; i++) {
+          const weekStart = new Date(startDate);
+          weekStart.setDate(startDate.getDate() + (i * 7));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          const clampedEnd = weekEnd > endDate ? endDate : weekEnd;
+          const { income, expense } = calcForRange(weekStart, clampedEnd);
+          
+          dataPoints.push({
+            name: `W${i + 1}`,
+            income,
+            expense,
+            net: income - expense,
+            date: format(weekStart, 'yyyy-MM-dd'),
           });
         }
       }

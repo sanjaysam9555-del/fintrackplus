@@ -113,17 +113,41 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
     // Parse as local dates to keep chart in sync with list filtering
     const startDate = parseISO(dateRange.start);
     const endDate = parseISO(dateRange.end);
+    const today = new Date();
     const daysDiff = differenceInDays(endDate, startDate);
     
     const dataPoints: { name: string; value: number }[] = [];
     
-    if (timeFilter === 'week' || daysDiff <= 7) {
-      // Show 7 days
-      for (let i = 6; i >= 0; i--) {
-        const day = new Date(endDate);
-        day.setDate(endDate.getDate() - i);
-        const dayStr = format(day, 'yyyy-MM-dd');
+    if (timeFilter === 'fy') {
+      // Financial Year: Generate months from start to min(endDate, today)
+      const actualEnd = endDate > today ? today : endDate;
+      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      
+      while (current <= actualEnd) {
+        const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
+        const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
         
+        const monthTransactions = filteredTransactions.filter(t => {
+          const d = parseISO(t.date);
+          return d >= monthStart && d <= monthEnd;
+        });
+        
+        dataPoints.push({
+          name: format(monthStart, 'MMM'),
+          value: monthTransactions.reduce((sum, t) => sum + t.amount, 0),
+        });
+        
+        current.setMonth(current.getMonth() + 1);
+      }
+    } else if (timeFilter === 'week' || daysDiff <= 7) {
+      // Show exact days within the date range
+      for (let i = 0; i <= Math.min(daysDiff, 6); i++) {
+        const day = new Date(startDate);
+        day.setDate(startDate.getDate() + i);
+        
+        if (day > endDate) break;
+        
+        const dayStr = format(day, 'yyyy-MM-dd');
         const dayTransactions = filteredTransactions.filter(t => t.date === dayStr);
         
         dataPoints.push({
@@ -132,75 +156,79 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
         });
       }
     } else if (timeFilter === 'month' || (daysDiff > 7 && daysDiff <= 31)) {
-      // Show 4 weeks
-      for (let i = 3; i >= 0; i--) {
-        const weekEnd = new Date(endDate);
-        weekEnd.setDate(endDate.getDate() - (i * 7));
-        const weekStart = new Date(weekEnd);
-        weekStart.setDate(weekEnd.getDate() - 6);
+      // Show weeks within the exact date range
+      const numWeeks = Math.ceil(daysDiff / 7);
+      for (let i = 0; i < numWeeks; i++) {
+        const weekStart = new Date(startDate);
+        weekStart.setDate(startDate.getDate() + (i * 7));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        
+        const clampedEnd = weekEnd > endDate ? endDate : weekEnd;
         
         const weekTransactions = filteredTransactions.filter(t => {
-          const date = parseISO(t.date);
-          return date >= weekStart && date <= weekEnd;
+          const d = parseISO(t.date);
+          return d >= weekStart && d <= clampedEnd;
         });
         
         dataPoints.push({
-          name: `W${4 - i}`,
+          name: `W${i + 1}`,
           value: weekTransactions.reduce((sum, t) => sum + t.amount, 0),
         });
       }
     } else if (timeFilter === 'year' || daysDiff > 31) {
-      // Show 12 months
-      for (let i = 11; i >= 0; i--) {
-        const monthDate = new Date(endDate);
-        monthDate.setMonth(endDate.getMonth() - i);
-        const monthStart = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-        const monthEnd = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+      // Show months within the exact date range
+      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const actualEnd = endDate > today ? today : endDate;
+      
+      while (current <= actualEnd) {
+        const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
+        const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
         
         const monthTransactions = filteredTransactions.filter(t => {
-          const date = parseISO(t.date);
-          return date >= monthStart && date <= monthEnd;
+          const d = parseISO(t.date);
+          return d >= monthStart && d <= monthEnd;
         });
         
         dataPoints.push({
-          name: format(monthDate, 'MMM'),
+          name: format(monthStart, 'MMM'),
           value: monthTransactions.reduce((sum, t) => sum + t.amount, 0),
         });
+        
+        current.setMonth(current.getMonth() + 1);
       }
     } else {
       // Custom: determine based on days difference
       if (daysDiff <= 14) {
-        // Show days
-        for (let i = daysDiff; i >= 0; i--) {
-          const day = new Date(endDate);
-          day.setDate(endDate.getDate() - i);
+        for (let i = 0; i <= daysDiff; i++) {
+          const day = new Date(startDate);
+          day.setDate(startDate.getDate() + i);
           const dayStr = format(day, 'yyyy-MM-dd');
           
-          if (day >= startDate) {
-            const dayTransactions = filteredTransactions.filter(t => t.date === dayStr);
-            
-            dataPoints.push({
-              name: format(day, 'd'),
-              value: dayTransactions.reduce((sum, t) => sum + t.amount, 0),
-            });
-          }
+          const dayTransactions = filteredTransactions.filter(t => t.date === dayStr);
+          
+          dataPoints.push({
+            name: format(day, 'd'),
+            value: dayTransactions.reduce((sum, t) => sum + t.amount, 0),
+          });
         }
       } else {
-        // Show weeks
         const numWeeks = Math.ceil(daysDiff / 7);
-        for (let i = numWeeks - 1; i >= 0; i--) {
-          const weekEnd = new Date(endDate);
-          weekEnd.setDate(endDate.getDate() - (i * 7));
-          const weekStart = new Date(weekEnd);
-          weekStart.setDate(weekEnd.getDate() - 6);
+        for (let i = 0; i < numWeeks; i++) {
+          const weekStart = new Date(startDate);
+          weekStart.setDate(startDate.getDate() + (i * 7));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          
+          const clampedEnd = weekEnd > endDate ? endDate : weekEnd;
           
           const weekTransactions = filteredTransactions.filter(t => {
-            const date = parseISO(t.date);
-            return date >= weekStart && date <= weekEnd && date >= startDate;
+            const d = parseISO(t.date);
+            return d >= weekStart && d <= clampedEnd;
           });
           
           dataPoints.push({
-            name: `W${numWeeks - i}`,
+            name: `W${i + 1}`,
             value: weekTransactions.reduce((sum, t) => sum + t.amount, 0),
           });
         }
