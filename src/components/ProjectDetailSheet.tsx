@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2 } from "lucide-react";
+import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown } from "lucide-react";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
 import { format } from "date-fns";
@@ -14,6 +14,11 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { TransactionItem } from "./TransactionItem";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface VendorBreakdown {
   vendor: string;
@@ -48,6 +53,37 @@ export const ProjectDetailSheet = ({
   const { getCategoryById, updateProject } = useFinanceStore();
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
+  const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
+  
+  // Sort and separate transactions - memoize for use in hooks
+  const { sortedTransactions, incomeTransactions, expenseTransactions } = useMemo(() => {
+    const sorted = [...transactions].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    return {
+      sortedTransactions: sorted,
+      incomeTransactions: sorted.filter(t => t.type === 'income'),
+      expenseTransactions: sorted.filter(t => t.type === 'expense'),
+    };
+  }, [transactions]);
+  
+  const toggleVendor = useCallback((vendor: string) => {
+    setExpandedVendors(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(vendor)) {
+        newSet.delete(vendor);
+      } else {
+        newSet.add(vendor);
+      }
+      return newSet;
+    });
+  }, []);
+  
+  // Get transactions for a specific vendor
+  const getVendorTransactions = useCallback((vendorName: string) => {
+    return expenseTransactions.filter(t => t.vendor === vendorName)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [expenseTransactions]);
   
   // Sync notes state with project
   useEffect(() => {
@@ -81,15 +117,6 @@ export const ProjectDetailSheet = ({
   }, [notes, project, saveNotes]);
   
   if (!project) return null;
-
-  // Sort transactions by date descending
-  const sortedTransactions = [...transactions].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
-  
-  // Separate income and expense transactions
-  const incomeTransactions = sortedTransactions.filter(t => t.type === 'income');
-  const expenseTransactions = sortedTransactions.filter(t => t.type === 'expense');
 
   const net = income - spent;
   const actualMargin = project.budgetLimit - spent;
@@ -252,22 +279,58 @@ export const ProjectDetailSheet = ({
                   Vendor Payments
                 </h3>
                 <div className="space-y-2">
-                  {vendorBreakdown.map((item) => (
-                    <motion.div
-                      key={item.vendor}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="bg-muted/50 rounded-xl p-3 flex items-center justify-between"
-                    >
-                      <div>
-                        <p className="font-medium">{item.vendor}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.count} payment{item.count !== 1 ? 's' : ''} • Last: {format(new Date(item.lastDate), 'MMM d')}
-                        </p>
-                      </div>
-                      <p className="font-semibold">₹{item.amount.toLocaleString()}</p>
-                    </motion.div>
-                  ))}
+                  {vendorBreakdown.map((item) => {
+                    const isExpanded = expandedVendors.has(item.vendor);
+                    const vendorTxns = getVendorTransactions(item.vendor);
+                    
+                    return (
+                      <Collapsible
+                        key={item.vendor}
+                        open={isExpanded}
+                        onOpenChange={() => toggleVendor(item.vendor)}
+                      >
+                        <CollapsibleTrigger asChild>
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="w-full bg-muted/50 rounded-xl p-3 cursor-pointer hover:bg-muted/70 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <ChevronDown 
+                                  size={16} 
+                                  className={cn(
+                                    "text-muted-foreground transition-transform duration-200",
+                                    isExpanded && "rotate-180"
+                                  )}
+                                />
+                                <div>
+                                  <p className="font-medium text-left">{item.vendor}</p>
+                                  <p className="text-xs text-muted-foreground text-left">
+                                    {item.count} payment{item.count !== 1 ? 's' : ''} • Last: {format(new Date(item.lastDate), 'MMM d')}
+                                  </p>
+                                </div>
+                              </div>
+                              <p className="font-semibold">₹{item.amount.toLocaleString()}</p>
+                            </div>
+                          </motion.div>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <div className="mt-2 ml-4 space-y-2 border-l-2 border-muted pl-2">
+                            {vendorTxns.map((txn) => (
+                              <TransactionItem
+                                key={txn.id}
+                                transaction={txn}
+                                category={getCategoryById(txn.categoryId)}
+                                userId={userId}
+                                onEditSheetChange={onEditSheetChange}
+                              />
+                            ))}
+                          </div>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    );
+                  })}
                 </div>
               </div>
             )}
