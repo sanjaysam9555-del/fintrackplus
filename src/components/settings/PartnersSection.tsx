@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { PartnerDetailSheet } from "./PartnerDetailSheet";
+import { Partner } from "@/lib/types";
 
 interface PartnersSectionProps {
   onBack: () => void;
@@ -37,6 +39,10 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  
+  // Detail sheet state
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   
   // Form state
   const [name, setName] = useState("");
@@ -136,10 +142,21 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     resetForm();
   };
   
-  const handleDelete = (partnerId: string) => {
+  const handleDelete = (partnerId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (confirm('Delete this partner? Transactions will be unassigned.')) {
       deletePartner(partnerId, userId);
     }
+  };
+  
+  const handleEditClick = (partnerId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    handleEdit(partnerId);
+  };
+  
+  const openPartnerDetail = (balanceData: typeof partnerBalances[0]) => {
+    setSelectedPartner(balanceData.partner);
+    setIsDetailOpen(true);
   };
   
   const getFilterLabel = () => {
@@ -158,6 +175,10 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     }
     return 'Custom';
   };
+  
+  const selectedBalanceData = selectedPartner 
+    ? partnerBalances.find(b => b.partner.id === selectedPartner.id) || null
+    : null;
   
   const PartnerForm = ({ isEdit = false }: { isEdit?: boolean }) => (
     <div className="space-y-4">
@@ -246,6 +267,22 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         <p className="text-sm text-muted-foreground mt-1 ml-8">
           Track money held by each partner
         </p>
+      </div>
+      
+      {/* Explanatory Info Box */}
+      <div className="px-4 mb-4">
+        <div className="bg-muted/50 rounded-xl p-3 border border-border/50">
+          <div className="flex items-start gap-2">
+            <Info size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground">How balances work:</p>
+              <p>• <span className="text-foreground">Opening</span> = Initial balance + transactions before period</p>
+              <p>• <span className="text-success">+ Income</span> received during period</p>
+              <p>• <span className="text-destructive">− Expenses</span> made during period</p>
+              <p>• <span className="text-foreground">Closing</span> = Current holdings</p>
+            </div>
+          </div>
+        </div>
       </div>
       
       {/* Time Filter Tabs */}
@@ -344,141 +381,116 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             <p className="text-sm text-muted-foreground mt-1">Add partners to track who holds the money</p>
           </div>
         ) : (
-          partnerBalances.map(({ 
-            partner, 
-            openingCashBalance, 
-            openingOnlineBalance,
-            periodCashIncome, 
-            periodCashExpense,
-            periodOnlineIncome,
-            periodOnlineExpense,
-            closingCashBalance,
-            closingOnlineBalance,
-            periodCashTxnCount,
-            periodOnlineTxnCount,
-          }) => (
-            <motion.div
-              key={partner.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-card rounded-2xl p-4 border border-border"
-            >
-              {editingPartner === partner.id ? (
-                <div className="space-y-3">
-                  <PartnerForm isEdit />
-                  <Button variant="outline" onClick={resetForm} className="w-full">
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div 
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                        style={{ backgroundColor: partner.color }}
-                      >
-                        {partner.name.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="font-semibold">{partner.name}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button 
-                        onClick={() => handleEdit(partner.id)}
-                        className="p-2 rounded-full hover:bg-muted"
-                      >
-                        <Edit2 size={16} className="text-muted-foreground" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(partner.id)}
-                        className="p-2 rounded-full hover:bg-destructive/10"
-                      >
-                        <Trash2 size={16} className="text-destructive" />
-                      </button>
-                    </div>
+          partnerBalances.map((balanceData) => {
+            const { 
+              partner, 
+              closingCashBalance,
+              closingOnlineBalance,
+              periodCashTxnCount,
+              periodOnlineTxnCount,
+            } = balanceData;
+            
+            const totalTxnCount = periodCashTxnCount + periodOnlineTxnCount;
+            const totalClosing = closingCashBalance + closingOnlineBalance;
+            
+            return (
+              <motion.div
+                key={partner.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => editingPartner !== partner.id && openPartnerDetail(balanceData)}
+                className={cn(
+                  "bg-card rounded-2xl p-4 border border-border transition-colors",
+                  editingPartner !== partner.id && "cursor-pointer hover:border-primary/50 active:bg-muted/30"
+                )}
+              >
+                {editingPartner === partner.id ? (
+                  <div className="space-y-3">
+                    <PartnerForm isEdit />
+                    <Button variant="outline" onClick={resetForm} className="w-full">
+                      Cancel
+                    </Button>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    {/* Cash Balance */}
-                    <div className="bg-muted/50 rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                        <Banknote size={14} />
-                        <span className="text-xs">Cash</span>
-                        <span className="text-[10px] text-muted-foreground ml-auto">
-                          {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
-                        </span>
+                ) : (
+                  <>
+                    {/* Header Row */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div 
+                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                          style={{ backgroundColor: partner.color }}
+                        >
+                          {partner.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <span className="font-semibold">{partner.name}</span>
+                          <p className="text-xs text-muted-foreground">
+                            {totalTxnCount} transaction{totalTxnCount !== 1 ? 's' : ''} this period
+                          </p>
+                        </div>
                       </div>
-                      
-                      {/* Closing Balance (Main) */}
-                      <p className={cn(
-                        "text-lg font-bold",
-                        closingCashBalance >= 0 ? "text-success" : "text-destructive"
-                      )}>
-                        {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">Closing Balance</p>
-                      
-                      {/* Breakdown */}
-                      <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5 text-[10px] text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>Opening</span>
-                          <span className={openingCashBalance >= 0 ? "" : "text-destructive"}>
-                            {openingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(openingCashBalance).toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-success">
-                          <span>+ Income</span>
-                          <span>{CURRENCY_SYMBOL}{periodCashIncome.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between text-destructive">
-                          <span>− Expense</span>
-                          <span>{CURRENCY_SYMBOL}{periodCashExpense.toLocaleString()}</span>
-                        </div>
+                      <div className="flex items-center gap-1">
+                        <button 
+                          onClick={(e) => handleEditClick(partner.id, e)}
+                          className="p-2 rounded-full hover:bg-muted"
+                        >
+                          <Edit2 size={16} className="text-muted-foreground" />
+                        </button>
+                        <button 
+                          onClick={(e) => handleDelete(partner.id, e)}
+                          className="p-2 rounded-full hover:bg-destructive/10"
+                        >
+                          <Trash2 size={16} className="text-destructive" />
+                        </button>
+                        <ChevronRight size={18} className="text-muted-foreground ml-1" />
                       </div>
                     </div>
                     
-                    {/* Online Balance */}
-                    <div className="bg-muted/50 rounded-xl p-3">
-                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
-                        <CreditCard size={14} />
-                        <span className="text-xs">Online</span>
-                        <span className="text-[10px] text-muted-foreground ml-auto">
-                          {periodOnlineTxnCount} txn{periodOnlineTxnCount !== 1 ? 's' : ''}
+                    {/* Balance Summary Row */}
+                    <div className="mt-3 flex items-center gap-4">
+                      <div className="flex items-center gap-2">
+                        <Banknote size={14} className="text-muted-foreground" />
+                        <span className={cn(
+                          "font-semibold",
+                          closingCashBalance >= 0 ? "text-success" : "text-destructive"
+                        )}>
+                          {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({periodCashTxnCount})
                         </span>
                       </div>
-                      
-                      {/* Closing Balance (Main) */}
-                      <p className={cn(
-                        "text-lg font-bold",
-                        closingOnlineBalance >= 0 ? "text-success" : "text-destructive"
-                      )}>
-                        {closingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingOnlineBalance).toLocaleString()}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">Closing Balance</p>
-                      
-                      {/* Breakdown */}
-                      <div className="mt-2 pt-2 border-t border-border/50 space-y-0.5 text-[10px] text-muted-foreground">
-                        <div className="flex justify-between">
-                          <span>Opening</span>
-                          <span className={openingOnlineBalance >= 0 ? "" : "text-destructive"}>
-                            {openingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(openingOnlineBalance).toLocaleString()}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-success">
-                          <span>+ Income</span>
-                          <span>{CURRENCY_SYMBOL}{periodOnlineIncome.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between text-destructive">
-                          <span>− Expense</span>
-                          <span>{CURRENCY_SYMBOL}{periodOnlineExpense.toLocaleString()}</span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <CreditCard size={14} className="text-muted-foreground" />
+                        <span className={cn(
+                          "font-semibold",
+                          closingOnlineBalance >= 0 ? "text-success" : "text-destructive"
+                        )}>
+                          {closingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingOnlineBalance).toLocaleString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({periodOnlineTxnCount})
+                        </span>
                       </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          ))
+                    
+                    {/* Total & Hint */}
+                    <div className="mt-2 flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">
+                        Total: <span className={cn(
+                          "font-semibold",
+                          totalClosing >= 0 ? "text-foreground" : "text-destructive"
+                        )}>
+                          {totalClosing < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(totalClosing).toLocaleString()}
+                        </span>
+                      </span>
+                      <span className="text-xs text-primary">Tap to view transactions →</span>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            );
+          })
         )}
       </div>
       
@@ -496,6 +508,20 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           <PartnerForm />
         </DialogContent>
       </Dialog>
+      
+      {/* Partner Detail Sheet */}
+      <PartnerDetailSheet
+        partner={selectedPartner}
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedPartner(null);
+        }}
+        dateRange={dateRange}
+        balanceData={selectedBalanceData}
+        periodLabel={getFilterLabel()}
+        userId={userId}
+      />
     </div>
   );
 };
