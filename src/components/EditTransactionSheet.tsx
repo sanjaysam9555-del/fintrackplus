@@ -92,7 +92,8 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     return allVendors.find(v => v.name.toLowerCase() === vendor.toLowerCase());
   }, [allVendors, vendor]);
   
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (!amount || !categoryId) return;
     
     await updateTransaction(transaction.id, {
@@ -130,7 +131,10 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 z-[60]"
-            onClick={onClose}
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
           />
           
           <motion.div
@@ -155,7 +159,13 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                 >
                   Save Changes
                 </Button>
-                <button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
+                  }} 
+                  className="p-2 rounded-full hover:bg-muted"
+                >
                   <X size={20} />
                 </button>
               </div>
