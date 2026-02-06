@@ -18,13 +18,13 @@ interface TransactionListProps {
   type: TransactionType;
   userId?: string;
   onEditSheetChange?: (isOpen: boolean) => void;
+  onSearchClick?: () => void;
 }
 
 type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
 
-export const TransactionList = ({ type, userId, onEditSheetChange }: TransactionListProps) => {
+export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick }: TransactionListProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
-  const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading] = useState(false);
@@ -83,18 +83,8 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
     return transactions
       .filter(t => t.type === type)
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
-      .filter(t => {
-        if (!searchQuery) return true;
-        const query = searchQuery.toLowerCase();
-        const category = categories.find(c => c.id === t.categoryId);
-        return (
-          t.vendor.toLowerCase().includes(query) ||
-          t.notes?.toLowerCase().includes(query) ||
-          category?.name.toLowerCase().includes(query)
-        );
-      })
       .filter(t => !selectedCategory || t.categoryId === selectedCategory);
-  }, [transactions, type, dateRange, searchQuery, selectedCategory, categories]);
+  }, [transactions, type, dateRange, selectedCategory]);
   
   const total = type === 'income' 
     ? getTotalIncome(dateRange.start, dateRange.end)
@@ -410,17 +400,16 @@ export const TransactionList = ({ type, userId, onEditSheetChange }: Transaction
         <UpcomingRecurringBanner type={type} />
       </div>
       
-      {/* Search */}
+      {/* Search Button - Opens Global Search */}
       <div className="px-4 mb-4">
-        <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search vendor or category..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <button
+          onClick={onSearchClick}
+          className="w-full flex items-center gap-3 px-4 py-3 bg-muted/50 rounded-xl text-muted-foreground hover:bg-muted transition-colors"
+        >
+          <Search size={18} />
+          <span className="flex-1 text-left text-sm">Search transactions...</span>
+          <kbd className="hidden md:inline-flex px-1.5 py-0.5 bg-background rounded text-xs font-mono">⌘K</kbd>
+        </button>
       </div>
       
       {/* Category Chips */}

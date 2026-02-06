@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { cn } from "@/lib/utils";
-import { Button } from "./ui/button";
 import { toast } from "sonner";
 
 interface ProjectOverviewPageProps {
   userId?: string;
   onEditSheetChange?: (isOpen: boolean) => void;
+  onSearchClick?: () => void;
 }
 
 type HealthStatus = 'healthy' | 'at-risk' | 'critical';
@@ -40,7 +40,7 @@ const getHealthDot = (status: HealthStatus): string => {
   }
 };
 
-export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOverviewPageProps) => {
+export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
   const { projects, getProjectSpending, getProjectIncome, transactions, updateProject } = useFinanceStore();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -92,59 +92,103 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange }: ProjectOvervi
 
   return (
     <div className="min-h-screen bg-background pb-40 md:pb-8 md:px-6">
-      {/* Header */}
+      {/* Enhanced Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border">
-        <h1 className="text-xl font-bold">Projects</h1>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <FolderKanban size={20} className="text-primary" />
+          </div>
+          <div className="flex-1">
+            <h1 className="text-xl font-bold">Projects</h1>
+            <p className="text-xs text-muted-foreground">Track project financials</p>
+          </div>
+          <button 
+            onClick={onSearchClick}
+            className="p-2.5 rounded-full hover:bg-muted transition-colors"
+            title="Search (⌘K)"
+          >
+            <Search size={18} className="text-muted-foreground" />
+          </button>
+        </div>
       </div>
 
-      {/* Summary Section */}
+      {/* Enhanced Summary Section */}
       <div className="px-4 pt-4">
-        <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 p-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="text-center">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-1">
-                <Wallet size={14} className="text-primary" />
+        <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 overflow-hidden">
+          {/* Header */}
+          <div className="px-4 pt-4 pb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Portfolio Overview</p>
+          </div>
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 divide-x divide-primary/10">
+            <div className="p-4 text-center">
+              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-2">
+                <Wallet size={18} className="text-primary" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase">Budget</p>
-              <p className="text-sm font-bold">₹{totalBudget.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Budget</p>
+              <p className="text-base font-bold">₹{totalBudget.toLocaleString()}</p>
             </div>
-            <div className="text-center">
-              <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center mx-auto mb-1">
-                <Receipt size={14} className="text-orange-500" />
+            <div className="p-4 text-center">
+              <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-2">
+                <Receipt size={18} className="text-orange-500" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase">Spent</p>
-              <p className="text-sm font-bold">₹{totalSpent.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Spent</p>
+              <p className="text-base font-bold">₹{totalSpent.toLocaleString()}</p>
             </div>
-            <div className="text-center">
-              <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center mx-auto mb-1">
-                <PiggyBank size={14} className="text-green-500" />
+            <div className="p-4 text-center">
+              <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center mx-auto mb-2">
+                <PiggyBank size={18} className="text-green-500" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase">Margin</p>
-              <p className="text-sm font-bold">₹{totalMargin.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Margin</p>
+              <p className="text-base font-bold">₹{totalMargin.toLocaleString()}</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Toggle Tabs */}
-      <div className="px-4 pt-4 flex gap-2">
-        <Button
-          variant={!showArchived ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowArchived(false)}
-          className="flex-1"
-        >
-          Active ({activeProjects.length})
-        </Button>
-        <Button
-          variant={showArchived ? "default" : "outline"}
-          size="sm"
-          onClick={() => setShowArchived(true)}
-          className="flex-1"
-        >
-          <Archive size={14} className="mr-1.5" />
-          Archived ({archivedProjects.length})
-        </Button>
+      {/* Enhanced Toggle Tabs */}
+      <div className="px-4 pt-4">
+        <div className="flex p-1 bg-muted rounded-xl">
+          <button
+            onClick={() => setShowArchived(false)}
+            className={cn(
+              "flex-1 py-2.5 rounded-lg font-medium transition-all text-sm flex items-center justify-center gap-2",
+              !showArchived 
+                ? "bg-card shadow-sm text-foreground" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <span className={cn(
+              "w-2 h-2 rounded-full",
+              !showArchived ? "bg-primary" : "bg-muted-foreground/50"
+            )} />
+            Active
+            <span className={cn(
+              "px-1.5 py-0.5 rounded-md text-xs",
+              !showArchived ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"
+            )}>
+              {activeProjects.length}
+            </span>
+          </button>
+          <button
+            onClick={() => setShowArchived(true)}
+            className={cn(
+              "flex-1 py-2.5 rounded-lg font-medium transition-all text-sm flex items-center justify-center gap-2",
+              showArchived 
+                ? "bg-card shadow-sm text-foreground" 
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Archive size={14} />
+            Archived
+            <span className={cn(
+              "px-1.5 py-0.5 rounded-md text-xs",
+              showArchived ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"
+            )}>
+              {archivedProjects.length}
+            </span>
+          </button>
+        </div>
       </div>
 
       {/* Project Cards - Two Column Grid */}
