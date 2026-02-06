@@ -1,122 +1,136 @@
 
 
-# Fix Horizontal Overflow in Project Detail Sheet (Mobile View)
+# Fix: Edit Sheet Closing Also Closes Project Detail Sheet
 
-## Problem Identified
+## Problem
 
-The Project Detail Sheet content is extending horizontally beyond the mobile viewport, causing:
-
-1. The **Net card** in the 2x2 financial summary grid to be clipped (only shows "Net +₹")
-2. The **Margin Analysis** monetary values to be completely invisible (pushed off-screen)
-3. **Transaction items** timestamps and amounts getting cut off at the edge
+When editing a transaction entry from within the Project Detail Sheet, closing the edit form (whether saving or canceling) causes both the edit sheet AND the Project Detail Sheet to close. The user expects to return to the Project Detail view, not the main Projects list.
 
 ## Root Cause
 
-While `DrawerContent` has `overflow-hidden`, the inner content containers lack proper width constraints:
-- The `ScrollArea` component doesn't have explicit `w-full` constraints
-- The inner `<div className="p-4 space-y-6">` allows content to grow beyond viewport
-- Currency values with Indian formatting (e.g., "₹10,67,500") are long and push flex layouts
-- The Margin Analysis uses `justify-between` but values have no `truncate` or `min-w-0` to prevent overflow
+The issue is a click event propagation problem between stacked modal components:
+
+```
+Layer Stack:
++---------------------------+
+| EditTransactionSheet      | z-[60] - Portal at body
+|   (backdrop click closes) |
++---------------------------+
+           ↓ click propagates after unmount
++---------------------------+
+| DrawerOverlay             | z-50 - Vaul Drawer
+|   (backdrop click closes) |
++---------------------------+
+| ProjectDetailSheet        |
++---------------------------+
+| ProjectOverviewPage       |
++---------------------------+
+```
+
+When the EditTransactionSheet's backdrop is clicked:
+1. The backdrop onClick calls `onClose()`
+2. The portal unmounts
+3. The click event continues to the DrawerOverlay beneath
+4. The Drawer's `onOpenChange` fires with `false`
+5. ProjectDetailSheet closes
 
 ---
 
 ## Solution
 
-Add explicit width constraints and overflow handling to all content containers within the drawer.
+Prevent the backdrop click from propagating to layers below by adding `e.stopPropagation()` to the EditTransactionSheet's backdrop click handler.
 
 ---
 
 ## Technical Changes
 
-### File: `src/components/ProjectDetailSheet.tsx`
+### File: `src/components/EditTransactionSheet.tsx`
 
-| Section | Issue | Fix |
-|---------|-------|-----|
-| ScrollArea | No width constraint | Add `w-full` class |
-| Inner container | Content can overflow | Add `w-full max-w-full overflow-x-hidden` |
-| Financial grid | Long amounts overflow | Add `overflow-hidden` to cards, `truncate` to amounts |
-| Margin Analysis rows | Values pushed off-screen | Add `min-w-0` to value spans, `shrink-0` to labels |
-| Transaction lists | No width constraint | Add `w-full overflow-hidden` wrapper |
+**Line 133 - Add stopPropagation to backdrop click:**
 
-### Specific Changes
-
-**1. ScrollArea and Inner Container (lines 152-153)**
 ```tsx
 // Before
-<ScrollArea className="flex-1 overflow-auto">
-  <div className="p-4 space-y-6">
+<motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  exit={{ opacity: 0 }}
+  className="fixed inset-0 bg-black/40 z-[60]"
+  onClick={onClose}
+/>
 
 // After
-<ScrollArea className="flex-1 overflow-auto w-full">
-  <div className="p-4 space-y-6 w-full max-w-full overflow-x-hidden">
+<motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  exit={{ opacity: 0 }}
+  className="fixed inset-0 bg-black/40 z-[60]"
+  onClick={(e) => {
+    e.stopPropagation();
+    onClose();
+  }}
+/>
 ```
 
-**2. Financial Summary Grid Cards (lines 155-180)**
-- Add `overflow-hidden` to each card container
-- Add `truncate` to all amount `<p>` elements to handle long values gracefully
+**Line 158 - Add stopPropagation to X button click:**
 
 ```tsx
 // Before
-<div className="bg-muted/50 rounded-xl p-3">
-  <p className="text-lg font-bold">₹{...}</p>
-</div>
+<button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
+  <X size={20} />
+</button>
+
+// After
+<button 
+  onClick={(e) => {
+    e.stopPropagation();
+    onClose();
+  }} 
+  className="p-2 rounded-full hover:bg-muted"
+>
+  <X size={20} />
+</button>
+```
+
+**Lines 95-120 - Add stopPropagation to handleSubmit (Save button):**
+
+```tsx
+// Before
+const handleSubmit = async () => {
+  if (!amount || !categoryId) return;
+  
+  await updateTransaction(transaction.id, {
+    // ... update data
+  }, userId);
+  
+  toast.success('Transaction Updated', { /* ... */ });
+  
+  onClose();
+};
 
 // After  
-<div className="bg-muted/50 rounded-xl p-3 overflow-hidden">
-  <p className="text-lg font-bold truncate">₹{...}</p>
-</div>
-```
-
-**3. Margin Analysis Section (lines 184-202)**
-- Add `overflow-hidden` to the container
-- Add `gap-2` and `min-w-0` to flex rows to prevent overlap
-- Add `shrink-0` to labels so they don't compress
-- Add `truncate` to values to handle overflow
-
-```tsx
-// Before
-<div className="flex items-center justify-between text-sm">
-  <span className="text-muted-foreground">Expected Margin</span>
-  <span className="font-medium">₹{...}</span>
-</div>
-
-// After
-<div className="flex items-center justify-between text-sm gap-2 min-w-0">
-  <span className="text-muted-foreground shrink-0">Expected Margin</span>
-  <span className="font-medium truncate">₹{...}</span>
-</div>
-```
-
-**4. Transaction List Containers (lines 229, 255)**
-Add width constraints to prevent TransactionItem overflow:
-
-```tsx
-// Before
-<div className="space-y-2">
-
-// After
-<div className="space-y-2 w-full overflow-hidden">
+const handleSubmit = async (e?: React.MouseEvent) => {
+  e?.stopPropagation();
+  if (!amount || !categoryId) return;
+  
+  await updateTransaction(transaction.id, {
+    // ... update data
+  }, userId);
+  
+  toast.success('Transaction Updated', { /* ... */ });
+  
+  onClose();
+};
 ```
 
 ---
 
-## Why This Works
+## Summary
 
-| Constraint | Purpose |
-|------------|---------|
-| `w-full` | Ensures container doesn't exceed parent width |
-| `max-w-full` | Prevents content from growing beyond 100% |
-| `overflow-x-hidden` | Clips any content that still overflows |
-| `overflow-hidden` on cards | Contains content within card boundaries |
-| `truncate` on amounts | Shows ellipsis for very long values |
-| `min-w-0` on flex rows | Allows flex items to shrink below content size |
-| `shrink-0` on labels | Keeps labels readable, only values truncate |
+| Location | Change |
+|----------|--------|
+| Backdrop div (line 133) | Add `e.stopPropagation()` before calling `onClose()` |
+| X button (line 158) | Add `e.stopPropagation()` before calling `onClose()` |
+| Save button handler | Add `e?.stopPropagation()` in `handleSubmit` |
 
----
-
-## Files to Modify
-
-| File | Changes |
-|------|---------|
-| `src/components/ProjectDetailSheet.tsx` | Add width constraints and overflow handling |
+This ensures that when the EditTransactionSheet closes, the click event doesn't bubble down to trigger the Drawer's close handler, keeping the ProjectDetailSheet open.
 
