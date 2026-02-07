@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, X, ArrowRight, Tag, FolderKanban, Store, Receipt } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { useGlobalSearch, SearchResult } from '@/hooks/useGlobalSearch';
 import { CategoryIcon } from './CategoryIcon';
 import { TransactionDetailSheet } from './TransactionDetailSheet';
@@ -162,11 +163,68 @@ export const GlobalSearchDialog = ({
                             <p className="text-sm text-muted-foreground truncate">
                               {result.subtitle}
                             </p>
+                            
+                            {/* Color badges for transaction results */}
+                            {result.type === 'transaction' && (
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                {/* Transaction type badge */}
+                                <Badge 
+                                  className={cn(
+                                    "text-[10px] px-1.5 py-0 font-medium border-0",
+                                    (result.data as Transaction).type === 'expense' 
+                                      ? "bg-destructive/15 text-destructive" 
+                                      : "bg-emerald-500/15 text-emerald-600"
+                                  )}
+                                >
+                                  {(result.data as Transaction).type === 'expense' ? 'Expense' : 'Income'}
+                                </Badge>
+                                
+                                {/* Category badge with category color */}
+                                {result.categoryName && (
+                                  <Badge 
+                                    className="text-[10px] px-1.5 py-0 font-medium border-0"
+                                    style={{ 
+                                      backgroundColor: `${result.color}20`,
+                                      color: result.color 
+                                    }}
+                                  >
+                                    {result.categoryName}
+                                  </Badge>
+                                )}
+                                
+                                {/* Project badge if assigned */}
+                                {result.projectName && (
+                                  <Badge 
+                                    className="text-[10px] px-1.5 py-0 font-medium border-0"
+                                    style={{ 
+                                      backgroundColor: `${result.projectColor}20`,
+                                      color: result.projectColor 
+                                    }}
+                                  >
+                                    {result.projectName}
+                                  </Badge>
+                                )}
+                                
+                                {/* Payment method badge */}
+                                <Badge 
+                                  className={cn(
+                                    "text-[10px] px-1.5 py-0 font-medium border-0",
+                                    (result.data as Transaction).paymentMethod === 'cash'
+                                      ? "bg-amber-500/15 text-amber-600"
+                                      : "bg-blue-500/15 text-blue-500"
+                                  )}
+                                >
+                                  {(result.data as Transaction).paymentMethod === 'cash' ? 'Cash' : 'Online'}
+                                </Badge>
+                              </div>
+                            )}
                           </div>
                           <div className="shrink-0 flex items-center gap-2 opacity-60 group-hover:opacity-100 transition-opacity">
-                            <span className="text-xs text-muted-foreground capitalize px-2 py-0.5 bg-muted rounded-full">
-                              {result.type}
-                            </span>
+                            {result.type !== 'transaction' && (
+                              <span className="text-xs text-muted-foreground capitalize px-2 py-0.5 bg-muted rounded-full">
+                                {result.type}
+                              </span>
+                            )}
                             <ArrowRight size={14} className="text-muted-foreground" />
                           </div>
                         </button>

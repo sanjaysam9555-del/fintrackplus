@@ -38,6 +38,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [name, setName] = useState('');
+  const [originalName, setOriginalName] = useState('');
   const [selectedColor, setSelectedColor] = useState(VENDOR_COLORS[0]);
   const [selectedIcon, setSelectedIcon] = useState('Store');
 
@@ -81,6 +82,18 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
       return;
     }
     
+    // Check for duplicate name, excluding the current vendor being edited
+    const trimmedName = name.trim().toLowerCase();
+    const isDuplicate = allVendors.some(v => 
+      v.name.toLowerCase() === trimmedName && 
+      v.name.toLowerCase() !== originalName.toLowerCase()
+    );
+    
+    if (isDuplicate) {
+      toast.error("A vendor with this name already exists");
+      return;
+    }
+    
     if (id.startsWith('legacy-')) {
       addVendor(name.trim(), selectedColor, selectedIcon, userId);
     } else {
@@ -88,6 +101,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
     }
     toast.success("Vendor updated");
     setEditingId(null);
+    setOriginalName('');
     setName('');
     setSelectedColor(VENDOR_COLORS[0]);
     setSelectedIcon('Store');
@@ -105,6 +119,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
 
   const startEdit = (vendorId: string, vendorName: string, vendorColor?: string, vendorIcon?: string) => {
     setEditingId(vendorId);
+    setOriginalName(vendorName);
     setName(vendorName);
     setSelectedColor(vendorColor || VENDOR_COLORS[0]);
     setSelectedIcon(vendorIcon || 'Store');
@@ -172,6 +187,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
             if (isEdit) setEditingId(null);
             else setShowAddForm(false);
             setName('');
+            setOriginalName('');
             setSelectedColor(VENDOR_COLORS[0]);
             setSelectedIcon('Store');
           }} 
