@@ -1,11 +1,11 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Repeat, Users, SplitSquareHorizontal } from "lucide-react";
+import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Repeat, Users, SplitSquareHorizontal, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
-import { TransactionType, PaymentMethod } from "@/lib/types";
+import { TransactionType, PaymentMethod, PlannedInstallment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { renderCategoryIcon, renderVendorIcon } from "@/lib/iconUtils";
@@ -19,6 +19,8 @@ import { DuplicateWarning } from "./DuplicateWarning";
 import { toast } from "sonner";
 import { ReceiptUpload } from "./ReceiptUpload";
 import { GstToggle } from "./GstToggle";
+import { InstallmentRow } from "./InstallmentRow";
+import { v4 as uuidv4 } from "uuid";
 
 interface AddTransactionSheetProps {
   isOpen: boolean;
@@ -57,6 +59,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [isGst, setIsGst] = useState(false);
   const [isPartPayment, setIsPartPayment] = useState(false);
   const [totalExpectedAmount, setTotalExpectedAmount] = useState("");
+  const [plannedInstallments, setPlannedInstallments] = useState<PlannedInstallment[]>([]);
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
@@ -135,6 +138,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       isGst: isGst || undefined,
       isPartPayment: isPartPayment || undefined,
       totalExpectedAmount: isPartPayment && totalExpectedAmount ? parseFloat(totalExpectedAmount) : undefined,
+      plannedInstallments: isPartPayment && plannedInstallments.length > 0 ? plannedInstallments : undefined,
     }, userId);
     
     // Show success confirmation
@@ -159,8 +163,44 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setIsGst(false);
     setIsPartPayment(false);
     setTotalExpectedAmount("");
+    setPlannedInstallments([]);
     onClose();
-  }, [type, amount, title, vendor, categoryId, projectId, partnerId, paymentMethod, date, notes, isRecurring, recurringFrequency, receiptUrl, isGst, isPartPayment, totalExpectedAmount, userId, addTransaction, onClose]);
+  }, [type, amount, title, vendor, categoryId, projectId, partnerId, paymentMethod, date, notes, isRecurring, recurringFrequency, receiptUrl, isGst, isPartPayment, totalExpectedAmount, plannedInstallments, userId, addTransaction, onClose]);
+  
+  // Installment helper functions
+  const addNewInstallment = useCallback(() => {
+    const total = parseFloat(totalExpectedAmount || '0');
+    const current = parseFloat(amount || '0');
+    const planned = plannedInstallments.reduce((sum, i) => sum + i.amount, 0);
+    const remaining = Math.max(0, total - current - planned);
+    
+    setPlannedInstallments(prev => [
+      ...prev,
+      {
+        id: uuidv4(),
+        amount: remaining > 0 ? remaining : 0,
+        expectedDate: undefined,
+        status: 'pending' as const,
+      }
+    ]);
+  }, [totalExpectedAmount, amount, plannedInstallments]);
+  
+  const updateInstallment = useCallback((id: string, updates: Partial<PlannedInstallment>) => {
+    setPlannedInstallments(prev => 
+      prev.map(inst => inst.id === id ? { ...inst, ...updates } : inst)
+    );
+  }, []);
+  
+  const removeInstallment = useCallback((id: string) => {
+    setPlannedInstallments(prev => prev.filter(inst => inst.id !== id));
+  }, []);
+  
+  const getRemainingAmount = useCallback(() => {
+    const total = parseFloat(totalExpectedAmount || '0');
+    const current = parseFloat(amount || '0');
+    const planned = plannedInstallments.reduce((sum, i) => sum + i.amount, 0);
+    return Math.max(0, total - current - planned);
+  }, [totalExpectedAmount, amount, plannedInstallments]);
   
   const handleSubmit = () => {
     if (!amount || !categoryId) return;
@@ -823,7 +863,12 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     Part Payment <span className="text-muted-foreground/60">(optional)</span>
                   </Label>
                   <button
-                    onClick={() => setIsPartPayment(!isPartPayment)}
+                    onClick={() => {
+                      setIsPartPayment(!isPartPayment);
+                      if (!isPartPayment) {
+                        setPlannedInstallments([]);
+                      }
+                    }}
                     className={cn(
                       "w-full mt-1 p-3 rounded-xl flex items-center justify-between min-h-[48px] border-2 transition-colors",
                       isPartPayment 
@@ -848,39 +893,111 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     </div>
                   </button>
                   
-                  {/* Total Expected Amount */}
-                  {isPartPayment && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-3 space-y-2"
-                    >
-                      <Label className="text-xs text-muted-foreground">Total Expected Amount</Label>
-                      <div className="flex items-center gap-2 border-b-2 border-amber-500/50 pb-2">
-                        <span className="text-lg font-bold text-muted-foreground">{CURRENCY_SYMBOL}</span>
-                        <input
-                          type="number"
-                          inputMode="decimal"
-                          value={totalExpectedAmount}
-                          onChange={(e) => setTotalExpectedAmount(e.target.value)}
-                          placeholder="0"
-                          className="flex-1 text-xl font-bold bg-transparent outline-none"
-                        />
-                      </div>
-                      {totalExpectedAmount && amount && (
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Remaining:</span>
-                          <span className={cn(
-                            "font-semibold",
-                            parseFloat(totalExpectedAmount) - parseFloat(amount) > 0 ? "text-amber-500" : "text-success"
-                          )}>
-                            {CURRENCY_SYMBOL}{Math.max(0, parseFloat(totalExpectedAmount || '0') - parseFloat(amount || '0')).toLocaleString('en-IN')}
-                          </span>
+                  {/* Inline Installment Manager */}
+                  <AnimatePresence>
+                    {isPartPayment && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-3 space-y-4"
+                      >
+                        {/* Total Expected Amount */}
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Total Expected Amount</Label>
+                          <div className="flex items-center gap-2 border-b-2 border-amber-500/50 pb-2 mt-1">
+                            <span className="text-lg font-bold text-muted-foreground">{CURRENCY_SYMBOL}</span>
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              value={totalExpectedAmount}
+                              onChange={(e) => setTotalExpectedAmount(e.target.value)}
+                              placeholder="0"
+                              className="flex-1 text-xl font-bold bg-transparent outline-none"
+                            />
+                          </div>
                         </div>
-                      )}
-                    </motion.div>
-                  )}
+
+                        {/* Installments List */}
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                              Installments
+                            </Label>
+                            <span className="text-xs text-amber-500">
+                              {plannedInstallments.length + 1} installment(s)
+                            </span>
+                          </div>
+
+                          {/* Current Payment (First Installment) */}
+                          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
+                                  <Check size={12} className="text-white" />
+                                </div>
+                                <span className="text-sm font-medium">This Payment</span>
+                              </div>
+                              <span className="font-bold text-amber-600">
+                                {CURRENCY_SYMBOL}{parseFloat(amount || '0').toLocaleString('en-IN')}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-1 ml-7">
+                              {format(date, 'MMM dd, yyyy')} • Will be recorded now
+                            </p>
+                          </div>
+
+                          {/* Planned Future Installments */}
+                          {plannedInstallments.map((inst, idx) => (
+                            <InstallmentRow
+                              key={inst.id}
+                              installment={inst}
+                              index={idx + 2}
+                              onUpdate={(updates) => updateInstallment(inst.id, updates)}
+                              onRemove={() => removeInstallment(inst.id)}
+                            />
+                          ))}
+
+                          {/* Add Installment Button */}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={addNewInstallment}
+                            className="w-full border-dashed border-amber-500/30 text-amber-600 hover:bg-amber-500/5"
+                          >
+                            <Plus size={14} className="mr-1" />
+                            Add Another Installment
+                          </Button>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="p-3 bg-muted rounded-xl space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Total Expected:</span>
+                            <span className="font-medium">
+                              {CURRENCY_SYMBOL}{parseFloat(totalExpectedAmount || '0').toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Planned:</span>
+                            <span className="font-medium">
+                              {CURRENCY_SYMBOL}{(parseFloat(amount || '0') + plannedInstallments.reduce((sum, i) => sum + i.amount, 0)).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Remaining:</span>
+                            <span className={cn(
+                              "font-semibold",
+                              getRemainingAmount() > 0 ? "text-amber-500" : "text-success"
+                            )}>
+                              {CURRENCY_SYMBOL}{getRemainingAmount().toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 
                 {/* Submit Button */}

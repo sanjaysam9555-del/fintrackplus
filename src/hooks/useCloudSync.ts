@@ -120,7 +120,12 @@ export const useCloudSync = () => {
           isGst: (t as unknown as { is_gst?: boolean }).is_gst || false,
           isPartPayment: (t as unknown as { is_part_payment?: boolean }).is_part_payment || false,
           totalExpectedAmount: (t as unknown as { total_expected_amount?: number }).total_expected_amount ? Number((t as unknown as { total_expected_amount: number }).total_expected_amount) : undefined,
-          linkedTransactionId: (t as unknown as { linked_transaction_id?: string }).linked_transaction_id || undefined
+          linkedTransactionId: (t as unknown as { linked_transaction_id?: string }).linked_transaction_id || undefined,
+          plannedInstallments: (t as unknown as { planned_installments?: unknown }).planned_installments 
+            ? (typeof (t as unknown as { planned_installments: unknown }).planned_installments === 'string' 
+                ? JSON.parse((t as unknown as { planned_installments: string }).planned_installments) 
+                : (t as unknown as { planned_installments: unknown }).planned_installments) 
+            : undefined
         })) || [],
         partners: cloudPartners?.map(p => ({
           id: (p as { id: string }).id,
