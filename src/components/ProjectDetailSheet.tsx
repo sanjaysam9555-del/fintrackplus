@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown } from "lucide-react";
+import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search } from "lucide-react";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { formatCurrency } from "@/lib/constants";
 import {
   Drawer,
   DrawerContent,
@@ -53,6 +54,8 @@ export const ProjectDetailSheet = ({
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   
   // Get transactions for this project reactively from the store
   const projectTransactions = useMemo(() => {
@@ -89,6 +92,31 @@ export const ProjectDetailSheet = ({
     return expenseTransactions.filter(t => t.vendor === vendorName)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [expenseTransactions]);
+  
+  // Filter transactions based on search query
+  const searchResults = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const term = searchQuery.toLowerCase();
+    return sortedTransactions.filter(t => {
+      const category = getCategoryById(t.categoryId);
+      return (
+        t.title?.toLowerCase().includes(term) ||
+        t.vendor?.toLowerCase().includes(term) ||
+        t.notes?.toLowerCase().includes(term) ||
+        category?.name?.toLowerCase().includes(term) ||
+        t.amount.toString().includes(term) ||
+        formatCurrency(t.amount).toLowerCase().includes(term)
+      );
+    });
+  }, [searchQuery, sortedTransactions, getCategoryById]);
+  
+  // Clear search when drawer closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+      setIsSearching(false);
+    }
+  }, [isOpen]);
   
   // Sync notes state with project
   useEffect(() => {
@@ -134,24 +162,52 @@ export const ProjectDetailSheet = ({
         <DrawerHeader className="border-b border-border pb-4 shrink-0">
           <div className="flex items-center gap-3">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
               style={{ backgroundColor: `${project.color}20` }}
             >
               <FolderKanban size={22} style={{ color: project.color }} />
             </div>
-            <div className="flex-1">
-              <DrawerTitle className="text-left">{project.name}</DrawerTitle>
+            <div className="flex-1 min-w-0">
+              <DrawerTitle className="text-left truncate">{project.name}</DrawerTitle>
               {project.description && (
-                <p className="text-sm text-muted-foreground mt-0.5">{project.description}</p>
+                <p className="text-sm text-muted-foreground mt-0.5 truncate">{project.description}</p>
               )}
             </div>
             <button
+              onClick={() => setIsSearching(!isSearching)}
+              className={cn(
+                "p-2 rounded-full hover:bg-muted transition-colors shrink-0",
+                isSearching && "bg-muted"
+              )}
+            >
+              <Search size={18} className="text-muted-foreground" />
+            </button>
+            <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
+              className="p-2 rounded-full hover:bg-muted transition-colors shrink-0"
             >
               <X size={20} />
             </button>
           </div>
+          
+          {/* Inline search bar when active */}
+          {isSearching && (
+            <div className="mt-3 flex items-center gap-2 bg-muted rounded-xl px-3 py-2">
+              <Search size={16} className="text-muted-foreground shrink-0" />
+              <input
+                autoFocus
+                placeholder="Search in this project..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60"
+              />
+              {searchQuery && (
+                <button onClick={() => setSearchQuery("")} className="shrink-0">
+                  <X size={16} className="text-muted-foreground" />
+                </button>
+              )}
+            </div>
+          )}
         </DrawerHeader>
 
         <div 
@@ -159,6 +215,34 @@ export const ProjectDetailSheet = ({
           data-vaul-no-drag
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
+          {searchQuery.trim() ? (
+            /* Search Results View */
+            <div className="p-3 space-y-2 w-full min-w-0">
+              <p className="text-xs text-muted-foreground mb-2">
+                {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} in this project
+              </p>
+              {searchResults.length > 0 ? (
+                <div className="space-y-1.5">
+                  {searchResults.map((transaction) => (
+                    <TransactionItem
+                      key={transaction.id}
+                      transaction={transaction}
+                      category={getCategoryById(transaction.categoryId)}
+                      userId={userId}
+                      onEditSheetChange={onEditSheetChange}
+                      compact
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Search size={32} className="mx-auto mb-2 opacity-50" />
+                  <p className="font-medium">No matching transactions</p>
+                  <p className="text-sm mt-1">Try a different search term</p>
+                </div>
+              )}
+            </div>
+          ) : (
           <div className="p-3 space-y-4 w-full min-w-0">
             {/* Financial Summary - 2x2 Grid */}
             <div className="grid grid-cols-2 gap-2 w-full">
@@ -344,6 +428,7 @@ export const ProjectDetailSheet = ({
               </div>
             )}
           </div>
+          )}
         </div>
       </DrawerContent>
     </Drawer>

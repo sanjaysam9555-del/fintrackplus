@@ -318,6 +318,7 @@ const Index = () => {
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onNavigate={handleNavigate}
+        userId={user?.id}
       />
     </div>
   );
