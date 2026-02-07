@@ -11,6 +11,10 @@ export interface SearchResult {
   icon?: string;
   color?: string;
   data: Transaction | Category | Project | Vendor;
+  // Additional metadata for rendering badges
+  categoryName?: string;
+  projectName?: string;
+  projectColor?: string;
 }
 
 /**
@@ -55,6 +59,9 @@ export const useGlobalSearch = () => {
           icon: category?.icon,
           color: category?.color,
           data: t,
+          categoryName: category?.name,
+          projectName: project?.name,
+          projectColor: project?.color,
         });
       }
     });
