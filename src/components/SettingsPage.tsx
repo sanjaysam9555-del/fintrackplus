@@ -267,7 +267,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   return (
     <div className="min-h-screen pb-24 md:pb-8 md:px-6 md:max-w-4xl">
       {/* Header */}
-      <div className="p-4 pt-6">
+      <div className="p-4 pt-6 safe-top">
         <div className="flex items-center gap-3">
           {onBack && (
             <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">

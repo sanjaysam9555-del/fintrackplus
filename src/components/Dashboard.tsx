@@ -166,7 +166,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   return (
     <div className="min-h-screen pb-40 md:pb-8 md:px-6">
       {/* Header */}
-      <div className="p-4 pt-6">
+      <div className="p-4 pt-6 safe-top">
         {/* Mobile Layout */}
         <div className="md:hidden">
           {/* Top row: Avatar + Name + Action Icons */}
