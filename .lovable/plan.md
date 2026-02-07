@@ -1,89 +1,264 @@
 
-## What I’m seeing from your screenshot
-In the Project detail drawer on mobile, the content area is:
-1) getting clipped on the right (cards and transaction rows look “cut”), and  
-2) not reliably scrollable to reach all entries (so it feels like entries are “missing”).
 
-This strongly points to a **mobile drawer + nested scroll container issue** (Vaul Drawer + Radix ScrollArea + `overflow-hidden`), which can behave differently on iOS/Android compared to desktop.
+# Optimize Text Sizing for Mobile Project Detail View
 
----
+## Problem Summary
 
-## Goal
-Make the Project detail drawer on mobile:
-- fully scrollable (so all transactions are reachable),
-- not clipped on the right (no horizontal cut-off),
-- consistent with other drawers that already behave well on mobile (e.g., PartnerDetailSheet).
+The transaction entries and content in the Project Detail Sheet use the same sizing as the main dashboard, which wastes valuable screen space on mobile. Users cannot see maximum information in a single view because:
 
----
+1. **Transaction items** have large padding (`p-3`) and standard text sizes
+2. **Section headers** use large icons and spacing
+3. **Financial summary cards** have generous padding that could be reduced
+4. **Vendor rows** use the same spacing as standalone cards
 
-## Changes I will implement
+As shown in the screenshot, entries like "Sajjan Singh Dholi - ₹11,000" take up significant vertical space, limiting how many transactions are visible before scrolling.
 
-### 1) Replace Radix `ScrollArea` with a native scroll container for this drawer (mobile-safe)
-**File:** `src/components/ProjectDetailSheet.tsx`
+## Solution
 
-- Remove the `ScrollArea` import and replace:
-  ```tsx
-  <ScrollArea className="flex-1 overflow-auto w-full"> ... </ScrollArea>
-  ```
-  with a native div scroller:
-  - `className="flex-1 min-h-0 overflow-y-auto w-full"`
-  - `data-vaul-no-drag` to prevent the drawer’s drag gesture from stealing scroll
-  - `style={{ WebkitOverflowScrolling: "touch" }}` for smooth iOS scrolling
-- Move padding onto the scroller (or keep a single inner wrapper), but avoid multiple nested “width/overflow” wrappers that can cause clipping.
-
-Why: This matches the working pattern in `PartnerDetailSheet.tsx` (which uses a plain `div` with `overflow-y-auto`) and is the most reliable approach on mobile Safari.
+Implement a **compact display mode** for the Project Detail Sheet that optimizes text sizes and spacing for mobile, allowing more information to be visible at once.
 
 ---
 
-### 2) Remove/adjust the horizontal clipping that’s cutting off the right side
-**File:** `src/components/ProjectDetailSheet.tsx`
+## Technical Changes
 
-- Remove or narrow down the use of `overflow-x-hidden` / `overflow-hidden` that can clip the card edges on mobile.
-- Add `min-w-0` where needed to guarantee children shrink instead of overflowing (especially inside flex rows and grid items). Concretely:
-  - Ensure the main scroll content wrapper uses `min-w-0 w-full`.
-  - Add `min-w-0` to the left-side container inside the Vendor rows (so long vendor names don’t force overflow).
-  - Keep `truncate` where appropriate, but ensure the *container* can shrink.
+### File 1: `src/components/TransactionItem.tsx`
 
-Outcome: content stays within the drawer width instead of being clipped by a parent overflow rule.
+**Add a `compact` prop** to enable a space-efficient display mode:
 
----
-
-### 3) Fix the empty-state check (minor correctness fix)
-Right now the “No transactions yet for this project” section checks `transactions.length` (the prop), but the sheet now uses `projectTransactions` (from the store) to render.
-**File:** `src/components/ProjectDetailSheet.tsx`
-
-- Change the empty-state condition to use `projectTransactions.length === 0` (or `sortedTransactions.length === 0`) so it’s consistent with what’s actually displayed.
-
----
-
-### 4) Fallback (only if needed): disable background scaling for this drawer on mobile
-If iOS still shows strange clipping/positioning after the scroll fix, I’ll apply:
 ```tsx
-<Drawer shouldScaleBackground={false} ...>
+interface TransactionItemProps {
+  transaction: Transaction;
+  category?: Category;
+  onClick?: () => void;
+  userId?: string;
+  onEditSheetChange?: (isOpen: boolean) => void;
+  compact?: boolean; // NEW PROP
+}
 ```
-**File:** `src/components/ProjectDetailSheet.tsx`
 
-Why: Vaul’s background scaling can introduce transformed ancestors that sometimes interact poorly with fixed-position overlays on iOS.
+**Apply compact styling when enabled:**
+
+| Element | Standard | Compact |
+|---------|----------|---------|
+| Main row padding | `p-3` | `p-2` |
+| Category icon | 40x40px | 32x32px |
+| Title text | `font-semibold` (base) | `text-sm font-medium` |
+| Subtitle text | `text-sm` | `text-xs` |
+| Amount text | `font-bold` (base) | `text-sm font-bold` |
+| Gap between items | `gap-3` | `gap-2` |
+| Chevron icon | 16px | 14px |
+
+**Conditional styling example:**
+```tsx
+<div
+  onClick={() => setIsExpanded(!isExpanded)}
+  className={cn(
+    "flex items-center cursor-pointer hover:bg-muted/30 transition-colors",
+    compact ? "gap-2 p-2" : "gap-3 p-3"
+  )}
+>
+  {/* CategoryIcon with size prop */}
+  <CategoryIcon 
+    iconName={category?.icon || 'Circle'} 
+    colorClass={category?.color || 'category-other'}
+    size={compact ? "sm" : "default"}
+  />
+  
+  <div className="flex-1 min-w-0">
+    <p className={cn(
+      "truncate",
+      compact ? "text-sm font-medium" : "font-semibold"
+    )}>
+      {transaction.title || transaction.vendor || category?.name || 'Transaction'}
+    </p>
+    <p className={cn(
+      "text-muted-foreground truncate",
+      compact ? "text-xs" : "text-sm"
+    )}>
+      {/* subtitle content */}
+    </p>
+  </div>
+  
+  <p className={cn(
+    "font-bold text-right whitespace-nowrap",
+    compact ? "text-sm" : "",
+    isExpense ? "text-destructive" : "text-success"
+  )}>
+    {isExpense ? '-' : '+'}{formatCurrency(transaction.amount)}
+  </p>
+</div>
+```
 
 ---
 
-## How we’ll verify the fix (mobile-first checklist)
-1) Open Projects → open a project detail drawer with many transactions.
-2) Confirm:
-   - You can scroll all the way down to the last expense/income entry.
-   - No cards/rows are cut off on the right edge.
-   - Vendor Payments expand and the nested list is scrollable.
-3) Test swipe-to-delete on a TransactionItem inside the drawer (ensure it still works).
-4) Edit a transaction from within the drawer and close the edit sheet—confirm the parent project drawer stays open (no accidental close).
+### File 2: `src/components/CategoryIcon.tsx`
+
+**Add size variant support:**
+
+```tsx
+interface CategoryIconProps {
+  iconName: string;
+  colorClass: string;
+  size?: "sm" | "default";  // NEW PROP
+}
+
+export const CategoryIcon = ({ iconName, colorClass, size = "default" }: CategoryIconProps) => {
+  const IconComponent = getIconComponent(iconName);
+  
+  const sizeClasses = size === "sm" 
+    ? "w-8 h-8"   // 32px
+    : "w-10 h-10"; // 40px
+    
+  const iconSize = size === "sm" ? 16 : 20;
+  
+  return (
+    <div className={cn(sizeClasses, "rounded-xl flex items-center justify-center", colorClass)}>
+      <IconComponent size={iconSize} className="text-white" />
+    </div>
+  );
+};
+```
 
 ---
 
-## Files involved
-- `src/components/ProjectDetailSheet.tsx` (main fix)
-- (No backend/database changes needed)
+### File 3: `src/components/ProjectDetailSheet.tsx`
+
+**Apply compact styling throughout:**
+
+**1. Reduce section spacing** (line 162):
+```tsx
+// Before
+<div className="p-4 space-y-6 w-full min-w-0">
+
+// After
+<div className="p-3 space-y-4 w-full min-w-0">
+```
+
+**2. Compact financial summary grid** (lines 164-189):
+```tsx
+// Before
+<div className="grid grid-cols-2 gap-3 w-full">
+  <div className="bg-muted/50 rounded-xl p-3 overflow-hidden">
+    <p className="text-xs text-muted-foreground">Budget</p>
+    <p className="text-lg font-bold truncate">₹{project.budgetLimit.toLocaleString()}</p>
+  </div>
+  ...
+
+// After
+<div className="grid grid-cols-2 gap-2 w-full">
+  <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
+    <p className="text-[10px] text-muted-foreground">Budget</p>
+    <p className="text-base font-bold truncate">₹{project.budgetLimit.toLocaleString()}</p>
+  </div>
+  ...
+```
+
+**3. Smaller section headers** (lines 234-236, 255-257):
+```tsx
+// Before
+<h3 className="font-semibold mb-3 flex items-center gap-2">
+  <ArrowDown size={18} className="text-green-500" />
+  Income Entries ({incomeTransactions.length})
+</h3>
+
+// After
+<h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+  <ArrowDown size={14} className="text-green-500" />
+  Income Entries ({incomeTransactions.length})
+</h3>
+```
+
+**4. Reduce transaction list spacing** (lines 238, 259):
+```tsx
+// Before
+<div className="space-y-2 w-full overflow-hidden">
+
+// After
+<div className="space-y-1.5 w-full overflow-hidden">
+```
+
+**5. Pass compact prop to TransactionItem** (lines 240-246, 260-266):
+```tsx
+<TransactionItem
+  key={transaction.id}
+  transaction={transaction}
+  category={getCategoryById(transaction.categoryId)}
+  userId={userId}
+  onEditSheetChange={onEditSheetChange}
+  compact  // NEW PROP
+/>
+```
+
+**6. Compact vendor breakdown rows** (lines 291-315):
+```tsx
+// Before
+<motion.div className="w-full bg-muted/50 rounded-xl p-3 cursor-pointer...">
+
+// After  
+<motion.div className="w-full bg-muted/50 rounded-lg p-2 cursor-pointer...">
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+      <ChevronDown size={14} className="..." />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-left truncate">{item.vendor}</p>
+        <p className="text-[10px] text-muted-foreground text-left">...</p>
+      </div>
+    </div>
+    <p className="text-sm font-semibold shrink-0">₹{item.amount.toLocaleString()}</p>
+  </div>
+</motion.div>
+```
+
+**7. Compact notes section** (lines 223-228):
+```tsx
+// Before
+<Textarea className="min-h-[100px] resize-none" />
+
+// After
+<Textarea className="min-h-[80px] resize-none text-sm" />
+```
 
 ---
 
-## Expected result
-- On mobile, the project detail view becomes reliably scrollable, and the “missing entries” issue disappears because you can actually reach all entries.
-- The right-side clipping is removed, so cards and transaction rows render fully within the drawer.
+## Visual Comparison
+
+```
+BEFORE (standard sizing):              AFTER (compact mode):
++--------------------------------+     +--------------------------------+
+| [ICON] Sajjan Singh Dholi      |     | [sm] Sajjan Singh Dholi        |
+|        Vendor Payment • 2:18   |     |      Vendor Payment • 2:18 -₹11k
+|                      -₹11,000  |     +--------------------------------+
++--------------------------------+     | [sm] Pardeep Safa Milni        |
+| [ICON] Pardeep Safa Milni      |     |      Vendor Payment • 2:14 -₹38k
+|        Vendor Payment • 2:14   |     +--------------------------------+
+|                      -₹38,000  |     | [sm] Bouncers Balance          |
++--------------------------------+     |      Vendor Payment • 2:16 -₹22k
+| [ICON] Bouncers Balance        |     +--------------------------------+
+|        Vendor Payment • 2:16   |     | [sm] Anchor Pratham 2nd        |
+|                      -₹22,000  |     |      RJ Deeksha • 6:09   -₹20k |
++--------------------------------+     +--------------------------------+
+
+~3 items visible                       ~5-6 items visible
+```
+
+---
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/TransactionItem.tsx` | Add `compact` prop with smaller sizing |
+| `src/components/CategoryIcon.tsx` | Add `size` prop for sm/default variants |
+| `src/components/ProjectDetailSheet.tsx` | Apply compact styling, pass `compact` to TransactionItem |
+
+---
+
+## Expected Result
+
+After these changes:
+- **40-50% more transactions visible** per screen on mobile
+- Cleaner, more information-dense layout
+- No horizontal clipping
+- Content remains readable and touch-friendly
+- Main dashboard transaction list remains unchanged (compact is opt-in)
+
