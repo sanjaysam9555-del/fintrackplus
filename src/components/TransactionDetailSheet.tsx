@@ -59,7 +59,7 @@ export const TransactionDetailSheet = ({
   return (
     <>
       <AnimatePresence>
-        {isOpen && (
+        {isOpen && !isEditing && (
           <>
             {/* Backdrop */}
             <motion.div
