@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Repeat, Users } from "lucide-react";
+import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Repeat, Users, SplitSquareHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -55,6 +55,8 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [duplicates, setDuplicates] = useState<ReturnType<typeof checkForDuplicates>>([]);
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>();
   const [isGst, setIsGst] = useState(false);
+  const [isPartPayment, setIsPartPayment] = useState(false);
+  const [totalExpectedAmount, setTotalExpectedAmount] = useState("");
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
@@ -131,11 +133,13 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       recurringFrequency: isRecurring ? recurringFrequency : undefined,
       receiptUrl: receiptUrl || undefined,
       isGst: isGst || undefined,
+      isPartPayment: isPartPayment || undefined,
+      totalExpectedAmount: isPartPayment && totalExpectedAmount ? parseFloat(totalExpectedAmount) : undefined,
     }, userId);
     
     // Show success confirmation
     toast.success(type === 'expense' ? 'Expense Added' : 'Income Added', {
-      description: `₹${parseFloat(amount).toLocaleString()} ${title ? `- ${title}` : ''}`,
+      description: `₹${parseFloat(amount).toLocaleString()} ${title ? `- ${title}` : ''}${isPartPayment ? ' (Part Payment)' : ''}`,
       duration: 3000,
     });
     
@@ -153,8 +157,10 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setDuplicates([]);
     setReceiptUrl(undefined);
     setIsGst(false);
+    setIsPartPayment(false);
+    setTotalExpectedAmount("");
     onClose();
-  }, [type, amount, title, vendor, categoryId, projectId, partnerId, paymentMethod, date, notes, isRecurring, recurringFrequency, receiptUrl, isGst, userId, addTransaction, onClose]);
+  }, [type, amount, title, vendor, categoryId, projectId, partnerId, paymentMethod, date, notes, isRecurring, recurringFrequency, receiptUrl, isGst, isPartPayment, totalExpectedAmount, userId, addTransaction, onClose]);
   
   const handleSubmit = () => {
     if (!amount || !categoryId) return;
@@ -810,6 +816,72 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                 
                 {/* GST Toggle */}
                 <GstToggle value={isGst} onChange={setIsGst} />
+                
+                {/* Part Payment Toggle */}
+                <div>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Part Payment <span className="text-muted-foreground/60">(optional)</span>
+                  </Label>
+                  <button
+                    onClick={() => setIsPartPayment(!isPartPayment)}
+                    className={cn(
+                      "w-full mt-1 p-3 rounded-xl flex items-center justify-between min-h-[48px] border-2 transition-colors",
+                      isPartPayment 
+                        ? "border-amber-500 bg-amber-500/5" 
+                        : "border-transparent bg-muted"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <SplitSquareHorizontal size={16} className={isPartPayment ? "text-amber-500" : "text-muted-foreground"} />
+                      <span className={cn("text-sm font-medium", isPartPayment ? "text-foreground" : "text-muted-foreground")}>
+                        {isPartPayment ? "This is a part payment" : "Mark as part payment"}
+                      </span>
+                    </div>
+                    <div className={cn(
+                      "w-10 h-6 rounded-full transition-colors flex items-center px-0.5",
+                      isPartPayment ? "bg-amber-500" : "bg-muted-foreground/30"
+                    )}>
+                      <div className={cn(
+                        "w-5 h-5 rounded-full bg-white shadow transition-transform",
+                        isPartPayment ? "translate-x-4" : "translate-x-0"
+                      )} />
+                    </div>
+                  </button>
+                  
+                  {/* Total Expected Amount */}
+                  {isPartPayment && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-3 space-y-2"
+                    >
+                      <Label className="text-xs text-muted-foreground">Total Expected Amount</Label>
+                      <div className="flex items-center gap-2 border-b-2 border-amber-500/50 pb-2">
+                        <span className="text-lg font-bold text-muted-foreground">{CURRENCY_SYMBOL}</span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={totalExpectedAmount}
+                          onChange={(e) => setTotalExpectedAmount(e.target.value)}
+                          placeholder="0"
+                          className="flex-1 text-xl font-bold bg-transparent outline-none"
+                        />
+                      </div>
+                      {totalExpectedAmount && amount && (
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground">Remaining:</span>
+                          <span className={cn(
+                            "font-semibold",
+                            parseFloat(totalExpectedAmount) - parseFloat(amount) > 0 ? "text-amber-500" : "text-success"
+                          )}>
+                            {CURRENCY_SYMBOL}{Math.max(0, parseFloat(totalExpectedAmount || '0') - parseFloat(amount || '0')).toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
                 
                 {/* Submit Button */}
                 <Button

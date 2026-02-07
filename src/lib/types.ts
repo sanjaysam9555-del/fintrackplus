@@ -48,6 +48,10 @@ export interface Transaction {
   recurringFrequency?: 'daily' | 'weekly' | 'monthly' | 'yearly';
   receiptUrl?: string;
   isGst?: boolean;
+  // Part payment / Installment tracking
+  isPartPayment?: boolean;
+  totalExpectedAmount?: number;
+  linkedTransactionId?: string;
 }
 
 export interface FinanceState {
