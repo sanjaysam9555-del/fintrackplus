@@ -931,6 +931,7 @@ export const useFinanceStore = create<FinanceStore>()(
       
       updateVendor: async (id, updates, userId) => {
         const vendor = get().vendors.find(v => v.id === id);
+        const oldVendorName = vendor?.name;
         
         // Build change details
         const changes: NotificationChange[] = [];
@@ -943,10 +944,19 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        // Check if name is changing - we'll need to update transactions too
+        const nameChanged = updates.name && oldVendorName && updates.name !== oldVendorName;
+        
         set((state) => ({
           vendors: state.vendors.map((v) => 
             v.id === id ? { ...v, ...updates } : v
-          )
+          ),
+          // Also update transactions that reference the old vendor name
+          transactions: nameChanged
+            ? state.transactions.map((t) =>
+                t.vendor === oldVendorName ? { ...t, vendor: updates.name! } : t
+              )
+            : state.transactions
         }));
         
         if (userId) {
@@ -957,6 +967,21 @@ export const useFinanceStore = create<FinanceStore>()(
             data: updates,
             userId,
           });
+          
+          // If name changed, also queue transaction updates
+          if (nameChanged) {
+            const affectedTransactions = get().transactions.filter(t => t.vendor === updates.name);
+            for (const txn of affectedTransactions) {
+              addToSyncQueue({
+                type: 'update',
+                entity: 'transaction',
+                entityId: txn.id,
+                data: { vendor: updates.name },
+                userId,
+              });
+            }
+          }
+          
           get().updatePendingCount();
           
           if (navigator.onLine) {

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
+import type { Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,7 +34,7 @@ const VENDOR_ICONS = [
 ];
 
 export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
-  const { vendors, addVendor, updateVendor, deleteVendor, transactions } = useFinanceStore();
+  const { vendors, addVendor, updateVendor, deleteVendor, transactions, updateTransaction } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -95,7 +96,22 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
     }
     
     if (id.startsWith('legacy-')) {
-      addVendor(name.trim(), selectedColor, selectedIcon, userId);
+      // For legacy vendors, we need to:
+      // 1. Create a new vendor entry
+      // 2. Update all transactions with the old name to use the new name
+      const oldName = originalName;
+      const newName = name.trim();
+      
+      // Add the new vendor
+      addVendor(newName, selectedColor, selectedIcon, userId);
+      
+      // Update transactions if name changed
+      if (oldName && newName !== oldName) {
+        const transactionsToUpdate = transactions.filter((t: Transaction) => t.vendor === oldName);
+        transactionsToUpdate.forEach((t: Transaction) => {
+          updateTransaction(t.id, { vendor: newName }, userId);
+        });
+      }
     } else {
       updateVendor(id, { name: name.trim(), color: selectedColor, icon: selectedIcon }, userId);
     }
