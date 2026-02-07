@@ -11,7 +11,6 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { TransactionItem } from "./TransactionItem";
 import {
@@ -130,9 +129,9 @@ export const ProjectDetailSheet = ({
   const isHealthy = actualMargin >= expectedMargin;
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="max-h-[85vh] overflow-hidden">
-        <DrawerHeader className="border-b border-border pb-4">
+    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} shouldScaleBackground={false}>
+      <DrawerContent className="max-h-[85vh]">
+        <DrawerHeader className="border-b border-border pb-4 shrink-0">
           <div className="flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center"
@@ -155,8 +154,12 @@ export const ProjectDetailSheet = ({
           </div>
         </DrawerHeader>
 
-        <ScrollArea className="flex-1 overflow-auto w-full">
-          <div className="p-4 space-y-6 w-full max-w-full overflow-x-hidden">
+        <div 
+          className="flex-1 min-h-0 overflow-y-auto w-full"
+          data-vaul-no-drag
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
+          <div className="p-4 space-y-6 w-full min-w-0">
             {/* Financial Summary - 2x2 Grid */}
             <div className="grid grid-cols-2 gap-3 w-full">
               <div className="bg-muted/50 rounded-xl p-3 overflow-hidden">
@@ -292,27 +295,27 @@ export const ProjectDetailSheet = ({
                             className="w-full bg-muted/50 rounded-xl p-3 cursor-pointer hover:bg-muted/70 transition-colors"
                           >
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                                 <ChevronDown 
                                   size={16} 
                                   className={cn(
-                                    "text-muted-foreground transition-transform duration-200",
+                                    "text-muted-foreground transition-transform duration-200 shrink-0",
                                     isExpanded && "rotate-180"
                                   )}
                                 />
-                                <div>
-                                  <p className="font-medium text-left">{item.vendor}</p>
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium text-left truncate">{item.vendor}</p>
                                   <p className="text-xs text-muted-foreground text-left">
                                     {item.count} payment{item.count !== 1 ? 's' : ''} • Last: {format(new Date(item.lastDate), 'MMM d')}
                                   </p>
                                 </div>
                               </div>
-                              <p className="font-semibold">₹{item.amount.toLocaleString()}</p>
+                              <p className="font-semibold shrink-0">₹{item.amount.toLocaleString()}</p>
                             </div>
                           </motion.div>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="mt-2 ml-2 space-y-2 border-l-2 border-muted pl-2 overflow-hidden">
+                          <div className="mt-2 ml-2 space-y-2 border-l-2 border-muted pl-2 min-w-0">
                             {vendorTxns.map((txn) => (
                               <TransactionItem
                                 key={txn.id}
@@ -331,14 +334,14 @@ export const ProjectDetailSheet = ({
               </div>
             )}
 
-            {transactions.length === 0 && (
+            {sortedTransactions.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Receipt size={40} className="mx-auto mb-2 opacity-50" />
                 <p>No transactions yet for this project</p>
               </div>
             )}
           </div>
-        </ScrollArea>
+        </div>
       </DrawerContent>
     </Drawer>
   );
