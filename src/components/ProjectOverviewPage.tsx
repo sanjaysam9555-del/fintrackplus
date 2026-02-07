@@ -121,7 +121,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
   return (
     <div className="min-h-screen bg-background pb-40 md:pb-8 md:px-6">
       {/* Enhanced Header */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border">
+      <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border safe-top">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <FolderKanban size={20} className="text-primary" />
