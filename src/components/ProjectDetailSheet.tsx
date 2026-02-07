@@ -159,30 +159,30 @@ export const ProjectDetailSheet = ({
           data-vaul-no-drag
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          <div className="p-4 space-y-6 w-full min-w-0">
+          <div className="p-3 space-y-4 w-full min-w-0">
             {/* Financial Summary - 2x2 Grid */}
-            <div className="grid grid-cols-2 gap-3 w-full">
-              <div className="bg-muted/50 rounded-xl p-3 overflow-hidden">
-                <p className="text-xs text-muted-foreground">Budget</p>
-                <p className="text-lg font-bold truncate">₹{project.budgetLimit.toLocaleString()}</p>
+            <div className="grid grid-cols-2 gap-2 w-full">
+              <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
+                <p className="text-[10px] text-muted-foreground">Budget</p>
+                <p className="text-base font-bold truncate">₹{project.budgetLimit.toLocaleString()}</p>
               </div>
-              <div className="bg-green-500/10 rounded-xl p-3 overflow-hidden">
-                <p className="text-xs text-muted-foreground">Income</p>
+              <div className="bg-green-500/10 rounded-lg p-2 overflow-hidden">
+                <p className="text-[10px] text-muted-foreground">Income</p>
                 <div className="flex items-center gap-1 min-w-0">
-                  <ArrowDown size={14} className="text-green-500 shrink-0" />
-                  <p className="text-lg font-bold text-green-500 truncate">₹{income.toLocaleString()}</p>
+                  <ArrowDown size={12} className="text-green-500 shrink-0" />
+                  <p className="text-base font-bold text-green-500 truncate">₹{income.toLocaleString()}</p>
                 </div>
               </div>
-              <div className="bg-red-500/10 rounded-xl p-3 overflow-hidden">
-                <p className="text-xs text-muted-foreground">Expenses</p>
+              <div className="bg-red-500/10 rounded-lg p-2 overflow-hidden">
+                <p className="text-[10px] text-muted-foreground">Expenses</p>
                 <div className="flex items-center gap-1 min-w-0">
-                  <ArrowUp size={14} className="text-red-500 shrink-0" />
-                  <p className="text-lg font-bold text-red-500 truncate">₹{spent.toLocaleString()}</p>
+                  <ArrowUp size={12} className="text-red-500 shrink-0" />
+                  <p className="text-base font-bold text-red-500 truncate">₹{spent.toLocaleString()}</p>
                 </div>
               </div>
-              <div className={cn("rounded-xl p-3 overflow-hidden", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-                <p className="text-xs text-muted-foreground">Net</p>
-                <p className={cn("text-lg font-bold truncate", net >= 0 ? "text-green-500" : "text-red-500")}>
+              <div className={cn("rounded-lg p-2 overflow-hidden", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
+                <p className="text-[10px] text-muted-foreground">Net</p>
+                <p className={cn("text-base font-bold truncate", net >= 0 ? "text-green-500" : "text-red-500")}>
                   {net >= 0 ? '+' : ''}₹{net.toLocaleString()}
                 </p>
               </div>
@@ -213,36 +213,37 @@ export const ProjectDetailSheet = ({
 
             {/* Project Notes */}
             <div>
-              <h3 className="font-semibold mb-3 flex items-center gap-2">
-                <StickyNote size={18} className="text-muted-foreground" />
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                <StickyNote size={14} className="text-muted-foreground" />
                 Project Notes
                 {isSavingNotes && (
-                  <Loader2 size={14} className="animate-spin text-muted-foreground" />
+                  <Loader2 size={12} className="animate-spin text-muted-foreground" />
                 )}
               </h3>
               <Textarea
                 placeholder="Add notes about this project..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="min-h-[100px] resize-none"
+                className="min-h-[80px] resize-none text-sm"
               />
             </div>
 
             {/* Income Entries */}
             {incomeTransactions.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <ArrowDown size={18} className="text-green-500" />
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <ArrowDown size={14} className="text-green-500" />
                   Income Entries ({incomeTransactions.length})
                 </h3>
-                <div className="space-y-2 w-full overflow-hidden">
-                {incomeTransactions.map((transaction) => (
+                <div className="space-y-1.5 w-full overflow-hidden">
+                  {incomeTransactions.map((transaction) => (
                     <TransactionItem
                       key={transaction.id}
                       transaction={transaction}
                       category={getCategoryById(transaction.categoryId)}
                       userId={userId}
                       onEditSheetChange={onEditSheetChange}
+                      compact
                     />
                   ))}
                 </div>
@@ -252,18 +253,19 @@ export const ProjectDetailSheet = ({
             {/* Expense Entries */}
             {expenseTransactions.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <ArrowUp size={18} className="text-red-500" />
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <ArrowUp size={14} className="text-red-500" />
                   Expense Entries ({expenseTransactions.length})
                 </h3>
-                <div className="space-y-2 w-full overflow-hidden">
-                {expenseTransactions.map((transaction) => (
+                <div className="space-y-1.5 w-full overflow-hidden">
+                  {expenseTransactions.map((transaction) => (
                     <TransactionItem
                       key={transaction.id}
                       transaction={transaction}
                       category={getCategoryById(transaction.categoryId)}
                       userId={userId}
                       onEditSheetChange={onEditSheetChange}
+                      compact
                     />
                   ))}
                 </div>
@@ -273,11 +275,11 @@ export const ProjectDetailSheet = ({
             {/* Vendor Breakdown */}
             {vendorBreakdown.length > 0 && (
               <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Store size={18} className="text-muted-foreground" />
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+                  <Store size={14} className="text-muted-foreground" />
                   Vendor Payments
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {vendorBreakdown.map((item) => {
                     const isExpanded = expandedVendors.has(item.vendor);
                     const vendorTxns = getVendorTransactions(item.vendor);
@@ -292,30 +294,30 @@ export const ProjectDetailSheet = ({
                           <motion.div
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
-                            className="w-full bg-muted/50 rounded-xl p-3 cursor-pointer hover:bg-muted/70 transition-colors"
+                            className="w-full bg-muted/50 rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors"
                           >
                             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 min-w-0 flex-1">
                                 <ChevronDown 
-                                  size={16} 
+                                  size={14} 
                                   className={cn(
                                     "text-muted-foreground transition-transform duration-200 shrink-0",
                                     isExpanded && "rotate-180"
                                   )}
                                 />
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-medium text-left truncate">{item.vendor}</p>
-                                  <p className="text-xs text-muted-foreground text-left">
+                                  <p className="text-sm font-medium text-left truncate">{item.vendor}</p>
+                                  <p className="text-[10px] text-muted-foreground text-left">
                                     {item.count} payment{item.count !== 1 ? 's' : ''} • Last: {format(new Date(item.lastDate), 'MMM d')}
                                   </p>
                                 </div>
                               </div>
-                              <p className="font-semibold shrink-0">₹{item.amount.toLocaleString()}</p>
+                              <p className="text-sm font-semibold shrink-0">₹{item.amount.toLocaleString()}</p>
                             </div>
                           </motion.div>
                         </CollapsibleTrigger>
                         <CollapsibleContent>
-                          <div className="mt-2 ml-2 space-y-2 border-l-2 border-muted pl-2 min-w-0">
+                          <div className="mt-1.5 ml-2 space-y-1.5 border-l-2 border-muted pl-2 min-w-0">
                             {vendorTxns.map((txn) => (
                               <TransactionItem
                                 key={txn.id}
@@ -323,6 +325,7 @@ export const ProjectDetailSheet = ({
                                 category={getCategoryById(txn.categoryId)}
                                 userId={userId}
                                 onEditSheetChange={onEditSheetChange}
+                                compact
                               />
                             ))}
                           </div>

@@ -18,9 +18,10 @@ interface TransactionItemProps {
   onClick?: () => void;
   userId?: string;
   onEditSheetChange?: (isOpen: boolean) => void;
+  compact?: boolean;
 }
 
-export const TransactionItem = ({ transaction, category, userId, onEditSheetChange }: TransactionItemProps) => {
+export const TransactionItem = ({ transaction, category, userId, onEditSheetChange, compact = false }: TransactionItemProps) => {
   const { deleteTransaction, addTransaction, projects, partners } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
   
@@ -121,20 +122,30 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
           {/* Main Row */}
           <div
             onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-3 p-3 cursor-pointer hover:bg-muted/30 transition-colors"
+            className={cn(
+              "flex items-center cursor-pointer hover:bg-muted/30 transition-colors",
+              compact ? "gap-2 p-2" : "gap-3 p-3"
+            )}
           >
             <div className="flex-shrink-0">
               <CategoryIcon 
                 iconName={category?.icon || 'Circle'} 
-                colorClass={category?.color || 'category-other'} 
+                colorClass={category?.color || 'category-other'}
+                size={compact ? "sm" : "md"}
               />
             </div>
             
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-foreground truncate">
+              <p className={cn(
+                "text-foreground truncate",
+                compact ? "text-sm font-medium" : "font-semibold"
+              )}>
                 {transaction.title || transaction.vendor || category?.name || 'Transaction'}
               </p>
-              <p className="text-sm text-muted-foreground truncate">
+              <p className={cn(
+                "text-muted-foreground truncate",
+                compact ? "text-xs" : "text-sm"
+              )}>
                 {(() => {
                   const parts: string[] = [];
                   
@@ -191,12 +202,13 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
               </div>
               <p className={cn(
                 "font-bold text-right whitespace-nowrap",
+                compact ? "text-sm" : "",
                 isExpense ? "text-destructive" : "text-success"
               )}>
                 {isExpense ? '-' : '+'}{formatCurrency(transaction.amount)}
               </p>
               <ChevronDown 
-                size={16} 
+                size={compact ? 14 : 16} 
                 className={cn(
                   "text-muted-foreground transition-transform flex-shrink-0",
                   isExpanded && "rotate-180"
