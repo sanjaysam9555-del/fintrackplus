@@ -1,181 +1,89 @@
 
+## What I’m seeing from your screenshot
+In the Project detail drawer on mobile, the content area is:
+1) getting clipped on the right (cards and transaction rows look “cut”), and  
+2) not reliably scrollable to reach all entries (so it feels like entries are “missing”).
 
-# Fix Missing Entries in Project Details & Vendor Breakdown
-
-## Problem Summary
-
-When viewing a project's details or expanding a vendor's payments, some entries are missing even though they should be displayed. There are two core issues:
-
-### Issue 1: Hardcoded Display Limit of 10 Entries
-
-The `ProjectDetailSheet` component limits visible transactions to **10 entries maximum** for both Income and Expense sections:
-
-```tsx
-// Lines 230 and 256 in ProjectDetailSheet.tsx
-{incomeTransactions.slice(0, 10).map((transaction) => ...)}
-{expenseTransactions.slice(0, 10).map((transaction) => ...)}
-```
-
-While the header shows the correct count (e.g., "Income Entries (15)"), only the first 10 appear with a "more entries" message below. This is confusing because users expect to see all entries.
-
-### Issue 2: Transactions Not Reactively Updating
-
-When the project detail sheet opens, the transactions are captured at that moment. If cloud sync happens afterward or there's network latency, newly synced transactions won't appear until the sheet is reopened.
+This strongly points to a **mobile drawer + nested scroll container issue** (Vaul Drawer + Radix ScrollArea + `overflow-hidden`), which can behave differently on iOS/Android compared to desktop.
 
 ---
 
-## Solution
-
-### Part 1: Remove the 10-Entry Limit
-
-Replace the `.slice(0, 10)` limits with full transaction display. For better UX with large transaction lists, implement collapsible sections that show all entries when expanded.
-
-### Part 2: Use Store Directly for Real-Time Data
-
-Instead of passing pre-filtered transactions as props, have the `ProjectDetailSheet` fetch transactions directly from the store using the `projectId`. This ensures the data is always current.
+## Goal
+Make the Project detail drawer on mobile:
+- fully scrollable (so all transactions are reachable),
+- not clipped on the right (no horizontal cut-off),
+- consistent with other drawers that already behave well on mobile (e.g., PartnerDetailSheet).
 
 ---
 
-## Technical Changes
+## Changes I will implement
 
-### File: `src/components/ProjectDetailSheet.tsx`
+### 1) Replace Radix `ScrollArea` with a native scroll container for this drawer (mobile-safe)
+**File:** `src/components/ProjectDetailSheet.tsx`
 
-**1. Import transactions directly from store (line 53)**
+- Remove the `ScrollArea` import and replace:
+  ```tsx
+  <ScrollArea className="flex-1 overflow-auto w-full"> ... </ScrollArea>
+  ```
+  with a native div scroller:
+  - `className="flex-1 min-h-0 overflow-y-auto w-full"`
+  - `data-vaul-no-drag` to prevent the drawer’s drag gesture from stealing scroll
+  - `style={{ WebkitOverflowScrolling: "touch" }}` for smooth iOS scrolling
+- Move padding onto the scroller (or keep a single inner wrapper), but avoid multiple nested “width/overflow” wrappers that can cause clipping.
 
-```tsx
-// Before
-const { getCategoryById, updateProject } = useFinanceStore();
-
-// After
-const { getCategoryById, updateProject, transactions: allTransactions } = useFinanceStore();
-```
-
-**2. Filter transactions inside the component (new lines after imports)**
-
-```tsx
-// Get transactions for this project reactively from the store
-const projectTransactions = useMemo(() => {
-  if (!project) return [];
-  return allTransactions.filter(t => t.projectId === project.id);
-}, [allTransactions, project?.id]);
-```
-
-**3. Update useMemo to use projectTransactions instead of props (lines 59-68)**
-
-```tsx
-// Before
-const { sortedTransactions, incomeTransactions, expenseTransactions } = useMemo(() => {
-  const sorted = [...transactions].sort(...)
-  ...
-}, [transactions]);
-
-// After
-const { sortedTransactions, incomeTransactions, expenseTransactions } = useMemo(() => {
-  const sorted = [...projectTransactions].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
-  return {
-    sortedTransactions: sorted,
-    incomeTransactions: sorted.filter(t => t.type === 'income'),
-    expenseTransactions: sorted.filter(t => t.type === 'expense'),
-  };
-}, [projectTransactions]);
-```
-
-**4. Update getVendorTransactions to use projectTransactions (lines 82-86)**
-
-```tsx
-// Before
-const getVendorTransactions = useCallback((vendorName: string) => {
-  return expenseTransactions.filter(t => t.vendor === vendorName)
-  ...
-}, [expenseTransactions]);
-
-// After - unchanged logic, just uses updated expenseTransactions
-```
-
-**5. Remove the .slice(0, 10) limit from Income section (lines 229-244)**
-
-```tsx
-// Before
-{incomeTransactions.slice(0, 10).map((transaction) => (
-  <TransactionItem ... />
-))}
-{incomeTransactions.length > 10 && (
-  <p className="text-center text-sm text-muted-foreground py-2">
-    +{incomeTransactions.length - 10} more income entries
-  </p>
-)}
-
-// After - show all entries
-{incomeTransactions.map((transaction) => (
-  <TransactionItem
-    key={transaction.id}
-    transaction={transaction}
-    category={getCategoryById(transaction.categoryId)}
-    userId={userId}
-    onEditSheetChange={onEditSheetChange}
-  />
-))}
-```
-
-**6. Remove the .slice(0, 10) limit from Expense section (lines 255-269)**
-
-```tsx
-// Before
-{expenseTransactions.slice(0, 10).map((transaction) => ...)}
-{expenseTransactions.length > 10 && (...)}
-
-// After - show all entries
-{expenseTransactions.map((transaction) => (
-  <TransactionItem
-    key={transaction.id}
-    transaction={transaction}
-    category={getCategoryById(transaction.categoryId)}
-    userId={userId}
-    onEditSheetChange={onEditSheetChange}
-  />
-))}
-```
+Why: This matches the working pattern in `PartnerDetailSheet.tsx` (which uses a plain `div` with `overflow-y-auto`) and is the most reliable approach on mobile Safari.
 
 ---
 
-### File: `src/components/ProjectOverviewPage.tsx`
+### 2) Remove/adjust the horizontal clipping that’s cutting off the right side
+**File:** `src/components/ProjectDetailSheet.tsx`
 
-**7. Simplify the props passed to ProjectDetailSheet (lines 365-375)**
+- Remove or narrow down the use of `overflow-x-hidden` / `overflow-hidden` that can clip the card edges on mobile.
+- Add `min-w-0` where needed to guarantee children shrink instead of overflowing (especially inside flex rows and grid items). Concretely:
+  - Ensure the main scroll content wrapper uses `min-w-0 w-full`.
+  - Add `min-w-0` to the left-side container inside the Vendor rows (so long vendor names don’t force overflow).
+  - Keep `truncate` where appropriate, but ensure the *container* can shrink.
 
-The `transactions` prop can now be removed since the sheet fetches data internally, but we'll keep it for backward compatibility and as a fallback.
+Outcome: content stays within the drawer width instead of being clipped by a parent overflow rule.
 
+---
+
+### 3) Fix the empty-state check (minor correctness fix)
+Right now the “No transactions yet for this project” section checks `transactions.length` (the prop), but the sheet now uses `projectTransactions` (from the store) to render.
+**File:** `src/components/ProjectDetailSheet.tsx`
+
+- Change the empty-state condition to use `projectTransactions.length === 0` (or `sortedTransactions.length === 0`) so it’s consistent with what’s actually displayed.
+
+---
+
+### 4) Fallback (only if needed): disable background scaling for this drawer on mobile
+If iOS still shows strange clipping/positioning after the scroll fix, I’ll apply:
 ```tsx
-// No changes required here - the sheet will prefer its internal data
-// but still accept the prop for consistency
+<Drawer shouldScaleBackground={false} ...>
 ```
+**File:** `src/components/ProjectDetailSheet.tsx`
+
+Why: Vaul’s background scaling can introduce transformed ancestors that sometimes interact poorly with fixed-position overlays on iOS.
 
 ---
 
-## Summary of Changes
-
-| File | Change | Purpose |
-|------|--------|---------|
-| `ProjectDetailSheet.tsx` | Import `transactions` from store | Get real-time data |
-| `ProjectDetailSheet.tsx` | Filter transactions by `project.id` in useMemo | React to store updates |
-| `ProjectDetailSheet.tsx` | Remove `.slice(0, 10)` from Income entries | Show all income entries |
-| `ProjectDetailSheet.tsx` | Remove `.slice(0, 10)` from Expense entries | Show all expense entries |
+## How we’ll verify the fix (mobile-first checklist)
+1) Open Projects → open a project detail drawer with many transactions.
+2) Confirm:
+   - You can scroll all the way down to the last expense/income entry.
+   - No cards/rows are cut off on the right edge.
+   - Vendor Payments expand and the nested list is scrollable.
+3) Test swipe-to-delete on a TransactionItem inside the drawer (ensure it still works).
+4) Edit a transaction from within the drawer and close the edit sheet—confirm the parent project drawer stays open (no accidental close).
 
 ---
 
-## Before & After
+## Files involved
+- `src/components/ProjectDetailSheet.tsx` (main fix)
+- (No backend/database changes needed)
 
-```
-BEFORE:                              AFTER:
-+----------------------------+       +----------------------------+
-| Income Entries (15)        |       | Income Entries (15)        |
-| - Entry 1                  |       | - Entry 1                  |
-| - Entry 2                  |       | - Entry 2                  |
-| - ...                      |       | - Entry 3                  |
-| - Entry 10                 |       | - ...                      |
-| +5 more income entries     |       | - Entry 15                 |
-+----------------------------+       +----------------------------+
-                                     (All 15 entries visible)
-```
+---
 
+## Expected result
+- On mobile, the project detail view becomes reliably scrollable, and the “missing entries” issue disappears because you can actually reach all entries.
+- The right-side clipping is removed, so cards and transaction rows render fully within the drawer.
