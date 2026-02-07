@@ -1,13 +1,18 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 interface ProjectOverviewPageProps {
   userId?: string;
   onEditSheetChange?: (isOpen: boolean) => void;
@@ -51,11 +56,25 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
   const archivedProjects = projects.filter(p => p.archived);
   const displayedProjects = showArchived ? archivedProjects : activeProjects;
 
-  // Calculate totals (only for active projects)
-  const totalBudget = activeProjects.reduce((sum, p) => sum + p.budgetLimit, 0);
-  const totalMargin = activeProjects.reduce((sum, p) => sum + (p.margin || 0), 0);
-  const totalSpent = activeProjects.reduce((sum, p) => sum + getProjectSpending(p.id), 0);
+  // Calculate totals based on selected tab
+  const relevantProjects = showArchived ? archivedProjects : activeProjects;
+  const totalBudget = relevantProjects.reduce((sum, p) => sum + p.budgetLimit, 0);
+  const totalMargin = relevantProjects.reduce((sum, p) => sum + (p.margin || 0), 0);
+  const totalSpent = relevantProjects.reduce((sum, p) => sum + getProjectSpending(p.id), 0);
 
+  // Handle project duplication
+  const handleDuplicate = (project: Project) => {
+    const { addProject } = useFinanceStore.getState();
+    addProject({
+      name: `${project.name} (Copy)`,
+      description: project.description,
+      notes: project.notes,
+      budgetLimit: project.budgetLimit,
+      margin: project.margin || 0,
+      color: project.color,
+    }, userId);
+    toast.success(`Project "${project.name}" duplicated`);
+  };
   // Get ALL transactions for a project (not just expenses)
   const getProjectTransactions = (projectId: string) => {
     return transactions.filter(t => t.projectId === projectId);
@@ -117,7 +136,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
         <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 overflow-hidden">
           {/* Header */}
           <div className="px-4 pt-4 pb-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Portfolio Overview</p>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{showArchived ? 'Archived' : 'Active'} Portfolio</p>
           </div>
           {/* Stats Grid */}
           <div className="grid grid-cols-3 divide-x divide-primary/10">
@@ -326,32 +345,49 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                       </div>
                     </button>
 
-                    {/* Archive/Restore Button */}
-                    <div className="px-3 pb-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setArchiveProject(project);
-                        }}
-                        className={cn(
-                          "w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-lg transition-colors",
-                          project.archived 
-                            ? "bg-primary/10 text-primary hover:bg-primary/20" 
-                            : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-                        )}
-                      >
-                        {project.archived ? (
-                          <>
-                            <ArchiveRestore size={14} />
-                            Restore Project
-                          </>
-                        ) : (
-                          <>
-                            <Archive size={14} />
-                            Archive
-                          </>
-                        )}
-                      </button>
+                    {/* Three-Dot Menu */}
+                    <div className="px-3 pb-3 flex justify-end">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-2 rounded-lg hover:bg-muted transition-colors"
+                          >
+                            <MoreVertical size={18} className="text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDuplicate(project);
+                            }}
+                            className="gap-2"
+                          >
+                            <Copy size={14} />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setArchiveProject(project);
+                            }}
+                            className="gap-2"
+                          >
+                            {project.archived ? (
+                              <>
+                                <ArchiveRestore size={14} />
+                                Restore
+                              </>
+                            ) : (
+                              <>
+                                <Archive size={14} />
+                                Archive
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </motion.div>
                 );
