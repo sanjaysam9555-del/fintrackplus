@@ -229,6 +229,7 @@ export type Database = {
           notes: string | null
           partner_id: string | null
           payment_method: string
+          planned_installments: Json | null
           project_id: string | null
           receipt_url: string | null
           recurring_frequency: string | null
@@ -252,6 +253,7 @@ export type Database = {
           notes?: string | null
           partner_id?: string | null
           payment_method: string
+          planned_installments?: Json | null
           project_id?: string | null
           receipt_url?: string | null
           recurring_frequency?: string | null
@@ -275,6 +277,7 @@ export type Database = {
           notes?: string | null
           partner_id?: string | null
           payment_method?: string
+          planned_installments?: Json | null
           project_id?: string | null
           receipt_url?: string | null
           recurring_frequency?: string | null

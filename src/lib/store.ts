@@ -58,6 +58,7 @@ interface FinanceStore extends FinanceState {
   addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
+  confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string) => void;
   
   // Category actions
   addCategory: (category: Omit<Category, 'id'>, userId?: string) => void;
@@ -271,6 +272,9 @@ export const useFinanceStore = create<FinanceStore>()(
           is_part_payment: transaction.isPartPayment || false,
           total_expected_amount: transaction.totalExpectedAmount || null,
           linked_transaction_id: transaction.linkedTransactionId || null,
+          planned_installments: transaction.plannedInstallments 
+            ? JSON.stringify(transaction.plannedInstallments) 
+            : '[]',
         };
         
         // 1. Add to local state immediately (optimistic)
@@ -412,6 +416,11 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.isPartPayment !== undefined) dbUpdates.is_part_payment = updates.isPartPayment || false;
           if (updates.totalExpectedAmount !== undefined) dbUpdates.total_expected_amount = updates.totalExpectedAmount || null;
           if (updates.linkedTransactionId !== undefined) dbUpdates.linked_transaction_id = updates.linkedTransactionId || null;
+          if (updates.plannedInstallments !== undefined) {
+            dbUpdates.planned_installments = updates.plannedInstallments 
+              ? JSON.stringify(updates.plannedInstallments) 
+              : '[]';
+          }
           
           addToSyncQueue({
             type: 'update',
@@ -493,6 +502,105 @@ export const useFinanceStore = create<FinanceStore>()(
             entityId: id,
           });
         }
+      },
+      
+      // Confirm an installment payment - creates linked transaction and updates parent
+      confirmInstallment: async (parentTransactionId, installmentId, userId) => {
+        const parent = get().transactions.find(t => t.id === parentTransactionId);
+        if (!parent || !parent.plannedInstallments) return;
+        
+        const installment = parent.plannedInstallments.find(i => i.id === installmentId);
+        if (!installment || installment.status === 'received') return;
+        
+        const today = new Date();
+        const newTransactionId = uuidv4();
+        
+        // 1. Create a new linked transaction for this installment
+        const linkedTransaction = {
+          id: newTransactionId,
+          type: parent.type,
+          amount: installment.amount,
+          title: parent.title ? `${parent.title} - Installment` : `${parent.vendor} - Installment`,
+          vendor: parent.vendor,
+          categoryId: parent.categoryId,
+          projectId: parent.projectId,
+          partnerId: parent.partnerId,
+          paymentMethod: parent.paymentMethod,
+          date: today.toISOString().split('T')[0],
+          time: `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`,
+          notes: `Installment payment for ${parent.title || parent.vendor}`,
+          linkedTransactionId: parentTransactionId,
+        };
+        
+        // 2. Update parent's plannedInstallments to mark as received
+        const updatedInstallments = parent.plannedInstallments.map(i => 
+          i.id === installmentId 
+            ? { ...i, status: 'received' as const, receivedDate: today.toISOString().split('T')[0] }
+            : i
+        );
+        
+        // 3. Optimistically update local state
+        set((state) => ({
+          transactions: [
+            linkedTransaction,
+            ...state.transactions.map(t => 
+              t.id === parentTransactionId 
+                ? { ...t, plannedInstallments: updatedInstallments }
+                : t
+            )
+          ]
+        }));
+        
+        // Resolve userId
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+        
+        // 4. Queue both operations for sync
+        if (uid) {
+          // Queue the new linked transaction
+          addToSyncQueue({
+            type: 'insert',
+            entity: 'transaction',
+            entityId: newTransactionId,
+            data: {
+              type: linkedTransaction.type,
+              amount: linkedTransaction.amount,
+              title: linkedTransaction.title,
+              vendor: linkedTransaction.vendor,
+              category_id: linkedTransaction.categoryId || null,
+              project_id: linkedTransaction.projectId || null,
+              partner_id: linkedTransaction.partnerId || null,
+              payment_method: linkedTransaction.paymentMethod,
+              date: linkedTransaction.date,
+              time: linkedTransaction.time,
+              notes: linkedTransaction.notes,
+              linked_transaction_id: linkedTransaction.linkedTransactionId,
+            },
+            userId: uid,
+          });
+          
+          // Queue the parent update
+          addToSyncQueue({
+            type: 'update',
+            entity: 'transaction',
+            entityId: parentTransactionId,
+            data: {
+              planned_installments: JSON.stringify(updatedInstallments),
+            },
+            userId: uid,
+          });
+          
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+        
+        get().addNotification({
+          type: 'transaction',
+          title: 'Installment Confirmed',
+          message: `₹${installment.amount.toLocaleString('en-IN')} received for ${parent.title || parent.vendor}`,
+        });
       },
       
       // Category actions - Optimistic local-first with background sync

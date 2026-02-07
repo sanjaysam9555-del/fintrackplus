@@ -1,20 +1,22 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SplitSquareHorizontal, Plus, ChevronRight, TrendingUp, TrendingDown } from "lucide-react";
+import { SplitSquareHorizontal, Plus, ChevronRight, TrendingUp, TrendingDown, Check } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
-import { Transaction } from "@/lib/types";
+import { Transaction, PlannedInstallment } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PartPaymentTrackerProps {
   onAddNextPayment?: (parentTransaction: Transaction) => void;
 }
 
 export const PartPaymentTracker = ({ onAddNextPayment }: PartPaymentTrackerProps) => {
-  const { transactions, categories, projects, partners } = useFinanceStore();
+  const { transactions, categories, projects, partners, confirmInstallment } = useFinanceStore();
+  const { user } = useAuth();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Get all part payment transactions
@@ -160,6 +162,44 @@ export const PartPaymentTracker = ({ onAddNextPayment }: PartPaymentTrackerProps
                   className="overflow-hidden border-t border-border"
                 >
                   <div className="p-4 space-y-3 bg-muted/30">
+                    {/* Pending Installments */}
+                    {group.parent.plannedInstallments?.filter(i => i.status === 'pending').length ? (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Pending Installments
+                        </p>
+                        {group.parent.plannedInstallments
+                          .filter(i => i.status === 'pending')
+                          .map((inst) => (
+                            <div key={inst.id} className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <p className="text-sm font-medium">
+                                    {CURRENCY_SYMBOL}{inst.amount.toLocaleString('en-IN')}
+                                  </p>
+                                  {inst.expectedDate && (
+                                    <p className="text-xs text-muted-foreground">
+                                      Expected: {format(parseISO(inst.expectedDate), 'MMM dd, yyyy')}
+                                    </p>
+                                  )}
+                                </div>
+                                <Button
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    confirmInstallment(group.parent.id, inst.id, user?.id);
+                                  }}
+                                  className="bg-success hover:bg-success/90 text-white text-xs"
+                                >
+                                  <Check size={12} className="mr-1" />
+                                  Confirm
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    ) : null}
+                    
                     {/* Payment History */}
                     <div className="space-y-2">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -185,6 +225,24 @@ export const PartPaymentTracker = ({ onAddNextPayment }: PartPaymentTrackerProps
                           <span className="font-semibold">{CURRENCY_SYMBOL}{payment.amount.toLocaleString('en-IN')}</span>
                         </div>
                       ))}
+                      
+                      {/* Received installments from plannedInstallments */}
+                      {group.parent.plannedInstallments
+                        ?.filter(i => i.status === 'received')
+                        .map((inst, idx) => (
+                          <div key={inst.id} className="flex items-center justify-between p-2 bg-success/5 border border-success/20 rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <Check size={14} className="text-success" />
+                              <div>
+                                <p className="text-sm font-medium">Installment Received</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {inst.receivedDate ? format(parseISO(inst.receivedDate), 'MMM dd, yyyy') : 'Received'}
+                                </p>
+                              </div>
+                            </div>
+                            <span className="font-semibold text-success">{CURRENCY_SYMBOL}{inst.amount.toLocaleString('en-IN')}</span>
+                          </div>
+                        ))}
                     </div>
                     
                     {/* Add Next Payment Button */}

@@ -52,6 +52,15 @@ export interface Transaction {
   isPartPayment?: boolean;
   totalExpectedAmount?: number;
   linkedTransactionId?: string;
+  plannedInstallments?: PlannedInstallment[];
+}
+
+export interface PlannedInstallment {
+  id: string;
+  amount: number;
+  expectedDate?: string;
+  status: 'pending' | 'received';
+  receivedDate?: string;
 }
 
 export interface FinanceState {
