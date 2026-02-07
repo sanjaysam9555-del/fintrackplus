@@ -1,145 +1,71 @@
 
+# Fix iOS Safari Status Bar Overlap
 
-# Fix Vendor Editing: Update Transactions When Vendor Name Changes
+## Problem
 
-## The Problem
+On iOS Safari, the app header content (greeting, avatar, etc.) is overlapping with the iOS status bar at the top of the screen. This happens across all tabs because the content is scrolling behind the safe area.
 
-When editing a vendor in Settings, the system creates a new vendor instead of properly updating the existing one. Additionally, when a vendor name changes, all transactions that reference the old vendor name are not updated.
+## Root Cause
 
-There are two related issues:
-
-1. **Legacy Vendors**: Vendors that exist only in transactions (not in the vendors table) get a `legacy-` prefix ID. When these are "edited", the code correctly creates a new vendor entry, but the original transaction vendor names remain unchanged.
-
-2. **Regular Vendors**: When editing a vendor's name, the vendor record is updated, but transactions still reference the old vendor name in the `vendor` field (which stores the vendor name as a string, not an ID).
-
-## Root Cause Analysis
-
-The transaction schema stores `vendor` as a **text field** containing the vendor name directly, not as a foreign key reference to the vendors table. This means:
-- When a vendor is renamed, transactions keep the old name
-- The vendors table and transactions table are not properly linked
+The app structure has a scroll container with `h-screen` that fills the entire viewport. While the `#root` element has `padding-top: env(safe-area-inset-top)`, the scroll container's content doesn't account for this when it scrolls - causing content to slip behind the status bar area.
 
 ## Solution
 
-When updating a vendor, also update all transactions that have the old vendor name to use the new vendor name.
+Add the existing `safe-top` utility class to the header/content sections of each page. This class already exists in `index.css` and provides: `padding-top: max(1rem, env(safe-area-inset-top))`.
 
 ---
 
-## Implementation Plan
+## Technical Changes
 
-### File: `src/lib/store.ts`
+### File: `src/components/Dashboard.tsx`
 
-**Modify the `updateVendor` function** to also update transactions with the old vendor name:
+**Change line 169**: Update the header section to include safe-top padding on mobile:
 
-Current logic (lines 932-975):
-```typescript
-updateVendor: async (id, updates, userId) => {
-  const vendor = get().vendors.find(v => v.id === id);
-  // ... notification logic ...
-  
-  set((state) => ({
-    vendors: state.vendors.map((v) => 
-      v.id === id ? { ...v, ...updates } : v
-    )
-  }));
-  
-  // ... sync queue logic ...
-}
+```tsx
+// Before
+<div className="p-4 pt-6">
+
+// After  
+<div className="p-4 pt-6 safe-top">
 ```
 
-Updated logic:
-```typescript
-updateVendor: async (id, updates, userId) => {
-  const vendor = get().vendors.find(v => v.id === id);
-  const oldVendorName = vendor?.name;
-  
-  // ... notification logic ...
-  
-  set((state) => ({
-    vendors: state.vendors.map((v) => 
-      v.id === id ? { ...v, ...updates } : v
-    ),
-    // Also update transactions that reference the old vendor name
-    transactions: updates.name && oldVendorName && updates.name !== oldVendorName
-      ? state.transactions.map((t) =>
-          t.vendor === oldVendorName ? { ...t, vendor: updates.name } : t
-        )
-      : state.transactions
-  }));
-  
-  // Queue vendor update
-  if (userId) {
-    addToSyncQueue({
-      type: 'update',
-      entity: 'vendor',
-      entityId: id,
-      data: updates,
-      userId,
-    });
-    
-    // If name changed, also queue transaction updates
-    if (updates.name && oldVendorName && updates.name !== oldVendorName) {
-      const affectedTransactions = get().transactions.filter(t => t.vendor === updates.name);
-      for (const txn of affectedTransactions) {
-        addToSyncQueue({
-          type: 'update',
-          entity: 'transaction',
-          entityId: txn.id,
-          data: { vendor: updates.name },
-          userId,
-        });
-      }
-    }
-    
-    get().updatePendingCount();
-    
-    if (navigator.onLine) {
-      processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
-    }
-  }
-  
-  // ... notification ...
-}
+### File: `src/components/TransactionList.tsx`
+
+**Change line 234**: Update the header section:
+
+```tsx
+// Before
+<div className="p-4 pt-6">
+
+// After
+<div className="p-4 pt-6 safe-top">
 ```
 
-### File: `src/components/settings/VendorsSection.tsx`
+### File: `src/components/ProjectOverviewPage.tsx`
 
-**Modify the `handleUpdate` function** for legacy vendors to also update transactions:
+Apply the same pattern to the header section of this component.
 
-Current logic (lines 97-101):
-```typescript
-if (id.startsWith('legacy-')) {
-  addVendor(name.trim(), selectedColor, selectedIcon, userId);
-} else {
-  updateVendor(id, { name: name.trim(), color: selectedColor, icon: selectedIcon }, userId);
-}
+### File: `src/components/AISummaryPage.tsx`
+
+Apply the same pattern to the header section.
+
+### File: `src/components/SettingsPage.tsx`
+
+Apply the same pattern to the header section.
+
+---
+
+## Why This Works
+
+The `safe-top` class uses:
+```css
+padding-top: max(1rem, env(safe-area-inset-top));
 ```
 
-Updated logic:
-```typescript
-if (id.startsWith('legacy-')) {
-  // For legacy vendors, we need to:
-  // 1. Create a new vendor entry
-  // 2. Update all transactions with the old name to use the new name
-  const oldName = originalName; // The legacy vendor's original name
-  const newName = name.trim();
-  
-  // Add the new vendor
-  addVendor(newName, selectedColor, selectedIcon, userId);
-  
-  // Update transactions if name changed
-  if (oldName && newName !== oldName) {
-    // Get transactions with the old vendor name and update them
-    const transactionsToUpdate = transactions.filter(t => t.vendor === oldName);
-    transactionsToUpdate.forEach(t => {
-      updateTransaction(t.id, { vendor: newName }, userId);
-    });
-  }
-} else {
-  updateVendor(id, { name: name.trim(), color: selectedColor, icon: selectedIcon }, userId);
-}
-```
-
-This requires importing `updateTransaction` from the store.
+This ensures:
+- On iOS with notch/dynamic island: Uses the actual safe area inset (typically 44-59px)
+- On devices without safe areas: Falls back to 1rem minimum padding
+- The content will always start below the status bar, even when scrolled to the top
 
 ---
 
@@ -147,22 +73,18 @@ This requires importing `updateTransaction` from the store.
 
 | File | Change |
 |------|--------|
-| `src/lib/store.ts` | Update `updateVendor` to also update transactions referencing the old vendor name |
-| `src/components/settings/VendorsSection.tsx` | Update `handleUpdate` for legacy vendors to update transactions with the old name |
+| `src/components/Dashboard.tsx` | Add `safe-top` class to header wrapper |
+| `src/components/TransactionList.tsx` | Add `safe-top` class to header wrapper |
+| `src/components/ProjectOverviewPage.tsx` | Add `safe-top` class to header wrapper |
+| `src/components/AISummaryPage.tsx` | Add `safe-top` class to header wrapper |
+| `src/components/SettingsPage.tsx` | Add `safe-top` class to header wrapper |
 
 ---
 
-## Expected Behavior After Fix
+## Expected Result
 
-1. **Editing a regular vendor**: 
-   - Vendor record updated in vendors table
-   - All transactions with old vendor name updated to new name
-   - Changes synced to database
-
-2. **Editing a legacy vendor**:
-   - New vendor record created in vendors table
-   - All transactions with old vendor name updated to new name
-   - Legacy vendor effectively "converted" to a real vendor
-
-3. **Both cases**: User sees consistent vendor names across transactions and vendor list
-
+After this fix:
+- The app header will always remain visible below the iOS status bar
+- Scrolling to the top will show proper spacing between status bar and app content
+- The fix works across all tabs (Home, Expenses, Income, Projects, Settings, AI)
+- The change is minimal and uses existing utility classes
