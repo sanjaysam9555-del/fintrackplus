@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
@@ -46,10 +46,11 @@ const getHealthDot = (status: HealthStatus): string => {
 };
 
 export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
-  const { projects, getProjectSpending, getProjectIncome, transactions, updateProject } = useFinanceStore();
+  const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject } = useFinanceStore();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [archiveProject, setArchiveProject] = useState<Project | null>(null);
+  const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
 
   // Filter projects
   const activeProjects = projects.filter(p => !p.archived);
@@ -106,6 +107,14 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       updateProject(archiveProject.id, { archived: !archiveProject.archived }, userId);
       toast.success(archiveProject.archived ? 'Project restored' : 'Project archived');
       setArchiveProject(null);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteProjectState) {
+      deleteProject(deleteProjectState.id, userId);
+      toast.success(`Project "${deleteProjectState.name}" deleted`);
+      setDeleteProjectState(null);
     }
   };
 
@@ -255,13 +264,12 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                       project.archived ? "from-muted to-muted" : getHealthGradient(healthStatus)
                     )} style={{ backgroundColor: project.archived ? undefined : project.color }} />
                     
-                    {/* Card Content */}
-                    <button
-                      onClick={() => setSelectedProject(project)}
-                      className="w-full p-3 text-left hover:bg-accent/30 transition-colors"
-                    >
-                      {/* Header: Icon + Name + Status */}
-                      <div className="flex items-start gap-2.5 mb-3">
+                    {/* Header with Three-Dot Menu */}
+                    <div className="flex items-start justify-between p-3 pb-0">
+                      <button
+                        onClick={() => setSelectedProject(project)}
+                        className="flex items-start gap-2.5 flex-1 min-w-0 text-left"
+                      >
                         <div
                           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
                           style={{ backgroundColor: `${project.color}20` }}
@@ -279,7 +287,67 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                             {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
                           </p>
                         </div>
-                      </div>
+                      </button>
+                      
+                      {/* Three-Dot Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            onClick={(e) => e.stopPropagation()}
+                            className="p-1.5 rounded-lg hover:bg-muted transition-colors -mt-0.5"
+                          >
+                            <MoreVertical size={16} className="text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDuplicate(project);
+                            }}
+                            className="gap-2"
+                          >
+                            <Copy size={14} />
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setArchiveProject(project);
+                            }}
+                            className="gap-2"
+                          >
+                            {project.archived ? (
+                              <>
+                                <ArchiveRestore size={14} />
+                                Restore
+                              </>
+                            ) : (
+                              <>
+                                <Archive size={14} />
+                                Archive
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteProjectState(project);
+                            }}
+                            className="gap-2 text-destructive focus:text-destructive"
+                          >
+                            <Trash2 size={14} />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    
+                    {/* Card Content */}
+                    <button
+                      onClick={() => setSelectedProject(project)}
+                      className="w-full px-3 pb-3 pt-3 text-left hover:bg-accent/30 transition-colors"
+                    >
 
                       {/* Budget Progress */}
                       {project.budgetLimit > 0 && (
@@ -344,51 +412,6 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                         </div>
                       </div>
                     </button>
-
-                    {/* Three-Dot Menu */}
-                    <div className="px-3 pb-3 flex justify-end">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <button
-                            onClick={(e) => e.stopPropagation()}
-                            className="p-2 rounded-lg hover:bg-muted transition-colors"
-                          >
-                            <MoreVertical size={18} className="text-muted-foreground" />
-                          </button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-44">
-                          <DropdownMenuItem 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDuplicate(project);
-                            }}
-                            className="gap-2"
-                          >
-                            <Copy size={14} />
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setArchiveProject(project);
-                            }}
-                            className="gap-2"
-                          >
-                            {project.archived ? (
-                              <>
-                                <ArchiveRestore size={14} />
-                                Restore
-                              </>
-                            ) : (
-                              <>
-                                <Archive size={14} />
-                                Archive
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
                   </motion.div>
                 );
               })}
@@ -422,6 +445,16 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             : `Are you sure you want to archive "${archiveProject?.name}"? You can restore it anytime from the Archived tab.`
         }
         variant={archiveProject?.archived ? 'restore' : 'archive'}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={!!deleteProjectState}
+        onClose={() => setDeleteProjectState(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Project"
+        description={`Are you sure you want to delete "${deleteProjectState?.name}"? This action cannot be undone.`}
+        variant="delete"
       />
     </div>
   );
