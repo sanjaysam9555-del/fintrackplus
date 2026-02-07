@@ -117,7 +117,10 @@ export const useCloudSync = () => {
           isRecurring: t.is_recurring || false,
           recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined,
           receiptUrl: (t as unknown as { receipt_url?: string }).receipt_url || undefined,
-          isGst: (t as unknown as { is_gst?: boolean }).is_gst || false
+          isGst: (t as unknown as { is_gst?: boolean }).is_gst || false,
+          isPartPayment: (t as unknown as { is_part_payment?: boolean }).is_part_payment || false,
+          totalExpectedAmount: (t as unknown as { total_expected_amount?: number }).total_expected_amount ? Number((t as unknown as { total_expected_amount: number }).total_expected_amount) : undefined,
+          linkedTransactionId: (t as unknown as { linked_transaction_id?: string }).linked_transaction_id || undefined
         })) || [],
         partners: cloudPartners?.map(p => ({
           id: (p as { id: string }).id,

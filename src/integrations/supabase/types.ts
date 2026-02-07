@@ -223,7 +223,9 @@ export type Database = {
           date: string
           id: string
           is_gst: boolean | null
+          is_part_payment: boolean | null
           is_recurring: boolean | null
+          linked_transaction_id: string | null
           notes: string | null
           partner_id: string | null
           payment_method: string
@@ -232,6 +234,7 @@ export type Database = {
           recurring_frequency: string | null
           time: string
           title: string | null
+          total_expected_amount: number | null
           type: string
           user_id: string
           vendor: string
@@ -243,7 +246,9 @@ export type Database = {
           date?: string
           id?: string
           is_gst?: boolean | null
+          is_part_payment?: boolean | null
           is_recurring?: boolean | null
+          linked_transaction_id?: string | null
           notes?: string | null
           partner_id?: string | null
           payment_method: string
@@ -252,6 +257,7 @@ export type Database = {
           recurring_frequency?: string | null
           time?: string
           title?: string | null
+          total_expected_amount?: number | null
           type: string
           user_id: string
           vendor: string
@@ -263,7 +269,9 @@ export type Database = {
           date?: string
           id?: string
           is_gst?: boolean | null
+          is_part_payment?: boolean | null
           is_recurring?: boolean | null
+          linked_transaction_id?: string | null
           notes?: string | null
           partner_id?: string | null
           payment_method?: string
@@ -272,6 +280,7 @@ export type Database = {
           recurring_frequency?: string | null
           time?: string
           title?: string | null
+          total_expected_amount?: number | null
           type?: string
           user_id?: string
           vendor?: string
@@ -282,6 +291,13 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_linked_transaction_id_fkey"
+            columns: ["linked_transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
           {
