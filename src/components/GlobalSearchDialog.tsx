@@ -4,24 +4,29 @@ import { Search, X, ArrowRight, Tag, FolderKanban, Store, Receipt } from 'lucide
 import { Input } from '@/components/ui/input';
 import { useGlobalSearch, SearchResult } from '@/hooks/useGlobalSearch';
 import { CategoryIcon } from './CategoryIcon';
+import { TransactionDetailSheet } from './TransactionDetailSheet';
 import { cn } from '@/lib/utils';
 import { useHaptics } from '@/hooks/useHaptics';
+import { Transaction } from '@/lib/types';
 
 interface GlobalSearchDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectTransaction?: (id: string) => void;
   onNavigate?: (section: string) => void;
+  userId?: string;
 }
 
 export const GlobalSearchDialog = ({ 
   isOpen, 
   onClose, 
   onSelectTransaction,
-  onNavigate 
+  onNavigate,
+  userId 
 }: GlobalSearchDialogProps) => {
   const { query, setQuery, results, clearSearch } = useGlobalSearch();
   const { lightTap } = useHaptics();
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   // Close on escape
   useEffect(() => {
@@ -46,8 +51,9 @@ export const GlobalSearchDialog = ({
 
   const handleResultClick = useCallback((result: SearchResult) => {
     lightTap();
-    if (result.type === 'transaction' && onSelectTransaction) {
-      onSelectTransaction(result.id);
+    if (result.type === 'transaction') {
+      // Show the transaction detail sheet
+      setSelectedTransaction(result.data as Transaction);
     } else if (onNavigate) {
       if (result.type === 'category') {
         onNavigate('categories');
@@ -56,9 +62,14 @@ export const GlobalSearchDialog = ({
       } else if (result.type === 'vendor') {
         onNavigate('vendors');
       }
+      onClose();
     }
+  }, [lightTap, onNavigate, onClose]);
+
+  const handleCloseTransactionDetail = useCallback(() => {
+    setSelectedTransaction(null);
     onClose();
-  }, [lightTap, onSelectTransaction, onNavigate, onClose]);
+  }, [onClose]);
 
   const getTypeIcon = (type: SearchResult['type']) => {
     switch (type) {
@@ -70,9 +81,10 @@ export const GlobalSearchDialog = ({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <>
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -198,8 +210,17 @@ export const GlobalSearchDialog = ({
               </div>
             </motion.div>
           </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          </>
+        )}
+      </AnimatePresence>
+    
+    {/* Transaction Detail Sheet */}
+    <TransactionDetailSheet
+      transaction={selectedTransaction}
+      isOpen={!!selectedTransaction}
+      onClose={handleCloseTransactionDetail}
+      userId={userId}
+    />
+  </>
   );
 };
