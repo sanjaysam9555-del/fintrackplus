@@ -1,90 +1,73 @@
 
-# Fix iOS Safari Status Bar Overlap
+# Add Automatic Word Capitalization for Mobile Keyboard
 
-## Problem
+## Overview
 
-On iOS Safari, the app header content (greeting, avatar, etc.) is overlapping with the iOS status bar at the top of the screen. This happens across all tabs because the content is scrolling behind the safe area.
-
-## Root Cause
-
-The app structure has a scroll container with `h-screen` that fills the entire viewport. While the `#root` element has `padding-top: env(safe-area-inset-top)`, the scroll container's content doesn't account for this when it scrolls - causing content to slip behind the status bar area.
+When typing in text input fields on mobile devices (iOS/Android), the first letter of each word should be automatically capitalized. This improves user experience by reducing manual capitalization when entering names like vendors, projects, categories, and transaction titles.
 
 ## Solution
 
-Add the existing `safe-top` utility class to the header/content sections of each page. This class already exists in `index.css` and provides: `padding-top: max(1rem, env(safe-area-inset-top))`.
+Add the `autocapitalize="words"` attribute to relevant text input fields. This HTML attribute tells mobile browsers to automatically capitalize the first letter of each word as the user types.
+
+### How It Works
+
+The `autocapitalize` attribute has several values:
+- `words` - Capitalize the first letter of each word (what we need)
+- `sentences` - Capitalize the first letter of each sentence
+- `characters` - Capitalize all characters
+- `none` / `off` - No automatic capitalization
 
 ---
 
-## Technical Changes
+## Files to Update
 
-### File: `src/components/Dashboard.tsx`
+### 1. Input Component (`src/components/ui/input.tsx`)
 
-**Change line 169**: Update the header section to include safe-top padding on mobile:
+Add a default `autocapitalize="words"` to the base Input component. This will apply to all inputs using this component unless explicitly overridden.
 
 ```tsx
-// Before
-<div className="p-4 pt-6">
-
-// After  
-<div className="p-4 pt-6 safe-top">
+// Add autocapitalize="words" as default
+<input
+  type={type}
+  autoCapitalize="words"
+  className={...}
+  ref={ref}
+  {...props}
+/>
 ```
 
-### File: `src/components/TransactionList.tsx`
+Note: For number, email, and password type inputs, browsers automatically ignore autocapitalize.
 
-**Change line 234**: Update the header section:
+### 2. AddTransactionSheet (`src/components/AddTransactionSheet.tsx`)
 
-```tsx
-// Before
-<div className="p-4 pt-6">
+Add `autoCapitalize="words"` to inline input elements that don't use the Input component:
+- Magic fill input (line 310)
+- Vendor search input (line 485)
+- Any native `<input>` elements for text entry
 
-// After
-<div className="p-4 pt-6 safe-top">
-```
+### 3. Settings Forms
 
-### File: `src/components/ProjectOverviewPage.tsx`
-
-Apply the same pattern to the header section of this component.
-
-### File: `src/components/AISummaryPage.tsx`
-
-Apply the same pattern to the header section.
-
-### File: `src/components/SettingsPage.tsx`
-
-Apply the same pattern to the header section.
+The Input component change will automatically apply to:
+- **VendorsSection**: Vendor name input
+- **ProjectsSection**: Project name, description inputs
+- **CategoriesSection**: Category name input
 
 ---
 
-## Why This Works
+## Technical Details
 
-The `safe-top` class uses:
-```css
-padding-top: max(1rem, env(safe-area-inset-top));
-```
-
-This ensures:
-- On iOS with notch/dynamic island: Uses the actual safe area inset (typically 44-59px)
-- On devices without safe areas: Falls back to 1rem minimum padding
-- The content will always start below the status bar, even when scrolled to the top
+| File | Changes |
+|------|---------|
+| `src/components/ui/input.tsx` | Add `autoCapitalize="words"` as default prop |
+| `src/components/AddTransactionSheet.tsx` | Add `autoCapitalize="words"` to inline inputs |
 
 ---
 
-## Files to Modify
+## Expected Behavior
 
-| File | Change |
-|------|--------|
-| `src/components/Dashboard.tsx` | Add `safe-top` class to header wrapper |
-| `src/components/TransactionList.tsx` | Add `safe-top` class to header wrapper |
-| `src/components/ProjectOverviewPage.tsx` | Add `safe-top` class to header wrapper |
-| `src/components/AISummaryPage.tsx` | Add `safe-top` class to header wrapper |
-| `src/components/SettingsPage.tsx` | Add `safe-top` class to header wrapper |
-
----
-
-## Expected Result
-
-After this fix:
-- The app header will always remain visible below the iOS status bar
-- Scrolling to the top will show proper spacing between status bar and app content
-- The fix works across all tabs (Home, Expenses, Income, Projects, Settings, AI)
-- The change is minimal and uses existing utility classes
+After implementation:
+- When typing "john doe" in a vendor field, it auto-capitalizes to "John Doe"
+- Project names like "new project" become "New Project" automatically
+- Transaction titles follow the same pattern
+- Works on both iOS Safari and Android Chrome keyboards
+- Desktop browsers are unaffected (attribute is ignored)
