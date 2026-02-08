@@ -32,6 +32,7 @@ interface PartnerDetailSheetProps {
   balanceData: PartnerPeriodBalance | null;
   periodLabel: string;
   userId?: string;
+  onEditSheetChange?: (isOpen: boolean) => void;
 }
 
 export const PartnerDetailSheet = ({
@@ -42,6 +43,7 @@ export const PartnerDetailSheet = ({
   balanceData,
   periodLabel,
   userId,
+  onEditSheetChange,
 }: PartnerDetailSheetProps) => {
   const { transactions, getCategoryById } = useFinanceStore();
   const [incomeOpen, setIncomeOpen] = useState(true);
@@ -219,6 +221,7 @@ export const PartnerDetailSheet = ({
                             transaction={transaction}
                             category={getCategoryById(transaction.categoryId)}
                             userId={userId}
+                            onEditSheetChange={onEditSheetChange}
                           />
                         ))}
                       </motion.div>
@@ -253,6 +256,7 @@ export const PartnerDetailSheet = ({
                             transaction={transaction}
                             category={getCategoryById(transaction.categoryId)}
                             userId={userId}
+                            onEditSheetChange={onEditSheetChange}
                           />
                         ))}
                       </motion.div>

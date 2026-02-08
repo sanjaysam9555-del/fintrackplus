@@ -521,6 +521,12 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         balanceData={selectedBalanceData}
         periodLabel={getFilterLabel()}
         userId={userId}
+        onEditSheetChange={(isOpen) => {
+          // Hide detail sheet when editing to prevent z-index conflicts
+          if (isOpen) {
+            setIsDetailOpen(false);
+          }
+        }}
       />
     </div>
   );
