@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SplitSquareHorizontal, Plus, ChevronRight, TrendingUp, TrendingDown, Check } from "lucide-react";
+import { SplitSquareHorizontal, Plus, ChevronRight, TrendingUp, TrendingDown, Check, Pencil } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Transaction, PlannedInstallment } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
@@ -12,9 +12,10 @@ import { useAuth } from "@/hooks/useAuth";
 
 interface PartPaymentTrackerProps {
   onAddNextPayment?: (parentTransaction: Transaction) => void;
+  onEditPayment?: (transaction: Transaction) => void;
 }
 
-export const PartPaymentTracker = ({ onAddNextPayment }: PartPaymentTrackerProps) => {
+export const PartPaymentTracker = ({ onAddNextPayment, onEditPayment }: PartPaymentTrackerProps) => {
   const { transactions, categories, projects, partners, confirmInstallment } = useFinanceStore();
   const { user } = useAuth();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -82,9 +83,10 @@ export const PartPaymentTracker = ({ onAddNextPayment }: PartPaymentTrackerProps
             )}
           >
             {/* Header */}
-            <button
-              onClick={() => setExpandedId(isExpanded ? null : group.parent.id)}
-              className="w-full p-4 text-left"
+            <div className="flex items-center">
+              <button
+                onClick={() => setExpandedId(isExpanded ? null : group.parent.id)}
+                className="flex-1 p-4 text-left"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -150,7 +152,22 @@ export const PartPaymentTracker = ({ onAddNextPayment }: PartPaymentTrackerProps
                   )}
                 </div>
               </div>
-            </button>
+              </button>
+              
+              {/* Edit Button */}
+              {onEditPayment && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditPayment(group.parent);
+                  }}
+                  className="p-3 pr-4 hover:bg-muted/50 transition-colors"
+                  title="Edit part payment"
+                >
+                  <Pencil size={16} className="text-muted-foreground" />
+                </button>
+              )}
+            </div>
             
             {/* Expanded Details */}
             <AnimatePresence>
