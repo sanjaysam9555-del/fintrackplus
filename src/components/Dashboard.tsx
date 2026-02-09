@@ -660,13 +660,11 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             title="Income"
             amount={currentIncome}
             type="income"
-            percentChange={incomeChange}
           />
           <SummaryCard
             title="Expense"
             amount={currentExpense}
             type="expense"
-            percentChange={expenseChange}
           />
           <SummaryCard
             title="Balance"
