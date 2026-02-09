@@ -1,125 +1,129 @@
 
-
-# Sort Options & Recent Transactions Improvements
+# Rename Project Fields: Internal Cost, Client Cost, Auto-Calculated Margin
 
 ## Overview
 
-Two changes requested:
-1. **Home page**: Show 10 recent transactions sorted by recency (when they were added), not chronological date/time
-2. **Home, Income, Expense tabs**: Add a sort dropdown with multiple sort options, respecting the selected time filter
+Replace the current "Budget Limit" and "Margin" fields with a new model:
+- **Internal Cost**: What the project actually costs you (replaces `budgetLimit`)
+- **Client Cost**: What you charge the client (new field)
+- **Margin**: Automatically calculated as `Client Cost - Internal Cost` (no longer manually entered)
 
-## What Changes
+All budget tracking, progress bars, and health indicators will use **Internal Cost** as the target to not breach.
 
-### 1. Add `createdAt` to Transaction Type and Sync
+## Data Model Change
 
-Currently the `created_at` timestamp from the database is dropped during sync. We need to preserve it so we can sort by "recency" (when the entry was actually created in the app).
+| Current | New |
+|---------|-----|
+| `budgetLimit` (manual) | `internalCost` (manual) -- same DB column `budget_limit` |
+| `margin` (manual) | `clientCost` (manual) -- repurpose DB column `margin` to store `client_cost` |
+| -- | `margin` (auto-calculated: clientCost - internalCost) |
 
-**Files:**
-- `src/lib/types.ts` -- Add `createdAt?: string` to the `Transaction` interface
-- `src/lib/syncEngine.ts` -- Map `created_at` from DB to `createdAt` on the Transaction object
-- `src/lib/store.ts` -- Include `createdAt` when creating new transactions locally
+Since the DB already has `budget_limit` and `margin` columns, we will:
+- Keep `budget_limit` column as-is, mapped to `internalCost` in the app
+- Repurpose the `margin` column to store `clientCost` instead
+- Margin becomes a purely computed value (clientCost - internalCost), never stored
 
-### 2. Dashboard: 10 Recent Transactions Sorted by Recency
-
-**File: `src/components/Dashboard.tsx`**
-
-- Change `.slice(0, 5)` to `.slice(0, 10)` to show 10 transactions
-- Change sort from `date`/`time` descending to `createdAt` descending (most recently added first)
-- This means if you add an entry for a past date, it still shows at the top of "Recent Transactions"
-
-### 3. Sort Dropdown for Home, Income, and Expense Tabs
-
-**Files: `src/components/Dashboard.tsx`, `src/components/TransactionList.tsx`**
-
-Add a sort selector (small dropdown/toggle) near the transaction list header with these options:
-
-| Sort Option | Description |
-|------------|-------------|
-| Recent | By `createdAt` descending (newest entry first) |
-| Date (Newest) | By `date` + `time` descending (default chronological) |
-| Date (Oldest) | By `date` + `time` ascending |
-| Amount (High) | By `amount` descending |
-| Amount (Low) | By `amount` ascending |
-
-- The sort applies WITHIN the currently selected time filter (FY, Week, Month, Year, Custom)
-- Default sort: "Recent" for Dashboard, "Date (Newest)" for Income/Expense tabs
-- Sort state is local to each tab (not persisted)
-
-### 4. Grouped Display Adjustment
-
-In the Income/Expense tabs, transactions are currently grouped by date. When sorting by amount or recency, the grouping will still use dates but the order within each group and the group order itself will reflect the chosen sort:
-- **Date sorts**: Groups ordered by date, transactions within group by time
-- **Recent sort**: Groups ordered by most recent entry's `createdAt`, transactions within group by `createdAt`
-- **Amount sorts**: No date grouping -- show as a flat sorted list instead
-
----
-
-## Technical Details
-
-### Transaction Type Update
-```typescript
-// src/lib/types.ts
-interface Transaction {
-  // ... existing fields
-  createdAt?: string; // ISO timestamp of when entry was created
-}
-```
-
-### Sync Engine Mapping
-```typescript
-// src/lib/syncEngine.ts - in the transaction mapping
-createdAt: t.created_at || new Date().toISOString(),
-```
-
-### Sort Dropdown UI
-
-A compact `Select` dropdown placed next to the "Recent Transactions" header (Dashboard) or above the transaction list (Income/Expense tabs):
-
-```tsx
-<Select value={sortBy} onValueChange={setSortBy}>
-  <SelectTrigger className="w-[140px] h-8 text-xs">
-    <SelectValue />
-  </SelectTrigger>
-  <SelectContent>
-    <SelectItem value="recent">Recent</SelectItem>
-    <SelectItem value="date-desc">Date (Newest)</SelectItem>
-    <SelectItem value="date-asc">Date (Oldest)</SelectItem>
-    <SelectItem value="amount-desc">Amount (High)</SelectItem>
-    <SelectItem value="amount-asc">Amount (Low)</SelectItem>
-  </SelectContent>
-</Select>
-```
-
-### Dashboard Recent Transactions Sort
-```typescript
-const filteredTransactions = useMemo(() => {
-  return transactions
-    .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
-    .slice()
-    .sort((a, b) => {
-      // Sort by createdAt descending (most recently added first)
-      return (b.createdAt || '').localeCompare(a.createdAt || '');
-    })
-    .slice(0, 10); // Show 10 instead of 5
-}, [transactions, dateRange]);
-```
+No database migration needed -- just re-map the fields in the app code.
 
 ---
 
 ## Files to Modify
 
-| File | Change |
-|------|--------|
-| `src/lib/types.ts` | Add `createdAt?: string` to Transaction interface |
-| `src/lib/syncEngine.ts` | Map `created_at` to `createdAt` in transaction sync |
-| `src/lib/store.ts` | Set `createdAt` when creating transactions locally |
-| `src/components/Dashboard.tsx` | Show 10 items, sort by recency, add sort dropdown |
-| `src/components/TransactionList.tsx` | Add sort dropdown with 5 sort options |
+### 1. `src/lib/types.ts` -- Update Project Interface
+
+```typescript
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  notes?: string;
+  internalCost: number;   // was budgetLimit
+  clientCost: number;     // was margin (repurposed)
+  color: string;
+  archived?: boolean;
+  createdAt: string;
+}
+```
+
+### 2. `src/lib/store.ts` -- Update Store Logic
+
+- Rename all `budgetLimit` references to `internalCost`
+- Rename all `margin` references to `clientCost`
+- Update sync queue mapping: `budget_limit` maps to `internalCost`, `margin` maps to `clientCost`
+- Update notification change tracking labels
+
+### 3. `src/lib/syncEngine.ts` -- Update Sync Mapping
+
+- Map DB `budget_limit` to `internalCost`
+- Map DB `margin` to `clientCost`
+
+### 4. `src/components/settings/ProjectsSection.tsx` -- Update Form
+
+Replace the form fields:
+- "Budget limit" input becomes **"Internal Cost (your cost)"**
+- "Expected margin" input becomes **"Client Cost (what you charge)"**
+- Add a read-only **Margin display** that auto-calculates: `clientCost - internalCost`
+- Progress bar label changes from "Budget" to "Internal Cost"
+
+### 5. `src/components/ProjectOverviewPage.tsx` -- Update Cards and Summary
+
+- Portfolio summary: "Budget" becomes "Internal Cost", "Margin" shows computed `clientCost - internalCost`
+- Card stats grid: Replace "Budget" with "Internal Cost", add "Client Cost", show computed "Margin"
+- Budget progress bar tracks against `internalCost`
+- Health status logic uses `internalCost` as the threshold
+
+### 6. `src/components/ProjectDetailSheet.tsx` -- Update Detail View
+
+- Update financial summary to show Internal Cost, Client Cost, and computed Margin
+- Budget progress tracks against `internalCost`
+
+### 7. `src/components/ai-summary/ProjectHealth.tsx` -- Update Health Widget
+
+- Replace `budgetLimit` with `internalCost`
+- Labels change from "Budget" to "Internal Cost"
+
+### 8. `src/components/settings/ReportsSection.tsx` -- Update PDF Reports
+
+- Update any report labels from "Budget" to "Internal Cost" and include "Client Cost"
 
 ---
 
-## Expected Result
+## UI Behavior
 
-- **Home tab**: Shows 10 most recently added entries by default, with a dropdown to change sort
-- **Income/Expense tabs**: Sort dropdown synced with the time filter, allowing users to reorder by date, amount, or recency
-- All sorting respects the currently selected time period (FY, Week, Month, etc.)
+### Project Creation/Edit Form
+
+```
+[Project Name          ]
+[Description           ]
+[Internal Cost (₹)     ]  -- your actual cost
+[Client Cost (₹)       ]  -- what you charge client
+Margin: ₹X,XXX          -- auto-calculated, shown as read-only text
+[Color picker          ]
+[Add Project]
+```
+
+### Project Card (Overview Page)
+
+Stats grid changes from:
+```
+Income | Expenses | Budget | Net
+```
+to:
+```
+Income | Expenses | Internal Cost | Client Cost
+```
+
+With margin shown as a computed label.
+
+### Budget Tracking
+
+All progress bars, "over budget" warnings, and health indicators compare **spent vs internalCost** (the target is to not exceed your internal cost).
+
+---
+
+## Technical Details
+
+- No database migration required -- reusing existing columns with new semantic meaning
+- Margin is always computed: `project.clientCost - project.internalCost`
+- Existing data: current `budget_limit` values become `internalCost`, current `margin` values become `clientCost`
+- All `getProjectSpending()` comparisons switch from `budgetLimit` to `internalCost`
