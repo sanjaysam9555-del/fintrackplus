@@ -59,8 +59,8 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
 
   // Calculate totals based on selected tab
   const relevantProjects = showArchived ? archivedProjects : activeProjects;
-  const totalBudget = relevantProjects.reduce((sum, p) => sum + p.budgetLimit, 0);
-  const totalMargin = relevantProjects.reduce((sum, p) => sum + (p.margin || 0), 0);
+  const totalInternalCost = relevantProjects.reduce((sum, p) => sum + p.internalCost, 0);
+  const totalClientCost = relevantProjects.reduce((sum, p) => sum + (p.clientCost || 0), 0);
   const totalSpent = relevantProjects.reduce((sum, p) => sum + getProjectSpending(p.id), 0);
 
   // Handle project duplication
@@ -70,8 +70,8 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       name: `${project.name} (Copy)`,
       description: project.description,
       notes: project.notes,
-      budgetLimit: project.budgetLimit,
-      margin: project.margin || 0,
+      internalCost: project.internalCost,
+      clientCost: project.clientCost || 0,
       color: project.color,
     }, userId);
     toast.success(`Project "${project.name}" duplicated`);
@@ -153,8 +153,8 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-2">
                 <Wallet size={18} className="text-primary" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Budget</p>
-              <p className="text-base font-bold">₹{totalBudget.toLocaleString()}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Internal Cost</p>
+              <p className="text-base font-bold">₹{totalInternalCost.toLocaleString()}</p>
             </div>
             <div className="p-4 text-center">
               <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-2">
@@ -168,7 +168,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                 <PiggyBank size={18} className="text-green-500" />
               </div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Margin</p>
-              <p className="text-base font-bold">₹{totalMargin.toLocaleString()}</p>
+              <p className="text-base font-bold">₹{(totalClientCost - totalInternalCost).toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -240,11 +240,11 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                 const spent = getProjectSpending(project.id);
                 const income = getProjectIncome(project.id);
                 const net = income - spent;
-                const remaining = project.budgetLimit - spent;
-                const healthStatus: HealthStatus = net >= 0 ? 'healthy' : net >= -(project.budgetLimit * 0.2) ? 'at-risk' : 'critical';
-                const budgetPercent = project.budgetLimit > 0 ? Math.min((spent / project.budgetLimit) * 100, 100) : 0;
+                const remaining = project.internalCost - spent;
+                const healthStatus: HealthStatus = spent <= project.internalCost ? 'healthy' : spent <= project.internalCost * 1.2 ? 'at-risk' : 'critical';
+                const budgetPercent = project.internalCost > 0 ? Math.min((spent / project.internalCost) * 100, 100) : 0;
                 const transactionCount = getProjectTransactions(project.id).length;
-                const isOverBudget = spent > project.budgetLimit && project.budgetLimit > 0;
+                const isOverBudget = spent > project.internalCost && project.internalCost > 0;
 
                 return (
                   <motion.div
@@ -350,7 +350,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                     >
 
                       {/* Budget Progress */}
-                      {project.budgetLimit > 0 && (
+                      {project.internalCost > 0 && (
                         <div className="mb-3">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-[10px] text-muted-foreground">
@@ -388,8 +388,8 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           <p className="text-xs font-semibold mt-0.5 text-red-600">₹{spent.toLocaleString()}</p>
                         </div>
                         <div className="bg-muted/50 rounded-lg p-2">
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Budget</p>
-                          <p className="text-xs font-semibold mt-0.5">₹{project.budgetLimit.toLocaleString()}</p>
+                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
+                          <p className="text-xs font-semibold mt-0.5">₹{project.internalCost.toLocaleString()}</p>
                         </div>
                         <div className={cn(
                           "rounded-lg p-2",

@@ -21,12 +21,14 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [archiveProject, setArchiveProject] = useState<typeof projects[0] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', notes: '', budgetLimit: 0, margin: 0, color: '#10B981' });
+  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981' });
 
   // Filter projects
   const activeProjects = projects.filter(p => !p.archived);
   const archivedProjects = projects.filter(p => p.archived);
   const displayedProjects = showArchived ? archivedProjects : activeProjects;
+
+  const computedMargin = formData.clientCost - formData.internalCost;
 
   const handleAdd = () => {
     if (!formData.name.trim()) {
@@ -37,13 +39,13 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       name: formData.name.trim(),
       description: formData.description.trim(),
       notes: formData.notes.trim() || undefined,
-      budgetLimit: formData.budgetLimit,
-      margin: formData.margin,
+      internalCost: formData.internalCost,
+      clientCost: formData.clientCost,
       color: formData.color,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', notes: '', budgetLimit: 0, margin: 0, color: '#10B981' });
+    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981' });
   };
 
   const handleUpdate = (id: string) => {
@@ -55,8 +57,8 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       name: formData.name.trim(),
       description: formData.description.trim(),
       notes: formData.notes.trim() || undefined,
-      budgetLimit: formData.budgetLimit,
-      margin: formData.margin,
+      internalCost: formData.internalCost,
+      clientCost: formData.clientCost,
       color: formData.color,
     }, userId);
     toast.success("Project updated");
@@ -85,11 +87,81 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       name: project.name,
       description: project.description || '',
       notes: project.notes || '',
-      budgetLimit: project.budgetLimit,
-      margin: project.margin || 0,
+      internalCost: project.internalCost,
+      clientCost: project.clientCost || 0,
       color: project.color,
     });
   };
+
+  const renderFormFields = (isEdit: boolean, projectId?: string) => (
+    <div className="space-y-4">
+      {!isEdit && (
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold">New Project</h3>
+          <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-muted rounded">
+            <X size={18} />
+          </button>
+        </div>
+      )}
+      <Input
+        placeholder="Project name"
+        value={formData.name}
+        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+      />
+      <Input
+        placeholder="Description (optional)"
+        value={formData.description}
+        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+      />
+      <Input
+        type="number"
+        placeholder="Internal Cost (₹) — your cost"
+        value={formData.internalCost || ''}
+        onChange={(e) => setFormData({ ...formData, internalCost: Number(e.target.value) || 0 })}
+      />
+      <Input
+        type="number"
+        placeholder="Client Cost (₹) — what you charge"
+        value={formData.clientCost || ''}
+        onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
+      />
+      {(formData.internalCost > 0 || formData.clientCost > 0) && (
+        <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">Margin</span>
+          <span className={`text-sm font-semibold ${computedMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+            ₹{computedMargin.toLocaleString()}
+          </span>
+        </div>
+      )}
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">Color</p>
+        <div className="flex gap-2">
+          {COLOR_OPTIONS.map((color) => (
+            <button
+              key={color}
+              onClick={() => setFormData({ ...formData, color })}
+              className={`w-8 h-8 rounded-full ${formData.color === color ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
+              style={{ backgroundColor: color }}
+            />
+          ))}
+        </div>
+      </div>
+      {isEdit ? (
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setEditingId(null)} className="flex-1">
+            Cancel
+          </Button>
+          <Button onClick={() => handleUpdate(projectId!)} className="flex-1">
+            Save
+          </Button>
+        </div>
+      ) : (
+        <Button onClick={handleAdd} className="w-full">
+          <Check size={16} className="mr-1" /> Add Project
+        </Button>
+      )}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -101,7 +173,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           <h1 className="text-xl font-bold">Project Labels</h1>
         </div>
         {!showArchived && (
-          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', budgetLimit: 0, margin: 0, color: '#10B981' }); }}>
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981' }); }}>
             <Plus size={16} className="mr-1" /> Add
           </Button>
         )}
@@ -136,52 +208,9 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="bg-card rounded-xl border border-border p-4 space-y-4"
+              className="bg-card rounded-xl border border-border p-4"
             >
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold">New Project</h3>
-                <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-muted rounded">
-                  <X size={18} />
-                </button>
-              </div>
-              <Input
-                placeholder="Project name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-              <Input
-                placeholder="Description (optional)"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-              <Input
-                type="number"
-                placeholder="Budget limit (₹)"
-                value={formData.budgetLimit || ''}
-                onChange={(e) => setFormData({ ...formData, budgetLimit: Number(e.target.value) || 0 })}
-              />
-              <Input
-                type="number"
-                placeholder="Expected margin / savings (₹)"
-                value={formData.margin || ''}
-                onChange={(e) => setFormData({ ...formData, margin: Number(e.target.value) || 0 })}
-              />
-              <div>
-                <p className="text-xs text-muted-foreground mb-2">Color</p>
-                <div className="flex gap-2">
-                  {COLOR_OPTIONS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setFormData({ ...formData, color })}
-                      className={`w-8 h-8 rounded-full ${formData.color === color ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
-              </div>
-              <Button onClick={handleAdd} className="w-full">
-                <Check size={16} className="mr-1" /> Add Project
-              </Button>
+              {renderFormFields(false)}
             </motion.div>
           )}
         </AnimatePresence>
@@ -194,7 +223,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
         ) : (
           displayedProjects.map((project) => {
             const spent = getProjectSpending(project.id);
-            const percentage = project.budgetLimit > 0 ? (spent / project.budgetLimit) * 100 : 0;
+            const percentage = project.internalCost > 0 ? (spent / project.internalCost) * 100 : 0;
             
             return (
               <motion.div
@@ -203,48 +232,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                 className={`bg-card rounded-xl border border-border p-4 ${project.archived ? 'opacity-70' : ''}`}
               >
                 {editingId === project.id ? (
-                  <div className="space-y-4">
-                    <Input
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      placeholder="Project name"
-                    />
-                    <Input
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Description"
-                    />
-                    <Input
-                      type="number"
-                      value={formData.budgetLimit || ''}
-                      onChange={(e) => setFormData({ ...formData, budgetLimit: Number(e.target.value) || 0 })}
-                      placeholder="Budget limit (₹)"
-                    />
-                    <Input
-                      type="number"
-                      value={formData.margin || ''}
-                      onChange={(e) => setFormData({ ...formData, margin: Number(e.target.value) || 0 })}
-                      placeholder="Expected margin (₹)"
-                    />
-                    <div className="flex gap-2">
-                      {COLOR_OPTIONS.map((color) => (
-                        <button
-                          key={color}
-                          onClick={() => setFormData({ ...formData, color })}
-                          className={`w-8 h-8 rounded-full ${formData.color === color ? 'ring-2 ring-offset-2 ring-primary' : ''}`}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setEditingId(null)} className="flex-1">
-                        Cancel
-                      </Button>
-                      <Button onClick={() => handleUpdate(project.id)} className="flex-1">
-                        Save
-                      </Button>
-                    </div>
-                  </div>
+                  renderFormFields(true, project.id)
                 ) : (
                   <div>
                     <div className="flex items-center gap-3">
@@ -283,11 +271,11 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                         <Trash2 size={16} className="text-destructive" />
                       </button>
                     </div>
-                    {project.budgetLimit > 0 && (
+                    {project.internalCost > 0 && (
                       <div className="mt-3">
                         <div className="flex justify-between text-xs mb-1">
                           <span className="text-muted-foreground">Spent: ₹{spent.toLocaleString()}</span>
-                          <span className="text-muted-foreground">Budget: ₹{project.budgetLimit.toLocaleString()}</span>
+                          <span className="text-muted-foreground">Internal Cost: ₹{project.internalCost.toLocaleString()}</span>
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div
