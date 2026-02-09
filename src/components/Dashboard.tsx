@@ -6,7 +6,8 @@ import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
-import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search } from "lucide-react";
+import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search, ArrowUpDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -37,6 +38,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   const [showDatePickerMobile, setShowDatePickerMobile] = useState(false);
   const [showDatePickerDesktop, setShowDatePickerDesktop] = useState(false);
   const [showCustomCalendar, setShowCustomCalendar] = useState<'start' | 'end' | null>(null);
+  const [sortBy, setSortBy] = useState<string>('recent');
 
   const closeDatePicker = useCallback(() => {
     setShowDatePickerMobile(false);
@@ -121,16 +123,36 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   
   // Filter transactions based on selected date range
   const filteredTransactions = useMemo(() => {
-    return transactions
+    const filtered = transactions
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
-      .slice()
-      .sort((a, b) => {
-        const dateCompare = b.date.localeCompare(a.date);
-        if (dateCompare !== 0) return dateCompare;
-        return b.time.localeCompare(a.time);
-      })
-      .slice(0, 5);
-  }, [transactions, dateRange]);
+      .slice();
+    
+    switch (sortBy) {
+      case 'recent':
+        filtered.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        break;
+      case 'date-desc':
+        filtered.sort((a, b) => {
+          const d = b.date.localeCompare(a.date);
+          return d !== 0 ? d : b.time.localeCompare(a.time);
+        });
+        break;
+      case 'date-asc':
+        filtered.sort((a, b) => {
+          const d = a.date.localeCompare(b.date);
+          return d !== 0 ? d : a.time.localeCompare(b.time);
+        });
+        break;
+      case 'amount-desc':
+        filtered.sort((a, b) => b.amount - a.amount);
+        break;
+      case 'amount-asc':
+        filtered.sort((a, b) => a.amount - b.amount);
+        break;
+    }
+    
+    return filtered.slice(0, 10);
+  }, [transactions, dateRange, sortBy]);
   
   const greeting = useMemo(() => {
     const hour = today.getHours();
@@ -717,6 +739,19 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
       <div className="px-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-bold">Recent Transactions</h2>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[130px] h-7 text-xs gap-1 border-muted">
+              <ArrowUpDown size={12} className="text-muted-foreground shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Recent</SelectItem>
+              <SelectItem value="date-desc">Date (Newest)</SelectItem>
+              <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+              <SelectItem value="amount-desc">Amount (High)</SelectItem>
+              <SelectItem value="amount-asc">Amount (Low)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         
         <div className="space-y-2">

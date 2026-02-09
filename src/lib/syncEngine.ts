@@ -386,7 +386,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           time: t.time,
           notes: t.notes || undefined,
           isRecurring: t.is_recurring || false,
-          recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined
+          recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined,
+          createdAt: t.created_at || new Date().toISOString(),
         })),
         partners: cloudPartners.map(p => ({
           id: (p as { id: string }).id,

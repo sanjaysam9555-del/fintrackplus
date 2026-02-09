@@ -5,7 +5,8 @@ import { formatDate as formatDateLabel, formatCurrency } from "@/lib/constants";
 import { TransactionItem } from "./TransactionItem";
 import { TransactionSkeleton } from "./ui/skeleton-loader";
 import { UpcomingRecurringBanner } from "./UpcomingRecurringBanner";
-import { Search, CalendarIcon } from "lucide-react";
+import { Search, CalendarIcon, ArrowUpDown } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "./ui/input";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -30,6 +31,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
   const [isLoading] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<string>('date-desc');
   
   const filteredCategories = categories.filter(c => c.type === type);
   
@@ -90,14 +92,55 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
     ? getTotalIncome(dateRange.start, dateRange.end)
     : getTotalExpense(dateRange.start, dateRange.end);
   
+  const sortedTransactions = useMemo(() => {
+    const sorted = [...filteredTransactions];
+    switch (sortBy) {
+      case 'recent':
+        sorted.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+        break;
+      case 'date-desc':
+        sorted.sort((a, b) => {
+          const d = b.date.localeCompare(a.date);
+          return d !== 0 ? d : b.time.localeCompare(a.time);
+        });
+        break;
+      case 'date-asc':
+        sorted.sort((a, b) => {
+          const d = a.date.localeCompare(b.date);
+          return d !== 0 ? d : a.time.localeCompare(b.time);
+        });
+        break;
+      case 'amount-desc':
+        sorted.sort((a, b) => b.amount - a.amount);
+        break;
+      case 'amount-asc':
+        sorted.sort((a, b) => a.amount - b.amount);
+        break;
+    }
+    return sorted;
+  }, [filteredTransactions, sortBy]);
+
+  const isAmountSort = sortBy === 'amount-desc' || sortBy === 'amount-asc';
+
   const groupedTransactions = useMemo(() => {
+    if (isAmountSort) return null; // flat list for amount sorts
     const groups: Record<string, Transaction[]> = {};
-    filteredTransactions.forEach(t => {
+    sortedTransactions.forEach(t => {
       if (!groups[t.date]) groups[t.date] = [];
       groups[t.date].push(t);
     });
+    if (sortBy === 'date-asc') {
+      return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+    }
+    if (sortBy === 'recent') {
+      return Object.entries(groups).sort(([, aTxns], [, bTxns]) => {
+        const aMax = Math.max(...aTxns.map(t => new Date(t.createdAt || 0).getTime()));
+        const bMax = Math.max(...bTxns.map(t => new Date(t.createdAt || 0).getTime()));
+        return bMax - aMax;
+      });
+    }
     return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a));
-  }, [filteredTransactions]);
+  }, [sortedTransactions, sortBy, isAmountSort]);
   
   const chartData = useMemo(() => {
     // Parse as local dates to keep chart in sync with list filtering
@@ -443,11 +486,52 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
         </div>
       </div>
       
+      {/* Sort Dropdown */}
+      <div className="px-4 mb-3">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-muted-foreground">
+            {sortedTransactions.length} transaction{sortedTransactions.length !== 1 ? 's' : ''}
+          </p>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[130px] h-7 text-xs gap-1 border-muted">
+              <ArrowUpDown size={12} className="text-muted-foreground shrink-0" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Recent</SelectItem>
+              <SelectItem value="date-desc">Date (Newest)</SelectItem>
+              <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+              <SelectItem value="amount-desc">Amount (High)</SelectItem>
+              <SelectItem value="amount-asc">Amount (Low)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       {/* Transaction List */}
       <div className="px-4 space-y-4">
         {isLoading ? (
           Array.from({ length: 5 }).map((_, i) => <TransactionSkeleton key={i} />)
-        ) : groupedTransactions.length === 0 ? (
+        ) : isAmountSort ? (
+          // Flat list for amount-based sorting
+          sortedTransactions.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No transactions found</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {sortedTransactions.map((t) => (
+                <TransactionItem
+                  key={t.id}
+                  transaction={t}
+                  category={categories.find(c => c.id === t.categoryId)}
+                  userId={userId}
+                  onEditSheetChange={onEditSheetChange}
+                />
+              ))}
+            </div>
+          )
+        ) : !groupedTransactions || groupedTransactions.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">No transactions found</p>
           </div>
