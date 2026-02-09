@@ -130,7 +130,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 z-[60]"
+            className="fixed inset-0 bg-black/40 z-[80]"
             onClick={(e) => {
               e.stopPropagation();
               onClose();
@@ -142,7 +142,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[60] bg-card rounded-t-3xl max-h-[85vh] overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-[80] bg-card rounded-t-3xl max-h-[85vh] overflow-hidden"
           >
             <div className="flex justify-center pt-3">
               <div className="w-10 h-1 bg-muted rounded-full" />
@@ -250,7 +250,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                         <ChevronDown size={16} className="text-muted-foreground shrink-0" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-72 p-2 bg-card z-[70]" align="start">
+                    <PopoverContent className="w-72 p-2 bg-card z-[90]" align="start">
                       <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y">
                         <div className="space-y-1">
                           {filteredCategories.length > 0 ? (
@@ -318,7 +318,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                         <CalendarIcon size={16} className="text-muted-foreground" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-card z-[70]" align="start">
+                    <PopoverContent className="w-auto p-0 bg-card z-[90]" align="start">
                       <Calendar
                         mode="single"
                         selected={date}
@@ -370,7 +370,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                         <ChevronDown size={16} className="text-muted-foreground" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-72 p-2 bg-card z-[70]" align="start">
+                    <PopoverContent className="w-72 p-2 bg-card z-[90]" align="start">
                       <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y">
                         <div className="space-y-1">
                           {allVendors.length > 0 ? (
@@ -489,7 +489,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                         <ChevronDown size={16} className="text-muted-foreground" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-72 p-2 bg-card z-[70]" align="start">
+                    <PopoverContent className="w-72 p-2 bg-card z-[90]" align="start">
                       <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y">
                         <div className="space-y-1">
                           <button
@@ -588,7 +588,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                           <ChevronDown size={16} className="text-muted-foreground" />
                         </button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-72 p-2 bg-card z-[70]" align="start">
+                      <PopoverContent className="w-72 p-2 bg-card z-[90]" align="start">
                         <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y">
                           <div className="space-y-1">
                             <button
