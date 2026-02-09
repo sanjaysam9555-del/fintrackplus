@@ -220,7 +220,7 @@ const Index = () => {
       case 'projects':
         return (
           <Suspense fallback={<ContentSkeleton />}>
-            <ProjectOverviewPage userId={user?.id} onEditSheetChange={setIsEditSheetOpen} onSearchClick={handleOpenSearch} onAddProject={() => { setSettingsSection('projects'); setViewMode('settings'); }} />
+            <ProjectOverviewPage userId={user?.id} onEditSheetChange={setIsEditSheetOpen} onSearchClick={handleOpenSearch} />
           </Suspense>
         );
       case 'ai':
