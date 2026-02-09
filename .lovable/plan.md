@@ -1,136 +1,107 @@
 
 
-# Fix Edit Mechanism Issues Across App
+# Sort Options & Recent Transactions Improvements
 
-## Problem Summary
+## Overview
 
-The edit functionality is not working correctly in several places:
+Two changes requested:
+1. **Home page**: Show 10 recent transactions sorted by recency (when they were added), not chronological date/time
+2. **Home, Income, Expense tabs**: Add a sort dropdown with multiple sort options, respecting the selected time filter
 
-1. **PartnerDetailSheet**: Missing `onEditSheetChange` prop propagation - when editing transactions from within a partner's detail view, the parent doesn't know an edit sheet is open, causing z-index/visibility conflicts.
+## What Changes
 
-2. **PartPaymentTracker**: No edit functionality for part payment entries - users can only view and confirm installments but cannot edit the parent transaction or modify planned installments.
+### 1. Add `createdAt` to Transaction Type and Sync
 
-3. **VendorsSection Legacy Handling**: When editing a "legacy vendor" (vendor name in transactions but not in the vendors table), the edit doesn't properly track the original name for updating transactions.
+Currently the `created_at` timestamp from the database is dropped during sync. We need to preserve it so we can sort by "recency" (when the entry was actually created in the app).
 
----
+**Files:**
+- `src/lib/types.ts` -- Add `createdAt?: string` to the `Transaction` interface
+- `src/lib/syncEngine.ts` -- Map `created_at` from DB to `createdAt` on the Transaction object
+- `src/lib/store.ts` -- Include `createdAt` when creating new transactions locally
 
-## Root Cause Analysis
+### 2. Dashboard: 10 Recent Transactions Sorted by Recency
 
-### Issue 1: PartnerDetailSheet Missing onEditSheetChange
+**File: `src/components/Dashboard.tsx`**
 
-Looking at `PartnerDetailSheet.tsx`, the `TransactionItem` components are rendered without passing the `onEditSheetChange` callback:
+- Change `.slice(0, 5)` to `.slice(0, 10)` to show 10 transactions
+- Change sort from `date`/`time` descending to `createdAt` descending (most recently added first)
+- This means if you add an entry for a past date, it still shows at the top of "Recent Transactions"
 
-```tsx
-// Current code (lines 217-223, 250-255)
-<TransactionItem
-  key={transaction.id}
-  transaction={transaction}
-  category={getCategoryById(transaction.categoryId)}
-  userId={userId}
-  // Missing: onEditSheetChange prop
-/>
-```
+### 3. Sort Dropdown for Home, Income, and Expense Tabs
 
-When the edit sheet opens, the parent `PartnerDetailSheet` doesn't hide itself, causing layer overlap and interaction issues.
+**Files: `src/components/Dashboard.tsx`, `src/components/TransactionList.tsx`**
 
-### Issue 2: PartPaymentTracker No Edit Capability
+Add a sort selector (small dropdown/toggle) near the transaction list header with these options:
 
-The `PartPaymentTracker` component displays part payment groups with their installments but provides no way to:
-- Edit the parent part payment transaction
-- Modify planned installments (amount, expected date)
-- Delete installments
+| Sort Option | Description |
+|------------|-------------|
+| Recent | By `createdAt` descending (newest entry first) |
+| Date (Newest) | By `date` + `time` descending (default chronological) |
+| Date (Oldest) | By `date` + `time` ascending |
+| Amount (High) | By `amount` descending |
+| Amount (Low) | By `amount` ascending |
 
-### Issue 3: VendorsSection originalName Tracking
+- The sort applies WITHIN the currently selected time filter (FY, Week, Month, Year, Custom)
+- Default sort: "Recent" for Dashboard, "Date (Newest)" for Income/Expense tabs
+- Sort state is local to each tab (not persisted)
 
-While the recent fix addressed updating transactions when a vendor name changes, when editing a legacy vendor, we need to ensure `originalName` captures the actual vendor name (not the `legacy-` prefixed ID).
+### 4. Grouped Display Adjustment
 
----
-
-## Implementation Plan
-
-### File 1: `src/components/settings/PartnerDetailSheet.tsx`
-
-**Add `onEditSheetChange` prop and pass it to TransactionItem components**
-
-```text
-Changes:
-- Add onEditSheetChange to props interface
-- Pass onEditSheetChange to all TransactionItem instances
-```
-
-| Location | Change |
-|----------|--------|
-| Line 27 | Add `onEditSheetChange?: (isOpen: boolean) => void;` to props interface |
-| Lines 217, 251 | Add `onEditSheetChange={onEditSheetChange}` to TransactionItem components |
-
-### File 2: `src/components/PartPaymentTracker.tsx`
-
-**Add edit functionality for part payment entries**
-
-```text
-Changes:
-- Add onEditPayment callback prop to component
-- Add edit button/action for each payment group header
-- Allow editing parent transaction when clicked
-```
-
-| Location | Change |
-|----------|--------|
-| Props | Add `onEditPayment?: (transaction: Transaction) => void;` |
-| Header section | Add Pencil icon button that calls `onEditPayment(group.parent)` |
-
-### File 3: `src/pages/Index.tsx`
-
-**Wire up the PartnerDetailSheet with onEditSheetChange callback**
-
-Look for where PartnerDetailSheet is rendered and add the prop.
+In the Income/Expense tabs, transactions are currently grouped by date. When sorting by amount or recency, the grouping will still use dates but the order within each group and the group order itself will reflect the chosen sort:
+- **Date sorts**: Groups ordered by date, transactions within group by time
+- **Recent sort**: Groups ordered by most recent entry's `createdAt`, transactions within group by `createdAt`
+- **Amount sorts**: No date grouping -- show as a flat sorted list instead
 
 ---
 
 ## Technical Details
 
-### PartnerDetailSheet Fix
-
-```tsx
-interface PartnerDetailSheetProps {
-  partner: Partner | null;
-  isOpen: boolean;
-  onClose: () => void;
-  dateRange: { start: string; end: string };
-  balanceData: PartnerPeriodBalance | null;
-  periodLabel: string;
-  userId?: string;
-  onEditSheetChange?: (isOpen: boolean) => void; // ADD THIS
+### Transaction Type Update
+```typescript
+// src/lib/types.ts
+interface Transaction {
+  // ... existing fields
+  createdAt?: string; // ISO timestamp of when entry was created
 }
-
-// Then in the JSX, update TransactionItem calls:
-<TransactionItem
-  key={transaction.id}
-  transaction={transaction}
-  category={getCategoryById(transaction.categoryId)}
-  userId={userId}
-  onEditSheetChange={onEditSheetChange} // ADD THIS
-/>
 ```
 
-### PartPaymentTracker Edit Support
+### Sync Engine Mapping
+```typescript
+// src/lib/syncEngine.ts - in the transaction mapping
+createdAt: t.created_at || new Date().toISOString(),
+```
+
+### Sort Dropdown UI
+
+A compact `Select` dropdown placed next to the "Recent Transactions" header (Dashboard) or above the transaction list (Income/Expense tabs):
 
 ```tsx
-interface PartPaymentTrackerProps {
-  onAddNextPayment?: (parentTransaction: Transaction) => void;
-  onEditPayment?: (transaction: Transaction) => void; // ADD THIS
-}
+<Select value={sortBy} onValueChange={setSortBy}>
+  <SelectTrigger className="w-[140px] h-8 text-xs">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="recent">Recent</SelectItem>
+    <SelectItem value="date-desc">Date (Newest)</SelectItem>
+    <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+    <SelectItem value="amount-desc">Amount (High)</SelectItem>
+    <SelectItem value="amount-asc">Amount (Low)</SelectItem>
+  </SelectContent>
+</Select>
+```
 
-// In the header button area, add an edit button:
-<button
-  onClick={(e) => {
-    e.stopPropagation();
-    onEditPayment?.(group.parent);
-  }}
-  className="p-1.5 rounded-lg hover:bg-muted transition-colors"
->
-  <Pencil size={14} className="text-muted-foreground" />
-</button>
+### Dashboard Recent Transactions Sort
+```typescript
+const filteredTransactions = useMemo(() => {
+  return transactions
+    .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
+    .slice()
+    .sort((a, b) => {
+      // Sort by createdAt descending (most recently added first)
+      return (b.createdAt || '').localeCompare(a.createdAt || '');
+    })
+    .slice(0, 10); // Show 10 instead of 5
+}, [transactions, dateRange]);
 ```
 
 ---
@@ -139,16 +110,16 @@ interface PartPaymentTrackerProps {
 
 | File | Change |
 |------|--------|
-| `src/components/settings/PartnerDetailSheet.tsx` | Add `onEditSheetChange` prop and pass to TransactionItem |
-| `src/components/PartPaymentTracker.tsx` | Add edit button with `onEditPayment` callback |
-| Parent components using these | Wire up the new callbacks |
+| `src/lib/types.ts` | Add `createdAt?: string` to Transaction interface |
+| `src/lib/syncEngine.ts` | Map `created_at` to `createdAt` in transaction sync |
+| `src/lib/store.ts` | Set `createdAt` when creating transactions locally |
+| `src/components/Dashboard.tsx` | Show 10 items, sort by recency, add sort dropdown |
+| `src/components/TransactionList.tsx` | Add sort dropdown with 5 sort options |
 
 ---
 
-## Expected Results
+## Expected Result
 
-After implementation:
-1. **PartnerDetailSheet**: Editing transactions from within a partner's detail view will properly hide the parent sheet, preventing z-index conflicts
-2. **PartPaymentTracker**: Users can click an edit button to modify part payment transactions
-3. **VendorsSection**: Legacy vendor edits will properly update all associated transactions
-
+- **Home tab**: Shows 10 most recently added entries by default, with a dropdown to change sort
+- **Income/Expense tabs**: Sort dropdown synced with the time filter, allowing users to reorder by date, amount, or recency
+- All sorting respects the currently selected time period (FY, Week, Month, etc.)
