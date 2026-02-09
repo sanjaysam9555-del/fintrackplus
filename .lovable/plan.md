@@ -1,129 +1,72 @@
 
-# Rename Project Fields: Internal Cost, Client Cost, Auto-Calculated Margin
+# Fix Edit Form Issues in Project Detail View
 
-## Overview
+## Problem
 
-Replace the current "Budget Limit" and "Margin" fields with a new model:
-- **Internal Cost**: What the project actually costs you (replaces `budgetLimit`)
-- **Client Cost**: What you charge the client (new field)
-- **Margin**: Automatically calculated as `Client Cost - Internal Cost` (no longer manually entered)
+When editing a transaction from within the Project Detail Sheet (the drawer that opens when you tap a project), the edit form is often:
+- Non-responsive to input
+- Impossible to close
+- Causes the app to hang
 
-All budget tracking, progress bars, and health indicators will use **Internal Cost** as the target to not breach.
+This happens because the Project Detail Sheet uses a **vaul Drawer** component whose overlay and drag handlers continue to capture touch/pointer events even when the Edit Transaction Sheet opens on top of it. The two layers fight for event control.
 
-## Data Model Change
+## Root Cause
 
-| Current | New |
-|---------|-----|
-| `budgetLimit` (manual) | `internalCost` (manual) -- same DB column `budget_limit` |
-| `margin` (manual) | `clientCost` (manual) -- repurpose DB column `margin` to store `client_cost` |
-| -- | `margin` (auto-calculated: clientCost - internalCost) |
+The `ProjectDetailSheet` is a vaul `Drawer` (renders overlay at z-50). The `EditTransactionSheet` renders via `createPortal` at z-60. Although the edit sheet is visually on top, the vaul Drawer's overlay and built-in drag-to-dismiss logic still intercept touch events, causing:
 
-Since the DB already has `budget_limit` and `margin` columns, we will:
-- Keep `budget_limit` column as-is, mapped to `internalCost` in the app
-- Repurpose the `margin` column to store `clientCost` instead
-- Margin becomes a purely computed value (clientCost - internalCost), never stored
+- Inputs inside the edit form to be unresponsive
+- Scroll/drag gestures to trigger the parent drawer's dismiss behavior instead
+- The close button and backdrop tap to not register properly
+- The app to appear "hung" because events are swallowed
 
-No database migration needed -- just re-map the fields in the app code.
+The `PartnersSection` already solved this exact problem by hiding its detail sheet when editing. The `ProjectDetailSheet` needs the same treatment.
+
+## Solution
+
+Hide the `ProjectDetailSheet` drawer when the edit sheet is active, and restore it when editing is done. This is the same pattern already used in `PartnersSection`.
+
+### File: `src/components/ProjectDetailSheet.tsx`
+
+**Track edit state locally and conditionally hide the drawer:**
+
+1. Add a local `isChildEditing` state
+2. Create a local `handleEditSheetChange` callback that:
+   - Sets `isChildEditing` to show/hide the drawer
+   - Also calls the parent `onEditSheetChange` prop (for dock hiding)
+3. Pass `handleEditSheetChange` to all `TransactionItem` components instead of `onEditSheetChange`
+4. When `isChildEditing` is true, set the Drawer's `open` prop to `false` (or hide it with CSS visibility)
+
+```
+Changes at a glance:
+- Add: const [isChildEditing, setIsChildEditing] = useState(false);
+- Add: handleEditSheetChange callback that sets isChildEditing AND calls parent onEditSheetChange
+- Modify: Drawer open prop from `isOpen` to `isOpen && !isChildEditing`
+- Pass: handleEditSheetChange to all TransactionItem instances (replacing onEditSheetChange)
+```
+
+### File: `src/components/EditTransactionSheet.tsx`
+
+**Raise z-index to ensure it's always above any drawer remnants:**
+
+- Change the backdrop from `z-[60]` to `z-[80]`
+- Change the sheet from `z-[60]` to `z-[80]`
+- Change popover z-indexes inside from `z-[70]` to `z-[90]`
+
+This ensures even if any drawer element lingers, the edit sheet is unambiguously on top.
 
 ---
 
 ## Files to Modify
 
-### 1. `src/lib/types.ts` -- Update Project Interface
+| File | Change |
+|------|--------|
+| `src/components/ProjectDetailSheet.tsx` | Add `isChildEditing` state; wrap `onEditSheetChange`; hide drawer when editing |
+| `src/components/EditTransactionSheet.tsx` | Raise z-index from 60 to 80 for backdrop and sheet; raise inner popovers from 70 to 90 |
 
-```typescript
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  notes?: string;
-  internalCost: number;   // was budgetLimit
-  clientCost: number;     // was margin (repurposed)
-  color: string;
-  archived?: boolean;
-  createdAt: string;
-}
-```
+## Expected Result
 
-### 2. `src/lib/store.ts` -- Update Store Logic
-
-- Rename all `budgetLimit` references to `internalCost`
-- Rename all `margin` references to `clientCost`
-- Update sync queue mapping: `budget_limit` maps to `internalCost`, `margin` maps to `clientCost`
-- Update notification change tracking labels
-
-### 3. `src/lib/syncEngine.ts` -- Update Sync Mapping
-
-- Map DB `budget_limit` to `internalCost`
-- Map DB `margin` to `clientCost`
-
-### 4. `src/components/settings/ProjectsSection.tsx` -- Update Form
-
-Replace the form fields:
-- "Budget limit" input becomes **"Internal Cost (your cost)"**
-- "Expected margin" input becomes **"Client Cost (what you charge)"**
-- Add a read-only **Margin display** that auto-calculates: `clientCost - internalCost`
-- Progress bar label changes from "Budget" to "Internal Cost"
-
-### 5. `src/components/ProjectOverviewPage.tsx` -- Update Cards and Summary
-
-- Portfolio summary: "Budget" becomes "Internal Cost", "Margin" shows computed `clientCost - internalCost`
-- Card stats grid: Replace "Budget" with "Internal Cost", add "Client Cost", show computed "Margin"
-- Budget progress bar tracks against `internalCost`
-- Health status logic uses `internalCost` as the threshold
-
-### 6. `src/components/ProjectDetailSheet.tsx` -- Update Detail View
-
-- Update financial summary to show Internal Cost, Client Cost, and computed Margin
-- Budget progress tracks against `internalCost`
-
-### 7. `src/components/ai-summary/ProjectHealth.tsx` -- Update Health Widget
-
-- Replace `budgetLimit` with `internalCost`
-- Labels change from "Budget" to "Internal Cost"
-
-### 8. `src/components/settings/ReportsSection.tsx` -- Update PDF Reports
-
-- Update any report labels from "Budget" to "Internal Cost" and include "Client Cost"
-
----
-
-## UI Behavior
-
-### Project Creation/Edit Form
-
-```
-[Project Name          ]
-[Description           ]
-[Internal Cost (₹)     ]  -- your actual cost
-[Client Cost (₹)       ]  -- what you charge client
-Margin: ₹X,XXX          -- auto-calculated, shown as read-only text
-[Color picker          ]
-[Add Project]
-```
-
-### Project Card (Overview Page)
-
-Stats grid changes from:
-```
-Income | Expenses | Budget | Net
-```
-to:
-```
-Income | Expenses | Internal Cost | Client Cost
-```
-
-With margin shown as a computed label.
-
-### Budget Tracking
-
-All progress bars, "over budget" warnings, and health indicators compare **spent vs internalCost** (the target is to not exceed your internal cost).
-
----
-
-## Technical Details
-
-- No database migration required -- reusing existing columns with new semantic meaning
-- Margin is always computed: `project.clientCost - project.internalCost`
-- Existing data: current `budget_limit` values become `internalCost`, current `margin` values become `clientCost`
-- All `getProjectSpending()` comparisons switch from `budgetLimit` to `internalCost`
+- Tapping "Edit" on any transaction inside the project detail view will smoothly hide the project drawer and show the edit form
+- All inputs (amount, title, vendor, category, date) will be fully responsive
+- The close button and backdrop tap will work correctly
+- Saving or closing the edit form will restore the project detail drawer
+- No more app hangs or frozen states
