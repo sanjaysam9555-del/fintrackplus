@@ -324,7 +324,11 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       {/* Project Cards - Two Column Grid */}
       <div className="px-4 pt-4 pb-4">
         {displayedProjects.length === 0 ? (
-          <div className="text-center py-12">
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="text-center py-12"
+          >
             <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
               {showArchived ? <Archive size={24} className="text-muted-foreground" /> : <FolderKanban size={24} className="text-muted-foreground" />}
             </div>
@@ -334,7 +338,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             <p className="text-xs text-muted-foreground mt-1">
               {showArchived ? 'Archived projects will appear here' : 'Tap the + button above to add a project'}
             </p>
-          </div>
+          </motion.div>
         ) : (
           <div className="space-y-3">
             <AnimatePresence>
@@ -355,8 +359,9 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
+                    whileHover={{ y: -2, boxShadow: "0 8px 25px rgba(0,0,0,0.1)" }}
                     className={cn(
-                      "bg-card rounded-2xl border border-border overflow-hidden",
+                      "bg-card rounded-2xl border border-border overflow-hidden transition-shadow",
                       project.archived && "opacity-60"
                     )}
                   >
@@ -382,7 +387,11 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           <div className="flex items-center gap-1.5">
                             <p className="text-sm font-semibold truncate leading-tight">{project.name}</p>
                             {!project.archived && (
-                              <span className={cn("w-2 h-2 rounded-full shrink-0", getHealthDot(healthStatus))} />
+                              <motion.span
+                                className={cn("w-2 h-2 rounded-full shrink-0", getHealthDot(healthStatus))}
+                                animate={healthStatus !== 'healthy' ? { scale: [1, 1.4, 1] } : undefined}
+                                transition={healthStatus !== 'healthy' ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : undefined}
+                              />
                             )}
                           </div>
                           <p className="text-[10px] text-muted-foreground mt-0.5">

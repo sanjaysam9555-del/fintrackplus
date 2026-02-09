@@ -690,46 +690,28 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           animate={{ opacity: 1, y: 0 }}
           className="grid grid-cols-4 gap-2 lg:gap-3"
         >
-          <button
-            onClick={() => onNavigate?.('categories')}
-            className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
-          >
-            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Grid3X3 size={16} className="text-primary lg:hidden" />
-              <Grid3X3 size={20} className="text-primary hidden lg:block" />
-            </div>
-            <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Categories</span>
-          </button>
-          <button
-            onClick={() => onNavigate?.('vendors')}
-            className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
-          >
-            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-success/10 flex items-center justify-center">
-              <Store size={16} className="text-success lg:hidden" />
-              <Store size={20} className="text-success hidden lg:block" />
-            </div>
-            <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Vendors</span>
-          </button>
-          <button
-            onClick={() => onNavigate?.('projects')}
-            className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
-          >
-            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <FolderKanban size={16} className="text-amber-500 lg:hidden" />
-              <FolderKanban size={20} className="text-amber-500 hidden lg:block" />
-            </div>
-            <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Projects</span>
-          </button>
-          <button
-            onClick={() => onNavigate?.('reports')}
-            className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
-          >
-            <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <FileBarChart size={16} className="text-purple-500 lg:hidden" />
-              <FileBarChart size={20} className="text-purple-500 hidden lg:block" />
-            </div>
-            <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">Reports</span>
-          </button>
+          {[
+            { key: 'categories', icon: Grid3X3, label: 'Categories', color: 'bg-primary/10', iconColor: 'text-primary' },
+            { key: 'vendors', icon: Store, label: 'Vendors', color: 'bg-success/10', iconColor: 'text-success' },
+            { key: 'projects', icon: FolderKanban, label: 'Projects', color: 'bg-amber-500/10', iconColor: 'text-amber-500' },
+            { key: 'reports', icon: FileBarChart, label: 'Reports', color: 'bg-purple-500/10', iconColor: 'text-purple-500' },
+          ].map((item, index) => (
+            <motion.button
+              key={item.key}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onNavigate?.(item.key)}
+              className="flex flex-col items-center gap-1.5 lg:gap-2 p-3 lg:p-4 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+            >
+              <div className={cn("w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center", item.color)}>
+                <item.icon size={16} className={cn(item.iconColor, "lg:hidden")} />
+                <item.icon size={20} className={cn(item.iconColor, "hidden lg:block")} />
+              </div>
+              <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">{item.label}</span>
+            </motion.button>
+          ))}
         </motion.div>
       </div>
       
@@ -754,21 +736,31 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         
         <div className="space-y-2">
           {filteredTransactions.length === 0 ? (
-            <div className="text-center py-8 bg-card rounded-xl border border-border">
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="text-center py-8 bg-card rounded-xl border border-border"
+            >
               <p className="text-muted-foreground">No transactions in this period</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Try selecting a different time frame
               </p>
-            </div>
+            </motion.div>
           ) : (
-            filteredTransactions.map((transaction) => (
-              <TransactionItem
+            filteredTransactions.map((transaction, index) => (
+              <motion.div
                 key={transaction.id}
-                transaction={transaction}
-                category={categories.find(c => c.id === transaction.categoryId)}
-                userId={userId}
-                onEditSheetChange={onEditSheetChange}
-              />
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+              >
+                <TransactionItem
+                  transaction={transaction}
+                  category={categories.find(c => c.id === transaction.categoryId)}
+                  userId={userId}
+                  onEditSheetChange={onEditSheetChange}
+                />
+              </motion.div>
             ))
           )}
         </div>

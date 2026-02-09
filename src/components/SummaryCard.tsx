@@ -1,7 +1,8 @@
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/lib/constants";
 import { ArrowDownLeft, ArrowUpRight, Wallet } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, useSpring, useMotionValue, useTransform } from "framer-motion";
+import { useEffect } from "react";
 
 interface SummaryCardProps {
   title: string;
@@ -35,6 +36,18 @@ const colorMap = {
   },
 };
 
+const AnimatedNumber = ({ value, prefix }: { value: number; prefix?: string }) => {
+  const motionValue = useMotionValue(0);
+  const spring = useSpring(motionValue, { damping: 30, stiffness: 100 });
+  const display = useTransform(spring, (v) => `${prefix || ''}${formatCurrency(Math.abs(Math.round(v)))}`);
+
+  useEffect(() => {
+    motionValue.set(value);
+  }, [value, motionValue]);
+
+  return <motion.span>{display}</motion.span>;
+};
+
 export const SummaryCard = ({ 
   title, 
   amount, 
@@ -64,7 +77,7 @@ export const SummaryCard = ({
       <p className="text-xs lg:text-sm text-muted-foreground font-medium mb-1">{title}</p>
       
       <p className={cn("text-sm lg:text-lg font-bold truncate", colors.text)}>
-        {type === 'expense' ? '-' : ''}{formatCurrency(amount)}
+        <AnimatedNumber value={amount} prefix={type === 'expense' ? '-' : ''} />
       </p>
       
       {percentChange !== undefined && (
