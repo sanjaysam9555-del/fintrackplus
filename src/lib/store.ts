@@ -752,8 +752,8 @@ export const useFinanceStore = create<FinanceStore>()(
             data: {
               name: project.name,
               description: project.description || null,
-              budget_limit: project.budgetLimit,
-              margin: project.margin || 0,
+              budget_limit: project.internalCost,
+              margin: project.clientCost || 0,
               color: project.color,
             },
             userId: uid,
@@ -781,18 +781,18 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.name && updates.name !== project.name) {
             changes.push({ field: 'Name', from: project.name, to: updates.name });
           }
-          if (updates.budgetLimit !== undefined && updates.budgetLimit !== project.budgetLimit) {
+          if (updates.internalCost !== undefined && updates.internalCost !== project.internalCost) {
             changes.push({ 
-              field: 'Budget', 
-              from: `₹${project.budgetLimit.toLocaleString()}`, 
-              to: `₹${updates.budgetLimit.toLocaleString()}` 
+              field: 'Internal Cost', 
+              from: `₹${project.internalCost.toLocaleString()}`, 
+              to: `₹${updates.internalCost.toLocaleString()}` 
             });
           }
-          if (updates.margin !== undefined && updates.margin !== project.margin) {
+          if (updates.clientCost !== undefined && updates.clientCost !== project.clientCost) {
             changes.push({ 
-              field: 'Margin', 
-              from: `₹${project.margin.toLocaleString()}`, 
-              to: `₹${updates.margin.toLocaleString()}` 
+              field: 'Client Cost', 
+              from: `₹${project.clientCost.toLocaleString()}`, 
+              to: `₹${updates.clientCost.toLocaleString()}` 
             });
           }
           if (updates.archived !== undefined && updates.archived !== project.archived) {
@@ -822,8 +822,8 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.name) dbUpdates.name = updates.name;
           if (updates.description !== undefined) dbUpdates.description = updates.description;
           if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-          if (updates.budgetLimit !== undefined) dbUpdates.budget_limit = updates.budgetLimit;
-          if (updates.margin !== undefined) dbUpdates.margin = updates.margin;
+          if (updates.internalCost !== undefined) dbUpdates.budget_limit = updates.internalCost;
+          if (updates.clientCost !== undefined) dbUpdates.margin = updates.clientCost;
           if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
           if (updates.color) dbUpdates.color = updates.color;
           
@@ -857,8 +857,8 @@ export const useFinanceStore = create<FinanceStore>()(
         // Capture details before deletion
         const details: NotificationChange[] = project ? [
           { field: 'Name', from: project.name, to: 'Deleted' },
-          { field: 'Budget', from: `₹${project.budgetLimit.toLocaleString()}`, to: 'Deleted' },
-          { field: 'Margin', from: `₹${project.margin.toLocaleString()}`, to: 'Deleted' },
+          { field: 'Internal Cost', from: `₹${project.internalCost.toLocaleString()}`, to: 'Deleted' },
+          { field: 'Client Cost', from: `₹${project.clientCost.toLocaleString()}`, to: 'Deleted' },
           { field: 'Status', from: project.archived ? 'Archived' : 'Active', to: 'Deleted' },
         ] : [];
         

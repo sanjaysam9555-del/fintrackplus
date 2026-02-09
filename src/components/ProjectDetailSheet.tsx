@@ -152,9 +152,9 @@ export const ProjectDetailSheet = ({
   if (!project) return null;
 
   const net = income - spent;
-  const actualMargin = project.budgetLimit - spent;
-  const expectedMargin = project.margin || 0;
-  const isHealthy = actualMargin >= expectedMargin;
+  const actualMargin = project.internalCost - spent;
+  const expectedMargin = project.clientCost > 0 ? project.clientCost - project.internalCost : 0;
+  const isHealthy = actualMargin >= 0;
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} shouldScaleBackground={false}>
@@ -247,15 +247,12 @@ export const ProjectDetailSheet = ({
             {/* Financial Summary - 2x2 Grid */}
             <div className="grid grid-cols-2 gap-2 w-full">
               <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
-                <p className="text-[10px] text-muted-foreground">Budget</p>
-                <p className="text-base font-bold truncate">₹{project.budgetLimit.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Internal Cost</p>
+                <p className="text-base font-bold truncate">₹{project.internalCost.toLocaleString()}</p>
               </div>
-              <div className="bg-green-500/10 rounded-lg p-2 overflow-hidden">
-                <p className="text-[10px] text-muted-foreground">Income</p>
-                <div className="flex items-center gap-1 min-w-0">
-                  <ArrowDown size={12} className="text-green-500 shrink-0" />
-                  <p className="text-base font-bold text-green-500 truncate">₹{income.toLocaleString()}</p>
-                </div>
+              <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
+                <p className="text-[10px] text-muted-foreground">Client Cost</p>
+                <p className="text-base font-bold truncate">₹{project.clientCost.toLocaleString()}</p>
               </div>
               <div className="bg-red-500/10 rounded-lg p-2 overflow-hidden">
                 <p className="text-[10px] text-muted-foreground">Expenses</p>
@@ -264,32 +261,32 @@ export const ProjectDetailSheet = ({
                   <p className="text-base font-bold text-red-500 truncate">₹{spent.toLocaleString()}</p>
                 </div>
               </div>
-              <div className={cn("rounded-lg p-2 overflow-hidden", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-                <p className="text-[10px] text-muted-foreground">Net</p>
-                <p className={cn("text-base font-bold truncate", net >= 0 ? "text-green-500" : "text-red-500")}>
-                  {net >= 0 ? '+' : ''}₹{net.toLocaleString()}
+              <div className={cn("rounded-lg p-2 overflow-hidden", (project.clientCost - project.internalCost) >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
+                <p className="text-[10px] text-muted-foreground">Margin</p>
+                <p className={cn("text-base font-bold truncate", (project.clientCost - project.internalCost) >= 0 ? "text-green-500" : "text-red-500")}>
+                  ₹{(project.clientCost - project.internalCost).toLocaleString()}
                 </p>
               </div>
             </div>
 
-            {/* Expected Margin Comparison */}
-            {expectedMargin > 0 && (
+            {/* Budget Tracking vs Internal Cost */}
+            {project.internalCost > 0 && (
               <div className="bg-card rounded-xl border border-border p-4 w-full overflow-hidden">
-                <p className="text-sm font-medium mb-2">Margin Analysis</p>
+                <p className="text-sm font-medium mb-2">Cost Analysis</p>
                 <div className="flex items-center justify-between text-sm gap-2 min-w-0">
-                  <span className="text-muted-foreground shrink-0">Expected Margin</span>
-                  <span className="font-medium truncate">₹{expectedMargin.toLocaleString()}</span>
+                  <span className="text-muted-foreground shrink-0">Internal Cost</span>
+                  <span className="font-medium truncate">₹{project.internalCost.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-1 gap-2 min-w-0">
-                  <span className="text-muted-foreground shrink-0">Actual Margin</span>
-                  <span className={cn("font-medium truncate", isHealthy ? "text-green-500" : "text-red-500")}>
-                    ₹{actualMargin.toLocaleString()}
+                  <span className="text-muted-foreground shrink-0">Spent So Far</span>
+                  <span className={cn("font-medium truncate", spent <= project.internalCost ? "text-green-500" : "text-red-500")}>
+                    ₹{spent.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-border gap-2 min-w-0">
-                  <span className="text-muted-foreground shrink-0">Difference</span>
-                  <span className={cn("font-bold truncate", actualMargin >= expectedMargin ? "text-green-500" : "text-red-500")}>
-                    {actualMargin >= expectedMargin ? '+' : ''}₹{(actualMargin - expectedMargin).toLocaleString()}
+                  <span className="text-muted-foreground shrink-0">Remaining</span>
+                  <span className={cn("font-bold truncate", (project.internalCost - spent) >= 0 ? "text-green-500" : "text-red-500")}>
+                    ₹{(project.internalCost - spent).toLocaleString()}
                   </span>
                 </div>
               </div>
