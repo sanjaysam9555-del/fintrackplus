@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2 } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
@@ -17,6 +17,7 @@ interface ProjectOverviewPageProps {
   userId?: string;
   onEditSheetChange?: (isOpen: boolean) => void;
   onSearchClick?: () => void;
+  onAddProject?: () => void;
 }
 
 type HealthStatus = 'healthy' | 'at-risk' | 'critical';
@@ -45,7 +46,7 @@ const getHealthDot = (status: HealthStatus): string => {
   }
 };
 
-export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
+export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick, onAddProject }: ProjectOverviewPageProps) => {
   const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject } = useFinanceStore();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -136,6 +137,13 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             title="Search (⌘K)"
           >
             <Search size={18} className="text-muted-foreground" />
+          </button>
+          <button 
+            onClick={onAddProject}
+            className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            title="Add Project"
+          >
+            <Plus size={18} />
           </button>
         </div>
       </div>
@@ -230,7 +238,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               {showArchived ? 'No archived projects' : 'No active projects'}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {showArchived ? 'Archived projects will appear here' : 'Add projects from Settings'}
+              {showArchived ? 'Archived projects will appear here' : 'Tap the + button above to add a project'}
             </p>
           </div>
         ) : (
