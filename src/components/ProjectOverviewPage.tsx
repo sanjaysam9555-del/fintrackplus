@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +19,6 @@ interface ProjectOverviewPageProps {
   userId?: string;
   onEditSheetChange?: (isOpen: boolean) => void;
   onSearchClick?: () => void;
-  onAddProject?: () => void;
 }
 
 type HealthStatus = 'healthy' | 'at-risk' | 'critical';
@@ -46,12 +47,34 @@ const getHealthDot = (status: HealthStatus): string => {
   }
 };
 
-export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick, onAddProject }: ProjectOverviewPageProps) => {
-  const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject } = useFinanceStore();
+export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
+  const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject } = useFinanceStore();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [archiveProject, setArchiveProject] = useState<Project | null>(null);
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981' });
+
+  const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1'];
+  const computedMargin = formData.clientCost - formData.internalCost;
+
+  const handleAddProject = () => {
+    if (!formData.name.trim()) {
+      toast.error("Please enter a project name");
+      return;
+    }
+    addProject({
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      internalCost: formData.internalCost,
+      clientCost: formData.clientCost,
+      color: formData.color,
+    }, userId);
+    toast.success("Project added");
+    setShowAddForm(false);
+    setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981' });
+  };
 
   // Filter projects
   const activeProjects = projects.filter(p => !p.archived);
@@ -139,7 +162,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick, 
             <Search size={18} className="text-muted-foreground" />
           </button>
           <button 
-            onClick={onAddProject}
+            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981' }); }}
             className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             title="Add Project"
           >
@@ -147,6 +170,77 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick, 
           </button>
         </div>
       </div>
+
+      {/* Inline Add Project Form */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-b border-border"
+          >
+            <div className="px-4 py-4 space-y-3 bg-card">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm">New Project</h3>
+                <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-muted rounded">
+                  <X size={16} />
+                </button>
+              </div>
+              <Input
+                placeholder="Project name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                autoFocus
+              />
+              <Input
+                placeholder="Description (optional)"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  type="number"
+                  placeholder="Internal Cost (₹)"
+                  value={formData.internalCost || ''}
+                  onChange={(e) => setFormData({ ...formData, internalCost: Number(e.target.value) || 0 })}
+                />
+                <Input
+                  type="number"
+                  placeholder="Client Cost (₹)"
+                  value={formData.clientCost || ''}
+                  onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
+                />
+              </div>
+              {(formData.internalCost > 0 || formData.clientCost > 0) && (
+                <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Margin</span>
+                  <span className={cn("text-sm font-semibold", computedMargin >= 0 ? "text-success" : "text-destructive")}>
+                    ₹{computedMargin.toLocaleString()}
+                  </span>
+                </div>
+              )}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Color</p>
+                <div className="flex gap-2">
+                  {COLOR_OPTIONS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setFormData({ ...formData, color })}
+                      className={cn("w-7 h-7 rounded-full transition-all", formData.color === color ? 'ring-2 ring-offset-2 ring-primary' : '')}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+              <Button onClick={handleAddProject} className="w-full" size="sm">
+                <Check size={14} className="mr-1" /> Add Project
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Enhanced Summary Section */}
       <div className="px-4 pt-4">
