@@ -1,72 +1,119 @@
 
-# Fix Edit Form Issues in Project Detail View
+# UI/UX Animation and Transition Improvements
 
-## Problem
+## Current State
 
-When editing a transaction from within the Project Detail Sheet (the drawer that opens when you tap a project), the edit form is often:
-- Non-responsive to input
-- Impossible to close
-- Causes the app to hang
+The app already has solid animation foundations: splash screen with glow effects, spring-based dock tab indicators, swipe-to-delete on transactions, and framer-motion page transitions. The areas below are where adding or refining animations will make the biggest UX impact.
 
-This happens because the Project Detail Sheet uses a **vaul Drawer** component whose overlay and drag handlers continue to capture touch/pointer events even when the Edit Transaction Sheet opens on top of it. The two layers fight for event control.
+## Proposed Improvements
 
-## Root Cause
+### 1. Staggered List Animations for Transactions
 
-The `ProjectDetailSheet` is a vaul `Drawer` (renders overlay at z-50). The `EditTransactionSheet` renders via `createPortal` at z-60. Although the edit sheet is visually on top, the vaul Drawer's overlay and built-in drag-to-dismiss logic still intercept touch events, causing:
+**Problem**: Transaction lists appear all at once, which feels flat.
 
-- Inputs inside the edit form to be unresponsive
-- Scroll/drag gestures to trigger the parent drawer's dismiss behavior instead
-- The close button and backdrop tap to not register properly
-- The app to appear "hung" because events are swallowed
+**Fix**: Add staggered fade-in animations so each transaction card enters with a slight delay (30ms per item), creating a cascading "waterfall" effect.
 
-The `PartnersSection` already solved this exact problem by hiding its detail sheet when editing. The `ProjectDetailSheet` needs the same treatment.
+**Files**: `Dashboard.tsx`, `TransactionList.tsx`
 
-## Solution
-
-Hide the `ProjectDetailSheet` drawer when the edit sheet is active, and restore it when editing is done. This is the same pattern already used in `PartnersSection`.
-
-### File: `src/components/ProjectDetailSheet.tsx`
-
-**Track edit state locally and conditionally hide the drawer:**
-
-1. Add a local `isChildEditing` state
-2. Create a local `handleEditSheetChange` callback that:
-   - Sets `isChildEditing` to show/hide the drawer
-   - Also calls the parent `onEditSheetChange` prop (for dock hiding)
-3. Pass `handleEditSheetChange` to all `TransactionItem` components instead of `onEditSheetChange`
-4. When `isChildEditing` is true, set the Drawer's `open` prop to `false` (or hide it with CSS visibility)
-
-```
-Changes at a glance:
-- Add: const [isChildEditing, setIsChildEditing] = useState(false);
-- Add: handleEditSheetChange callback that sets isChildEditing AND calls parent onEditSheetChange
-- Modify: Drawer open prop from `isOpen` to `isOpen && !isChildEditing`
-- Pass: handleEditSheetChange to all TransactionItem instances (replacing onEditSheetChange)
-```
-
-### File: `src/components/EditTransactionSheet.tsx`
-
-**Raise z-index to ensure it's always above any drawer remnants:**
-
-- Change the backdrop from `z-[60]` to `z-[80]`
-- Change the sheet from `z-[60]` to `z-[80]`
-- Change popover z-indexes inside from `z-[70]` to `z-[90]`
-
-This ensures even if any drawer element lingers, the edit sheet is unambiguously on top.
+Each `TransactionItem` wrapper gets a `motion.div` with:
+- `initial={{ opacity: 0, y: 12 }}`
+- `animate={{ opacity: 1, y: 0 }}`
+- `transition={{ delay: index * 0.03 }}`
 
 ---
 
-## Files to Modify
+### 2. Quick Action Buttons - Press Feedback + Stagger
 
-| File | Change |
-|------|--------|
-| `src/components/ProjectDetailSheet.tsx` | Add `isChildEditing` state; wrap `onEditSheetChange`; hide drawer when editing |
-| `src/components/EditTransactionSheet.tsx` | Raise z-index from 60 to 80 for backdrop and sheet; raise inner popovers from 70 to 90 |
+**Problem**: The 4 quick action buttons (Categories, Vendors, Projects, Reports) on the dashboard have no press feedback and appear without entrance animation.
 
-## Expected Result
+**Fix**:
+- Add `whileTap={{ scale: 0.95 }}` for tactile press feedback
+- Stagger their entrance: each button fades in with a 50ms delay
 
-- Tapping "Edit" on any transaction inside the project detail view will smoothly hide the project drawer and show the edit form
-- All inputs (amount, title, vendor, category, date) will be fully responsive
-- The close button and backdrop tap will work correctly
-- Saving or closing the edit form will restore the project detail drawer
-- No more app hangs or frozen states
+**File**: `Dashboard.tsx` (quick actions grid section)
+
+---
+
+### 3. Summary Cards - Animated Number Counter
+
+**Problem**: Financial amounts just pop in statically. Counting up to the final number feels more dynamic and draws attention to the values.
+
+**Fix**: Add a simple animated counter effect to `SummaryCard` using framer-motion's `useSpring` + `useMotionValue`. The number counts from 0 to the target amount over ~600ms on mount/change.
+
+**File**: `SummaryCard.tsx`
+
+---
+
+### 4. Add Transaction Sheet - Slide-Up with Spring
+
+**Problem**: The full-screen add transaction form appears via portal but has a basic fade. A slide-up with slight overshoot feels more natural for a bottom sheet.
+
+**Fix**: Change the sheet's entrance to slide up from the bottom with a spring curve:
+- `initial={{ y: "100%" }}`
+- `animate={{ y: 0 }}`
+- `transition={{ type: "spring", damping: 28, stiffness: 300 }}`
+- Exit: `y: "100%"` with quicker easing
+
+**File**: `AddTransactionSheet.tsx`
+
+---
+
+### 5. Delete Confirmation Dialog - Shake Animation
+
+**Problem**: The delete dialog appears but the destructive action could benefit from a subtle "warning shake" on the icon to draw attention.
+
+**Fix**: Add a horizontal shake keyframe to the trash icon inside `DeleteConfirmDialog` when it opens:
+- `animate={{ x: [0, -4, 4, -4, 4, 0] }}` over 400ms
+
+**File**: `DeleteConfirmDialog.tsx`
+
+---
+
+### 6. Project Cards - Hover Lift + Health Pulse
+
+**Problem**: Project cards on the overview page are static. Cards representing "at-risk" or "critical" projects could pulse their health dot to draw attention.
+
+**Fix**:
+- Add `whileHover={{ y: -2, boxShadow: "0 8px 25px rgba(0,0,0,0.1)" }}` to project cards
+- Animate the health status dot with a pulse for non-healthy projects: `animate={{ scale: [1, 1.4, 1] }}` repeating
+
+**File**: `ProjectOverviewPage.tsx`
+
+---
+
+### 7. Empty State Bounce
+
+**Problem**: Empty states (no transactions, no projects) are plain text. A subtle bounce on the icon/illustration makes them feel more alive.
+
+**Fix**: Wrap empty state content in a motion div with a gentle floating animation:
+- `animate={{ y: [0, -6, 0] }}` with 2s duration, infinite repeat
+
+**Files**: `Dashboard.tsx`, `ProjectOverviewPage.tsx`, `TransactionList.tsx`
+
+---
+
+### 8. Dock Add Button - Pulse Ring
+
+**Problem**: The central "+" button in the dock is visually distinct but could have a subtle pulse ring to draw new users' attention.
+
+**Fix**: Add a pulsing ring behind the add button that fades in/out:
+- An absolutely positioned div with `animate={{ scale: [1, 1.3], opacity: [0.4, 0] }}` repeating every 2s
+- Only shows for the first few sessions (optional, can always show)
+
+**File**: `GlassDock.tsx`
+
+---
+
+## Technical Details
+
+| File | Changes |
+|------|---------|
+| `SummaryCard.tsx` | Add animated number counter using `useSpring` / `useMotionValue` |
+| `Dashboard.tsx` | Staggered transaction list, quick action press feedback + stagger, empty state float |
+| `TransactionList.tsx` | Staggered transaction entrance |
+| `GlassDock.tsx` | Pulse ring on add button |
+| `AddTransactionSheet.tsx` | Spring slide-up entrance/exit |
+| `DeleteConfirmDialog.tsx` | Shake animation on icon |
+| `ProjectOverviewPage.tsx` | Card hover lift, health dot pulse, empty state float |
+
+All animations use `framer-motion` which is already installed. No new dependencies needed. Animations are kept short (200-600ms) and use `will-change-transform` where appropriate to ensure smooth 60fps rendering.
