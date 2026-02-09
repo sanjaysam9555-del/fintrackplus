@@ -279,7 +279,7 @@ export const useFinanceStore = create<FinanceStore>()(
         
         // 1. Add to local state immediately (optimistic)
         set((state) => ({
-          transactions: [{ ...transaction, id }, ...state.transactions]
+          transactions: [{ ...transaction, id, createdAt: new Date().toISOString() }, ...state.transactions]
         }));
 
         // Resolve userId if caller didn't pass it (prevents local items being overwritten by cloud refresh)

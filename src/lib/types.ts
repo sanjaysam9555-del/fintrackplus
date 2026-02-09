@@ -53,6 +53,7 @@ export interface Transaction {
   totalExpectedAmount?: number;
   linkedTransactionId?: string;
   plannedInstallments?: PlannedInstallment[];
+  createdAt?: string;
 }
 
 export interface PlannedInstallment {
