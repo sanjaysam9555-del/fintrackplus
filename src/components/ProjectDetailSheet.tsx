@@ -51,6 +51,12 @@ export const ProjectDetailSheet = ({
   onEditSheetChange,
 }: ProjectDetailSheetProps) => {
   const { getCategoryById, updateProject, transactions: allTransactions } = useFinanceStore();
+  const [isChildEditing, setIsChildEditing] = useState(false);
+  
+  const handleChildEditSheetChange = useCallback((open: boolean) => {
+    setIsChildEditing(open);
+    onEditSheetChange?.(open);
+  }, [onEditSheetChange]);
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
@@ -157,7 +163,7 @@ export const ProjectDetailSheet = ({
   const isHealthy = actualMargin >= 0;
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()} shouldScaleBackground={false}>
+    <Drawer open={isOpen && !isChildEditing} onOpenChange={(open) => !open && onClose()} shouldScaleBackground={false}>
       <DrawerContent className="max-h-[85vh]">
         <DrawerHeader className="border-b border-border pb-4 shrink-0">
           <div className="flex items-center gap-3">
@@ -229,7 +235,7 @@ export const ProjectDetailSheet = ({
                       transaction={transaction}
                       category={getCategoryById(transaction.categoryId)}
                       userId={userId}
-                      onEditSheetChange={onEditSheetChange}
+                      onEditSheetChange={handleChildEditSheetChange}
                       compact
                     />
                   ))}
@@ -323,7 +329,7 @@ export const ProjectDetailSheet = ({
                       transaction={transaction}
                       category={getCategoryById(transaction.categoryId)}
                       userId={userId}
-                      onEditSheetChange={onEditSheetChange}
+                      onEditSheetChange={handleChildEditSheetChange}
                       compact
                     />
                   ))}
@@ -345,7 +351,7 @@ export const ProjectDetailSheet = ({
                       transaction={transaction}
                       category={getCategoryById(transaction.categoryId)}
                       userId={userId}
-                      onEditSheetChange={onEditSheetChange}
+                      onEditSheetChange={handleChildEditSheetChange}
                       compact
                     />
                   ))}
@@ -405,7 +411,7 @@ export const ProjectDetailSheet = ({
                                 transaction={txn}
                                 category={getCategoryById(txn.categoryId)}
                                 userId={userId}
-                                onEditSheetChange={onEditSheetChange}
+                                onEditSheetChange={handleChildEditSheetChange}
                                 compact
                               />
                             ))}
