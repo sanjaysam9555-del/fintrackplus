@@ -515,26 +515,40 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
         ) : isAmountSort ? (
           // Flat list for amount-based sorting
           sortedTransactions.length === 0 ? (
-            <div className="text-center py-12">
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+              className="text-center py-12"
+            >
               <p className="text-muted-foreground">No transactions found</p>
-            </div>
+            </motion.div>
           ) : (
             <div className="space-y-2">
-              {sortedTransactions.map((t) => (
-                <TransactionItem
+              {sortedTransactions.map((t, index) => (
+                <motion.div
                   key={t.id}
-                  transaction={t}
-                  category={categories.find(c => c.id === t.categoryId)}
-                  userId={userId}
-                  onEditSheetChange={onEditSheetChange}
-                />
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.03 }}
+                >
+                  <TransactionItem
+                    transaction={t}
+                    category={categories.find(c => c.id === t.categoryId)}
+                    userId={userId}
+                    onEditSheetChange={onEditSheetChange}
+                  />
+                </motion.div>
               ))}
             </div>
           )
         ) : !groupedTransactions || groupedTransactions.length === 0 ? (
-          <div className="text-center py-12">
+          <motion.div
+            animate={{ y: [0, -6, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="text-center py-12"
+          >
             <p className="text-muted-foreground">No transactions found</p>
-          </div>
+          </motion.div>
         ) : (
           groupedTransactions.map(([date, txns]) => (
             <div key={date}>
@@ -542,14 +556,20 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
                 {formatDateLabel(date)}
               </p>
               <div className="space-y-2">
-                {txns.map((t) => (
-                  <TransactionItem
+                {txns.map((t, index) => (
+                  <motion.div
                     key={t.id}
-                    transaction={t}
-                    category={categories.find(c => c.id === t.categoryId)}
-                    userId={userId}
-                    onEditSheetChange={onEditSheetChange}
-                  />
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                  >
+                    <TransactionItem
+                      transaction={t}
+                      category={categories.find(c => c.id === t.categoryId)}
+                      userId={userId}
+                      onEditSheetChange={onEditSheetChange}
+                    />
+                  </motion.div>
                 ))}
               </div>
             </div>

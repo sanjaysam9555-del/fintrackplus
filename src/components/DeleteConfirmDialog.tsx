@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2, Archive, ArchiveRestore } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 interface DeleteConfirmDialogProps {
   isOpen: boolean;
@@ -82,7 +83,12 @@ export const DeleteConfirmDialog = ({
       <AlertDialogContent className="max-w-sm rounded-2xl">
         <AlertDialogHeader>
           <div className={cn("w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2", getIconBgColor())}>
-            <Icon className={getIconColor()} size={24} />
+            <motion.div
+              animate={{ x: [0, -4, 4, -4, 4, 0] }}
+              transition={{ duration: 0.4, ease: "easeInOut" }}
+            >
+              <Icon className={getIconColor()} size={24} />
+            </motion.div>
           </div>
           <AlertDialogTitle className="text-center">{title}</AlertDialogTitle>
           <AlertDialogDescription className="text-center">

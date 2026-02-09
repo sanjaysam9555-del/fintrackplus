@@ -43,9 +43,14 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
                 key={tab.id}
                 onClick={handleAddClick}
                 whileTap={{ scale: 0.9 }}
-                className="flex flex-col items-center gap-1 px-4 py-2"
+                className="flex flex-col items-center gap-1 px-4 py-2 relative"
               >
-                <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center">
+                <motion.div
+                  className="absolute w-12 h-12 rounded-full bg-primary/30"
+                  animate={{ scale: [1, 1.3], opacity: [0.4, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeOut" }}
+                />
+                <div className="w-12 h-12 rounded-full gradient-primary flex items-center justify-center relative">
                   <Plus size={24} className="text-primary-foreground" />
                 </div>
               </motion.button>
