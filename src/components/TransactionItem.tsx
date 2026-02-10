@@ -46,19 +46,14 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
   };
   
   const confirmDelete = useCallback(() => {
-    // Store the transaction data for potential undo
     const deletedTransaction = { ...transaction };
-    
-    // Delete the transaction
     deleteTransaction(transaction.id, userId);
     
-    // Show undo toast
     toast(`${deletedTransaction.title || deletedTransaction.vendor} deleted`, {
       duration: 5000,
       action: {
         label: 'Undo',
         onClick: () => {
-          // Restore the transaction
           addTransaction({
             type: deletedTransaction.type,
             amount: deletedTransaction.amount,
@@ -89,8 +84,32 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
     if (info.offset.x < -100) {
       setShowDeleteConfirm(true);
     }
-    // Always animate back to original position smoothly
     await controls.start({ x: 0 }, { type: "spring", stiffness: 500, damping: 30 });
+  };
+
+  const PartnerBadge = () => {
+    if (!partner) return null;
+    
+    if (partner.avatarUrl) {
+      return (
+        <img
+          src={partner.avatarUrl}
+          alt={partner.name}
+          className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+          title={partner.name}
+        />
+      );
+    }
+    
+    return (
+      <span 
+        className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold text-white flex-shrink-0"
+        style={{ backgroundColor: partner.color }}
+        title={partner.name}
+      >
+        {partner.name.charAt(0).toUpperCase()}
+      </span>
+    );
   };
   
   return (
@@ -124,7 +143,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
             onClick={() => setIsExpanded(!isExpanded)}
             className={cn(
               "flex items-center cursor-pointer hover:bg-muted/30 transition-colors",
-              compact ? "gap-2 p-2" : "gap-3 p-3"
+              compact ? "gap-2 p-2" : "gap-2.5 p-3"
             )}
           >
             <div className="flex-shrink-0">
@@ -138,55 +157,44 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
             <div className="flex-1 min-w-0">
               <p className={cn(
                 "text-foreground truncate",
-                compact ? "text-sm font-medium" : "font-semibold"
+                compact ? "text-sm font-medium" : "text-sm font-semibold lg:text-base"
               )}>
                 {transaction.title || transaction.vendor || category?.name || 'Transaction'}
               </p>
               <p className={cn(
                 "text-muted-foreground truncate",
-                compact ? "text-xs" : "text-sm"
+                compact ? "text-xs" : "text-xs lg:text-sm"
               )}>
                 {(() => {
                   const parts: string[] = [];
                   
-                  // Add vendor if different from title
                   if (transaction.vendor && transaction.vendor !== (transaction.title || '')) {
                     parts.push(transaction.vendor);
                   }
                   
-                  // Add category name
                   if (category?.name) {
                     parts.push(category.name);
                   }
                   
-                  // Add project name if available
                   if (project?.name && parts.length < 2) {
                     parts.push(project.name);
                   }
                   
-                  // Add payment method if we still need more info
                   if (parts.length < 2) {
                     parts.push(transaction.paymentMethod === 'cash' ? 'Cash' : 'Online');
                   }
                   
-                  // Always add time
                   parts.push(formatTime(transaction.time));
                   
                   return parts.join(' • ');
                 })()}
-                {partner && (
-                  <span 
-                    className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white ml-1"
-                    style={{ backgroundColor: partner.color }}
-                    title={partner.name}
-                  >
-                    {partner.name.charAt(0).toUpperCase()}
-                  </span>
-                )}
               </p>
             </div>
             
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              {/* Partner avatar/monogram */}
+              <PartnerBadge />
+              
               {/* Receipt & GST indicators */}
               <div className="flex items-center gap-1">
                 {transaction.receiptUrl && (
@@ -202,7 +210,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
               </div>
               <p className={cn(
                 "font-bold text-right whitespace-nowrap",
-                compact ? "text-sm" : "",
+                compact ? "text-sm" : "text-sm lg:text-base",
                 isExpense ? "text-destructive" : "text-success"
               )}>
                 {isExpense ? '-' : '+'}{formatCurrency(transaction.amount)}
@@ -248,12 +256,16 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                         <div className="flex items-center gap-2 col-span-2">
                           <span className="text-muted-foreground">Handled by:</span>
                           <div className="flex items-center gap-1.5">
-                            <div 
-                              className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold"
-                              style={{ backgroundColor: partner.color }}
-                            >
-                              {partner.name.charAt(0).toUpperCase()}
-                            </div>
+                            {partner.avatarUrl ? (
+                              <img src={partner.avatarUrl} alt={partner.name} className="w-4 h-4 rounded-full object-cover" />
+                            ) : (
+                              <div 
+                                className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold"
+                                style={{ backgroundColor: partner.color }}
+                              >
+                                {partner.name.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                             <span className="font-medium">{partner.name}</span>
                           </div>
                         </div>

@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
-import { formatCurrency } from "@/lib/constants";
+import { formatCurrency, formatCompactCurrency } from "@/lib/constants";
 import { ArrowDownLeft, ArrowUpRight, Wallet } from "lucide-react";
 import { motion, useSpring, useMotionValue, useTransform } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface SummaryCardProps {
   title: string;
@@ -36,10 +36,10 @@ const colorMap = {
   },
 };
 
-const AnimatedNumber = ({ value, prefix }: { value: number; prefix?: string }) => {
+const AnimatedNumber = ({ value, prefix, formatter }: { value: number; prefix?: string; formatter: (v: number) => string }) => {
   const motionValue = useMotionValue(0);
   const spring = useSpring(motionValue, { damping: 30, stiffness: 100 });
-  const display = useTransform(spring, (v) => `${prefix || ''}${formatCurrency(Math.abs(Math.round(v)))}`);
+  const display = useTransform(spring, (v) => `${prefix || ''}${formatter(Math.abs(Math.round(v)))}`);
 
   useEffect(() => {
     motionValue.set(value);
@@ -76,8 +76,14 @@ export const SummaryCard = ({
       
       <p className="text-xs lg:text-sm text-muted-foreground font-medium mb-1">{title}</p>
       
+      {/* Mobile: compact format, Desktop: full format */}
       <p className={cn("text-sm lg:text-lg font-bold truncate", colors.text)}>
-        <AnimatedNumber value={amount} prefix={type === 'expense' ? '-' : ''} />
+        <span className="lg:hidden">
+          <AnimatedNumber value={amount} prefix={type === 'expense' ? '-' : ''} formatter={formatCompactCurrency} />
+        </span>
+        <span className="hidden lg:inline">
+          <AnimatedNumber value={amount} prefix={type === 'expense' ? '-' : ''} formatter={formatCurrency} />
+        </span>
       </p>
       
       {percentChange !== undefined && (
