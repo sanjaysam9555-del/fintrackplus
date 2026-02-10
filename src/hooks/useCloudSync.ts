@@ -133,6 +133,7 @@ export const useCloudSync = () => {
           color: (p as { color: string }).color,
           initialCashBalance: Number((p as { initial_cash_balance: number }).initial_cash_balance) || 0,
           initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
+          avatarUrl: (p as { avatar_url?: string }).avatar_url || undefined,
           createdAt: (p as { created_at: string }).created_at.split('T')[0]
         })) || []
       });

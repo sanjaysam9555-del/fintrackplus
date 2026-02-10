@@ -28,6 +28,7 @@ export interface Partner {
   color: string;
   initialCashBalance: number;
   initialOnlineBalance: number;
+  avatarUrl?: string;
   createdAt: string;
 }
 

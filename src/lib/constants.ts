@@ -33,6 +33,22 @@ export const formatCurrency = (amount: number, showSymbol = true): string => {
   return showSymbol ? `${CURRENCY_SYMBOL}${formatted}` : formatted;
 };
 
+export const formatCompactCurrency = (amount: number, showSymbol = true): string => {
+  const abs = Math.abs(amount);
+  const prefix = showSymbol ? CURRENCY_SYMBOL : '';
+  
+  if (abs >= 10000000) {
+    return `${prefix}${(abs / 10000000).toFixed(1)}Cr`;
+  }
+  if (abs >= 100000) {
+    return `${prefix}${(abs / 100000).toFixed(1)}L`;
+  }
+  if (abs >= 1000) {
+    return `${prefix}${(abs / 1000).toFixed(1)}K`;
+  }
+  return `${prefix}${abs}`;
+};
+
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);
   const today = new Date();

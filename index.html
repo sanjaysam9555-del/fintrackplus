@@ -27,6 +27,22 @@
   </head>
 
   <body>
+    <script>
+      // Apply stored theme immediately to prevent flash of light mode
+      (function() {
+        var theme = localStorage.getItem('fintrack-theme') || 'system';
+        var resolved = theme;
+        if (theme === 'system') {
+          resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        var root = document.documentElement;
+        if (resolved === 'oled') {
+          root.classList.add('dark', 'oled');
+        } else {
+          root.classList.add(resolved);
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

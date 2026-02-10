@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,8 @@ import {
 } from "@/components/ui/dialog";
 import { PartnerDetailSheet } from "./PartnerDetailSheet";
 import { Partner } from "@/lib/types";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface PartnersSectionProps {
   onBack: () => void;
@@ -40,7 +42,6 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   
-  // Detail sheet state
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   
@@ -49,6 +50,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [color, setColor] = useState(PARTNER_COLORS[0]);
   const [initialCash, setInitialCash] = useState("");
   const [initialOnline, setInitialOnline] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const dateRange = useMemo(() => {
     const today = new Date();
@@ -101,7 +105,37 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setColor(PARTNER_COLORS[0]);
     setInitialCash("");
     setInitialOnline("");
+    setAvatarUrl(undefined);
     setEditingPartner(null);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('partner-avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('partner-avatars')
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+      toast.success('Photo uploaded');
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Failed to upload photo');
+    } finally {
+      setIsUploading(false);
+    }
   };
   
   const handleAdd = () => {
@@ -112,6 +146,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       color,
       initialCashBalance: parseFloat(initialCash) || 0,
       initialOnlineBalance: parseFloat(initialOnline) || 0,
+      avatarUrl,
     }, userId);
     
     resetForm();
@@ -126,6 +161,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setColor(partner.color);
     setInitialCash(partner.initialCashBalance.toString());
     setInitialOnline(partner.initialOnlineBalance.toString());
+    setAvatarUrl(partner.avatarUrl);
     setEditingPartner(partnerId);
   };
   
@@ -137,6 +173,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       color,
       initialCashBalance: parseFloat(initialCash) || 0,
       initialOnlineBalance: parseFloat(initialOnline) || 0,
+      avatarUrl,
     }, userId);
     
     resetForm();
@@ -179,9 +216,43 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const selectedBalanceData = selectedPartner 
     ? partnerBalances.find(b => b.partner.id === selectedPartner.id) || null
     : null;
+
+  const AvatarUploadButton = () => (
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="relative w-14 h-14 rounded-full border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors overflow-hidden"
+        disabled={isUploading}
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+        ) : (
+          <Camera size={20} className="text-muted-foreground" />
+        )}
+        {isUploading && (
+          <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-full">
+            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+      </button>
+      <div className="text-xs text-muted-foreground">
+        {avatarUrl ? 'Tap to change' : 'Add photo'}
+      </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleAvatarUpload}
+      />
+    </div>
+  );
   
   const PartnerForm = ({ isEdit = false }: { isEdit?: boolean }) => (
     <div className="space-y-4">
+      <AvatarUploadButton />
+
       <div>
         <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name</Label>
         <Input
@@ -416,12 +487,20 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                     {/* Header Row */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div 
-                          className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                          style={{ backgroundColor: partner.color }}
-                        >
-                          {partner.name.charAt(0).toUpperCase()}
-                        </div>
+                        {partner.avatarUrl ? (
+                          <img 
+                            src={partner.avatarUrl} 
+                            alt={partner.name}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div 
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                            style={{ backgroundColor: partner.color }}
+                          >
+                            {partner.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <span className="font-semibold">{partner.name}</span>
                           <p className="text-xs text-muted-foreground">
@@ -473,19 +552,6 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                         </span>
                       </div>
                     </div>
-                    
-                    {/* Total & Hint */}
-                    <div className="mt-2 flex items-center justify-between">
-                      <span className="text-xs text-muted-foreground">
-                        Total: <span className={cn(
-                          "font-semibold",
-                          totalClosing >= 0 ? "text-foreground" : "text-destructive"
-                        )}>
-                          {totalClosing < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(totalClosing).toLocaleString()}
-                        </span>
-                      </span>
-                      <span className="text-xs text-primary">Tap to view transactions →</span>
-                    </div>
                   </>
                 )}
               </motion.div>
@@ -494,40 +560,42 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         )}
       </div>
       
-      {/* Add Partner Dialog */}
-      <Dialog open={isAddOpen} onOpenChange={(open) => { setIsAddOpen(open); if (!open) resetForm(); }}>
-        <DialogTrigger asChild>
-          <Button className="fixed bottom-24 right-4 rounded-full w-14 h-14 shadow-lg z-40">
-            <Plus size={24} />
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Add Partner</DialogTitle>
-          </DialogHeader>
-          <PartnerForm />
-        </DialogContent>
-      </Dialog>
+      {/* Add Partner Button */}
+      <div className="px-4 mt-4">
+        <Dialog open={isAddOpen} onOpenChange={(open) => {
+          setIsAddOpen(open);
+          if (!open) resetForm();
+        }}>
+          <DialogTrigger asChild>
+            <Button className="w-full" size="lg">
+              <Plus size={18} className="mr-2" />
+              Add Partner
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md bg-card">
+            <DialogHeader>
+              <DialogTitle>Add Partner</DialogTitle>
+            </DialogHeader>
+            <PartnerForm />
+          </DialogContent>
+        </Dialog>
+      </div>
       
       {/* Partner Detail Sheet */}
-      <PartnerDetailSheet
-        partner={selectedPartner}
-        isOpen={isDetailOpen}
-        onClose={() => {
-          setIsDetailOpen(false);
-          setSelectedPartner(null);
-        }}
-        dateRange={dateRange}
-        balanceData={selectedBalanceData}
-        periodLabel={getFilterLabel()}
-        userId={userId}
-        onEditSheetChange={(isOpen) => {
-          // Hide detail sheet when editing to prevent z-index conflicts
-          if (isOpen) {
+      {selectedPartner && selectedBalanceData && (
+        <PartnerDetailSheet
+          isOpen={isDetailOpen}
+          onClose={() => {
             setIsDetailOpen(false);
-          }
-        }}
-      />
+            setSelectedPartner(null);
+          }}
+          partner={selectedPartner}
+          balanceData={selectedBalanceData}
+          dateRange={dateRange}
+          periodLabel={getFilterLabel()}
+          userId={userId}
+        />
+      )}
     </div>
   );
 };

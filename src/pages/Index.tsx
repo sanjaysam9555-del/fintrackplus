@@ -7,6 +7,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { useSyncEngine } from "@/hooks/useSyncEngine";
+import { useTheme } from "@/hooks/useTheme";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
 
@@ -117,6 +118,9 @@ const Index = () => {
   
   // Initialize airtight sync engine (all syncing happens silently in background)
   const { showOnboarding, userName, completeOnboarding, refreshData, isOnline, pendingCount } = useSyncEngine();
+  
+  // Apply theme at app level (not just Settings)
+  useTheme();
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -271,7 +275,8 @@ const Index = () => {
         {/* Main Content Area */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 h-screen overflow-y-auto overscroll-contain scroll-smooth relative"
+          className="flex-1 h-screen overflow-y-auto overscroll-contain relative"
+          style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain' }}
         >
           {/* Page transition overlay */}
           <AnimatePresence>
