@@ -1,93 +1,105 @@
 
 
-# UI/UX Improvements - 6 Fixes
+# 7 Fixes: Partner Symmetry, PDF Layout, Summary Cards, Chart Height, Settings Button, Upload, and Avatar Propagation
 
-## 1. Partner Avatars (Profile Pictures)
+## 0. Partner Avatar Position -- Fixed Location for Symmetry
 
-**What changes**: Partners can have profile pictures for easier identification.
+**Problem**: The partner badge (avatar/monogram) sits inside a flex row between the title and the amount, so it shifts left/right depending on title length.
 
-**Technical approach**:
-- Add `avatar_url` column to the `partners` database table via migration
-- Add `avatarUrl` optional field to the `Partner` TypeScript interface
-- Update `PartnersSection.tsx` partner form to include a photo upload button (using existing storage bucket pattern from `ProfileEditSheet.tsx`)
-- Update `addPartner` and `updatePartner` in `store.ts` to sync `avatar_url`
-- Update cloud sync mappings in `useCloudSync.ts` and `syncEngine.ts` to include `avatar_url`
-- Create a storage bucket `partner-avatars` via SQL migration with appropriate RLS policies
+**Fix**: Move `<PartnerBadge />` out of the `flex items-center` right-side group and give it a fixed position. Place it immediately after the category icon (before the title) as a second flex-shrink-0 element, so it always appears in the same spot regardless of title length.
 
-**Files**: `src/lib/types.ts`, `src/lib/store.ts`, `src/hooks/useCloudSync.ts`, `src/lib/syncEngine.ts`, `src/components/settings/PartnersSection.tsx`, + DB migration
-
----
-
-## 2. Mobile Font Size Optimization for Transaction Entries
-
-**What changes**: Transaction items on mobile show smaller, denser text to maximize information at a glance.
-
-**Technical approach**:
-- In `TransactionItem.tsx`, reduce the non-compact title from `font-semibold` (inherits base ~16px) to `text-sm font-semibold` on mobile
-- Reduce subtitle text from `text-sm` to `text-xs`
-- Reduce amount text size slightly
-- These changes are mobile-only; desktop sizes remain unchanged
+In `TransactionItem.tsx` (line ~194-196): Remove `<PartnerBadge />` from the right-side `div` and place it right after the category icon `div` (after line 155), so the layout becomes: `[CategoryIcon] [PartnerBadge] [Title...] [Amount] [Chevron]`. The badge gets `flex-shrink-0` so it never moves.
 
 **File**: `src/components/TransactionItem.tsx`
 
 ---
 
-## 3. Partner Avatar/Monogram on All Transaction Entries
+## 1. PDF Export -- Laptop-Optimized Layout
 
-**What changes**: Every transaction item across all tabs shows the partner's avatar image or colored monogram circle for quick identification.
+**Problem**: The PDF HTML uses `font-size: 13px`, small padding, and a viewport meta tag that makes it render mobile-sized.
 
-**Technical approach**:
-- In `TransactionItem.tsx`, move the partner badge from inside the subtitle text into a visible position in the main row (next to the category icon or amount area)
-- If the partner has an `avatarUrl`, show a small circular image; otherwise show the existing colored monogram
-- Make it slightly larger (w-5 h-5 instead of w-4 h-4) for better visibility
-- This applies everywhere `TransactionItem` is rendered (Home, Expenses, Income, Project details, etc.)
+**Fix**: Update the PDF HTML template in `ReportsSection.tsx` to:
+- Remove or widen the viewport meta tag (set `width=1200` instead of `device-width`)
+- Increase body font size to 14px, table font to 12px
+- Use a fixed min-width on the body (e.g., `min-width: 1100px`) so the report always renders at desktop width
+- Increase table `th`/`td` padding for better readability
+- This ensures the PDF looks laptop-optimized whether opened on mobile or desktop
 
-**File**: `src/components/TransactionItem.tsx`
-
----
-
-## 4. Theme Not Applied on Initial Load
-
-**What changes**: The app correctly applies dark/OLED theme immediately on load, not just when Settings is visited.
-
-**Root cause**: The `useTheme` hook is only called inside `SettingsPage.tsx`. The theme is applied on mount via `useEffect`, but this component is lazy-loaded and only mounts when the user visits Settings.
-
-**Technical approach**:
-- Apply the stored theme at the top level before React renders. Add a synchronous script in `index.html` (inline `<script>`) that reads `localStorage('fintrack-theme')` and applies the correct class to `<html>` immediately. This prevents any flash of light mode.
-- Additionally, call `useTheme()` in `Index.tsx` (the main authenticated page) so that theme changes and system preference listeners are active app-wide, not just in Settings.
-
-**Files**: `index.html`, `src/pages/Index.tsx`
+**File**: `src/components/settings/ReportsSection.tsx` (lines ~281-367)
 
 ---
 
-## 5. Smooth Scrolling Fixes
+## 2. Summary Cards -- Compact 2-Row Layout
 
-**What changes**: Vertical scrolling across the app feels smooth and doesn't get stuck.
+**Problem**: Summary cards have 3 visual rows: icon, label, number, making them tall.
 
-**Technical approach**:
-- The main scroll container in `Index.tsx` uses `overflow-y-auto overscroll-contain scroll-smooth`. The `scroll-smooth` class causes programmatic scrolling to be smooth but can interfere with touch scrolling on some mobile browsers. Remove `scroll-smooth` from the scroll container.
-- Add `-webkit-overflow-scrolling: touch` for iOS momentum scrolling
-- Ensure the `AnimatePresence` exit animations don't cause layout shifts that block scroll by adding `overflow-hidden` to the motion wrapper only during transitions
-- Add `overscroll-behavior-y: contain` to prevent scroll chaining
+**Fix**: Restructure `SummaryCard.tsx` to put icon and label in one row (horizontal flex), and the number below:
 
-**File**: `src/pages/Index.tsx`, `src/index.css`
+```text
+[Icon] Income        (row 1: icon + label side by side)
+35.7L                 (row 2: number)
++5.2% vs last        (row 3: optional change indicator)
+```
+
+- Reduce card padding from `p-3 lg:p-4` to `p-2.5 lg:p-3`
+- Make the icon smaller (w-6 h-6 instead of w-8 h-8)
+- Put icon div and label `<p>` in a `flex items-center gap-1.5` row
+- Remove `mb-2` from icon, remove `mb-1` from label
+
+**File**: `src/components/SummaryCard.tsx`
 
 ---
 
-## 6. Summary Card Compact Number Formatting
+## 3. Cash Flow Chart -- 25% Height Reduction
 
-**What changes**: Large numbers on summary cards show as "35.7L" instead of "35,70,084" on mobile. The animated counter still works with these compact numbers.
+**Problem**: The chart container uses `h-28` (7rem / 112px).
 
-**Technical approach**:
-- Create a `formatCompactCurrency` function that formats amounts as:
-  - Under 1,000: show full number (e.g., "850")
-  - 1K-99.9K: show with K suffix (e.g., "35.7K")  
-  - 1L+: show with L suffix (e.g., "35.7L")
-  - 1Cr+: show with Cr suffix (e.g., "1.2Cr")
-- In `SummaryCard.tsx`, use this compact format on mobile (`lg:` breakpoint uses full format)
-- Update the `AnimatedNumber` component to accept a formatter function so the spring animation works with compact display
+**Fix**: Change `h-28` to `h-20` (5rem / 80px) on the chart `div` (line 230 of `CashFlowChart.tsx`). Also reduce top margin from `mt-2` to `mt-1` and bottom legend margin from `mt-2` to `mt-1`. Reduce overall card padding from `p-4` to `p-3`. These changes cut roughly 25% of the card height while keeping the chart readable.
 
-**Files**: `src/lib/constants.ts`, `src/components/SummaryCard.tsx`
+**File**: `src/components/CashFlowChart.tsx`
+
+---
+
+## 4. Settings Button on Income and Expense Tabs
+
+**Problem**: The Settings gear icon only appears on the Home tab header.
+
+**Fix**: In `TransactionList.tsx`, add a Settings button to the header area (line ~277-281). The component needs an `onNavigate` prop. Update:
+- `TransactionListProps` interface: add `onNavigate?: (section: string) => void`
+- In the header `div`, add a Settings icon button that calls `onNavigate?.('settings')`
+- In `Index.tsx`, pass `onNavigate={handleNavigate}` to `TransactionList` (lines ~215, 221)
+
+**Files**: `src/components/TransactionList.tsx`, `src/pages/Index.tsx`
+
+---
+
+## 5. Partner Photo Upload -- Reliability Fix
+
+**Problem**: Upload sometimes fails or requires multiple attempts. No cropping/save confirmation.
+
+**Fix**: In `PartnersSection.tsx`:
+- Add error retry logic: wrap the upload in a try-catch with a retry (up to 2 attempts)
+- Add `contentType` to the upload options so Supabase correctly handles the file
+- Add a cache-busting query param to the public URL (`?t=timestamp`) to avoid stale cached images
+- Reset the file input value after upload (`e.target.value = ''`) so re-selecting the same file works
+- For cropping: add a simple circular preview with object-fit cover (the current implementation already does this visually; a full crop tool would require a heavy library -- instead, note that photos are displayed as circular crops automatically)
+
+**File**: `src/components/settings/PartnersSection.tsx`
+
+---
+
+## 6. Partner Photo Propagation -- Updated Everywhere
+
+**Problem**: When a partner's photo is updated in Settings, the `TransactionItem` expanded "Handled by" section (lines 255-272) reads `partner.avatarUrl` from the store. If the store's partner list is updated correctly, this should propagate. The issue is likely that `updatePartner` in the store doesn't update `avatarUrl` correctly, or the cache-busted URL isn't being used.
+
+**Fix**:
+- Ensure `updatePartner` in `store.ts` correctly merges `avatarUrl` into the partner object (verify the existing code)
+- In `TransactionItem.tsx` "Handled by" section (line 259-268): it already reads from `partner.avatarUrl` -- this will work correctly once the store update and cache-busting from fix #5 are applied
+- Add cache-busting to all avatar image URLs: append `?t=` + a timestamp or use the URL as-is since the URL changes on each upload (new filename with `Date.now()`)
+
+The root cause is likely that the old cached URL is served even after update. The fix in #5 (new filename per upload + cleaning up old files) will resolve this.
+
+**Files**: `src/components/settings/PartnersSection.tsx`, `src/components/TransactionItem.tsx`
 
 ---
 
@@ -95,16 +107,11 @@
 
 | File | Changes |
 |------|---------|
-| DB Migration | Add `avatar_url` column to `partners`, create `partner-avatars` storage bucket |
-| `src/lib/types.ts` | Add `avatarUrl?: string` to `Partner` interface |
-| `src/lib/store.ts` | Sync `avatar_url` in addPartner/updatePartner |
-| `src/hooks/useCloudSync.ts` | Map `avatar_url` in partner cloud sync |
-| `src/lib/syncEngine.ts` | Map `avatar_url` in partner sync engine |
-| `src/components/settings/PartnersSection.tsx` | Add avatar upload to partner form, show avatar in list |
-| `src/components/TransactionItem.tsx` | Smaller mobile fonts, visible partner avatar/monogram |
-| `index.html` | Inline script to apply theme before React loads |
-| `src/pages/Index.tsx` | Call `useTheme()` at top level, fix scroll container classes |
-| `src/index.css` | Add `-webkit-overflow-scrolling: touch` styles |
-| `src/lib/constants.ts` | Add `formatCompactCurrency` function |
-| `src/components/SummaryCard.tsx` | Use compact format on mobile with animated counter |
+| `src/components/TransactionItem.tsx` | Move PartnerBadge to fixed position after category icon |
+| `src/components/settings/ReportsSection.tsx` | Desktop-optimized PDF HTML template (wider layout, bigger fonts) |
+| `src/components/SummaryCard.tsx` | Compact 2-row layout (icon+label in row 1, number in row 2) |
+| `src/components/CashFlowChart.tsx` | Reduce chart height from h-28 to h-20, tighter padding |
+| `src/components/TransactionList.tsx` | Add Settings button to header, accept onNavigate prop |
+| `src/pages/Index.tsx` | Pass onNavigate to TransactionList |
+| `src/components/settings/PartnersSection.tsx` | Upload reliability fixes, cache-busting, file input reset |
 
