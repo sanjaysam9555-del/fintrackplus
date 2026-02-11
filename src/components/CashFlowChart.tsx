@@ -200,7 +200,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-card rounded-2xl p-4 shadow-card border border-border"
+      className="bg-card rounded-2xl p-3 shadow-card border border-border"
     >
       <div className="flex items-center justify-between mb-2">
         <div>
@@ -227,7 +227,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         </motion.p>
       )}
       
-      <div className="h-28 mt-2">
+      <div className="h-20 mt-1">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} onClick={handleClick} margin={{ left: 10, right: 10 }}>
             <defs>
@@ -283,7 +283,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         </ResponsiveContainer>
       </div>
       
-      <div className="flex justify-center gap-4 mt-2">
+      <div className="flex justify-center gap-4 mt-1">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-full bg-success" />
           <span className="text-[10px] text-muted-foreground">Income</span>

@@ -154,6 +154,9 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
               />
             </div>
             
+            {/* Partner avatar/monogram - fixed position */}
+            <PartnerBadge />
+            
             <div className="flex-1 min-w-0">
               <p className={cn(
                 "text-foreground truncate",
@@ -192,9 +195,6 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
             </div>
             
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              {/* Partner avatar/monogram */}
-              <PartnerBadge />
-              
               {/* Receipt & GST indicators */}
               <div className="flex items-center gap-1">
                 {transaction.receiptUrl && (
