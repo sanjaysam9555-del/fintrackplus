@@ -113,26 +113,43 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
 
-    setIsUploading(true);
-    try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${userId}/${Date.now()}.${fileExt}`;
+    // Reset file input so re-selecting the same file works
+    e.target.value = '';
 
+    setIsUploading(true);
+    
+    const fileExt = file.name.split('.').pop();
+    const filePath = `${userId}/${Date.now()}.${fileExt}`;
+    
+    const attemptUpload = async (attempt: number): Promise<void> => {
       const { error: uploadError } = await supabase.storage
         .from('partner-avatars')
-        .upload(filePath, file, { upsert: true });
+        .upload(filePath, file, { 
+          upsert: true,
+          contentType: file.type,
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        if (attempt < 2) {
+          await attemptUpload(attempt + 1);
+          return;
+        }
+        throw uploadError;
+      }
 
       const { data: { publicUrl } } = supabase.storage
         .from('partner-avatars')
         .getPublicUrl(filePath);
 
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(`${publicUrl}?t=${Date.now()}`);
       toast.success('Photo uploaded');
+    };
+
+    try {
+      await attemptUpload(1);
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload photo');
+      toast.error('Failed to upload photo. Please try again.');
     } finally {
       setIsUploading(false);
     }

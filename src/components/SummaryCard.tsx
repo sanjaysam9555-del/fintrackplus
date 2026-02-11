@@ -65,16 +65,17 @@ export const SummaryCard = ({
       animate={{ opacity: 1, y: 0 }}
       whileHover={{ scale: 1.02 }}
       className={cn(
-        "bg-card rounded-2xl p-3 lg:p-4 shadow-card border border-border",
+        "bg-card rounded-2xl p-2.5 lg:p-3 shadow-card border border-border",
         className
       )}
     >
-      <div className={cn("w-8 h-8 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center mb-2", colors.icon)}>
-        <Icon size={16} className={cn(colors.iconColor, "lg:hidden")} />
-        <Icon size={20} className={cn(colors.iconColor, "hidden lg:block")} />
+      <div className="flex items-center gap-1.5 mb-1">
+        <div className={cn("w-6 h-6 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center flex-shrink-0", colors.icon)}>
+          <Icon size={14} className={cn(colors.iconColor, "lg:hidden")} />
+          <Icon size={16} className={cn(colors.iconColor, "hidden lg:block")} />
+        </div>
+        <p className="text-xs lg:text-sm text-muted-foreground font-medium truncate">{title}</p>
       </div>
-      
-      <p className="text-xs lg:text-sm text-muted-foreground font-medium mb-1">{title}</p>
       
       {/* Mobile: compact format, Desktop: full format */}
       <p className={cn("text-sm lg:text-lg font-bold truncate", colors.text)}>

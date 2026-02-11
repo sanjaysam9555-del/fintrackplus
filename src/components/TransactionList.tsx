@@ -5,7 +5,7 @@ import { formatDate as formatDateLabel, formatCurrency } from "@/lib/constants";
 import { TransactionItem } from "./TransactionItem";
 import { TransactionSkeleton } from "./ui/skeleton-loader";
 import { UpcomingRecurringBanner } from "./UpcomingRecurringBanner";
-import { Search, CalendarIcon, ArrowUpDown } from "lucide-react";
+import { Search, CalendarIcon, ArrowUpDown, Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "./ui/input";
 import { motion } from "framer-motion";
@@ -20,11 +20,12 @@ interface TransactionListProps {
   userId?: string;
   onEditSheetChange?: (isOpen: boolean) => void;
   onSearchClick?: () => void;
+  onNavigate?: (section: string) => void;
 }
 
 type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
 
-export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick }: TransactionListProps) => {
+export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick, onNavigate }: TransactionListProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -274,10 +275,18 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
   return (
     <div className="min-h-screen pb-40 md:pb-8 md:px-6">
       {/* Header */}
-      <div className="p-4 pt-6 safe-top">
+      <div className="p-4 pt-6 safe-top flex items-center justify-between">
         <h1 className="text-2xl font-bold">
           {type === 'expense' ? 'Expenses' : 'Income'}
         </h1>
+        {onNavigate && (
+          <button
+            onClick={() => onNavigate('settings')}
+            className="p-2 rounded-full hover:bg-muted transition-colors"
+          >
+            <Settings size={20} className="text-muted-foreground" />
+          </button>
+        )}
       </div>
       
       {/* Time Filter Tabs */}
