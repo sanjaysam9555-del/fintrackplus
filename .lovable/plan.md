@@ -1,33 +1,35 @@
 
-# Clickable Project Filter Chips on Vendor Detail Page
 
-## What Changes
+# Add Income/Expense Filter Tabs to Categories Section
 
-On the vendor detail page, the project chips at the top become clickable toggle filters. Tapping a project chip highlights it with color and filters the transaction list to show only entries from that project. Multiple projects can be selected simultaneously. When no chips are selected, all transactions show (default).
+## Problem
+The categories list currently shows all categories (income and expense) combined, making it harder to manage them separately.
 
-## Technical Details
+## Solution
 
-**File: `src/components/settings/VendorsSection.tsx`**
+Add a tab selector at the top of the categories list (below the header) to filter by type: "All", "Expense", "Income".
 
-1. **Add state** for selected project filter:
-   - `const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set())`
-   - Reset it when `detailVendorName` changes
+### Changes in `src/components/settings/CategoriesSection.tsx`
 
-2. **Make project chips clickable** (lines 282-287):
-   - Toggle project ID in/out of `selectedProjectIds` on click
-   - When selected: apply the project's color as background with white text (or use `bg-primary text-primary-foreground`)
-   - When unselected: keep current `bg-muted` style
-   - Add `cursor-pointer` and transition classes
+1. **Add filter state**: `const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all')`
 
-3. **Filter transactions** (lines 296-304):
-   - Compute `filteredTransactions` from `detailStats.all`:
-     - If `selectedProjectIds.size === 0` -> show all
-     - Otherwise -> show only transactions where `t.projectId` is in `selectedProjectIds`
-   - Update the transaction count/total in the header card to reflect the filtered view
+2. **Add tab bar** between the header and the add form/list area:
+   - Three buttons: "All", "Expense", "Income"
+   - Styled as a segmented control using `bg-muted` container with `bg-background` for the active tab (matching the existing Tabs component style)
+   - Sticky below the header
 
-4. **Add "All" chip** before the project chips to quickly clear all filters (deselect all projects)
+3. **Filter the categories list**: Wrap the `categories.map()` with a filtered array:
+   - `filterType === 'all'` -> show all
+   - Otherwise -> show only categories matching `cat.type === filterType`
 
-| Element | Unselected | Selected |
-|---------|-----------|----------|
-| Project chip | `bg-muted text-foreground` | `bg-primary text-primary-foreground` or project color |
-| "All" chip | Active when no projects selected | Dimmed when projects are selected |
+4. **Auto-set filter when adding**: When the user opens the add form, pre-set the form's type to match the current filter (if not "all"), so adding a category while viewing "Expense" defaults the new category to expense type.
+
+### Layout
+
+```
+[Back] Categories          [+ Add]
+[ All | Expense | Income ]
+-------------------------------
+[Category cards filtered by selection]
+```
+
