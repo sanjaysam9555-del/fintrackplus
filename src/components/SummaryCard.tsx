@@ -78,7 +78,7 @@ export const SummaryCard = ({
         className
       )}
     >
-      <div className="flex items-center gap-1.5 mb-1">
+      <div className="flex items-center justify-center gap-1.5 mb-1">
         <div className={cn("w-6 h-6 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center flex-shrink-0", colors.icon)}>
           <Icon size={14} className={cn(colors.iconColor, "lg:hidden")} />
           <Icon size={16} className={cn(colors.iconColor, "hidden lg:block")} />
@@ -87,7 +87,7 @@ export const SummaryCard = ({
       </div>
       
       {/* Mobile: compact format, Desktop: full format */}
-      <p className={cn("text-sm lg:text-lg font-bold truncate", colors.text)}>
+      <p className={cn("text-sm lg:text-lg font-bold truncate text-center", colors.text)}>
         <span className="lg:hidden">
           <AnimatedNumber value={amount} prefix={type === 'expense' ? '-' : ''} formatter={formatCompactCurrency} />
         </span>
@@ -98,7 +98,7 @@ export const SummaryCard = ({
       
       {percentChange !== undefined && (
         <p className={cn(
-          "text-[10px] lg:text-xs font-medium mt-1 whitespace-nowrap",
+          "text-[10px] lg:text-xs font-medium mt-1 whitespace-nowrap text-center",
           isPositive ? "text-success" : "text-destructive"
         )}>
           {isPositive ? '+' : ''}{percentChange.toFixed(1)}% vs last
