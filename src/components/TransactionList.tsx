@@ -510,6 +510,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
               {cat.name}
             </button>
           ))}
+          <div className="w-px self-stretch my-1 bg-foreground/30 flex-shrink-0" />
           {[
             { key: 'no-category', label: 'Uncategorized' },
             { key: 'no-project', label: 'No Project' },
