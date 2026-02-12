@@ -510,11 +510,6 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
               {cat.name}
             </button>
           ))}
-        </div>
-      </div>
-      {/* Uncategorized Filter Chips */}
-      <div className="px-4 mb-4 overflow-x-auto">
-        <div className="flex gap-2 pb-1">
           {[
             { key: 'no-category', label: 'Uncategorized' },
             { key: 'no-project', label: 'No Project' },
@@ -524,10 +519,10 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
               key={filter.key}
               onClick={() => { setUncategorizedFilter(uncategorizedFilter === filter.key ? null : filter.key); setSelectedCategory(null); }}
               className={cn(
-                "px-3 py-1.5 rounded-full font-medium whitespace-nowrap transition-colors text-xs border",
+                "px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors text-sm",
                 uncategorizedFilter === filter.key 
-                  ? "bg-destructive/10 text-destructive border-destructive/30" 
-                  : "bg-muted/50 text-muted-foreground border-transparent"
+                  ? "bg-foreground text-background" 
+                  : "bg-muted text-muted-foreground"
               )}
             >
               {filter.label}
