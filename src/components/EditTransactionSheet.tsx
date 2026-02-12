@@ -571,12 +571,16 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                         <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                           {selectedPartner ? (
                             <div className="flex items-center gap-2">
-                              <div 
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                                style={{ backgroundColor: selectedPartner.color }}
-                              >
-                                {selectedPartner.name.charAt(0).toUpperCase()}
-                              </div>
+                              {selectedPartner.avatarUrl ? (
+                                <img src={selectedPartner.avatarUrl} alt={selectedPartner.name} className="w-6 h-6 rounded-full object-cover" />
+                              ) : (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                  style={{ backgroundColor: selectedPartner.color }}
+                                >
+                                  {selectedPartner.name.charAt(0).toUpperCase()}
+                                </div>
+                              )}
                               <span className="text-sm font-medium">{selectedPartner.name}</span>
                             </div>
                           ) : (
@@ -615,12 +619,16 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                   partnerId === p.id ? "bg-primary/10" : "hover:bg-muted"
                                 )}
                               >
-                                <div 
-                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                                  style={{ backgroundColor: p.color }}
-                                >
-                                  {p.name.charAt(0).toUpperCase()}
-                                </div>
+                                {p.avatarUrl ? (
+                                  <img src={p.avatarUrl} alt={p.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
+                                ) : (
+                                  <div 
+                                    className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                                    style={{ backgroundColor: p.color }}
+                                  >
+                                    {p.name.charAt(0).toUpperCase()}
+                                  </div>
+                                )}
                                 <span className="font-medium flex-1">{p.name}</span>
                                 <Check size={14} className={cn("text-primary shrink-0", partnerId === p.id ? "opacity-100" : "opacity-0")} />
                               </button>

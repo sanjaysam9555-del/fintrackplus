@@ -95,7 +95,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
         <img
           src={partner.avatarUrl}
           alt={partner.name}
-          className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+          className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full object-cover ring-1 ring-card"
           title={partner.name}
         />
       );
@@ -103,7 +103,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
     
     return (
       <span 
-        className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold text-white flex-shrink-0"
+        className="absolute -bottom-0.5 -right-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full text-[8px] font-bold text-white ring-1 ring-card"
         style={{ backgroundColor: partner.color }}
         title={partner.name}
       >
@@ -146,16 +146,14 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
               compact ? "gap-2 p-2" : "gap-2.5 p-3"
             )}
           >
-            <div className="flex-shrink-0">
+            <div className="relative flex-shrink-0">
               <CategoryIcon 
                 iconName={category?.icon || 'Circle'} 
                 colorClass={category?.color || 'category-other'}
                 size={compact ? "sm" : "md"}
               />
+              <PartnerBadge />
             </div>
-            
-            {/* Partner avatar/monogram - fixed position */}
-            <PartnerBadge />
             
             <div className="flex-1 min-w-0">
               <p className={cn(
