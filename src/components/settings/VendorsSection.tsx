@@ -47,6 +47,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   const [selectedIcon, setSelectedIcon] = useState('Store');
   const [detailVendorName, setDetailVendorName] = useState<string | null>(null);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
 
   // Combine stored vendors with transaction vendors, ensuring all are editable
   const allVendors = useMemo(() => {
@@ -247,11 +248,36 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   const detailStats = detailVendorName ? vendorStats[detailVendorName] : null;
   const detailVendorObj = detailVendorName ? allVendors.find(v => v.name === detailVendorName) : null;
 
+  // Reset filter when vendor changes
+  const handleSetDetailVendor = (name: string | null) => {
+    setDetailVendorName(name);
+    setSelectedProjectIds(new Set());
+  };
+
+  const toggleProjectFilter = (pid: string) => {
+    setSelectedProjectIds(prev => {
+      const next = new Set(prev);
+      if (next.has(pid)) next.delete(pid);
+      else next.add(pid);
+      return next;
+    });
+  };
+
+  // Filtered transactions for detail view
+  const filteredDetailTransactions = useMemo(() => {
+    if (!detailStats) return [];
+    if (selectedProjectIds.size === 0) return detailStats.all;
+    return detailStats.all.filter(t => t.projectId && selectedProjectIds.has(t.projectId));
+  }, [detailStats, selectedProjectIds]);
+
+  const filteredTotal = filteredDetailTransactions.reduce((sum, t) => sum + t.amount, 0);
+  const filteredCount = filteredDetailTransactions.length;
+
   if (detailVendorName && detailStats && !isEditSheetOpen) {
     return (
       <div className="min-h-screen bg-background">
         <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 border-b border-border">
-          <button onClick={() => setDetailVendorName(null)} className="p-2 -ml-2 rounded-full hover:bg-muted">
+          <button onClick={() => handleSetDetailVendor(null)} className="p-2 -ml-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-xl font-bold truncate">{detailVendorName}</h1>
@@ -269,21 +295,46 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
             <div>
               <p className="font-semibold text-lg">{detailVendorName}</p>
               <p className="text-sm text-muted-foreground">
-                {detailStats.count} transaction{detailStats.count !== 1 ? 's' : ''} &middot; {formatAmount(detailStats.total)}
+                {filteredCount} transaction{filteredCount !== 1 ? 's' : ''} &middot; {formatAmount(filteredTotal)}
               </p>
             </div>
           </div>
 
-          {/* Projects chips */}
+          {/* Projects filter chips */}
           {detailStats.projectIds.size > 0 && (
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-1.5">Projects</p>
               <div className="flex flex-wrap gap-1.5">
+                <button
+                  onClick={() => setSelectedProjectIds(new Set())}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer",
+                    selectedProjectIds.size === 0
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
+                  )}
+                >
+                  All
+                </button>
                 {Array.from(detailStats.projectIds).map(pid => {
                   const proj = projects.find(p => p.id === pid);
-                  return proj ? (
-                    <span key={pid} className="px-2 py-0.5 bg-muted rounded-full text-xs font-medium">{proj.name}</span>
-                  ) : null;
+                  if (!proj) return null;
+                  const isSelected = selectedProjectIds.has(pid);
+                  return (
+                    <button
+                      key={pid}
+                      onClick={() => toggleProjectFilter(pid)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-medium transition-all cursor-pointer",
+                        isSelected
+                          ? "text-white"
+                          : "bg-muted text-foreground hover:bg-muted/80"
+                      )}
+                      style={isSelected ? { backgroundColor: proj.color || 'hsl(var(--primary))' } : undefined}
+                    >
+                      {proj.name}
+                    </button>
+                  );
                 })}
               </div>
             </div>
@@ -291,9 +342,11 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
 
           {/* All transactions */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2">All Transactions</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">
+              {selectedProjectIds.size > 0 ? 'Filtered Transactions' : 'All Transactions'}
+            </p>
             <div className="space-y-1.5">
-              {detailStats.all.map((t) => (
+              {filteredDetailTransactions.map((t) => (
                 <TransactionItem
                   key={t.id}
                   transaction={t}
@@ -303,6 +356,9 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
                   onEditSheetChange={setIsEditSheetOpen}
                 />
               ))}
+              {filteredCount === 0 && (
+                <p className="text-center text-sm text-muted-foreground py-4">No transactions for selected projects</p>
+              )}
             </div>
           </div>
         </div>
@@ -438,7 +494,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
                                   className="w-full mt-2 text-xs text-primary"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setDetailVendorName(vendor.name);
+                                    handleSetDetailVendor(vendor.name);
                                   }}
                                 >
                                   View All ({stats.count})
