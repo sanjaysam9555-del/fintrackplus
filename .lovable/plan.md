@@ -1,73 +1,56 @@
 
 
-# Redesign Activity Logs for Clarity
+# Enrich Activity Logs with Full Details and Extended History
 
-## Problem
+## Problems Found
 
-The current log entries are hard to parse. The change details section uses a cramped inline layout (`field: ~~old~~ -> new`) with tiny text, muted colors, and a narrow fixed-width label column. It's not immediately clear what changed, what the old value was, and what the new value is.
+1. **Log history capped at 50 entries** -- heavy users exhaust this in days, not a month
+2. **"Added" entries have no details** -- when you add a transaction, category, project, vendor, or partner, the log only shows a brief message like "Vendor Name - Rs 5,000" with zero detail about what was actually created
+3. **Partner creation has no log entry at all** -- the `addPartner` function is missing the `addNotification` call entirely
+4. **Transaction add messages are vague** -- missing title, category, project, partner, and payment method info
 
-## Solution
+## Changes
 
-Redesign the log card UI in `src/components/SettingsPage.tsx` (the `NotificationsContent` component) to make changes visually distinct and scannable.
+### File: `src/lib/store.ts`
 
-### UI Changes
+**1. Increase log limit from 50 to 200** (line 239)
+- Change `.slice(0, 50)` to `.slice(0, 200)`
+- This comfortably covers a month of activity even for power users
 
-**1. Better card header layout**
-- Show the action type as a colored badge/pill (e.g., "Edited", "Deleted", "Added") next to the title
-- Make the title bolder and the message more descriptive
+**2. Enrich "Transaction Added" notification** (lines 305-309)
+- Add `details` array showing: Title, Amount, Type, Vendor, Category, Project, Partner, Payment Method, Date
+- Add `entityType: 'transaction'` and `entityId`
+- Use the same name-resolution helpers (getCategoryName, getProjectName, getPartnerName) already used in update/delete
 
-**2. Redesigned change details table**
-- Replace the cramped inline layout with a proper two-column "before/after" design
-- Each changed field gets its own row with:
-  - Field label as a clear header
-  - "Before" value on the left with a subtle red/strikethrough treatment
-  - "After" value on the right with a green highlight
-- For "Deleted" entries, show all values with a red treatment and a "Deleted" badge instead of repeating "Deleted" for every field
+**3. Enrich "Category Added" notification** (lines 636-640)
+- Add details: Name, Type, Icon
+- Add `entityType: 'category'` and `entityId`
 
-**3. Visual hierarchy improvements**
-- Use color-coded action badges: green for "Added", orange for "Edited", red for "Deleted", blue for "Exported"
-- Increase font sizes slightly for readability
-- Better spacing between log entries
+**4. Enrich "Project Added" notification** (lines 768-772)
+- Add details: Name, Internal Cost, Client Cost, Description
+- Add `entityType: 'project'` and `entityId`
 
-### Technical Changes
+**5. Enrich "Vendor Added" notification** (lines 925-929)
+- Add details: Name, Icon
+- Add `entityType: 'vendor'` and `entityId`
 
-**File: `src/components/SettingsPage.tsx` (NotificationsContent component, lines ~88-135)**
+**6. Add missing "Partner Added" notification** (after line 1072)
+- Currently completely missing -- add a notification with details: Name, Cash Balance, Online Balance
+- Include `entityType: 'partner'` and `entityId`
 
-Replace the change details rendering with:
+**7. Enrich "Installment Confirmed" notification** (lines 599-603)
+- Add details: Amount, Parent Transaction, Date
+- Add `entityType: 'transaction'` and `entityId`
 
-```
--- Action badge next to title (Added/Edited/Deleted) with color coding
--- For edit logs with details:
-   A two-column card layout per field:
-   | Field Name                    |
-   | Before (red, dim)  | After (green, bright) |
-   
--- For delete logs:
-   Show deleted entity details in a single-column list with red accent
-   
--- For add/export logs:
-   Keep the simple message format but with clearer typography
-```
+### Summary of detail fields added per entity
 
-**Specific code changes:**
+| Entity | Add Details |
+|---|---|
+| Transaction | Title, Amount, Type, Vendor, Category, Project, Partner, Payment, Date |
+| Category | Name, Type, Icon |
+| Project | Name, Internal Cost, Client Cost |
+| Vendor | Name, Icon |
+| Partner | Name, Cash Balance, Online Balance |
 
-1. Add an action badge helper that returns a colored pill based on notification type:
-   - `transaction` (add) = green "Added"
-   - `edit` = orange "Edited" 
-   - `delete` = red "Deleted"
-   - `export` = blue "Exported"
-
-2. Replace the change details `div` (lines 116-125) with a structured before/after layout:
-   - Field label row spans full width
-   - Before value: `text-destructive/70 line-through text-xs`
-   - After value: `text-success font-medium text-xs`
-   - Visual arrow or divider between them
-
-3. For delete notifications, instead of showing "to: Deleted" for every field, show a "This item was deleted" banner and list the original values underneath as a summary
-
-4. Increase the message line from `truncate` to allow wrapping for better context
-
-## File Changed
-
-- `src/components/SettingsPage.tsx` -- the `NotificationsContent` component (lines 34-136)
+All "Added" log entries will now use the same structured before/after card UI (with "New" instead of "Before" for created entries -- the `from` field will show "New" and `to` will show the value).
 
