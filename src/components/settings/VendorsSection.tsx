@@ -351,19 +351,19 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
                               </div>
                             )}
                             <div>
-                              <p className="text-xs font-medium text-muted-foreground mb-1.5">Recent</p>
-                              <div className="space-y-1.5">
-                                {stats.recent.map(t => {
+                              <p className="text-xs font-medium text-muted-foreground mb-2">Recent</p>
+                              <div className="space-y-0">
+                                {stats.recent.map((t, idx) => {
                                   const proj = t.projectId ? projects.find(p => p.id === t.projectId) : null;
                                   return (
-                                    <div key={t.id} className="flex items-center justify-between text-xs">
-                                      <div className="flex items-center gap-2 min-w-0">
-                                        <span className="text-muted-foreground shrink-0">{t.date}</span>
-                                        <span className="truncate">{t.title || '-'}</span>
-                                        {proj && <span className="text-muted-foreground shrink-0">&middot; {proj.name}</span>}
+                                    <div key={t.id} className={cn("grid grid-cols-[70px_1fr_auto] gap-2 items-center text-xs py-1.5", idx > 0 && "border-t border-border/50")}>
+                                      <span className="text-muted-foreground text-[10px] tabular-nums">{t.date}</span>
+                                      <div className="min-w-0">
+                                        <p className="truncate font-medium">{t.title || '-'}</p>
+                                        {proj && <p className="text-[10px] text-muted-foreground truncate">{proj.name}</p>}
                                       </div>
-                                      <span className={cn("font-medium shrink-0 ml-2", t.type === 'income' ? 'text-success' : 'text-destructive')}>
-                                        {t.type === 'income' ? '+' : '-'}{formatAmount(t.amount)}
+                                      <span className={cn("font-semibold tabular-nums text-right", t.type === 'income' ? 'text-success' : 'text-destructive')}>
+                                        {t.type === 'income' ? '+' : '-'}₹{formatAmount(t.amount)}
                                       </span>
                                     </div>
                                   );
