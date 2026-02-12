@@ -41,7 +41,10 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [formData, setFormData] = useState({ name: '', icon: 'other', color: '#10B981', type: 'expense' as 'income' | 'expense' });
+
+  const filteredCategories = filterType === 'all' ? categories : categories.filter(c => c.type === filterType);
 
   const handleAdd = () => {
     if (!formData.name.trim()) {
@@ -96,9 +99,23 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
           </button>
           <h1 className="text-xl font-bold">Categories</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', icon: 'other', color: '#10B981', type: 'expense' }); }}>
+        <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', icon: 'other', color: '#10B981', type: filterType === 'all' ? 'expense' : filterType }); }}>
           <Plus size={16} className="mr-1" /> Add
         </Button>
+      </div>
+
+      <div className="sticky top-[57px] bg-background z-10 px-4 pt-3 pb-1">
+        <div className="inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground w-full">
+          {(['all', 'expense', 'income'] as const).map((type) => (
+            <button
+              key={type}
+              onClick={() => setFilterType(type)}
+              className={`flex-1 inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium transition-all ${filterType === type ? 'bg-background text-foreground shadow-sm' : ''}`}
+            >
+              {type === 'all' ? 'All' : type === 'expense' ? 'Expense' : 'Income'}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="p-4 space-y-3">
@@ -174,7 +191,7 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
         </AnimatePresence>
 
         {/* Categories List */}
-        {categories.map((cat) => (
+        {filteredCategories.map((cat) => (
           <motion.div
             key={cat.id}
             layout
