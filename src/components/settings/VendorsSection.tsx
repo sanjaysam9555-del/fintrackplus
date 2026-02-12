@@ -273,9 +273,9 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   const filteredTotal = filteredDetailTransactions.reduce((sum, t) => sum + t.amount, 0);
   const filteredCount = filteredDetailTransactions.length;
 
-  if (detailVendorName && detailStats && !isEditSheetOpen) {
+  if (detailVendorName && detailStats) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className={cn("min-h-screen bg-background", isEditSheetOpen && "hidden")}>
         <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 border-b border-border">
           <button onClick={() => handleSetDetailVendor(null)} className="p-2 -ml-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} />

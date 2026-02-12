@@ -2,7 +2,9 @@ import { cn } from "@/lib/utils";
 import { formatCurrency, formatCompactCurrency } from "@/lib/constants";
 import { ArrowDownLeft, ArrowUpRight, Wallet } from "lucide-react";
 import { motion, useSpring, useMotionValue, useTransform } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
+
+let hasAnimated = false;
 
 interface SummaryCardProps {
   title: string;
@@ -37,13 +39,20 @@ const colorMap = {
 };
 
 const AnimatedNumber = ({ value, prefix, formatter }: { value: number; prefix?: string; formatter: (v: number) => string }) => {
-  const motionValue = useMotionValue(0);
+  const isFirstMount = useRef(!hasAnimated);
+  const motionValue = useMotionValue(isFirstMount.current ? 0 : value);
   const spring = useSpring(motionValue, { damping: 30, stiffness: 100 });
   const display = useTransform(spring, (v) => `${prefix || ''}${formatter(Math.abs(Math.round(v)))}`);
 
   useEffect(() => {
-    motionValue.set(value);
-  }, [value, motionValue]);
+    if (isFirstMount.current) {
+      motionValue.set(value);
+      isFirstMount.current = false;
+      hasAnimated = true;
+    } else {
+      spring.jump(value);
+    }
+  }, [value, motionValue, spring]);
 
   return <motion.span>{display}</motion.span>;
 };
