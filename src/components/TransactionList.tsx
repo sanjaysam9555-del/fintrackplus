@@ -33,6 +33,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>('date-desc');
+  const [uncategorizedFilter, setUncategorizedFilter] = useState<string | null>(null);
   
   const filteredCategories = categories.filter(c => c.type === type);
   
@@ -86,8 +87,14 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
     return transactions
       .filter(t => t.type === type)
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
-      .filter(t => !selectedCategory || t.categoryId === selectedCategory);
-  }, [transactions, type, dateRange, selectedCategory]);
+      .filter(t => !selectedCategory || t.categoryId === selectedCategory)
+      .filter(t => {
+        if (uncategorizedFilter === 'no-category') return !t.categoryId;
+        if (uncategorizedFilter === 'no-project') return !t.projectId;
+        if (uncategorizedFilter === 'no-vendor') return !t.vendor || t.vendor === 'Unknown' || t.vendor === '';
+        return true;
+      });
+  }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter]);
   
   const total = type === 'income' 
     ? getTotalIncome(dateRange.start, dateRange.end)
@@ -279,14 +286,25 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
         <h1 className="text-2xl font-bold">
           {type === 'expense' ? 'Expenses' : 'Income'}
         </h1>
-        {onNavigate && (
-          <button
-            onClick={() => onNavigate('settings')}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-          >
-            <Settings size={20} className="text-muted-foreground" />
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          {onSearchClick && (
+            <button
+              onClick={onSearchClick}
+              className="p-2 rounded-full hover:bg-muted transition-colors"
+              title="Search (⌘K)"
+            >
+              <Search size={20} className="text-muted-foreground" />
+            </button>
+          )}
+          {onNavigate && (
+            <button
+              onClick={() => onNavigate('settings')}
+              className="p-2 rounded-full hover:bg-muted transition-colors"
+            >
+              <Settings size={20} className="text-muted-foreground" />
+            </button>
+          )}
+        </div>
       </div>
       
       {/* Time Filter Tabs */}
@@ -465,13 +483,13 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
       </div>
       
       {/* Category Chips */}
-      <div className="px-4 mb-4 overflow-x-auto">
+      <div className="px-4 mb-2 overflow-x-auto">
         <div className="flex gap-2 pb-2">
           <button
-            onClick={() => setSelectedCategory(null)}
+            onClick={() => { setSelectedCategory(null); setUncategorizedFilter(null); }}
             className={cn(
-              "px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors",
-              !selectedCategory 
+              "px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors text-sm",
+              !selectedCategory && !uncategorizedFilter
                 ? "bg-foreground text-background" 
                 : "bg-muted text-muted-foreground"
             )}
@@ -481,15 +499,38 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
           {filteredCategories.slice(0, 6).map((cat) => (
             <button
               key={cat.id}
-              onClick={() => setSelectedCategory(selectedCategory === cat.id ? null : cat.id)}
+              onClick={() => { setSelectedCategory(selectedCategory === cat.id ? null : cat.id); setUncategorizedFilter(null); }}
               className={cn(
-                "px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors flex items-center gap-2",
+                "px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors flex items-center gap-2 text-sm",
                 selectedCategory === cat.id 
                   ? "bg-foreground text-background" 
                   : "bg-muted text-muted-foreground"
               )}
             >
               {cat.name}
+            </button>
+          ))}
+        </div>
+      </div>
+      {/* Uncategorized Filter Chips */}
+      <div className="px-4 mb-4 overflow-x-auto">
+        <div className="flex gap-2 pb-1">
+          {[
+            { key: 'no-category', label: 'Uncategorized' },
+            { key: 'no-project', label: 'No Project' },
+            { key: 'no-vendor', label: 'No Vendor' },
+          ].map((filter) => (
+            <button
+              key={filter.key}
+              onClick={() => { setUncategorizedFilter(uncategorizedFilter === filter.key ? null : filter.key); setSelectedCategory(null); }}
+              className={cn(
+                "px-3 py-1.5 rounded-full font-medium whitespace-nowrap transition-colors text-xs border",
+                uncategorizedFilter === filter.key 
+                  ? "bg-destructive/10 text-destructive border-destructive/30" 
+                  : "bg-muted/50 text-muted-foreground border-transparent"
+              )}
+            >
+              {filter.label}
             </button>
           ))}
         </div>
