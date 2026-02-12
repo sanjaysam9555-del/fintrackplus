@@ -1,41 +1,73 @@
 
 
-# Fix Report Preview Header on iPhone 16
+# Redesign Activity Logs for Clarity
 
-## Problems Identified
+## Problem
 
-1. **Header elements overlapping**: The top bar has three elements (Back button with text, "Report Preview" title, "Save PDF" button) fighting for horizontal space on iPhone 16's narrow screen. This causes the garbled/overlapping text visible in the screenshot.
+The current log entries are hard to parse. The change details section uses a cramped inline layout (`field: ~~old~~ -> new`) with tiny text, muted colors, and a narrow fixed-width label column. It's not immediately clear what changed, what the old value was, and what the new value is.
 
-2. **Safe area padding issue**: The `safe-top` class adds padding for the Dynamic Island, but the header content itself isn't given enough breathing room, so elements collide.
+## Solution
 
-## Changes (File: `src/components/settings/ReportsSection.tsx`)
+Redesign the log card UI in `src/components/SettingsPage.tsx` (the `NotificationsContent` component) to make changes visually distinct and scannable.
 
-### Fix the top bar layout (lines 649-662)
+### UI Changes
 
-- Remove the "Back" text label from the back button -- keep only the arrow icon to save space
-- Make the "Report Preview" title use `flex-1 text-center` so it centers between the two side elements
-- Shrink the Save PDF button text on small screens or keep it compact
-- Give the back button and save button fixed/minimum widths so the title gets the remaining space
-- Add `truncate` to prevent text overflow
+**1. Better card header layout**
+- Show the action type as a colored badge/pill (e.g., "Edited", "Deleted", "Added") next to the title
+- Make the title bolder and the message more descriptive
 
-### Before:
+**2. Redesigned change details table**
+- Replace the cramped inline layout with a proper two-column "before/after" design
+- Each changed field gets its own row with:
+  - Field label as a clear header
+  - "Before" value on the left with a subtle red/strikethrough treatment
+  - "After" value on the right with a green highlight
+- For "Deleted" entries, show all values with a red treatment and a "Deleted" badge instead of repeating "Deleted" for every field
+
+**3. Visual hierarchy improvements**
+- Use color-coded action badges: green for "Added", orange for "Edited", red for "Deleted", blue for "Exported"
+- Increase font sizes slightly for readability
+- Better spacing between log entries
+
+### Technical Changes
+
+**File: `src/components/SettingsPage.tsx` (NotificationsContent component, lines ~88-135)**
+
+Replace the change details rendering with:
+
 ```
-Back  Report Preview  [Save PDF]
+-- Action badge next to title (Added/Edited/Deleted) with color coding
+-- For edit logs with details:
+   A two-column card layout per field:
+   | Field Name                    |
+   | Before (red, dim)  | After (green, bright) |
+   
+-- For delete logs:
+   Show deleted entity details in a single-column list with red accent
+   
+-- For add/export logs:
+   Keep the simple message format but with clearer typography
 ```
 
-### After:
-```
-<-  Report Preview  [Save PDF]
-```
+**Specific code changes:**
 
-With proper flex layout so elements never overlap.
+1. Add an action badge helper that returns a colored pill based on notification type:
+   - `transaction` (add) = green "Added"
+   - `edit` = orange "Edited" 
+   - `delete` = red "Deleted"
+   - `export` = blue "Exported"
 
-## Technical Details
+2. Replace the change details `div` (lines 116-125) with a structured before/after layout:
+   - Field label row spans full width
+   - Before value: `text-destructive/70 line-through text-xs`
+   - After value: `text-success font-medium text-xs`
+   - Visual arrow or divider between them
 
-The top bar div (line 649) will be updated:
-- Back button: Remove the `<span>Back</span>`, keep just `ArrowLeft` icon with proper touch target
-- Title: Add `flex-1 text-center truncate` 
-- Save PDF button: Keep as-is but ensure it doesn't grow
+3. For delete notifications, instead of showing "to: Deleted" for every field, show a "This item was deleted" banner and list the original values underneath as a summary
 
-This is a minimal, targeted fix to the cramped header layout on narrow mobile screens.
+4. Increase the message line from `truncate` to allow wrapping for better context
+
+## File Changed
+
+- `src/components/SettingsPage.tsx` -- the `NotificationsContent` component (lines 34-136)
 
