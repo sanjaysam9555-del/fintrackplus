@@ -1,34 +1,55 @@
 
 
-# Fix Quick Action Card Text Fitting
+# Vendor Transaction Detail View and Clickable Entries
 
 ## Problem
-The quick action cards (Categories, Vendors, Projects, Reports) use a horizontal (`flex-row`) layout with the icon and label side by side. On smaller screens, the text (especially "Categories") gets clipped or doesn't fit well within the card because `grid-cols-4` divides the available width into 4 equal narrow columns.
+1. Vendor expanded view shows only 5 recent transactions but has no way to see the rest when there are more than 5
+2. Transaction rows in the vendor section are plain text divs -- they can't be clicked to view/edit details like they can in the Project detail view
 
-## Fix
+## Solution
 
-In `src/components/Dashboard.tsx` (lines 698-713):
+### Part A: Replace plain transaction rows with TransactionItem component
 
-1. **Switch back to vertical layout** (`flex-col` instead of `flex-row`) -- vertical stacking ensures the label has the full card width available, preventing clipping
-2. **Reduce padding** to `p-2 lg:p-3` and use `gap-1`
-3. **Shrink icon container** to `w-6 h-6 lg:w-7 lg:h-7` with icon sizes `12px` / `14px`
-4. **Center-align** text and icon (`items-center text-center`)
-5. **Reduce label font** to `text-[9px] lg:text-xs` and add `leading-tight truncate w-full` so long labels like "Categories" compress gracefully
+In `src/components/settings/VendorsSection.tsx`:
 
-This gives a compact, vertically-stacked card where the text always fits within the column width.
+- Replace the manual grid rows (lines 356-369) with the existing `TransactionItem` component (same one used in `ProjectDetailSheet`)
+- This automatically gives each entry click-to-expand behavior with edit/delete options
+- Pass `compact` prop for smaller sizing
+- Need to import `TransactionItem` and access `getCategoryById` from the store
 
-## Technical Detail
+### Part B: "View All" button and full vendor detail page
 
-```
-Before (horizontal, text clipped):
-  [Icon] Categories
+When a vendor has more than 5 transactions:
 
-After (vertical, compact):
-  [Icon]
-  Categories
-```
+1. Add a "View All (N)" button at the bottom of the recent transactions list
+2. Clicking it opens a full-screen vendor detail page (new state `detailVendorName`) that shows:
+   - Vendor header with icon, name, total amount, transaction count
+   - Projects associated (chips)
+   - Full scrollable list of ALL transactions using `TransactionItem` components
+   - Back button to return to vendor list
+3. Track an `EditTransactionSheet` open state to hide the detail view when editing (same pattern as `ProjectDetailSheet`)
+
+### Files Changed
 
 | File | Change |
 |------|--------|
-| `src/components/Dashboard.tsx` (lines 706-712) | Switch to `flex-col items-center`, reduce padding/icon/font sizes, add `truncate` to label |
+| `src/components/settings/VendorsSection.tsx` | Import `TransactionItem`; replace plain rows with `TransactionItem compact`; add "View All" button; add full vendor detail view state and rendering; get `getCategoryById` from store |
 
+### Detail View Layout
+
+```
+[Back] Vendor Name
+--------------------------
+[Icon] Vendor Name
+X transactions | Total: amount
+
+Projects: [chip] [chip]
+
+All Transactions
+[TransactionItem] (clickable, expandable)
+[TransactionItem]
+[TransactionItem]
+...
+```
+
+The detail view reuses the same page pattern as the VendorsSection itself (sticky header, scrollable content) but is focused on a single vendor's full transaction history.
