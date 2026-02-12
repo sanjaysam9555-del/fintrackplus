@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-
+import { TransactionItem } from "@/components/TransactionItem";
 interface VendorsSectionProps {
   onBack: () => void;
   userId?: string;
@@ -36,7 +36,7 @@ const VENDOR_ICONS = [
 ];
 
 export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
-  const { vendors, addVendor, updateVendor, deleteVendor, transactions, updateTransaction, projects } = useFinanceStore();
+  const { vendors, addVendor, updateVendor, deleteVendor, transactions, updateTransaction, projects, getCategoryById } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -45,6 +45,8 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   const [originalName, setOriginalName] = useState('');
   const [selectedColor, setSelectedColor] = useState(VENDOR_COLORS[0]);
   const [selectedIcon, setSelectedIcon] = useState('Store');
+  const [detailVendorName, setDetailVendorName] = useState<string | null>(null);
+  const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
 
   // Combine stored vendors with transaction vendors, ensuring all are editable
   const allVendors = useMemo(() => {
@@ -65,20 +67,18 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
 
   // Compute vendor stats from transactions
   const vendorStats = useMemo(() => {
-    const stats: Record<string, { total: number; count: number; projectIds: Set<string>; recent: Transaction[] }> = {};
+    const stats: Record<string, { total: number; count: number; projectIds: Set<string>; all: Transaction[] }> = {};
     transactions.forEach((t: Transaction) => {
       const key = t.vendor;
       if (!key) return;
-      if (!stats[key]) stats[key] = { total: 0, count: 0, projectIds: new Set(), recent: [] };
+      if (!stats[key]) stats[key] = { total: 0, count: 0, projectIds: new Set(), all: [] };
       stats[key].total += t.amount;
       stats[key].count += 1;
       if (t.projectId) stats[key].projectIds.add(t.projectId);
-      stats[key].recent.push(t);
+      stats[key].all.push(t);
     });
-    // Sort recent by date desc and keep top 5
     Object.values(stats).forEach(s => {
-      s.recent.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
-      s.recent = s.recent.slice(0, 5);
+      s.all.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
     });
     return stats;
   }, [transactions]);
@@ -243,6 +243,73 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
     </div>
   );
 
+  // Detail view for a single vendor
+  const detailStats = detailVendorName ? vendorStats[detailVendorName] : null;
+  const detailVendorObj = detailVendorName ? allVendors.find(v => v.name === detailVendorName) : null;
+
+  if (detailVendorName && detailStats && !isEditSheetOpen) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 border-b border-border">
+          <button onClick={() => setDetailVendorName(null)} className="p-2 -ml-2 rounded-full hover:bg-muted">
+            <ArrowLeft size={20} />
+          </button>
+          <h1 className="text-xl font-bold truncate">{detailVendorName}</h1>
+        </div>
+
+        <div className="p-4 space-y-4">
+          {/* Header card */}
+          <div className="flex items-center gap-3">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+              style={{ backgroundColor: detailVendorObj?.color ? `${detailVendorObj.color}20` : 'hsl(var(--success) / 0.1)' }}
+            >
+              {renderIcon(detailVendorObj?.icon || 'Store', detailVendorObj?.color || 'hsl(var(--success))', 22)}
+            </div>
+            <div>
+              <p className="font-semibold text-lg">{detailVendorName}</p>
+              <p className="text-sm text-muted-foreground">
+                {detailStats.count} transaction{detailStats.count !== 1 ? 's' : ''} &middot; {formatAmount(detailStats.total)}
+              </p>
+            </div>
+          </div>
+
+          {/* Projects chips */}
+          {detailStats.projectIds.size > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1.5">Projects</p>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from(detailStats.projectIds).map(pid => {
+                  const proj = projects.find(p => p.id === pid);
+                  return proj ? (
+                    <span key={pid} className="px-2 py-0.5 bg-muted rounded-full text-xs font-medium">{proj.name}</span>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* All transactions */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">All Transactions</p>
+            <div className="space-y-1.5">
+              {detailStats.all.map((t) => (
+                <TransactionItem
+                  key={t.id}
+                  transaction={t}
+                  category={getCategoryById(t.categoryId)}
+                  userId={userId}
+                  compact
+                  onEditSheetChange={setIsEditSheetOpen}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="sticky top-0 bg-background z-10 flex items-center justify-between p-4 border-b border-border">
@@ -352,23 +419,31 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
                             )}
                             <div>
                               <p className="text-xs font-medium text-muted-foreground mb-2">Recent</p>
-                              <div className="space-y-0">
-                                {stats.recent.map((t, idx) => {
-                                  const proj = t.projectId ? projects.find(p => p.id === t.projectId) : null;
-                                  return (
-                                    <div key={t.id} className={cn("grid grid-cols-[70px_1fr_auto] gap-2 items-center text-xs py-1.5", idx > 0 && "border-t border-border/50")}>
-                                      <span className="text-muted-foreground text-[10px] tabular-nums">{t.date}</span>
-                                      <div className="min-w-0">
-                                        <p className="truncate font-medium">{t.title || '-'}</p>
-                                        {proj && <p className="text-[10px] text-muted-foreground truncate">{proj.name}</p>}
-                                      </div>
-                                      <span className={cn("font-semibold tabular-nums text-right", t.type === 'income' ? 'text-success' : 'text-destructive')}>
-                                        {t.type === 'income' ? '+' : '-'}₹{formatAmount(t.amount)}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
+                              <div className="space-y-1.5">
+                                {stats.all.slice(0, 5).map((t) => (
+                                  <TransactionItem
+                                    key={t.id}
+                                    transaction={t}
+                                    category={getCategoryById(t.categoryId)}
+                                    userId={userId}
+                                    compact
+                                    onEditSheetChange={setIsEditSheetOpen}
+                                  />
+                                ))}
                               </div>
+                              {stats.count > 5 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="w-full mt-2 text-xs text-primary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDetailVendorName(vendor.name);
+                                  }}
+                                >
+                                  View All ({stats.count})
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </motion.div>
