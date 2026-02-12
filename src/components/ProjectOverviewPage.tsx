@@ -6,6 +6,7 @@ import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { cn } from "@/lib/utils";
+import { formatCompactCurrency } from "@/lib/constants";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -256,21 +257,30 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                 <Wallet size={18} className="text-primary" />
               </div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Internal Cost</p>
-              <p className="text-base font-bold">₹{totalInternalCost.toLocaleString()}</p>
+              <p className="text-base font-bold">
+                <span className="lg:hidden">₹{formatCompactCurrency(totalInternalCost, false)}</span>
+                <span className="hidden lg:inline">₹{totalInternalCost.toLocaleString()}</span>
+              </p>
             </div>
             <div className="p-4 text-center">
               <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-2">
                 <Receipt size={18} className="text-orange-500" />
               </div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Spent</p>
-              <p className="text-base font-bold">₹{totalSpent.toLocaleString()}</p>
+              <p className="text-base font-bold">
+                <span className="lg:hidden">₹{formatCompactCurrency(totalSpent, false)}</span>
+                <span className="hidden lg:inline">₹{totalSpent.toLocaleString()}</span>
+              </p>
             </div>
             <div className="p-4 text-center">
               <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center mx-auto mb-2">
                 <PiggyBank size={18} className="text-green-500" />
               </div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Margin</p>
-              <p className="text-base font-bold">₹{(totalClientCost - totalInternalCost).toLocaleString()}</p>
+              <p className="text-base font-bold">
+                <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalInternalCost, false)}</span>
+                <span className="hidden lg:inline">₹{(totalClientCost - totalInternalCost).toLocaleString()}</span>
+              </p>
             </div>
           </div>
         </div>
