@@ -1,55 +1,33 @@
 
+# Clickable Project Filter Chips on Vendor Detail Page
 
-# Vendor Transaction Detail View and Clickable Entries
+## What Changes
 
-## Problem
-1. Vendor expanded view shows only 5 recent transactions but has no way to see the rest when there are more than 5
-2. Transaction rows in the vendor section are plain text divs -- they can't be clicked to view/edit details like they can in the Project detail view
+On the vendor detail page, the project chips at the top become clickable toggle filters. Tapping a project chip highlights it with color and filters the transaction list to show only entries from that project. Multiple projects can be selected simultaneously. When no chips are selected, all transactions show (default).
 
-## Solution
+## Technical Details
 
-### Part A: Replace plain transaction rows with TransactionItem component
+**File: `src/components/settings/VendorsSection.tsx`**
 
-In `src/components/settings/VendorsSection.tsx`:
+1. **Add state** for selected project filter:
+   - `const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set())`
+   - Reset it when `detailVendorName` changes
 
-- Replace the manual grid rows (lines 356-369) with the existing `TransactionItem` component (same one used in `ProjectDetailSheet`)
-- This automatically gives each entry click-to-expand behavior with edit/delete options
-- Pass `compact` prop for smaller sizing
-- Need to import `TransactionItem` and access `getCategoryById` from the store
+2. **Make project chips clickable** (lines 282-287):
+   - Toggle project ID in/out of `selectedProjectIds` on click
+   - When selected: apply the project's color as background with white text (or use `bg-primary text-primary-foreground`)
+   - When unselected: keep current `bg-muted` style
+   - Add `cursor-pointer` and transition classes
 
-### Part B: "View All" button and full vendor detail page
+3. **Filter transactions** (lines 296-304):
+   - Compute `filteredTransactions` from `detailStats.all`:
+     - If `selectedProjectIds.size === 0` -> show all
+     - Otherwise -> show only transactions where `t.projectId` is in `selectedProjectIds`
+   - Update the transaction count/total in the header card to reflect the filtered view
 
-When a vendor has more than 5 transactions:
+4. **Add "All" chip** before the project chips to quickly clear all filters (deselect all projects)
 
-1. Add a "View All (N)" button at the bottom of the recent transactions list
-2. Clicking it opens a full-screen vendor detail page (new state `detailVendorName`) that shows:
-   - Vendor header with icon, name, total amount, transaction count
-   - Projects associated (chips)
-   - Full scrollable list of ALL transactions using `TransactionItem` components
-   - Back button to return to vendor list
-3. Track an `EditTransactionSheet` open state to hide the detail view when editing (same pattern as `ProjectDetailSheet`)
-
-### Files Changed
-
-| File | Change |
-|------|--------|
-| `src/components/settings/VendorsSection.tsx` | Import `TransactionItem`; replace plain rows with `TransactionItem compact`; add "View All" button; add full vendor detail view state and rendering; get `getCategoryById` from store |
-
-### Detail View Layout
-
-```
-[Back] Vendor Name
---------------------------
-[Icon] Vendor Name
-X transactions | Total: amount
-
-Projects: [chip] [chip]
-
-All Transactions
-[TransactionItem] (clickable, expandable)
-[TransactionItem]
-[TransactionItem]
-...
-```
-
-The detail view reuses the same page pattern as the VendorsSection itself (sticky header, scrollable content) but is focused on a single vendor's full transaction history.
+| Element | Unselected | Selected |
+|---------|-----------|----------|
+| Project chip | `bg-muted text-foreground` | `bg-primary text-primary-foreground` or project color |
+| "All" chip | Active when no projects selected | Dimmed when projects are selected |
