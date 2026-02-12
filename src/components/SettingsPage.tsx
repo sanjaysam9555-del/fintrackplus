@@ -32,8 +32,10 @@ import { useTheme, ThemeMode } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
 // Action badge helper
-const getActionBadge = (type: string) => {
-  switch (type) {
+const getActionBadge = (notification: { type: string; details?: { from: string }[] }) => {
+  const isNew = notification.details && notification.details.length > 0 && notification.details[0].from === 'New';
+  if (isNew) return { label: 'Added', className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' };
+  switch (notification.type) {
     case 'transaction': return { label: 'Added', className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' };
     case 'edit': return { label: 'Edited', className: 'bg-orange-500/15 text-orange-600 dark:text-orange-400' };
     case 'delete': return { label: 'Deleted', className: 'bg-destructive/15 text-destructive' };
@@ -103,8 +105,9 @@ const NotificationsContent = () => {
           notifications.map((notification, index) => {
             const Icon = getIcon(notification.type);
             const iconColor = getIconColor(notification.type);
-            const badge = getActionBadge(notification.type);
+            const badge = getActionBadge(notification);
             const isDelete = isDeleteNotification(notification);
+            const isNewEntry = notification.details && notification.details.length > 0 && notification.details[0].from === 'New';
             
             return (
               <motion.div
@@ -150,11 +153,27 @@ const NotificationsContent = () => {
                             ))}
                           </div>
                         </div>
+                      ) : isNewEntry ? (
+                        /* Added: show new values */
+                        <div className="mt-3 rounded-lg border border-emerald-500/20 overflow-hidden">
+                          <div className="bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                            <ArrowUpRight size={12} />
+                            New entry created
+                          </div>
+                          <div className="p-3 space-y-1.5 bg-muted/30">
+                            {notification.details!.map((change, i) => (
+                              <div key={i} className="flex items-baseline gap-2 text-xs">
+                                <span className="text-muted-foreground font-medium min-w-[5rem]">{change.field}</span>
+                                <span className="text-emerald-600 dark:text-emerald-400 font-medium">{change.to}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       ) : (
                         /* Edit: structured before/after layout */
                         <div className="mt-3 rounded-lg border border-border overflow-hidden">
                           <div className="divide-y divide-border">
-                            {notification.details.map((change, i) => (
+                            {notification.details!.map((change, i) => (
                               <div key={i} className="px-3 py-2">
                                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
                                   {change.field}
