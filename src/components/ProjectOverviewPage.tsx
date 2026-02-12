@@ -250,37 +250,45 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
           <div className="px-4 pt-4 pb-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{showArchived ? 'Archived' : 'Active'} Portfolio</p>
           </div>
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 divide-x divide-primary/10">
-            <div className="p-4 text-center">
-              <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center mx-auto mb-2">
-                <Wallet size={18} className="text-primary" />
+          {/* Stats Row */}
+          <div className="flex items-center justify-between px-4 pb-4 gap-2">
+            <div className="flex items-center gap-1.5">
+              <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+                <Wallet size={14} className="text-primary" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Internal Cost</p>
-              <p className="text-base font-bold">
-                <span className="lg:hidden">₹{formatCompactCurrency(totalInternalCost, false)}</span>
-                <span className="hidden lg:inline">₹{totalInternalCost.toLocaleString()}</span>
-              </p>
+              <div>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-tight">Cost</p>
+                <p className="text-sm font-bold text-primary">
+                  <span className="lg:hidden">₹{formatCompactCurrency(totalInternalCost, false)}</span>
+                  <span className="hidden lg:inline">₹{totalInternalCost.toLocaleString()}</span>
+                </p>
+              </div>
             </div>
-            <div className="p-4 text-center">
-              <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center mx-auto mb-2">
-                <Receipt size={18} className="text-orange-500" />
+            <div className="w-px h-8 bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-7 h-7 rounded-lg bg-destructive/20 flex items-center justify-center flex-shrink-0">
+                <Receipt size={14} className="text-destructive" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Spent</p>
-              <p className="text-base font-bold">
-                <span className="lg:hidden">₹{formatCompactCurrency(totalSpent, false)}</span>
-                <span className="hidden lg:inline">₹{totalSpent.toLocaleString()}</span>
-              </p>
+              <div>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-tight">Spent</p>
+                <p className="text-sm font-bold text-destructive">
+                  <span className="lg:hidden">₹{formatCompactCurrency(totalSpent, false)}</span>
+                  <span className="hidden lg:inline">₹{totalSpent.toLocaleString()}</span>
+                </p>
+              </div>
             </div>
-            <div className="p-4 text-center">
-              <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center mx-auto mb-2">
-                <PiggyBank size={18} className="text-green-500" />
+            <div className="w-px h-8 bg-border flex-shrink-0" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-7 h-7 rounded-lg bg-success/20 flex items-center justify-center flex-shrink-0">
+                <PiggyBank size={14} className="text-success" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-0.5">Margin</p>
-              <p className="text-base font-bold">
-                <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalInternalCost, false)}</span>
-                <span className="hidden lg:inline">₹{(totalClientCost - totalInternalCost).toLocaleString()}</span>
-              </p>
+              <div>
+                <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-tight">Margin</p>
+                <p className={cn("text-sm font-bold", (totalClientCost - totalInternalCost) >= 0 ? "text-success" : "text-destructive")}>
+                  <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalInternalCost, false)}</span>
+                  <span className="hidden lg:inline">₹{(totalClientCost - totalInternalCost).toLocaleString()}</span>
+                </p>
+              </div>
             </div>
           </div>
         </div>
