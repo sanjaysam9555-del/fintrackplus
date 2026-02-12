@@ -123,15 +123,16 @@ html, body {
     --secondary-foreground: 210 40% 98%;
     
     --muted: 222 25% 20%;
-    --muted-foreground: 215 20% 72%;
+    --muted-foreground: 215 25% 78%;
     
     --accent: 214 50% 22%;
     --accent-foreground: 214 78% 75%;
     
     --success: 142 71% 55%;
     --success-light: 142 50% 15%;
-    --destructive: 0 72% 60%;
-    --destructive-light: 0 50% 15%;
+    --destructive: 4 80% 64%;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-light: 4 50% 16%;
     --warning: 38 92% 60%;
     --warning-light: 38 50% 15%;
     
@@ -155,7 +156,7 @@ html, body {
     
     /* Chart colors with better contrast for dark mode */
     --chart-income: 142 71% 60%;
-    --chart-expense: 0 72% 65%;
+    --chart-expense: 4 80% 68%;
     --chart-primary: 214 78% 60%;
   }
 
