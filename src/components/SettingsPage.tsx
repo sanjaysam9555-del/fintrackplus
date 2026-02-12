@@ -145,9 +145,10 @@ interface SettingsPageProps {
   initialSection?: SettingsSection;
   onSectionChange?: (section: SettingsSection) => void;
   onBack?: () => void;
+  onBackToHome?: () => void;
 }
 
-export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }: SettingsPageProps) => {
+export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, onBackToHome }: SettingsPageProps) => {
   const { categories, projects, userProfile, partners } = useFinanceStore();
   const { signOut, user } = useAuth();
   const { mode, setTheme, isDark, isOled } = useTheme();
@@ -169,6 +170,11 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack }:
   };
   
   const handleBack = () => {
+    // If we arrived via a direct section from Home, go back to Home
+    if (initialSection && onBackToHome) {
+      onBackToHome();
+      return;
+    }
     handleSectionChange(null);
   };
 

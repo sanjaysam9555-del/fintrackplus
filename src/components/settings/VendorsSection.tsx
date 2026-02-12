@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons, ChevronDown, ChevronUp } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import type { Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 interface VendorsSectionProps {
   onBack: () => void;
@@ -34,10 +36,11 @@ const VENDOR_ICONS = [
 ];
 
 export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
-  const { vendors, addVendor, updateVendor, deleteVendor, transactions, updateTransaction } = useFinanceStore();
+  const { vendors, addVendor, updateVendor, deleteVendor, transactions, updateTransaction, projects } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [originalName, setOriginalName] = useState('');
   const [selectedColor, setSelectedColor] = useState(VENDOR_COLORS[0]);
@@ -59,6 +62,28 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
     
     return combinedVendors;
   }, [vendors, transactions]);
+
+  // Compute vendor stats from transactions
+  const vendorStats = useMemo(() => {
+    const stats: Record<string, { total: number; count: number; projectIds: Set<string>; recent: Transaction[] }> = {};
+    transactions.forEach((t: Transaction) => {
+      const key = t.vendor;
+      if (!key) return;
+      if (!stats[key]) stats[key] = { total: 0, count: 0, projectIds: new Set(), recent: [] };
+      stats[key].total += t.amount;
+      stats[key].count += 1;
+      if (t.projectId) stats[key].projectIds.add(t.projectId);
+      stats[key].recent.push(t);
+    });
+    // Sort recent by date desc and keep top 5
+    Object.values(stats).forEach(s => {
+      s.recent.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
+      s.recent = s.recent.slice(0, 5);
+    });
+    return stats;
+  }, [transactions]);
+
+  const formatAmount = (amount: number) => `${CURRENCY_SYMBOL}${amount.toLocaleString('en-IN')}`;
 
   const handleAdd = () => {
     if (!name.trim()) {
@@ -259,33 +284,102 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
             No vendors yet. Add your first vendor!
           </div>
         ) : (
-          allVendors.map((vendor) => (
-            <motion.div
-              key={vendor.id}
-              layout
-              className="bg-card rounded-xl border border-border p-4"
-            >
-              {editingId === vendor.id ? (
-                <VendorForm isEdit vendorId={vendor.id} />
-              ) : (
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: vendor.color ? `${vendor.color}20` : 'hsl(var(--success) / 0.1)' }}
-                  >
-                    {renderIcon(vendor.icon || 'Store', vendor.color || 'hsl(var(--success))')}
+          <>
+          {allVendors.map((vendor) => {
+            const stats = vendorStats[vendor.name];
+            const isExpanded = expandedId === vendor.id;
+            return (
+              <motion.div
+                key={vendor.id}
+                layout
+                className="bg-card rounded-xl border border-border"
+              >
+                {editingId === vendor.id ? (
+                  <div className="p-4">
+                    <VendorForm isEdit vendorId={vendor.id} />
                   </div>
-                  <p className="font-medium flex-1 truncate">{vendor.name}</p>
-                  <button onClick={() => startEdit(vendor.id, vendor.name, vendor.color, vendor.icon)} className="p-2 hover:bg-muted rounded-lg">
-                    <Pencil size={16} className="text-muted-foreground" />
-                  </button>
-                  <button onClick={() => setDeleteId(vendor.id)} className="p-2 hover:bg-destructive/10 rounded-lg">
-                    <Trash2 size={16} className="text-destructive" />
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          ))
+                ) : (
+                  <>
+                    <button
+                      className="w-full flex items-center gap-3 p-4 text-left"
+                      onClick={() => setExpandedId(isExpanded ? null : vendor.id)}
+                    >
+                      <div 
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: vendor.color ? `${vendor.color}20` : 'hsl(var(--success) / 0.1)' }}
+                      >
+                        {renderIcon(vendor.icon || 'Store', vendor.color || 'hsl(var(--success))')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{vendor.name}</p>
+                        {stats && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {stats.count} transaction{stats.count !== 1 ? 's' : ''} &middot; {formatAmount(stats.total)}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={(e) => { e.stopPropagation(); startEdit(vendor.id, vendor.name, vendor.color, vendor.icon); }} className="p-2 hover:bg-muted rounded-lg">
+                          <Pencil size={16} className="text-muted-foreground" />
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); setDeleteId(vendor.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
+                          <Trash2 size={16} className="text-destructive" />
+                        </button>
+                        {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                      </div>
+                    </button>
+                    <AnimatePresence>
+                      {isExpanded && stats && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden border-t border-border"
+                        >
+                          <div className="p-4 pt-3 space-y-3">
+                            {stats.projectIds.size > 0 && (
+                              <div>
+                                <p className="text-xs font-medium text-muted-foreground mb-1.5">Projects</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {Array.from(stats.projectIds).map(pid => {
+                                    const proj = projects.find(p => p.id === pid);
+                                    return proj ? (
+                                      <span key={pid} className="px-2 py-0.5 bg-muted rounded-full text-xs font-medium">{proj.name}</span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground mb-1.5">Recent</p>
+                              <div className="space-y-1.5">
+                                {stats.recent.map(t => {
+                                  const proj = t.projectId ? projects.find(p => p.id === t.projectId) : null;
+                                  return (
+                                    <div key={t.id} className="flex items-center justify-between text-xs">
+                                      <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-muted-foreground shrink-0">{t.date}</span>
+                                        <span className="truncate">{t.title || '-'}</span>
+                                        {proj && <span className="text-muted-foreground shrink-0">&middot; {proj.name}</span>}
+                                      </div>
+                                      <span className={cn("font-medium shrink-0 ml-2", t.type === 'income' ? 'text-success' : 'text-destructive')}>
+                                        {t.type === 'income' ? '+' : '-'}{formatAmount(t.amount)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </motion.div>
+            );
+          })}
+          </>
         )}
       </div>
 

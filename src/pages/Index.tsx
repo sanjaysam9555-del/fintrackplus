@@ -159,8 +159,11 @@ const Index = () => {
   const handleOpenAddSheet = () => setIsAddSheetOpen(true);
   const handleOpenSearch = useCallback(() => setIsSearchOpen(true), []);
   
+  const navigatedFromHome = useRef(false);
+  
   const handleNavigate = (section: string) => {
     if (section === 'settings') {
+      navigatedFromHome.current = false;
       setViewMode('settings');
       setSettingsSection(null);
     } else if (section === 'ai') {
@@ -168,6 +171,8 @@ const Index = () => {
     } else if (section === 'search') {
       setIsSearchOpen(true);
     } else {
+      // Track if navigating from non-settings view (e.g. home)
+      navigatedFromHome.current = viewMode !== 'settings';
       setSettingsSection(section as SettingsSection);
       setViewMode('settings');
     }
@@ -236,7 +241,7 @@ const Index = () => {
       case 'settings':
         return (
           <Suspense fallback={<SettingsSkeleton />}>
-            <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={handleBackToHome} />
+            <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={handleBackToHome} onBackToHome={navigatedFromHome.current ? handleBackToHome : undefined} />
           </Suspense>
         );
       default:
