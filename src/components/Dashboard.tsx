@@ -6,7 +6,7 @@ import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
-import { CalendarDays, Grid3X3, Store, FolderKanban, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search, ArrowUpDown } from "lucide-react";
+import { CalendarDays, Grid3X3, Store, ScrollText, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -693,7 +693,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           {[
             { key: 'categories', icon: Grid3X3, label: 'Categories', color: 'bg-primary/10', iconColor: 'text-primary' },
             { key: 'vendors', icon: Store, label: 'Vendors', color: 'bg-success/10', iconColor: 'text-success' },
-            { key: 'projects', icon: FolderKanban, label: 'Projects', color: 'bg-amber-500/10', iconColor: 'text-amber-500' },
+            { key: 'logs', icon: ScrollText, label: 'Logs', color: 'bg-amber-500/10', iconColor: 'text-amber-500' },
             { key: 'reports', icon: FileBarChart, label: 'Reports', color: 'bg-purple-500/10', iconColor: 'text-purple-500' },
           ].map((item, index) => (
             <motion.button
