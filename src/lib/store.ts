@@ -236,7 +236,7 @@ export const useFinanceStore = create<FinanceStore>()(
           id: uuidv4(),
           timestamp: new Date().toISOString(),
           read: false,
-        }, ...state.notifications].slice(0, 50)
+        }, ...state.notifications].slice(0, 200)
       })),
       
       markNotificationRead: (id) => set((state) => ({
@@ -302,10 +302,30 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const { categories, projects, partners } = get();
+        const getCategoryName = (catId?: string) => categories.find(c => c.id === catId)?.name || 'None';
+        const getProjectName = (projId?: string) => projects.find(p => p.id === projId)?.name || 'None';
+        const getPartnerName = (pId?: string) => partners.find(p => p.id === pId)?.name || 'None';
+        
+        const addDetails: NotificationChange[] = [
+          { field: 'Title', from: 'New', to: transaction.title || transaction.vendor },
+          { field: 'Amount', from: 'New', to: `₹${transaction.amount.toLocaleString()}` },
+          { field: 'Type', from: 'New', to: transaction.type === 'income' ? 'Income' : 'Expense' },
+          { field: 'Vendor', from: 'New', to: transaction.vendor },
+          { field: 'Category', from: 'New', to: getCategoryName(transaction.categoryId) },
+          { field: 'Payment', from: 'New', to: transaction.paymentMethod === 'cash' ? 'Cash' : 'Online' },
+          { field: 'Date', from: 'New', to: transaction.date },
+        ];
+        if (transaction.projectId) addDetails.push({ field: 'Project', from: 'New', to: getProjectName(transaction.projectId) });
+        if (transaction.partnerId) addDetails.push({ field: 'Partner', from: 'New', to: getPartnerName(transaction.partnerId) });
+        
         get().addNotification({
           type: 'transaction',
           title: `${transaction.type === 'income' ? 'Income' : 'Expense'} Added`,
-          message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+          message: `${transaction.title || transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+          details: addDetails,
+          entityType: 'transaction',
+          entityId: id,
         });
       },
       
@@ -600,6 +620,13 @@ export const useFinanceStore = create<FinanceStore>()(
           type: 'transaction',
           title: 'Installment Confirmed',
           message: `₹${installment.amount.toLocaleString('en-IN')} received for ${parent.title || parent.vendor}`,
+          details: [
+            { field: 'Amount', from: 'New', to: `₹${installment.amount.toLocaleString('en-IN')}` },
+            { field: 'Parent Transaction', from: 'New', to: parent.title || parent.vendor },
+            { field: 'Date', from: 'New', to: installment.receivedDate || new Date().toISOString().split('T')[0] },
+          ],
+          entityType: 'transaction',
+          entityId: parentTransactionId,
         });
       },
       
@@ -637,6 +664,13 @@ export const useFinanceStore = create<FinanceStore>()(
           type: 'category',
           title: 'Category Added',
           message: category.name,
+          details: [
+            { field: 'Name', from: 'New', to: category.name },
+            { field: 'Type', from: 'New', to: category.type === 'income' ? 'Income' : 'Expense' },
+            { field: 'Icon', from: 'New', to: category.icon || 'None' },
+          ],
+          entityType: 'category',
+          entityId: id,
         });
       },
       
@@ -769,6 +803,14 @@ export const useFinanceStore = create<FinanceStore>()(
           type: 'project',
           title: 'Project Added',
           message: project.name,
+          details: [
+            { field: 'Name', from: 'New', to: project.name },
+            { field: 'Internal Cost', from: 'New', to: `₹${project.internalCost.toLocaleString()}` },
+            { field: 'Client Cost', from: 'New', to: `₹${(project.clientCost || 0).toLocaleString()}` },
+            ...(project.description ? [{ field: 'Description', from: 'New', to: project.description }] : []),
+          ],
+          entityType: 'project',
+          entityId: id,
         });
       },
       
@@ -926,6 +968,12 @@ export const useFinanceStore = create<FinanceStore>()(
           type: 'vendor',
           title: 'Vendor Added',
           message: name,
+          details: [
+            { field: 'Name', from: 'New', to: name },
+            ...(icon ? [{ field: 'Icon', from: 'New', to: icon }] : []),
+          ],
+          entityType: 'vendor',
+          entityId: id,
         });
       },
       
@@ -1070,6 +1118,19 @@ export const useFinanceStore = create<FinanceStore>()(
             processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
           }
         }
+        
+        get().addNotification({
+          type: 'partner',
+          title: 'Partner Added',
+          message: partner.name,
+          details: [
+            { field: 'Name', from: 'New', to: partner.name },
+            { field: 'Cash Balance', from: 'New', to: `₹${partner.initialCashBalance.toLocaleString()}` },
+            { field: 'Online Balance', from: 'New', to: `₹${partner.initialOnlineBalance.toLocaleString()}` },
+          ],
+          entityType: 'partner',
+          entityId: id,
+        });
       },
       
       updatePartner: async (id, updates, userId) => {
