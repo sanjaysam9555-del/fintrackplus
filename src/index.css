@@ -107,11 +107,11 @@ html, body {
     --background: 222 47% 8%;
     --foreground: 210 40% 98%;
     
-    --card: 222 47% 11%;
+    --card: 222 35% 14%;
     --card-foreground: 210 40% 98%;
-    --card-glass: 222 47% 11% / 0.8;
+    --card-glass: 222 35% 14% / 0.8;
     
-    --popover: 222 47% 11%;
+    --popover: 222 35% 14%;
     --popover-foreground: 210 40% 98%;
     
     --primary: 214 78% 50%;
@@ -119,62 +119,62 @@ html, body {
     --primary-light: 214 78% 20%;
     --primary-glow: 214 78% 60%;
     
-    --secondary: 222 30% 15%;
+    --secondary: 222 25% 18%;
     --secondary-foreground: 210 40% 98%;
     
-    --muted: 222 30% 18%;
-    --muted-foreground: 215 20% 65%;
+    --muted: 222 25% 20%;
+    --muted-foreground: 215 20% 72%;
     
-    --accent: 214 50% 20%;
-    --accent-foreground: 214 78% 70%;
+    --accent: 214 50% 22%;
+    --accent-foreground: 214 78% 75%;
     
-    --success: 142 71% 50%;
+    --success: 142 71% 55%;
     --success-light: 142 50% 15%;
-    --destructive: 0 72% 55%;
+    --destructive: 0 72% 60%;
     --destructive-light: 0 50% 15%;
-    --warning: 38 92% 55%;
+    --warning: 38 92% 60%;
     --warning-light: 38 50% 15%;
     
-    --border: 222 30% 20%;
-    --input: 222 30% 20%;
+    --border: 222 20% 25%;
+    --input: 222 20% 25%;
     --ring: 214 78% 50%;
     
     --sidebar-background: 222 47% 8%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 15%;
+    --sidebar-accent: 222 25% 18%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 222 30% 20%;
+    --sidebar-border: 222 20% 25%;
     --sidebar-ring: 217.2 91.2% 59.8%;
     
     /* Enhanced glass effects for dark mode */
-    --glass-bg: rgba(30, 41, 59, 0.9);
-    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-bg: rgba(38, 50, 72, 0.92);
+    --glass-border: rgba(255, 255, 255, 0.12);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
     
     /* Chart colors with better contrast for dark mode */
-    --chart-income: 142 71% 55%;
-    --chart-expense: 0 72% 60%;
-    --chart-primary: 214 78% 55%;
+    --chart-income: 142 71% 60%;
+    --chart-expense: 0 72% 65%;
+    --chart-primary: 214 78% 60%;
   }
 
   /* OLED Black Mode - Pure black for OLED screens */
   .dark.oled {
     --background: 0 0% 0%;
-    --card: 0 0% 5%;
-    --card-glass: 0 0% 5% / 0.9;
-    --popover: 0 0% 5%;
-    --secondary: 0 0% 8%;
-    --muted: 0 0% 10%;
-    --border: 0 0% 12%;
-    --input: 0 0% 12%;
+    --card: 0 0% 7%;
+    --card-glass: 0 0% 7% / 0.9;
+    --popover: 0 0% 7%;
+    --secondary: 0 0% 10%;
+    --muted: 0 0% 12%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
     --sidebar-background: 0 0% 0%;
-    --sidebar-accent: 0 0% 8%;
-    --sidebar-border: 0 0% 12%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-border: 0 0% 15%;
     
     --glass-bg: rgba(0, 0, 0, 0.95);
-    --glass-border: rgba(255, 255, 255, 0.05);
+    --glass-border: rgba(255, 255, 255, 0.08);
     --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
   }
 }
