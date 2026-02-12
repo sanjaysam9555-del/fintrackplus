@@ -1,48 +1,41 @@
 
-# Dark Mode Text & Color Readability Fix
+
+# Fix Report Preview Header on iPhone 16
 
 ## Problems Identified
 
-1. **Greyish text everywhere**: The `--muted-foreground` variable (currently `215 20% 72%`) is used extensively across the app for labels, section headers, date groups, subtitles, currency symbols, and more. At 72% lightness with low saturation, it appears as a dull grey that's hard to read on dark surfaces.
+1. **Header elements overlapping**: The top bar has three elements (Back button with text, "Report Preview" title, "Save PDF" button) fighting for horizontal space on iPhone 16's narrow screen. This causes the garbled/overlapping text visible in the screenshot.
 
-2. **Red/destructive colors look muddy**: The `--destructive` variable (`0 72% 60%`) uses pure red (hue 0) which looks washed out on dark backgrounds. The `--destructive-light` background (`0 50% 15%`) also lacks enough contrast with the text it contains.
+2. **Safe area padding issue**: The `safe-top` class adds padding for the Dynamic Island, but the header content itself isn't given enough breathing room, so elements collide.
 
-## Changes (File: `src/index.css`)
+## Changes (File: `src/components/settings/ReportsSection.tsx`)
 
-### 1. Brighten muted-foreground text
+### Fix the top bar layout (lines 649-662)
 
-Increase lightness from 72% to 78% and add a touch more saturation so secondary text is clearly readable without overpowering primary text:
+- Remove the "Back" text label from the back button -- keep only the arrow icon to save space
+- Make the "Report Preview" title use `flex-1 text-center` so it centers between the two side elements
+- Shrink the Save PDF button text on small screens or keep it compact
+- Give the back button and save button fixed/minimum widths so the title gets the remaining space
+- Add `truncate` to prevent text overflow
 
-- `--muted-foreground`: from `215 20% 72%` to `215 25% 78%`
+### Before:
+```
+Back  Report Preview  [Save PDF]
+```
 
-### 2. Fix destructive/red colors for dark mode
+### After:
+```
+<-  Report Preview  [Save PDF]
+```
 
-Shift the hue slightly toward warm red (from 0 to 4) and increase lightness so red icons, badges, and text are vibrant and distinct:
+With proper flex layout so elements never overlap.
 
-- `--destructive`: from `0 72% 60%` to `4 80% 64%`
-- `--destructive-light`: from `0 50% 15%` to `4 50% 16%`
-- `--destructive-foreground`: add explicitly as `0 0% 100%` (ensure white text on red backgrounds)
-- `--chart-expense`: from `0 72% 65%` to `4 80% 68%` (match the brighter red in charts)
+## Technical Details
 
-### 3. OLED mode -- same improvements
+The top bar div (line 649) will be updated:
+- Back button: Remove the `<span>Back</span>`, keep just `ArrowLeft` icon with proper touch target
+- Title: Add `flex-1 text-center truncate` 
+- Save PDF button: Keep as-is but ensure it doesn't grow
 
-Apply the same muted-foreground and destructive adjustments in the `.dark.oled` block:
+This is a minimal, targeted fix to the cramped header layout on narrow mobile screens.
 
-- `--muted-foreground`: `215 25% 78%` (inherited from dark, but explicitly set for clarity)
-
-## Summary of Variable Changes
-
-| Variable | Old Value | New Value |
-|---|---|---|
-| `--muted-foreground` | `215 20% 72%` | `215 25% 78%` |
-| `--destructive` | `0 72% 60%` | `4 80% 64%` |
-| `--destructive-light` | `0 50% 15%` | `4 50% 16%` |
-| `--chart-expense` | `0 72% 65%` | `4 80% 68%` |
-
-## Impact
-
-- All section headers ("Navigation", "Tools", date groups, labels) become clearly readable
-- Currency symbols in forms become brighter
-- Red expense amounts, delete icons, error badges, and trend indicators become vivid and distinct
-- Charts show a warmer, more visible red for expense data
-- No component code changes needed -- everything uses CSS variables
