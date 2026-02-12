@@ -703,13 +703,13 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
               transition={{ delay: index * 0.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onNavigate?.(item.key)}
-              className="flex flex-row items-center gap-2 p-2.5 lg:p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+              className="flex flex-col items-center text-center gap-1 p-2 lg:p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
             >
-              <div className={cn("w-7 h-7 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center shrink-0", item.color)}>
-                <item.icon size={14} className={cn(item.iconColor, "lg:hidden")} />
-                <item.icon size={16} className={cn(item.iconColor, "hidden lg:block")} />
+              <div className={cn("w-6 h-6 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center shrink-0", item.color)}>
+                <item.icon size={12} className={cn(item.iconColor, "lg:hidden")} />
+                <item.icon size={14} className={cn(item.iconColor, "hidden lg:block")} />
               </div>
-              <span className="text-[10px] lg:text-xs font-medium text-muted-foreground">{item.label}</span>
+              <span className="text-[9px] lg:text-xs font-medium text-muted-foreground leading-tight truncate w-full">{item.label}</span>
             </motion.button>
           ))}
         </motion.div>
