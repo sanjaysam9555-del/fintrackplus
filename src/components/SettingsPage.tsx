@@ -31,6 +31,19 @@ import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
 import { useTheme, ThemeMode } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 
+// Action badge helper
+const getActionBadge = (type: string) => {
+  switch (type) {
+    case 'transaction': return { label: 'Added', className: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' };
+    case 'edit': return { label: 'Edited', className: 'bg-orange-500/15 text-orange-600 dark:text-orange-400' };
+    case 'delete': return { label: 'Deleted', className: 'bg-destructive/15 text-destructive' };
+    case 'export': return { label: 'Exported', className: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' };
+    case 'profile': return { label: 'Updated', className: 'bg-purple-500/15 text-purple-600 dark:text-purple-400' };
+    case 'partner': return { label: 'Updated', className: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' };
+    default: return { label: 'Action', className: 'bg-muted text-muted-foreground' };
+  }
+};
+
 // Inline notification content for settings page
 const NotificationsContent = () => {
   const { notifications, markNotificationRead, markAllNotificationsRead } = useFinanceStore();
@@ -52,7 +65,7 @@ const NotificationsContent = () => {
   const getIconColor = (type: string) => {
     switch (type) {
       case 'transaction': return 'bg-primary/10 text-primary';
-      case 'export': return 'bg-success/10 text-success';
+      case 'export': return 'bg-blue-500/10 text-blue-500';
       case 'profile': return 'bg-purple-500/10 text-purple-500';
       case 'category': return 'bg-blue-500/10 text-blue-500';
       case 'vendor': return 'bg-emerald-500/10 text-emerald-500';
@@ -64,6 +77,8 @@ const NotificationsContent = () => {
   };
   
   const unreadCount = notifications.filter(n => !n.read).length;
+  const isDeleteNotification = (n: { type: string; details?: { field: string; to: string }[] }) =>
+    n.type === 'delete' || (n.details && n.details.every(d => d.to === 'Deleted'));
   
   return (
     <div className="px-4">
@@ -75,7 +90,7 @@ const NotificationsContent = () => {
           </Button>
         </div>
       )}
-      <div className="space-y-2">
+      <div className="space-y-3">
         {notifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
@@ -88,6 +103,8 @@ const NotificationsContent = () => {
           notifications.map((notification, index) => {
             const Icon = getIcon(notification.type);
             const iconColor = getIconColor(notification.type);
+            const badge = getActionBadge(notification.type);
+            const isDelete = isDeleteNotification(notification);
             
             return (
               <motion.div
@@ -105,27 +122,61 @@ const NotificationsContent = () => {
                     <Icon size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">{notification.title}</p>
+                    {/* Title row with action badge */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-semibold text-sm">{notification.title}</p>
+                      <span className={`text-[10px] font-semibold uppercase px-2 py-0.5 rounded-full ${badge.className}`}>
+                        {badge.label}
+                      </span>
                       {!notification.read && <span className="w-2 h-2 rounded-full bg-primary shrink-0" />}
                     </div>
-                    <p className="text-sm text-muted-foreground mt-0.5 truncate">{notification.message}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
                     
-                    {/* Change Details */}
+                    {/* Change Details - Redesigned */}
                     {notification.details && notification.details.length > 0 && (
-                      <div className="mt-2 p-2 bg-muted/50 rounded-lg space-y-1">
-                        {notification.details.map((change, i) => (
-                          <div key={i} className="flex items-center gap-2 text-xs flex-wrap">
-                            <span className="text-muted-foreground w-16 shrink-0 font-medium">{change.field}:</span>
-                            <span className="text-muted-foreground line-through">{change.from}</span>
-                            <span className="text-muted-foreground">→</span>
-                            <span className="text-foreground font-medium">{change.to}</span>
+                      isDelete ? (
+                        /* Delete: show original values summary */
+                        <div className="mt-3 rounded-lg border border-destructive/20 overflow-hidden">
+                          <div className="bg-destructive/10 px-3 py-1.5 text-xs font-semibold text-destructive flex items-center gap-1.5">
+                            <Trash2 size={12} />
+                            Item was deleted
                           </div>
-                        ))}
-                      </div>
+                          <div className="p-3 space-y-1.5 bg-muted/30">
+                            {notification.details.map((change, i) => (
+                              <div key={i} className="flex items-baseline gap-2 text-xs">
+                                <span className="text-muted-foreground font-medium min-w-[4rem]">{change.field}</span>
+                                <span className="text-destructive/70">{change.from}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        /* Edit: structured before/after layout */
+                        <div className="mt-3 rounded-lg border border-border overflow-hidden">
+                          <div className="divide-y divide-border">
+                            {notification.details.map((change, i) => (
+                              <div key={i} className="px-3 py-2">
+                                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                                  {change.field}
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div>
+                                    <span className="text-[10px] text-muted-foreground/60 block mb-0.5">Before</span>
+                                    <span className="text-xs text-destructive/80 line-through">{change.from}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-[10px] text-muted-foreground/60 block mb-0.5">After</span>
+                                    <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">{change.to}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
                     )}
                     
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-muted-foreground mt-2">
                       {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
                     </p>
                   </div>
