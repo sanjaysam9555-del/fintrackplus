@@ -54,7 +54,7 @@ export const PricingSection = () => {
               ₹499<span className="text-lg md:text-xl font-normal text-muted-foreground">/month</span>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              Start with a 7-day free trial
+              Full access to every feature
             </p>
           </div>
 
@@ -72,11 +72,11 @@ export const PricingSection = () => {
             className="w-full text-base rounded-xl gap-2"
             onClick={() => navigate("/auth")}
           >
-            Start 7-Day Free Trial <ArrowRight className="w-4 h-4" />
+            Get Started <ArrowRight className="w-4 h-4" />
           </Button>
 
           <p className="mt-3 text-center text-xs text-muted-foreground">
-            Credit card required · Cancel anytime before trial ends
+            Credit card required · Cancel anytime
           </p>
         </motion.div>
       </div>
