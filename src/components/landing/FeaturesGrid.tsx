@@ -179,7 +179,7 @@ export const FeaturesGrid = () => (
     {/* Remaining primary features — card grid with screenshot thumbnails */}
     <section className="py-12 md:py-16 px-4">
       <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+        <div className="grid grid-cols-2 gap-4 md:gap-5">
           {remainingFeatures.map((f, i) => (
             <motion.div
               key={f.title}
@@ -256,7 +256,7 @@ export const FeaturesGrid = () => (
           whileInView="visible"
           viewport={{ once: true }}
           variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5"
+          className="grid grid-cols-2 gap-4 md:gap-5"
         >
           {secondaryFeatures.map((f, i) => (
             <React.Fragment key={f.title}>
