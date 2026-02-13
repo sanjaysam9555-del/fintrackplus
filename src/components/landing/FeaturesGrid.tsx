@@ -1,3 +1,4 @@
+import React from "react";
 import { motion } from "framer-motion";
 import {
   FolderKanban, Store, Users, CalendarClock,
@@ -257,37 +258,44 @@ export const FeaturesGrid = () => (
           variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
           className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5"
         >
-          {secondaryFeatures.map((f) => (
-            <motion.div
-              key={f.title}
-              variants={{
-                hidden: { opacity: 0, y: 20, scale: 0.95 },
-                visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
-              }}
-              whileHover={{ y: -4 }}
-              className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group"
-            >
-              {/* Screenshot thumbnail */}
-              <div className="h-36 md:h-40 overflow-hidden bg-muted/20">
-                <img
-                  src={f.screenshot}
-                  alt={f.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  style={{ objectPosition: f.objectPosition || "center top" }}
-                  loading="lazy"
-                />
-              </div>
-              {/* Content */}
-              <div className="p-5 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-                  <f.icon className="w-4.5 h-4.5 text-primary" />
+          {secondaryFeatures.map((f, i) => (
+            <React.Fragment key={f.title}>
+              {/* Mobile-only divider between cards */}
+              {i > 0 && (
+                <div className="sm:hidden col-span-full py-1">
+                  <div className="mx-auto w-2/3 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
                 </div>
-                <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-1">{f.title}</h4>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+              )}
+              <motion.div
+                variants={{
+                  hidden: { opacity: 0, y: 20, scale: 0.95 },
+                  visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
+                }}
+                whileHover={{ y: -4 }}
+                className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group"
+              >
+                {/* Screenshot thumbnail */}
+                <div className="h-36 md:h-40 overflow-hidden bg-muted/20">
+                  <img
+                    src={f.screenshot}
+                    alt={f.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    style={{ objectPosition: f.objectPosition || "center top" }}
+                    loading="lazy"
+                  />
                 </div>
-              </div>
-            </motion.div>
+                {/* Content */}
+                <div className="p-5 flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                    <f.icon className="w-4.5 h-4.5 text-primary" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-1">{f.title}</h4>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                  </div>
+                </div>
+              </motion.div>
+            </React.Fragment>
           ))}
         </motion.div>
       </div>
