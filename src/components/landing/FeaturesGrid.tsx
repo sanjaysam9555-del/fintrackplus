@@ -189,7 +189,7 @@ export const FeaturesGrid = () => (
               whileHover={{ scale: 1.03, y: -4 }}
               className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
             >
-              <div className="h-36 overflow-hidden bg-muted/30">
+              <div className="h-36 overflow-hidden bg-muted/60 border-b border-border/30">
                 <img
                   src={f.screenshot}
                   alt={f.screenshotAlt}
@@ -275,7 +275,7 @@ export const FeaturesGrid = () => (
                 className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group"
               >
                 {/* Screenshot thumbnail */}
-                <div className="h-36 md:h-40 overflow-hidden bg-muted/20">
+                <div className="h-36 md:h-40 overflow-hidden bg-muted/60 border-b border-border/30">
                   <img
                     src={f.screenshot}
                     alt={f.title}
