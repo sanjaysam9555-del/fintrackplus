@@ -124,7 +124,7 @@ const secondaryFeatures = [
 export const FeaturesGrid = () => (
   <>
     {/* Feature Showcase — alternating layout with phone mockups */}
-    <section id="features" className="py-16 md:py-20 px-4 bg-muted/30">
+    <section id="features" className="py-20 md:py-24 px-4 bg-muted/30">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial="hidden" whileInView="visible"
@@ -177,7 +177,7 @@ export const FeaturesGrid = () => (
     </section>
 
     {/* Remaining primary features — card grid matching PainPoints style */}
-    <section className="py-14 md:py-18 px-4">
+    <section className="py-20 md:py-24 px-4">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial="hidden" whileInView="visible"
@@ -234,7 +234,7 @@ export const FeaturesGrid = () => (
     </section>
 
     {/* Secondary features — clean card grid */}
-    <section className="py-14 md:py-18 px-4 bg-muted/30">
+    <section className="py-20 md:py-24 px-4 bg-muted/30">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial="hidden"
