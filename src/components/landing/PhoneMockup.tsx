@@ -3,7 +3,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { cn } from "@/lib/utils";
 
 interface PhoneMockupProps {
-  screens: { src: string; alt: string }[];
+  screens: { src: string; alt: string; fit?: "cover" | "contain" }[];
   autoPlayMs?: number;
   className?: string;
 }
@@ -42,7 +42,7 @@ export const PhoneMockup = ({ screens, autoPlayMs = 3000, className }: PhoneMock
                 <img
                   src={s.src}
                   alt={s.alt}
-                  className="w-full aspect-[9/19] object-cover object-top"
+                  className={cn("w-full aspect-[9/19] object-top", s.fit === "contain" ? "object-contain" : "object-cover")}
                   loading={i === 0 ? "eager" : "lazy"}
                 />
               </div>
