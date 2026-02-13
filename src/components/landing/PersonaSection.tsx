@@ -3,11 +3,6 @@ import personaSolo from "@/assets/landing/persona-solo-planner.jpg";
 import personaAgency from "@/assets/landing/persona-agency-team.jpg";
 import personaCoordinator from "@/assets/landing/persona-coordinator.jpg";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
-
 const personas = [
   {
     title: "Solo Wedding Planners",
@@ -36,9 +31,10 @@ export const PersonaSection = () => (
   <section className="py-20 px-4">
     <div className="max-w-5xl mx-auto">
       <motion.div
-        initial="hidden" whileInView="visible"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        variants={fadeUp}
+        transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-foreground">
@@ -50,9 +46,11 @@ export const PersonaSection = () => (
         {personas.map((p, i) => (
           <motion.div
             key={p.title}
-            initial="hidden" whileInView="visible"
+            initial={{ opacity: 0, y: 30, rotate: i === 0 ? -3 : i === 2 ? 3 : 0 }}
+            whileInView={{ opacity: 1, y: 0, rotate: 0 }}
             viewport={{ once: true }}
-            variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.5, delay: i * 0.12 } } }}
+            transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.12 }}
+            whileHover={{ scale: 1.03, y: -4 }}
             className={`bg-gradient-to-br ${p.gradient} border rounded-2xl overflow-hidden text-center`}
           >
             <img

@@ -6,44 +6,30 @@ import {
   Search, Undo2, Palette, Moon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { PhoneMockup } from "./PhoneMockup";
 
-// Screenshot imports
-import screenDashboard from "@/assets/landing/screen-dashboard.jpg";
-import screenPartners from "@/assets/landing/screen-partners.jpg";
-import screenInstallments from "@/assets/landing/screen-installments.jpg";
-import screenGstExport from "@/assets/landing/screen-gst-export.jpg";
-import screenVendors from "@/assets/landing/screen-vendors.jpg";
-import screenReceipt from "@/assets/landing/screen-receipt.jpg";
-import screenAiInsights from "@/assets/landing/screen-ai-insights.jpg";
-import screenFy from "@/assets/landing/screen-fy.jpg";
-import screenRecurring from "@/assets/landing/screen-recurring.jpg";
-import screenDuplicate from "@/assets/landing/screen-duplicate.jpg";
-import screenOffline from "@/assets/landing/screen-offline.jpg";
-import screenSearch from "@/assets/landing/screen-search.jpg";
+// Real screenshot imports
+import projectsTab from "@/assets/landing/real/projects-tab.png";
+import projectEntries from "@/assets/landing/real/project-entries.png";
+import partners from "@/assets/landing/real/partners.png";
+import projectSubTab from "@/assets/landing/real/project-sub-tab.png";
+import gstForm from "@/assets/landing/real/gst-form.png";
+import reports from "@/assets/landing/real/reports.png";
+import vendors from "@/assets/landing/real/vendors.png";
+import homeTab from "@/assets/landing/real/home-tab.png";
+import expenseForm from "@/assets/landing/real/expense-form.png";
+import aiSummary from "@/assets/landing/real/ai-summary.png";
+import incomeTab from "@/assets/landing/real/income-tab.png";
+import expenseTab from "@/assets/landing/real/expense-tab.png";
+import activityLog from "@/assets/landing/real/activity-log.png";
+import categories from "@/assets/landing/real/categories.png";
+import aiSummary2 from "@/assets/landing/real/ai-summary-2.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.45 } },
 };
 
-/* ── Phone Frame Component ── */
-const PhoneFrame = ({ src, alt }: { src: string; alt: string }) => (
-  <div className="relative w-full max-w-[220px] mx-auto">
-    <div className="bg-foreground/10 rounded-[2rem] p-1.5 shadow-xl">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3.5 bg-foreground/10 rounded-b-xl z-10" />
-      <div className="rounded-[1.6rem] overflow-hidden bg-background">
-        <img
-          src={src}
-          alt={alt}
-          className="w-full aspect-[9/19] object-cover object-top"
-          loading="lazy"
-        />
-      </div>
-    </div>
-  </div>
-);
-
-/* ── Feature Showcase Items ── */
 const showcaseFeatures = [
   {
     icon: FolderKanban,
@@ -51,31 +37,33 @@ const showcaseFeatures = [
     badge: "Core",
     description: "Create a project per wedding. Set Internal Cost and Client Cost. See real-time margin, health status, and budget consumption.",
     detail: "Duplicate projects to reuse templates across similar events.",
-    screenshot: screenDashboard,
-    screenshotAlt: "Dashboard showing wedding project with margins and budget tracking",
+    screens: [
+      { src: projectsTab, alt: "Projects tab showing wedding event tracking" },
+      { src: projectEntries, alt: "Detailed project entries view" },
+    ],
   },
   {
     icon: Users,
     title: "Partner / Team Tracking",
     badge: "Multi-Partner",
     description: "Add business partners with separate Cash and Online balances. Track who handled which transaction with one-tap fund transfers.",
-    screenshot: screenPartners,
-    screenshotAlt: "Partner balance view showing cash and online splits",
+    screens: [{ src: partners, alt: "Partner balance view showing cash and online splits" }],
   },
   {
     icon: CalendarClock,
     title: "Part Payment Tracking",
     description: "Log total expected amounts, plan future installments with dates, confirm payments as they happen. Visual progress bar included.",
-    screenshot: screenInstallments,
-    screenshotAlt: "Part payment tracker with installment timeline and progress",
+    screens: [{ src: projectSubTab, alt: "Part payment tracker with installment timeline" }],
   },
   {
     icon: Receipt,
     title: "GST Tagging & CA Export",
     badge: "Tax Ready",
     description: "Tag any transaction as GST. Export a CA-ready ZIP: transaction CSV, GST summary, and receipt images with professional headers.",
-    screenshot: screenGstExport,
-    screenshotAlt: "GST export package with downloadable ZIP file",
+    screens: [
+      { src: gstForm, alt: "GST split transaction form" },
+      { src: reports, alt: "Reports page with export options" },
+    ],
   },
 ];
 
@@ -85,7 +73,7 @@ const remainingFeatures = [
     title: "Vendor Management",
     description: "Maintain a vendor directory with custom icons and colors. See total spend per vendor across all weddings.",
     gradient: "from-warning/20 to-warning/5",
-    screenshot: screenVendors,
+    screenshot: vendors,
     screenshotAlt: "Vendor directory with spend totals",
   },
   {
@@ -93,16 +81,16 @@ const remainingFeatures = [
     title: "Cash vs Online Split",
     description: "Every transaction tagged Cash or Online. Dashboard and partner balances reflect both modes separately.",
     gradient: "from-primary/20 to-primary/5",
-    screenshot: screenPartners,
-    screenshotAlt: "Cash and online balance split view",
+    screenshot: homeTab,
+    screenshotAlt: "Home tab showing cash and online balance split",
   },
   {
     icon: Camera,
     title: "Receipt Capture",
     description: "Attach photos of bills directly to transactions. Camera + gallery support on mobile. Included in exports.",
     gradient: "from-warning/20 to-warning/5",
-    screenshot: screenReceipt,
-    screenshotAlt: "Receipt capture with camera and gallery upload",
+    screenshot: expenseForm,
+    screenshotAlt: "Expense add form with receipt capture",
   },
   {
     icon: Brain,
@@ -110,20 +98,20 @@ const remainingFeatures = [
     badge: "AI Powered",
     description: "FY-level summaries, 6-month trend charts, category breakdowns, project health dashboard, and spending insights.",
     gradient: "from-primary/20 to-primary/5",
-    screenshot: screenAiInsights,
+    screenshot: aiSummary,
     screenshotAlt: "AI insights dashboard with charts and analysis",
   },
 ];
 
 const secondaryFeatures = [
-  { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: screenFy },
-  { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: screenRecurring },
-  { icon: Copy, title: "Duplicate Detection", desc: "Smart warnings for same vendor + amount + date", screenshot: screenDuplicate },
-  { icon: WifiOff, title: "Offline-First Sync", desc: "Works without internet, syncs when back online", screenshot: screenOffline },
-  { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: screenSearch },
-  { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: screenDashboard },
-  { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: screenVendors },
-  { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: screenDashboard },
+  { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: incomeTab },
+  { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: expenseTab },
+  { icon: Copy, title: "Duplicate Detection", desc: "Smart warnings for same vendor + amount + date", screenshot: homeTab },
+  { icon: WifiOff, title: "Offline-First Sync", desc: "Works without internet, syncs when back online", screenshot: homeTab },
+  { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: homeTab },
+  { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog },
+  { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories },
+  { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: aiSummary2 },
 ];
 
 export const FeaturesGrid = () => (
@@ -170,9 +158,9 @@ export const FeaturesGrid = () => (
                     <p className="mt-2 text-xs text-muted-foreground/80 italic">{f.detail}</p>
                   )}
                 </div>
-                {/* Phone mockup */}
+                {/* Phone mockup with mini carousel */}
                 <div className="flex-1 w-full max-w-sm md:max-w-none flex justify-center">
-                  <PhoneFrame src={f.screenshot} alt={f.screenshotAlt} />
+                  <PhoneMockup screens={f.screens} autoPlayMs={2500} />
                 </div>
               </motion.div>
             );
@@ -191,9 +179,9 @@ export const FeaturesGrid = () => (
               initial="hidden" whileInView="visible"
               viewport={{ once: true, margin: "-50px" }}
               variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.45, delay: i * 0.06 } } }}
-              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-all group"
+              whileHover={{ scale: 1.03, y: -4 }}
+              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
             >
-              {/* Screenshot thumbnail */}
               <div className="h-36 overflow-hidden bg-muted/30">
                 <img
                   src={f.screenshot}
@@ -238,9 +226,9 @@ export const FeaturesGrid = () => (
               initial="hidden" whileInView="visible"
               viewport={{ once: true }}
               variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.4, delay: i * 0.05 } } }}
+              whileHover={{ scale: 1.03, y: -4 }}
               className="bg-card/60 backdrop-blur-sm border rounded-xl overflow-hidden hover:bg-card transition-colors group"
             >
-              {/* Screenshot thumbnail */}
               <div className="h-28 md:h-32 overflow-hidden bg-muted/20">
                 <img
                   src={f.screenshot}

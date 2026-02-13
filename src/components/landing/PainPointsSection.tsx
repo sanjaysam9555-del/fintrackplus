@@ -1,11 +1,6 @@
 import { motion } from "framer-motion";
 import { Banknote, TrendingDown, FileWarning } from "lucide-react";
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
-
 const painPoints = [
   {
     icon: Banknote,
@@ -34,10 +29,10 @@ export const PainPointsSection = () => (
   <section className="py-20 px-4">
     <div className="max-w-6xl mx-auto">
       <motion.div
-        initial="hidden"
-        whileInView="visible"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
-        variants={fadeUp}
+        transition={{ duration: 0.5 }}
         className="text-center mb-12"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-foreground">
@@ -52,13 +47,13 @@ export const PainPointsSection = () => (
         {painPoints.map((p, i) => (
           <motion.div
             key={p.title}
-            initial="hidden"
-            whileInView="visible"
+            initial={{ opacity: 0, x: i === 0 ? -40 : i === 2 ? 40 : 0, y: i === 1 ? 30 : 0 }}
+            whileInView={{ opacity: 1, x: 0, y: 0 }}
             viewport={{ once: true, margin: "-60px" }}
-            variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.5, delay: i * 0.12 } } }}
+            transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.12 }}
+            whileHover={{ scale: 1.03, y: -4 }}
             className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow"
           >
-            {/* Gradient header instead of cartoon image */}
             <div className={`h-32 bg-gradient-to-b ${p.gradient} flex items-center justify-center`}>
               <div className={`w-16 h-16 rounded-2xl ${p.iconBg} flex items-center justify-center`}>
                 <p.icon className="w-8 h-8" />
