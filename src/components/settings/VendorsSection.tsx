@@ -276,7 +276,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   if (detailVendorName && detailStats) {
     return (
       <div className={cn("min-h-screen bg-background", isEditSheetOpen && "hidden")}>
-        <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 border-b border-border">
+        <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 safe-top border-b border-border">
           <button onClick={() => handleSetDetailVendor(null)} className="p-2 -ml-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} />
           </button>
@@ -368,7 +368,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="sticky top-0 bg-background z-10 flex items-center justify-between p-4 border-b border-border">
+      <div className="sticky top-0 bg-background z-10 flex items-center justify-between p-4 safe-top border-b border-border">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} />

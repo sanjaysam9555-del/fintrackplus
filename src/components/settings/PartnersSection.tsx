@@ -345,7 +345,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   
   return (
     <div className="min-h-screen pb-24">
-      <div className="p-4 pt-6">
+      <div className="p-4 safe-top">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} />

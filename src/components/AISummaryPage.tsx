@@ -200,7 +200,7 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
   return (
     <div className="min-h-screen pb-40 md:pb-8 md:px-6 md:max-w-6xl">
       {/* Header */}
-      <div className="p-4 pt-6 safe-top">
+      <div className="p-4 safe-top">
         <div className="flex items-center gap-3">
           {onBack && (
             <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
