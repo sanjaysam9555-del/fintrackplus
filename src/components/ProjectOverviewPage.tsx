@@ -148,8 +148,8 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       {/* Enhanced Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border safe-top">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <FolderKanban size={20} className="text-primary" />
+          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
+            <FolderKanban size={20} className="text-accent-foreground" />
           </div>
           <div className="flex-1">
             <h1 className="text-xl font-bold">Projects</h1>
@@ -253,11 +253,11 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
           {/* Stats Row - 3 column grid */}
           <div className="grid grid-cols-3 gap-px bg-border mx-3 mb-3 rounded-xl overflow-hidden">
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Wallet size={14} className="text-primary" />
+              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
+                <Wallet size={14} className="text-accent-foreground" />
               </div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost</p>
-              <p className="text-sm font-bold text-primary">
+              <p className="text-sm font-bold text-foreground">
                 <span className="lg:hidden">₹{formatCompactCurrency(totalInternalCost, false)}</span>
                 <span className="hidden lg:inline">₹{totalInternalCost.toLocaleString()}</span>
               </p>
