@@ -1,73 +1,49 @@
 
 
-# Fix Landing Page: Logo Visibility, Mobile-First Hero, and Image Cropping
+# Replace 10 Feature Images with Cropped Versions
 
-## Problem Summary
-1. **No logo or app name visible** on first load -- hero section has no FinTrack+ branding
-2. **On mobile, text is hidden below the fold** because the phone mockup takes `order-1` and pushes copy down
-3. **Feature screenshot images are uncropped** -- full phone screenshots shown in tiny card thumbnails, making them unrecognizable
+## Overview
+Replace the current full-phone screenshots with properly cropped, focused images that clearly show each feature.
 
----
+## Image Mapping
 
-## Fix 1: Add Logo + App Name to Hero (Above the Fold)
+| Uploaded File | Target Path | Replaces | Used For |
+|---|---|---|---|
+| `AI_Insights.png` | `src/assets/landing/real/ai-insights-cropped.png` | `ai-summary.png` | Smart Insights (AI) -- remaining features card |
+| `Attach_Reciept.png` | `src/assets/landing/real/receipt-cropped.png` | `expense-form.png` | Receipt Capture -- remaining features card |
+| `Cash_vs_Online_1.png` | `src/assets/landing/real/cash-online-cropped.png` | `home-tab.png` | Cash vs Online Split -- remaining features card |
+| `Cash_vs_Online_2.png` | `src/assets/landing/real/cash-online-form.png` | (new, not currently used) | Could be added as second image or kept for future |
+| `CleanShot...@2x.png` | `src/assets/landing/real/dark-mode-cropped.png` | `ai-summary-2.png` | Dark Mode + OLED -- secondary features card |
+| `Dark_Mode_OLED_Mode.png` | `src/assets/landing/real/global-search-cropped.png` | `home-tab.png` | Global Search -- secondary features card |
+| `Indian_Financial_Year.png` | `src/assets/landing/real/fy-cropped.png` | `income-tab.png` | Indian Financial Year -- secondary features card |
+| `Part_Payment_Tracking.png` | `src/assets/landing/real/part-payment-cropped.png` | `project-sub-tab.png` | Part Payment Tracking -- showcase feature (PhoneMockup) |
+| `Reccuring_Expense.png` | `src/assets/landing/real/recurring-cropped.png` | `expense-tab.png` | Recurring Transactions -- secondary features card |
+| `Duplicate_Detection.png` | `src/assets/landing/real/duplicate-cropped.png` | `home-tab.png` | Duplicate Detection -- secondary features card |
 
-Add the app icon (`src/assets/app-icon.png`) and "FinTrack+" name at the top of the hero section, visible immediately on load without any animation delay.
+## Changes to `FeaturesGrid.tsx`
 
-**File: `src/components/landing/HeroSection.tsx`**
-- Import `appIcon` from `@/assets/app-icon.png`
-- Add a logo + name row above the badge: a 36px icon + "FinTrack+" text, no stagger delay so it renders instantly
-- This ensures branding is the first thing users see
+1. Add 10 new imports for the cropped images
+2. Update the `remainingFeatures` array:
+   - Cash vs Online Split: use `cash-online-cropped.png` instead of `home-tab.png`
+   - Receipt Capture: use `receipt-cropped.png` instead of `expense-form.png`
+   - Smart Insights (AI): use `ai-insights-cropped.png` instead of `ai-summary.png`
+3. Update the `secondaryFeatures` array:
+   - Indian Financial Year: use `fy-cropped.png`
+   - Recurring Transactions: use `recurring-cropped.png`
+   - Duplicate Detection: use `duplicate-cropped.png`
+   - Global Search: use `global-search-cropped.png`
+   - Dark Mode + OLED: use `dark-mode-cropped.png`
+4. Update the `showcaseFeatures` array:
+   - Part Payment Tracking: use `part-payment-cropped.png` in its PhoneMockup screens
+5. Since the new images are already cropped to show relevant content, reset `objectPosition` to `center` for all replaced images (the manual crop offsets are no longer needed)
 
-## Fix 2: Mobile Layout -- Show Text First, Phone Second
+## Note on `Cash_vs_Online_2.png`
+This shows the Cash/Online payment method selector in a form. It can be added as a second screen in the Cash vs Online feature card if desired, or kept unused. The plan will copy it but not reference it unless you want a mini-carousel there.
 
-Currently on mobile the phone mockup has `order-1` and text has `order-2`, meaning the key message is pushed below the fold.
+## Files Changed
 
-**File: `src/components/landing/HeroSection.tsx`**
-- Swap mobile order: text block gets `order-1` (always first on mobile), phone gets `order-2`
-- Keep desktop layout unchanged (`md:order-1` for text, `md:order-2` for phone)
-- Reduce `min-h-[85vh]` to `min-h-[70vh]` on mobile so the section doesn't take too much vertical space before content appears
-
-## Fix 3: Crop Feature Card Screenshots to Show Relevant Portions
-
-The issue is that full-height phone screenshots are crammed into small `h-36` / `h-28` card thumbnails using `object-cover object-top`. This always shows just the status bar area, which looks the same for every screenshot and is not meaningful.
-
-**File: `src/components/landing/FeaturesGrid.tsx`**
-
-### Remaining Features (card grid) -- Use `object-[center_top_offset]` to crop to the relevant part:
-
-| Feature | Image | Crop Strategy |
-|---|---|---|
-| Vendor Management | `vendors.png` | `object-[center_25%]` -- show vendor list, not status bar |
-| Cash vs Online Split | `home-tab.png` | `object-[center_15%]` -- show the balance cards |
-| Receipt Capture | `expense-form.png` | `object-[center_40%]` -- show the receipt/camera area of the form |
-| Smart Insights (AI) | `ai-summary.png` | `object-[center_20%]` -- show the charts/insights area |
-
-### Secondary Features (small cards) -- Same approach with per-image crop positions:
-
-| Feature | Image | Crop Position |
-|---|---|---|
-| Indian Financial Year | `income-tab.png` | `object-[center_10%]` -- show FY header |
-| Recurring Transactions | `expense-tab.png` | `object-[center_20%]` |
-| Duplicate Detection | `home-tab.png` | `object-[center_15%]` |
-| Offline-First Sync | `home-tab.png` | `object-[center_15%]` |
-| Global Search | `home-tab.png` | `object-[center_15%]` |
-| Undo Delete | `activity-log.png` | `object-[center_20%]` |
-| Custom Categories | `categories.png` | `object-[center_20%]` |
-| Dark Mode + OLED | `ai-summary-2.png` | `object-[center_20%]` |
-
-To implement this, add an `objectPosition` style property to each feature's data and apply it on the `<img>` tag instead of the generic `object-top`.
-
----
-
-## Technical Details
-
-### Files Changed
-
-| File | Changes |
+| File | Change |
 |---|---|
-| `src/components/landing/HeroSection.tsx` | Add logo+name, fix mobile order (text first), reduce min-height |
-| `src/components/landing/FeaturesGrid.tsx` | Add per-image `objectPosition` to remaining and secondary features, apply on img tags |
-
-### No New Dependencies
-All changes use existing imports and Tailwind utilities.
+| `src/assets/landing/real/` | 10 new cropped PNG files |
+| `src/components/landing/FeaturesGrid.tsx` | Update imports and feature data to use new cropped images |
 
