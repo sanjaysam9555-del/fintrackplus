@@ -286,7 +286,7 @@ export const FeaturesGrid = () => (
                 </div>
                 {/* Content */}
                 <div className="p-5 flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
                     <f.icon className="w-4.5 h-4.5 text-primary" />
                   </div>
                   <div>
