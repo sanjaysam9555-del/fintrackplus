@@ -187,7 +187,7 @@ export const FeaturesGrid = () => (
               viewport={{ once: true, margin: "-50px" }}
               variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.45, delay: i * 0.06 } } }}
               whileHover={{ scale: 1.03, y: -4 }}
-              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
+              className="bg-[#1966CD] border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
             >
               <div className="h-36 overflow-hidden bg-muted/60 border-b border-border/30">
                 <img
@@ -200,15 +200,15 @@ export const FeaturesGrid = () => (
               </div>
               <div className="p-5 md:p-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center`}>
-                    <f.icon className="w-4.5 h-4.5 text-foreground" />
+                  <div className={`w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center`}>
+                    <f.icon className="w-4.5 h-4.5 text-white" />
                   </div>
-                  <h3 className="text-base md:text-lg font-semibold text-foreground">{f.title}</h3>
+                  <h3 className="text-base md:text-lg font-semibold text-white">{f.title}</h3>
                   {f.badge && (
                     <Badge variant="secondary" className="text-[10px] px-2 py-0">{f.badge}</Badge>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+                <p className="text-sm text-white/80 leading-relaxed">{f.description}</p>
               </div>
             </motion.div>
           ))}
@@ -272,7 +272,7 @@ export const FeaturesGrid = () => (
                   visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
                 }}
                 whileHover={{ y: -4 }}
-                className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group"
+                className="border border-white/10 rounded-2xl bg-[#1966CD] shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group"
               >
                 {/* Screenshot thumbnail */}
                 <div className="h-36 md:h-40 overflow-hidden bg-muted/60 border-b border-border/30">
@@ -286,12 +286,12 @@ export const FeaturesGrid = () => (
                 </div>
                 {/* Content */}
                 <div className="p-5 flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
-                    <f.icon className="w-4.5 h-4.5 text-primary" />
+                  <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
+                    <f.icon className="w-4.5 h-4.5 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-foreground mb-1">{f.title}</h4>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                    <h4 className="text-sm font-semibold text-white mb-1">{f.title}</h4>
+                    <p className="text-xs text-white/80 leading-relaxed">{f.desc}</p>
                   </div>
                 </div>
               </motion.div>
