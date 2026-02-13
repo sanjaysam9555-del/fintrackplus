@@ -1,105 +1,107 @@
 
 
-# Landing Page for FinTrack+ -- Built for Indian Wedding Planners
+# Landing Page Overhaul: Visuals, Pricing, and Mobile Optimization
 
-## Audience and Positioning
+## What's Changing
 
-This is not a generic finance app. FinTrack+ is purpose-built for Indian wedding planners who juggle lakhs in cash and online payments across multiple weddings, dozens of vendors (florists, caterers, decorators, photographers), and partner teams -- all while needing GST compliance and CA-ready books.
+### 1. Pricing Corrections (across multiple files)
+All references to "free", "no credit card" must be updated to reflect the paid model:
+- **Rs. 499/month subscription**
+- **7-day free trial** (to still have a low-friction entry point)
+- Credit card required at signup
 
-## Page Structure (Route: `/landing`, publicly accessible)
+**Files affected:**
+- `HeroSection.tsx` -- CTA changes from "Start Free" to "Start 7-Day Free Trial", subtext changes to "Rs. 499/month after trial"
+- `HowItWorks.tsx` -- Step 1 description updated
+- `FAQSection.tsx` -- "Is it free?" answer rewritten with pricing details
+- `LandingFooter.tsx` -- "Get Started Free" changed to "Start Your Free Trial"
 
-### Section 1: Hero
-- Headline: "Stop Losing Money Between Weddings"
-- Subheadline: "The finance app Indian wedding planners actually need. Track every rupee across events, vendors, and partners -- even offline."
-- CTA: "Start Free" (links to `/auth`)
-- Visual: Phone mockup showing the Dashboard with INR amounts, partner balances, and project cards
+### 2. New Pricing Section (new component)
+A dedicated pricing card section inserted between PersonaSection and FAQSection:
+- **File:** `src/components/landing/PricingSection.tsx`
+- Single plan card: "Rs. 499/month"
+- Feature checklist showing everything included
+- "Start 7-Day Free Trial" CTA
+- "Cancel anytime" reassurance text
 
-### Section 2: Pain Points (Problem Statement)
-A 3-card grid addressing real wedding planner pain points:
-1. **"Cash leaks between events"** -- Vendors get paid in cash, amounts get lost in WhatsApp messages and notebooks
-2. **"No visibility into margins"** -- You quoted the client 18L but spent 14L or 20L? You only find out after the wedding
-3. **"GST and CA headaches"** -- Receipts scattered across phones, no clean books when tax season arrives
+### 3. Hero Section Overhaul (mobile-first)
+The current hero has a phone mockup that's too small on mobile and doesn't convey the app well.
 
-### Section 3: Feature Showcase (Solutions Grid)
-A detailed section with ~8 feature cards, each with icon, title, description, and a relevant detail:
+**Changes to `HeroSection.tsx`:**
+- On mobile: hide the phone mockup entirely, replace with a horizontally scrollable row of 3 mini feature highlight cards (e.g., "Track ₹18L+", "5 Weddings", "Cash + Online") that give immediate visual context
+- On desktop: keep the phone mockup but make it larger and more detailed
+- Add social proof line: "Trusted by wedding planners across India"
+- Update CTA button and subtext for paid model
 
-1. **Wedding-as-a-Project** -- Create a project per wedding (e.g., "Sharma-Gupta Wedding"). Set Internal Cost (your actual spend) and Client Cost (what you charge). See real-time margin, health status (Healthy/At-Risk/Critical), and a progress bar showing budget consumption. Duplicate projects to reuse templates.
+### 4. App Screen Mockups Alongside Features
+Since we can't capture real screenshots with data, we'll build **detailed CSS-rendered app screen mockups** that look like real screenshots. These will be placed alongside feature descriptions in an alternating layout (text left / mockup right, then swap).
 
-2. **Vendor Management** -- Maintain a vendor directory with custom icons and colors. See total spend per vendor across all weddings. Track which vendor got paid for which event. Expandable vendor cards with full transaction history.
+**Changes to `FeaturesGrid.tsx`:**
+- Restructure the top 4 primary features into a "Feature Showcase" format: each feature gets a full-width row with text on one side and a detailed CSS mockup on the other
+- Alternating layout: odd features have text-left/mockup-right, even features swap
+- The remaining 4 primary features stay in the existing 2-column card grid
+- Each mockup is a realistic representation of the actual app screen for that feature
 
-3. **Partner/Team Tracking** -- Add business partners with separate Cash and Online opening balances. Track who handled which transaction. See per-partner closing balances (Cash + Online split). One-tap partner-to-partner fund transfers.
+**CSS Mockups to build (inline in FeaturesGrid):**
+1. **Wedding-as-a-Project** -- A project card showing "Sharma-Gupta Wedding", Internal Cost ₹14L, Client Cost ₹18L, margin bar at 22%, health badge "Healthy"
+2. **Partner Tracking** -- Two partner cards with Cash/Online split balances, transfer button
+3. **Part Payment Tracker** -- A vendor installment view with progress bar at 60%, upcoming dates
+4. **GST Export** -- A mock export preview showing CSV rows, receipt thumbnails, ZIP download button
 
-4. **Part Payment / Installment Tracking** -- Wedding vendors rarely get paid in one shot. Log the total expected amount, plan future installments with dates, confirm payments as they happen. Visual progress bar shows how much is paid vs remaining.
+### 5. Mobile Optimization
+- All feature showcase mockups stack vertically on mobile (mockup below text)
+- Mockups scale down gracefully with `max-w-sm mx-auto` on mobile
+- Pain points section: cards stack to single column on very small screens
+- Secondary features grid: `grid-cols-2` on mobile (already correct)
+- Add `scroll-smooth` to the landing page for smooth anchor navigation on mobile
+- Hero section min-height reduced on mobile from `min-h-[90vh]` to `min-h-[80vh]` to show more content above the fold
 
-5. **Cash vs Online Split** -- Every transaction is tagged Cash or Online. Dashboard and partner balances reflect both modes separately. Essential for wedding planners who handle lakhs in cash daily.
-
-6. **GST Tagging and CA Export** -- Tag any transaction as GST. Export a CA-ready ZIP package: transaction CSV, GST summary CSV, and a folder of receipt images. Professional report headers with your name and date range.
-
-7. **Receipt Capture** -- Attach photos of bills and receipts directly to transactions. Camera + gallery support on mobile. Images are compressed and stored securely. Included in CA export packages.
-
-8. **Smart Insights (AI Summary)** -- FY-level hero card with total income/expense. 6-month spending trend chart. Category-wise breakdown pie chart. Project health dashboard. Cash vs Online payment split. Auto-generated insights (top spending categories, budget warnings).
-
-### Section 4: More Features (Secondary Grid)
-A compact grid of additional features:
-- **Indian Financial Year** -- All summaries default to Apr-Mar FY, not calendar year
-- **Recurring Transactions** -- Set up monthly rent, EMIs, or retainer fees (daily/weekly/monthly/yearly)
-- **Duplicate Detection** -- Smart warnings when you accidentally enter the same vendor + amount + date
-- **Offline-First Sync** -- Works without internet. Queues changes locally, syncs when back online. Pending count visible on dashboard
-- **Global Search** -- Cmd+K to search across all transactions, vendors, projects instantly
-- **Undo Delete** -- 5-second undo toast on every deletion. No accidental data loss
-- **Custom Categories** -- Create expense and income categories with icons and colors tailored to wedding planning (Decor, Catering, Venue, Photography, etc.)
-- **Dark Mode + OLED** -- Easy on the eyes during late-night event planning
-
-### Section 5: How It Works
-3-step flow:
-1. **Sign up in 30 seconds** -- Email + password, no credit card
-2. **Create your first wedding project** -- Set the client name, your budget, and client cost
-3. **Start logging** -- Every vendor payment, every cash handoff, every receipt
-
-### Section 6: Who Is This For?
-Persona cards:
-- Solo wedding planners managing 5-15 events/year
-- Wedding planning agencies with 2-5 partners handling different events
-- Event coordinators who need to report clean books to clients
-
-### Section 7: FAQ (Accordion)
-- "Can I use this for non-wedding events?" -- Yes, projects work for any event
-- "Is my data safe?" -- Cloud-synced with secure authentication
-- "Does it work offline?" -- Yes, fully offline-first with background sync
-- "Can my business partner access the same data?" -- Currently single-user with partner tracking. Multi-user access coming soon
-- "Is it free?" -- Free to start, premium features coming soon
-
-### Section 8: Final CTA
-- "Your next wedding deserves better books."
-- Large "Get Started Free" button
-
-### Section 9: Footer
-- FinTrack+ branding with version
-- Links: Privacy, Terms, Contact
+### 6. Landing Page Structure Update
+**File: `src/pages/Landing.tsx`** -- Add the new PricingSection between PersonaSection and FAQSection.
 
 ---
 
-## Technical Implementation
+## Technical Details
 
-### New Files
-- `src/pages/Landing.tsx` -- Main landing page component (~600 lines)
-- `src/components/landing/HeroSection.tsx`
-- `src/components/landing/PainPointsSection.tsx`
-- `src/components/landing/FeaturesGrid.tsx`
-- `src/components/landing/HowItWorks.tsx`
-- `src/components/landing/PersonaSection.tsx`
-- `src/components/landing/FAQSection.tsx`
-- `src/components/landing/Footer.tsx`
+### New File: `src/components/landing/PricingSection.tsx`
+- Single pricing card with glass-morphism styling
+- Checklist of all included features (12-15 items)
+- "Rs. 499/month" prominently displayed
+- "Start 7-Day Free Trial" button linking to `/auth`
+- Framer Motion fade-up animation
 
-### Modified Files
-- `src/App.tsx` -- Add `/landing` route (publicly accessible, no auth required)
+### Modified: `src/components/landing/HeroSection.tsx`
+- Mobile: replace phone mockup with 3 mini stat cards in a horizontal row
+- Use `hidden md:flex` on phone mockup, `flex md:hidden` on mobile stat cards
+- CTA: "Start 7-Day Free Trial" with ArrowRight icon
+- Subtext: "Rs. 499/month after trial -- Cancel anytime"
+- Add a trust line with a subtle icon
 
-### Design Approach
-- Framer Motion scroll-triggered animations (fade-in-up on each section)
-- Glass-morphism cards consistent with existing app design
-- Responsive: mobile-first, scales to desktop with multi-column grids
-- Color palette: existing app theme (primary blue, emerald for success, amber for warnings)
-- INR currency throughout (₹) -- no dollar signs anywhere
-- Uses existing UI components (Card, Accordion, Button, Badge) for consistency
-- No placeholder images initially -- uses Lucide icons and gradient backgrounds for feature cards
+### Modified: `src/components/landing/FeaturesGrid.tsx`
+- Top 4 features become full-width alternating rows with CSS mockups
+- Each mockup is a `div` styled to look like a phone/app screen with realistic data
+- Bottom 4 primary features remain as 2-column cards
+- Secondary features grid unchanged
 
+### Modified: `src/components/landing/HowItWorks.tsx`
+- Step 1 description: "Email + password. 7-day free trial, no commitment." (remove "no credit card")
+
+### Modified: `src/components/landing/FAQSection.tsx`
+- "Is it free?" rewritten: "FinTrack+ is Rs. 499/month. Every new account gets a 7-day free trial with full access to all features. Cancel anytime before the trial ends and you won't be charged."
+- Add new FAQ: "What payment methods do you accept?" -- "Credit card, debit card, and UPI. All payments are processed securely."
+
+### Modified: `src/components/landing/LandingFooter.tsx`
+- FinalCTA button text: "Start Your Free Trial"
+- Remove "Get Started Free"
+
+### Modified: `src/pages/Landing.tsx`
+- Import and add `PricingSection` between `PersonaSection` and `FAQSection`
+
+### Summary of all files changed:
+1. `src/components/landing/HeroSection.tsx` -- mobile hero, pricing text, CTA
+2. `src/components/landing/FeaturesGrid.tsx` -- alternating feature showcase with CSS mockups
+3. `src/components/landing/PricingSection.tsx` -- NEW pricing section
+4. `src/components/landing/HowItWorks.tsx` -- step 1 text fix
+5. `src/components/landing/FAQSection.tsx` -- pricing FAQ updates
+6. `src/components/landing/LandingFooter.tsx` -- CTA text fix
+7. `src/pages/Landing.tsx` -- add PricingSection import and placement
