@@ -77,48 +77,48 @@ const remainingFeatures = [
     icon: Store,
     title: "Vendor Management",
     description: "Maintain a vendor directory with custom icons and colors. See total spend per vendor across all weddings.",
-    gradient: "from-warning/20 to-warning/5",
     screenshot: vendorsCropped,
     screenshotAlt: "Vendor directory with spend totals",
-    objectPosition: "center",
+    iconBg: "bg-warning/10 text-warning",
+    gradient: "from-warning/15 via-warning/5 to-transparent",
   },
   {
     icon: Banknote,
     title: "Cash vs Online Split",
     description: "Every transaction tagged Cash or Online. Dashboard and partner balances reflect both modes separately.",
-    gradient: "from-primary/20 to-primary/5",
     screenshot: cashOnlineCropped,
     screenshotAlt: "Cash and online balance split",
-    objectPosition: "center",
+    iconBg: "bg-primary/10 text-primary",
+    gradient: "from-primary/15 via-primary/5 to-transparent",
   },
   {
     icon: Camera,
     title: "Receipt Capture",
     description: "Attach photos of bills directly to transactions. Camera + gallery support on mobile. Included in exports.",
-    gradient: "from-warning/20 to-warning/5",
     screenshot: receiptCropped,
     screenshotAlt: "Receipt capture feature",
-    objectPosition: "center",
+    iconBg: "bg-success/10 text-success",
+    gradient: "from-success/15 via-success/5 to-transparent",
   },
   {
     icon: Brain,
     title: "Smart Insights (AI)",
     badge: "AI Powered",
     description: "FY-level summaries, 6-month trend charts, category breakdowns, project health dashboard, and spending insights.",
-    gradient: "from-primary/20 to-primary/5",
     screenshot: aiInsightsCropped,
     screenshotAlt: "AI insights dashboard with charts and analysis",
-    objectPosition: "center",
+    iconBg: "bg-primary/10 text-primary",
+    gradient: "from-primary/15 via-primary/5 to-transparent",
   },
 ];
 
 const secondaryFeatures = [
-  { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: fyCropped, objectPosition: "center" },
-  { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: recurringCropped, objectPosition: "center" },
-  { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: globalSearchCropped, objectPosition: "center" },
-  { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, objectPosition: "center" },
-  { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, objectPosition: "center" },
-  { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: darkModeCropped, objectPosition: "center" },
+  { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: fyCropped, iconBg: "bg-warning/10 text-warning" },
+  { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: recurringCropped, iconBg: "bg-primary/10 text-primary" },
+  { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: globalSearchCropped, iconBg: "bg-success/10 text-success" },
+  { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, iconBg: "bg-destructive/10 text-destructive" },
+  { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, iconBg: "bg-warning/10 text-warning" },
+  { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: darkModeCropped, iconBg: "bg-primary/10 text-primary" },
 ];
 
 export const FeaturesGrid = () => (
@@ -176,39 +176,56 @@ export const FeaturesGrid = () => (
       </div>
     </section>
 
-    {/* Remaining primary features — card grid with screenshot thumbnails */}
-    <section className="py-10 md:py-12 px-4">
-      <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+    {/* Remaining primary features — card grid matching PainPoints style */}
+    <section className="py-14 md:py-18 px-4">
+      <div className="max-w-6xl mx-auto">
+        <motion.div
+          initial="hidden" whileInView="visible"
+          viewport={{ once: true, margin: "-80px" }}
+          variants={fadeUp}
+          className="text-center mb-10 md:mb-12"
+        >
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+            More powerful tools
+          </h2>
+          <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-xl mx-auto">
+            Every feature designed to save you time and protect your margins.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           {remainingFeatures.map((f, i) => (
             <motion.div
               key={f.title}
-              initial="hidden" whileInView="visible"
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
-              variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.45, delay: i * 0.06 } } }}
-              whileHover={{ scale: 1.03, y: -4 }}
-              className="bg-[#1966CD] border rounded-xl overflow-hidden hover:shadow-lg transition-shadow group"
+              transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.08 }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
             >
-              <div className="h-28 overflow-hidden bg-muted/60 border-b border-border/30">
+              {/* Screenshot with gradient overlay */}
+              <div className="relative h-40 overflow-hidden">
                 <img
                   src={f.screenshot}
                   alt={f.screenshotAlt}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  style={{ objectPosition: f.objectPosition || "center top" }}
                   loading="lazy"
                 />
+                <div className={`absolute inset-0 bg-gradient-to-t ${f.gradient} opacity-60`} />
               </div>
-              <div className="p-4 md:p-5">
-                <div className="flex items-center gap-2 mb-1.5">
-                  <div className={`w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center`}>
-                    <f.icon className="w-3.5 h-3.5 text-white" />
+              {/* Content */}
+              <div className="p-5 md:p-6">
+                <div className="flex items-center gap-2.5 mb-2">
+                  <div className={`w-9 h-9 rounded-xl ${f.iconBg} flex items-center justify-center`}>
+                    <f.icon className="w-4.5 h-4.5" />
                   </div>
-                  <h3 className="text-sm md:text-base font-semibold text-white">{f.title}</h3>
+                  <h3 className="text-base md:text-lg font-semibold text-foreground">{f.title}</h3>
                   {f.badge && (
                     <Badge variant="secondary" className="text-[10px] px-2 py-0">{f.badge}</Badge>
                   )}
                 </div>
-                <p className="text-xs text-white/80 leading-relaxed">{f.description}</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
               </div>
             </motion.div>
           ))}
@@ -216,34 +233,21 @@ export const FeaturesGrid = () => (
       </div>
     </section>
 
-    {/* Secondary features — aesthetic card grid */}
-    <section className="relative py-16 px-4 overflow-hidden">
-      {/* Decorative background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
-      <motion.div
-        className="absolute top-16 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl"
-        animate={{ x: [0, -18, 0], y: [0, 12, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="absolute bottom-10 left-1/4 w-52 h-52 bg-primary/5 rounded-full blur-3xl"
-        animate={{ x: [0, 14, 0], y: [0, -10, 0] }}
-        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      <div className="relative z-10 max-w-4xl mx-auto">
+    {/* Secondary features — clean card grid */}
+    <section className="py-14 md:py-18 px-4 bg-muted/30">
+      <div className="max-w-6xl mx-auto">
         <motion.div
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
           variants={fadeUp}
-          className="text-center mb-14"
+          className="text-center mb-10 md:mb-12"
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
             <Palette className="w-3.5 h-3.5" />
             More features
           </div>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
             And there's more…
           </h2>
           <p className="mt-3 text-sm text-muted-foreground max-w-md mx-auto">
@@ -255,47 +259,39 @@ export const FeaturesGrid = () => (
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"
+          variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5"
         >
-          {secondaryFeatures.map((f, i) => (
-            <React.Fragment key={f.title}>
-              {/* Mobile-only divider between cards */}
-              {i > 0 && (
-                <div className="sm:hidden col-span-full py-1">
-                  <div className="mx-auto w-2/3 h-px bg-gradient-to-r from-transparent via-primary/15 to-transparent" />
+          {secondaryFeatures.map((f) => (
+            <motion.div
+              key={f.title}
+              variants={{
+                hidden: { opacity: 0, y: 24, scale: 0.96 },
+                visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
+              }}
+              whileHover={{ y: -4, scale: 1.02 }}
+              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow duration-300 group"
+            >
+              {/* Screenshot thumbnail */}
+              <div className="h-36 md:h-40 overflow-hidden">
+                <img
+                  src={f.screenshot}
+                  alt={f.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </div>
+              {/* Content */}
+              <div className="p-4 md:p-5 flex items-start gap-3">
+                <div className={`w-9 h-9 rounded-xl ${f.iconBg} flex items-center justify-center shrink-0 mt-0.5`}>
+                  <f.icon className="w-4.5 h-4.5" />
                 </div>
-              )}
-              <motion.div
-                variants={{
-                  hidden: { opacity: 0, y: 20, scale: 0.95 },
-                  visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
-                }}
-                whileHover={{ y: -4 }}
-                className="border border-white/10 rounded-2xl bg-[#1966CD] shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group"
-              >
-                {/* Screenshot thumbnail */}
-                <div className="h-28 md:h-32 overflow-hidden bg-muted/60 border-b border-border/30">
-                  <img
-                    src={f.screenshot}
-                    alt={f.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    style={{ objectPosition: f.objectPosition || "center top" }}
-                    loading="lazy"
-                  />
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">{f.title}</h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
                 </div>
-                {/* Content */}
-                <div className="p-4 flex items-start gap-2.5">
-                  <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
-                    <f.icon className="w-3.5 h-3.5 text-white" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-white mb-0.5">{f.title}</h4>
-                    <p className="text-[11px] text-white/80 leading-relaxed">{f.desc}</p>
-                  </div>
-                </div>
-              </motion.div>
-            </React.Fragment>
+              </div>
+            </motion.div>
           ))}
         </motion.div>
       </div>
