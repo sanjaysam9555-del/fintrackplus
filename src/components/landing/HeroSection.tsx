@@ -7,8 +7,10 @@ import appIcon from "@/assets/app-icon.png";
 import homeTab from "@/assets/landing/real/home-tab.png";
 import projectsTab from "@/assets/landing/real/projects-tab.png";
 import expenseTab from "@/assets/landing/real/expense-tab.png";
+import openingScreen from "@/assets/landing/real/opening-screen.png";
 
 const heroScreens = [
+  { src: openingScreen, alt: "FinTrack⁺ opening screen with logo" },
   { src: homeTab, alt: "FinTrack⁺ home dashboard showing financial overview" },
   { src: projectsTab, alt: "Projects tab showing wedding event tracking" },
   { src: expenseTab, alt: "Expense tab with transaction list" },
