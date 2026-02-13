@@ -11,7 +11,7 @@ const steps = [
     icon: UserPlus,
     number: "01",
     title: "Sign up in 30 seconds",
-    description: "Email + password, no credit card. You're in.",
+    description: "Email + password. 7-day free trial, no commitment.",
   },
   {
     icon: FolderPlus,

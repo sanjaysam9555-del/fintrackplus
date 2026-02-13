@@ -27,7 +27,7 @@ export const FinalCTA = () => {
           className="text-base px-10 rounded-xl gap-2"
           onClick={() => navigate("/auth")}
         >
-          Get Started Free <ArrowRight className="w-4 h-4" />
+          Start Your Free Trial <ArrowRight className="w-4 h-4" />
         </Button>
       </motion.div>
     </section>

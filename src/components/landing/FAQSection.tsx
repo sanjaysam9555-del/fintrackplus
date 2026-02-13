@@ -29,8 +29,12 @@ const faqs = [
     a: "Currently it's single-user with built-in partner tracking — you log transactions on behalf of partners and track their balances. Multi-user collaborative access is coming soon.",
   },
   {
-    q: "Is it free?",
-    a: "Free to start with all core features. Premium features for larger agencies are coming soon.",
+    q: "How much does it cost?",
+    a: "FinTrack⁺ is ₹499/month. Every new account gets a 7-day free trial with full access to all features. Cancel anytime before the trial ends and you won't be charged.",
+  },
+  {
+    q: "What payment methods do you accept?",
+    a: "Credit card, debit card, and UPI. All payments are processed securely.",
   },
 ];
 
