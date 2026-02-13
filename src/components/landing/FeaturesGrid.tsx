@@ -215,28 +215,60 @@ export const FeaturesGrid = () => (
       </div>
     </section>
 
-    {/* Secondary features — cards with screenshot thumbnails */}
-    <section className="py-12 md:py-16 px-4 bg-muted/30">
-      <div className="max-w-6xl mx-auto">
-        <motion.h3
-          initial="hidden" whileInView="visible"
+    {/* Secondary features — aesthetic card grid */}
+    <section className="relative py-24 px-4 overflow-hidden">
+      {/* Decorative background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
+      <motion.div
+        className="absolute top-16 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl"
+        animate={{ x: [0, -18, 0], y: [0, 12, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-10 left-1/4 w-52 h-52 bg-primary/5 rounded-full blur-3xl"
+        animate={{ x: [0, 14, 0], y: [0, -10, 0] }}
+        transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <div className="relative z-10 max-w-5xl mx-auto">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true }}
           variants={fadeUp}
-          className="text-xl md:text-2xl font-bold text-foreground text-center mb-8 md:mb-10"
+          className="text-center mb-14"
         >
-          And there's more…
-        </motion.h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {secondaryFeatures.map((f, i) => (
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
+            <Palette className="w-3.5 h-3.5" />
+            More features
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+            And there's more…
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground max-w-md mx-auto">
+            Every detail considered, so you can focus on creating unforgettable events
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5"
+        >
+          {secondaryFeatures.map((f) => (
             <motion.div
               key={f.title}
-              initial="hidden" whileInView="visible"
-              viewport={{ once: true }}
-              variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.4, delay: i * 0.05 } } }}
-              whileHover={{ scale: 1.03, y: -4 }}
-              className="bg-card/60 backdrop-blur-sm border rounded-xl overflow-hidden hover:bg-card transition-colors group"
+              variants={{
+                hidden: { opacity: 0, y: 20, scale: 0.95 },
+                visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
+              }}
+              whileHover={{ y: -4 }}
+              className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group"
             >
-              <div className="h-28 md:h-32 overflow-hidden bg-muted/20">
+              {/* Screenshot thumbnail */}
+              <div className="h-36 md:h-40 overflow-hidden bg-muted/20">
                 <img
                   src={f.screenshot}
                   alt={f.title}
@@ -245,14 +277,19 @@ export const FeaturesGrid = () => (
                   loading="lazy"
                 />
               </div>
-              <div className="p-3 md:p-4 text-center">
-                <f.icon className="w-5 h-5 md:w-6 md:h-6 mx-auto mb-1.5 md:mb-2 text-primary" />
-                <h4 className="text-xs md:text-sm font-semibold text-foreground mb-1">{f.title}</h4>
-                <p className="text-[10px] md:text-xs text-muted-foreground">{f.desc}</p>
+              {/* Content */}
+              <div className="p-5 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <f.icon className="w-4.5 h-4.5 text-primary" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-foreground mb-1">{f.title}</h4>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+                </div>
               </div>
             </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   </>
