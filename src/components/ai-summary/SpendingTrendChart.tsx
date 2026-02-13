@@ -66,7 +66,7 @@ export const SpendingTrendChart = ({ data }: SpendingTrendChartProps) => {
         )}
       </div>
       
-      <div className="h-40">
+      <div className="h-40 md:h-52">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} barCategoryGap="20%">
             <XAxis 

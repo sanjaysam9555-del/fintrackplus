@@ -71,7 +71,7 @@ export const CategoryBreakdown = ({ data, total }: CategoryBreakdownProps) => {
       
       <div className="flex items-center gap-4">
         {/* Pie Chart */}
-        <div className="w-32 h-32 shrink-0">
+        <div className="w-32 h-32 md:w-44 md:h-44 shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -105,7 +105,7 @@ export const CategoryBreakdown = ({ data, total }: CategoryBreakdownProps) => {
                   className="w-2.5 h-2.5 rounded-full" 
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
-                <span className="text-xs truncate max-w-[100px]">{cat.name}</span>
+                <span className="text-xs truncate max-w-[100px] md:max-w-[160px]">{cat.name}</span>
               </div>
               <span className="text-xs font-medium text-muted-foreground">
                 {cat.percent.toFixed(0)}%

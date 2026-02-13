@@ -198,7 +198,7 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
   const hasData = transactions.length > 0;
 
   return (
-    <div className="min-h-screen pb-40 md:pb-8 md:px-6 md:max-w-4xl">
+    <div className="min-h-screen pb-40 md:pb-8 md:px-6 md:max-w-6xl">
       {/* Header */}
       <div className="p-4 pt-6 safe-top">
         <div className="flex items-center gap-3">
@@ -230,30 +230,30 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
           </div>
         </div>
       ) : (
-        <div className="px-4 space-y-4">
-          {/* FY Hero Card */}
-          <FYHeroCard
-            fyLabel={fyRange.label}
-            totalIncome={fyIncome}
-            totalExpense={fyExpense}
-          />
+        <div className="px-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* FY Hero Card - full width */}
+          <div className="md:col-span-2">
+            <FYHeroCard
+              fyLabel={fyRange.label}
+              totalIncome={fyIncome}
+              totalExpense={fyExpense}
+            />
+          </div>
           
-          {/* 6-Month Trend Chart */}
+          {/* 6-Month Trend + Category Breakdown side by side */}
           <SpendingTrendChart data={trendData} />
-          
-          {/* Smart Insights */}
-          <SmartInsights insights={insights} />
-          
-          {/* Category Breakdown */}
           <CategoryBreakdown 
             data={categoryData} 
             total={fyExpense} 
           />
           
-          {/* Project Health */}
-          <ProjectHealth projects={projectsWithSpending} />
+          {/* Smart Insights - full width */}
+          <div className="md:col-span-2">
+            <SmartInsights insights={insights} />
+          </div>
           
-          {/* Payment Methods */}
+          {/* Project Health + Payment Methods side by side */}
+          <ProjectHealth projects={projectsWithSpending} />
           <PaymentMethods 
             cashTotal={paymentSplit.cash} 
             onlineTotal={paymentSplit.online} 

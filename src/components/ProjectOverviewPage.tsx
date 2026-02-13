@@ -144,7 +144,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
   };
 
   return (
-    <div className="min-h-screen bg-background pb-40 md:pb-8 md:px-6">
+    <div className="min-h-screen bg-background pb-40 md:pb-8 md:px-6 md:max-w-6xl">
       {/* Enhanced Header */}
       <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border safe-top">
         <div className="flex items-center gap-3">
@@ -182,7 +182,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             transition={{ duration: 0.2 }}
             className="overflow-hidden border-b border-border"
           >
-            <div className="px-4 py-4 space-y-3 bg-card">
+            <div className="px-4 py-4 space-y-3 bg-card md:max-w-lg">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-sm">New Project</h3>
                 <button onClick={() => setShowAddForm(false)} className="p-1 hover:bg-muted rounded">
@@ -350,7 +350,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             </p>
           </motion.div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <AnimatePresence>
               {displayedProjects.map((project) => {
                 const spent = getProjectSpending(project.id);
