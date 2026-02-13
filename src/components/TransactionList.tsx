@@ -282,7 +282,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
   return (
     <div className="min-h-screen pb-40 md:pb-8 md:px-6">
       {/* Header */}
-      <div className="p-4 pt-6 safe-top flex items-center justify-between">
+      <div className="p-4 safe-top flex items-center justify-between">
         <h1 className="text-2xl font-bold">
           {type === 'expense' ? 'Expenses' : 'Income'}
         </h1>

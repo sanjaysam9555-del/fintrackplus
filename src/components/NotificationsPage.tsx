@@ -58,7 +58,7 @@ export const NotificationsPage = () => {
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
-      <div className="p-4 pt-6 flex items-center justify-between">
+      <div className="p-4 safe-top flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
           {unreadCount > 0 && (

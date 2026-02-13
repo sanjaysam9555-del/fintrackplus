@@ -165,7 +165,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="sticky top-0 bg-background z-10 flex items-center justify-between p-4 border-b border-border">
+      <div className="sticky top-0 bg-background z-10 flex items-center justify-between p-4 safe-top border-b border-border">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} />
