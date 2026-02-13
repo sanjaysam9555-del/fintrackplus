@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, IndianRupee, FolderKanban, Wifi } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import heroImage from "@/assets/landing/hero-wedding-planner.jpg";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -74,81 +75,52 @@ export const HeroSection = () => {
           </motion.p>
         </motion.div>
 
-        {/* Mobile: stat cards instead of phone mockup */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex md:hidden gap-3 justify-center"
-        >
-          {mobileStats.map((s) => (
-            <div key={s.label} className="flex-1 max-w-[120px] bg-card/80 backdrop-blur-sm border rounded-xl p-3 text-center">
-              <s.icon className="w-5 h-5 mx-auto mb-1.5 text-primary" />
-              <div className="text-xs font-semibold text-foreground">{s.label}</div>
-              <div className="text-[10px] text-muted-foreground">{s.sub}</div>
-            </div>
-          ))}
-        </motion.div>
+        {/* Mobile: Hero image + stat cards */}
+        <div className="flex flex-col gap-4 md:hidden">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <img
+              src={heroImage}
+              alt="Indian wedding planner managing finances on a tablet with marigold decorations"
+              className="w-full rounded-2xl shadow-xl object-cover aspect-[16/9]"
+              loading="eager"
+            />
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex gap-3 justify-center"
+          >
+            {mobileStats.map((s) => (
+              <div key={s.label} className="flex-1 max-w-[120px] bg-card/80 backdrop-blur-sm border rounded-xl p-3 text-center">
+                <s.icon className="w-5 h-5 mx-auto mb-1.5 text-primary" />
+                <div className="text-xs font-semibold text-foreground">{s.label}</div>
+                <div className="text-[10px] text-muted-foreground">{s.sub}</div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
 
-        {/* Desktop: Phone mockup */}
+        {/* Desktop: Hero image with glow */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3 }}
           className="hidden md:flex justify-center"
         >
-          <div className="relative w-72 lg:w-80">
-            {/* Phone frame */}
-            <div className="bg-card rounded-[2.5rem] border-4 border-muted shadow-2xl p-3 aspect-[9/19]">
-              <div className="bg-background rounded-[2rem] h-full w-full overflow-hidden flex flex-col">
-                {/* Status bar */}
-                <div className="h-6 bg-primary/5 flex items-center justify-center">
-                  <div className="w-16 h-1.5 bg-muted rounded-full" />
-                </div>
-                {/* Mock dashboard */}
-                <div className="flex-1 p-3 space-y-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-primary/20" />
-                    <div>
-                      <div className="h-2 w-16 bg-muted rounded" />
-                      <div className="h-2.5 w-12 bg-foreground/20 rounded mt-1" />
-                    </div>
-                  </div>
-                  {/* Summary cards */}
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { label: "Income", color: "bg-success/20", amount: "₹18L" },
-                      { label: "Expense", color: "bg-destructive/20", amount: "₹14L" },
-                      { label: "Balance", color: "bg-primary/20", amount: "₹4L" },
-                    ].map((c) => (
-                      <div key={c.label} className={`${c.color} rounded-lg p-1.5`}>
-                        <div className="text-[6px] text-muted-foreground">{c.label}</div>
-                        <div className="text-[9px] font-bold text-foreground">{c.amount}</div>
-                      </div>
-                    ))}
-                  </div>
-                  {/* Chart placeholder */}
-                  <div className="bg-card border rounded-lg p-2 space-y-1">
-                    <div className="h-1.5 w-12 bg-muted rounded" />
-                    <div className="flex items-end gap-1 h-10">
-                      {[40, 65, 50, 80, 55, 70].map((h, i) => (
-                        <div key={i} className="flex-1 bg-primary/30 rounded-sm" style={{ height: `${h}%` }} />
-                      ))}
-                    </div>
-                  </div>
-                  {/* Transaction rows */}
-                  {["Caterer - ₹2.5L", "Florist - ₹45K", "Venue - ₹5L"].map((t) => (
-                    <div key={t} className="flex items-center gap-2 bg-card border rounded-lg p-1.5">
-                      <div className="w-5 h-5 rounded-full bg-muted" />
-                      <div className="text-[7px] text-foreground flex-1">{t}</div>
-                      <div className="text-[6px] text-muted-foreground">Cash</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          <div className="relative">
+            <img
+              src={heroImage}
+              alt="Indian wedding planner managing finances on a tablet with marigold decorations"
+              className="w-full max-w-lg rounded-2xl shadow-2xl object-cover"
+              loading="eager"
+            />
             {/* Glow */}
-            <div className="absolute -inset-4 bg-primary/10 rounded-[3rem] blur-2xl -z-10" />
+            <div className="absolute -inset-4 bg-primary/10 rounded-3xl blur-2xl -z-10" />
           </div>
         </motion.div>
       </div>

@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
-import { User, Users, ClipboardList } from "lucide-react";
+import personaSolo from "@/assets/landing/persona-solo-planner.jpg";
+import personaAgency from "@/assets/landing/persona-agency-team.jpg";
+import personaCoordinator from "@/assets/landing/persona-coordinator.jpg";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -8,22 +10,25 @@ const fadeUp = {
 
 const personas = [
   {
-    icon: User,
     title: "Solo Wedding Planners",
     description: "Managing 5–15 events a year. You need one place to track every rupee without hiring an accountant.",
     gradient: "from-primary/15 to-primary/5",
+    image: personaSolo,
+    imageAlt: "Solo wedding planner confidently managing events on her phone",
   },
   {
-    icon: Users,
     title: "Planning Agencies",
     description: "2–5 partners handling different events. Track who spent what, with separate cash and online balances per partner.",
     gradient: "from-success/15 to-success/5",
+    image: personaAgency,
+    imageAlt: "Small team coordinating wedding plans with tablets and phones",
   },
   {
-    icon: ClipboardList,
     title: "Event Coordinators",
     description: "Need to present clean, professional financial reports to clients after every event. Export-ready books in one tap.",
     gradient: "from-warning/15 to-warning/5",
+    image: personaCoordinator,
+    imageAlt: "Event coordinator presenting a financial report to clients",
   },
 ];
 
@@ -48,13 +53,18 @@ export const PersonaSection = () => (
             initial="hidden" whileInView="visible"
             viewport={{ once: true }}
             variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.5, delay: i * 0.12 } } }}
-            className={`bg-gradient-to-br ${p.gradient} border rounded-2xl p-6 text-center`}
+            className={`bg-gradient-to-br ${p.gradient} border rounded-2xl overflow-hidden text-center`}
           >
-            <div className="w-14 h-14 mx-auto mb-4 bg-card rounded-2xl border flex items-center justify-center">
-              <p.icon className="w-7 h-7 text-primary" />
+            <img
+              src={p.image}
+              alt={p.imageAlt}
+              className="w-full h-48 object-cover"
+              loading="lazy"
+            />
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-foreground mb-2">{p.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
             </div>
-            <h3 className="text-lg font-semibold text-foreground mb-2">{p.title}</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
           </motion.div>
         ))}
       </div>
