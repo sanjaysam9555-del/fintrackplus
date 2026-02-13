@@ -30,7 +30,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: "FinTrack⁺ is ₹499/month. Every new account gets a 7-day free trial with full access to all features. Cancel anytime before the trial ends and you won't be charged.",
+    a: "₹499/month. Credit card required at signup. Cancel anytime.",
   },
   {
     q: "What payment methods do you accept?",
@@ -57,17 +57,17 @@ export const FAQSection = () => (
         viewport={{ once: true }}
         variants={fadeUp}
       >
-        <Accordion type="single" collapsible className="space-y-2">
+        <Accordion type="single" collapsible className="w-full">
           {faqs.map((f, i) => (
             <AccordionItem
               key={i}
               value={`faq-${i}`}
-              className="bg-card border rounded-xl px-5 data-[state=open]:shadow-sm"
+              className="border-b border-border px-0"
             >
-              <AccordionTrigger className="text-sm font-medium text-foreground hover:no-underline">
+              <AccordionTrigger className="text-sm md:text-base font-medium text-foreground text-left hover:no-underline py-5">
                 {f.q}
               </AccordionTrigger>
-              <AccordionContent className="text-sm text-muted-foreground">
+              <AccordionContent className="text-sm text-muted-foreground pb-5">
                 {f.a}
               </AccordionContent>
             </AccordionItem>

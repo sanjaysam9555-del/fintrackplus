@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { UserPlus, FolderPlus, PenLine } from "lucide-react";
-import howItWorksImage from "@/assets/landing/how-it-works.jpg";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -12,7 +11,7 @@ const steps = [
     icon: UserPlus,
     number: "01",
     title: "Sign up in 30 seconds",
-    description: "Email + password. 7-day free trial, no commitment.",
+    description: "Email + password. Set up in under a minute.",
   },
   {
     icon: FolderPlus,
@@ -35,26 +34,11 @@ export const HowItWorks = () => (
         initial="hidden" whileInView="visible"
         viewport={{ once: true }}
         variants={fadeUp}
-        className="text-center mb-8"
+        className="text-center mb-10"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-foreground">
           Up and running in 3 steps
         </h2>
-      </motion.div>
-
-      {/* How it works illustration */}
-      <motion.div
-        initial="hidden" whileInView="visible"
-        viewport={{ once: true }}
-        variants={fadeUp}
-        className="mb-10"
-      >
-        <img
-          src={howItWorksImage}
-          alt="3-step onboarding flow: sign up, create project, start logging"
-          className="w-full max-w-2xl mx-auto rounded-2xl shadow-lg object-cover"
-          loading="lazy"
-        />
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

@@ -27,8 +27,11 @@ export const FinalCTA = () => {
           className="text-base px-10 rounded-xl gap-2"
           onClick={() => navigate("/auth")}
         >
-          Start Your Free Trial <ArrowRight className="w-4 h-4" />
+          Get Started <ArrowRight className="w-4 h-4" />
         </Button>
+        <p className="mt-3 text-xs text-muted-foreground">
+          ₹499/month · Credit card required
+        </p>
       </motion.div>
     </section>
   );
