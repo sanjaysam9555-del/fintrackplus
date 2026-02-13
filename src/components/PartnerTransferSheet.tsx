@@ -121,7 +121,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
             
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <Users size={20} className="text-primary" />
+                <Users size={20} className="text-accent-foreground" />
                 <h2 className="text-xl font-bold">Partner Transfer</h2>
               </div>
               <button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
@@ -149,7 +149,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                     <span className="text-xs text-muted-foreground">From</span>
                   </div>
                   
-                  <ArrowRight size={24} className="text-primary" />
+                  <ArrowRight size={24} className="text-accent-foreground" />
                   
                   <div className="flex flex-col items-center gap-2">
                     {toPartner ? (

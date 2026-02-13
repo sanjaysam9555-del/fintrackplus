@@ -284,7 +284,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                             <button
                               className={cn(
                                 "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
-                                customStartDate ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                                customStartDate ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground"
                               )}
                             >
                               {customStartDate ? format(customStartDate, "MMM dd") : "From"}
@@ -308,7 +308,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                             <button
                               className={cn(
                                 "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
-                                customEndDate ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                                customEndDate ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground"
                               )}
                             >
                               {customEndDate ? format(customEndDate, "MMM dd") : "To"}
@@ -376,7 +376,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             <button
               type="button"
               onClick={() => setShowDatePickerMobile(true)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-primary/10 text-primary text-xs font-medium rounded-full hover:bg-primary/15 transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-accent text-accent-foreground text-xs font-medium rounded-full hover:bg-accent/80 transition-colors"
               aria-label="Choose time frame"
             >
               <CalendarDays size={12} />
@@ -515,7 +515,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                             <button
                               className={cn(
                                 "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
-                                customStartDate ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                                customStartDate ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground"
                               )}
                             >
                               {customStartDate ? format(customStartDate, "MMM dd") : "From"}
@@ -539,7 +539,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                             <button
                               className={cn(
                                 "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
-                                customEndDate ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"
+                                customEndDate ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground"
                               )}
                             >
                               {customEndDate ? format(customEndDate, "MMM dd") : "To"}
@@ -604,7 +604,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             animate={{ opacity: 1, y: 0 }}
             className="mt-3 flex items-center gap-2 flex-wrap"
           >
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-sm font-medium rounded-full">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent text-accent-foreground text-sm font-medium rounded-full">
               <CalendarDays size={14} />
               {getTimeFilterLabel()}
             </span>
@@ -691,10 +691,10 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           className="grid grid-cols-4 gap-2 lg:gap-3"
         >
           {[
-            { key: 'categories', icon: Grid3X3, label: 'Categories', color: 'bg-primary/10', iconColor: 'text-primary' },
+            { key: 'categories', icon: Grid3X3, label: 'Categories', color: 'bg-accent', iconColor: 'text-accent-foreground' },
             { key: 'vendors', icon: Store, label: 'Vendors', color: 'bg-success/10', iconColor: 'text-success' },
-            { key: 'logs', icon: ScrollText, label: 'Logs', color: 'bg-amber-500/10', iconColor: 'text-amber-500' },
-            { key: 'reports', icon: FileBarChart, label: 'Reports', color: 'bg-purple-500/10', iconColor: 'text-purple-500' },
+            { key: 'logs', icon: ScrollText, label: 'Logs', color: 'bg-amber-500/10', iconColor: 'text-amber-500 dark:text-amber-400' },
+            { key: 'reports', icon: FileBarChart, label: 'Reports', color: 'bg-purple-500/10', iconColor: 'text-purple-500 dark:text-purple-400' },
           ].map((item, index) => (
             <motion.button
               key={item.key}

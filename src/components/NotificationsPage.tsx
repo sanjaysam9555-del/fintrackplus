@@ -33,21 +33,21 @@ export const NotificationsPage = () => {
   const getIconColor = (type: string) => {
     switch (type) {
       case 'transaction':
-        return 'bg-primary/10 text-primary';
+        return 'bg-accent text-accent-foreground';
       case 'export':
         return 'bg-success/10 text-success';
       case 'profile':
-        return 'bg-purple-500/10 text-purple-500';
+        return 'bg-purple-500/10 text-purple-500 dark:text-purple-400';
       case 'category':
-        return 'bg-blue-500/10 text-blue-500';
+        return 'bg-blue-500/10 text-blue-500 dark:text-blue-400';
       case 'vendor':
-        return 'bg-emerald-500/10 text-emerald-500';
+        return 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400';
       case 'project':
-        return 'bg-amber-500/10 text-amber-500';
+        return 'bg-amber-500/10 text-amber-500 dark:text-amber-400';
       case 'delete':
         return 'bg-destructive/10 text-destructive';
       case 'edit':
-        return 'bg-orange-500/10 text-orange-500';
+        return 'bg-orange-500/10 text-orange-500 dark:text-orange-400';
       default:
         return 'bg-muted text-muted-foreground';
     }

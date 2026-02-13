@@ -506,7 +506,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                           className={cn(
                             "p-2 rounded-lg text-xs font-medium transition-colors border-2",
                             recurringFrequency === freq.value
-                              ? "border-primary bg-primary/10 text-primary"
+                              ? "border-primary bg-accent text-accent-foreground"
                               : "border-border bg-muted text-muted-foreground hover:border-primary/50"
                           )}
                         >

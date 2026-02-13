@@ -36,8 +36,8 @@ export const UpcomingRecurringCard = ({ onViewAll }: UpcomingRecurringCardProps)
     >
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Repeat size={16} className="text-primary" />
+          <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center">
+            <Repeat size={16} className="text-accent-foreground" />
           </div>
           <div>
             <h3 className="font-semibold text-sm">Upcoming Payments</h3>

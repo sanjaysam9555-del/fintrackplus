@@ -66,14 +66,14 @@ const NotificationsContent = () => {
   
   const getIconColor = (type: string) => {
     switch (type) {
-      case 'transaction': return 'bg-primary/10 text-primary';
-      case 'export': return 'bg-blue-500/10 text-blue-500';
-      case 'profile': return 'bg-purple-500/10 text-purple-500';
-      case 'category': return 'bg-blue-500/10 text-blue-500';
-      case 'vendor': return 'bg-emerald-500/10 text-emerald-500';
-      case 'project': return 'bg-amber-500/10 text-amber-500';
+      case 'transaction': return 'bg-accent text-accent-foreground';
+      case 'export': return 'bg-blue-500/10 text-blue-500 dark:text-blue-400';
+      case 'profile': return 'bg-purple-500/10 text-purple-500 dark:text-purple-400';
+      case 'category': return 'bg-blue-500/10 text-blue-500 dark:text-blue-400';
+      case 'vendor': return 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400';
+      case 'project': return 'bg-amber-500/10 text-amber-500 dark:text-amber-400';
       case 'delete': return 'bg-destructive/10 text-destructive';
-      case 'edit': return 'bg-orange-500/10 text-orange-500';
+      case 'edit': return 'bg-orange-500/10 text-orange-500 dark:text-orange-400';
       default: return 'bg-muted text-muted-foreground';
     }
   };
@@ -383,7 +383,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           </div>
           <button 
             onClick={() => setShowProfileEdit(true)}
-            className="w-full mt-4 flex items-center justify-center gap-2 p-2.5 bg-primary/10 text-primary rounded-xl font-medium text-sm hover:bg-primary/20 transition-colors"
+            className="w-full mt-4 flex items-center justify-center gap-2 p-2.5 bg-accent text-accent-foreground rounded-xl font-medium text-sm hover:bg-accent/80 transition-colors"
           >
             <Pencil size={14} />
             Edit Profile
@@ -446,17 +446,17 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                   className={cn(
                     "flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
                     isActive 
-                      ? "bg-primary/10 border-2 border-primary" 
+                      ? "bg-accent border-2 border-primary" 
                       : "bg-muted/50 border-2 border-transparent hover:bg-muted"
                   )}
                 >
                   <option.icon 
                     size={20} 
-                    className={isActive ? "text-primary" : "text-muted-foreground"} 
+                    className={isActive ? "text-accent-foreground" : "text-muted-foreground"} 
                   />
                   <span className={cn(
                     "text-xs font-medium",
-                    isActive ? "text-primary" : "text-muted-foreground"
+                    isActive ? "text-accent-foreground" : "text-muted-foreground"
                   )}>
                     {option.label}
                   </span>

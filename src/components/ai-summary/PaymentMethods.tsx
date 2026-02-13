@@ -32,7 +32,7 @@ export const PaymentMethods = ({ cashTotal, onlineTotal }: PaymentMethodsProps) 
       className="bg-card border border-border rounded-2xl p-4"
     >
       <div className="flex items-center gap-2 mb-4">
-        <Wallet size={18} className="text-primary" />
+        <Wallet size={18} className="text-accent-foreground" />
         <h3 className="font-semibold">Payment Methods</h3>
       </div>
       
@@ -65,8 +65,8 @@ export const PaymentMethods = ({ cashTotal, onlineTotal }: PaymentMethodsProps) 
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Smartphone size={14} className="text-primary" />
+              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
+                <Smartphone size={14} className="text-accent-foreground" />
               </div>
               <span className="text-sm font-medium">Online</span>
             </div>
