@@ -1,37 +1,41 @@
 
-# Fix: iPhone Status Bar Cutting Off Header
+
+# Fix: iPhone Safe Area on All Settings Sub-Pages
 
 ## Problem
-On iPhones with the Dynamic Island/notch, the top of the dashboard header ("Good Afternoon, Saffron Events") is hidden behind the system status bar. The greeting text and avatar overlap with the clock and signal icons.
+When opening Partners, Vendors, Categories, Projects, Reports, or Activity Logs from Settings, the header content is cut off behind the iPhone status bar/Dynamic Island. The `safe-top` class is missing from these sub-page headers.
 
 ## Root Cause
-A CSS specificity conflict: the `safe-top` class (in `@layer components`) is overridden by Tailwind's `pt-6` utility (in `@layer utilities`). Since CSS layers give utilities higher priority, the safe area padding (~59px on modern iPhones) is replaced by a fixed 24px, which is not enough.
+The settings sub-sections render their own full-page layouts with headers that don't include the `safe-top` utility. Some use `sticky top-0` (which pins to the very top edge behind the notch) and others use `p-4 pt-6` (fixed 24px, not enough for notch devices).
 
-## Fix
+## Fix -- Add `safe-top` to All Sub-Page Headers
 
-### 1. Update `safe-top` utility (`src/index.css`)
-Move `safe-top` from `@layer components` to `@layer utilities` so it has equal specificity with Tailwind classes, and update it to **add to** the base padding rather than replace it:
+| File | Current | Fix |
+|------|---------|-----|
+| `src/components/settings/PartnersSection.tsx` (line ~348) | `p-4 pt-6` | `p-4 safe-top` |
+| `src/components/settings/CategoriesSection.tsx` (line ~95) | `sticky top-0 ... p-4` | `sticky top-0 ... p-4 safe-top` |
+| `src/components/settings/ProjectsSection.tsx` (line ~168) | `sticky top-0 ... p-4` | `sticky top-0 ... p-4 safe-top` |
+| `src/components/settings/VendorsSection.tsx` (line ~279) | `sticky top-0 ... p-4` (detail view) | `sticky top-0 ... p-4 safe-top` |
+| `src/components/settings/VendorsSection.tsx` (line ~371) | `sticky top-0 ... p-4` (list view) | `sticky top-0 ... p-4 safe-top` |
+| `src/components/settings/ReportsSection.tsx` (line ~471) | `sticky top-0 ... p-4` | `sticky top-0 ... p-4 safe-top` |
+| `src/components/SettingsPage.tsx` (line ~330) | `p-4 pt-6` (Activity Logs) | `p-4 safe-top` |
+| `src/components/SettingsPage.tsx` (line ~346) | `p-4 pt-6 safe-top` | `p-4 safe-top` (remove conflicting `pt-6`) |
+| `src/components/NotificationsPage.tsx` (line ~61) | `p-4 pt-6` | `p-4 safe-top` |
+| `src/components/AISummaryPage.tsx` (line ~203) | `p-4 pt-6 safe-top` | `p-4 safe-top` (remove conflicting `pt-6`) |
+| `src/components/TransactionList.tsx` (line ~285) | `p-4 pt-6 safe-top` | `p-4 safe-top` (remove conflicting `pt-6`) |
 
-```css
-.safe-top {
-  padding-top: max(1.5rem, env(safe-area-inset-top));
-}
-```
+## Summary
+- Add `safe-top` to 6 settings sub-pages that are missing it entirely
+- Remove conflicting `pt-6` from 3 pages that already have `safe-top` but where `pt-6` overrides it
+- This ensures every page header respects the iPhone notch/Dynamic Island safe area
 
-### 2. Remove conflicting `pt-6` from Dashboard header (`src/components/Dashboard.tsx`)
-Change line 191 from:
-```
-<div className="p-4 pt-6 safe-top">
-```
-to:
-```
-<div className="p-4 safe-top">
-```
-
-This ensures `safe-top` provides at minimum 1.5rem (24px) on non-notch devices, and the full safe-area-inset on iPhones with notch/Dynamic Island.
-
-### Files Changed
-| File | Change |
-|------|--------|
-| `src/index.css` | Move `.safe-top` to `@layer utilities`, update value to `max(1.5rem, env(safe-area-inset-top))` |
-| `src/components/Dashboard.tsx` | Remove `pt-6` from the header div class (line 191) |
+## Files Changed
+- `src/components/settings/PartnersSection.tsx`
+- `src/components/settings/CategoriesSection.tsx`
+- `src/components/settings/ProjectsSection.tsx`
+- `src/components/settings/VendorsSection.tsx`
+- `src/components/settings/ReportsSection.tsx`
+- `src/components/SettingsPage.tsx`
+- `src/components/NotificationsPage.tsx`
+- `src/components/AISummaryPage.tsx`
+- `src/components/TransactionList.tsx`
