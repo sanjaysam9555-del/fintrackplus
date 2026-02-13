@@ -1,27 +1,34 @@
 import { motion } from "framer-motion";
 import { Banknote, TrendingDown, FileWarning } from "lucide-react";
 
+import painCashLeak from "@/assets/landing/pain-cash-leak.png";
+import painNoVisibility from "@/assets/landing/pain-no-visibility.png";
+import painGst from "@/assets/landing/pain-gst.png";
+
 const painPoints = [
   {
     icon: Banknote,
     title: "Cash leaks between events",
     description: "Vendors get paid in cash, amounts get lost in WhatsApp messages and notebooks. By the time you reconcile, thousands have slipped through.",
-    gradient: "from-destructive/15 via-destructive/5 to-transparent",
     iconBg: "bg-destructive/10 text-destructive",
+    image: painCashLeak,
+    imageAlt: "Wedding planner reviewing budget overrun on tablet at venue",
   },
   {
     icon: TrendingDown,
     title: "No visibility into margins",
     description: "You quoted the client ₹18L but spent ₹14L or ₹20L? You only find out after the wedding is over and the damage is done.",
-    gradient: "from-warning/15 via-warning/5 to-transparent",
     iconBg: "bg-warning/10 text-warning",
+    image: painNoVisibility,
+    imageAlt: "Cash exchange with WhatsApp and notebook at event backstage",
   },
   {
     icon: FileWarning,
     title: "GST and CA headaches",
     description: "Receipts scattered across phones, no clean books when tax season arrives. Your CA charges extra just to make sense of the mess.",
-    gradient: "from-primary/15 via-primary/5 to-transparent",
     iconBg: "bg-primary/10 text-primary",
+    image: painGst,
+    imageAlt: "Scattered GST receipts piled on phone with pen",
   },
 ];
 
@@ -52,15 +59,25 @@ export const PainPointsSection = () => (
             viewport={{ once: true, margin: "-60px" }}
             transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.12 }}
             whileHover={{ scale: 1.03, y: -4 }}
-            className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow"
+            className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
           >
-            <div className={`h-32 bg-gradient-to-b ${p.gradient} flex items-center justify-center`}>
-              <div className={`w-16 h-16 rounded-2xl ${p.iconBg} flex items-center justify-center`}>
-                <p.icon className="w-8 h-8" />
-              </div>
+            {/* Image */}
+            <div className="h-44 md:h-40 overflow-hidden">
+              <img
+                src={p.image}
+                alt={p.imageAlt}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                loading="lazy"
+              />
             </div>
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-2">"{p.title}"</h3>
+            {/* Content */}
+            <div className="p-5 md:p-6">
+              <div className="flex items-center gap-2.5 mb-2">
+                <div className={`w-9 h-9 rounded-xl ${p.iconBg} flex items-center justify-center`}>
+                  <p.icon className="w-4.5 h-4.5" />
+                </div>
+                <h3 className="text-base md:text-lg font-semibold text-foreground">"{p.title}"</h3>
+              </div>
               <p className="text-sm text-muted-foreground leading-relaxed">{p.description}</p>
             </div>
           </motion.div>
