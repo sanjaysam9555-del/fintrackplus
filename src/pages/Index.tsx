@@ -280,7 +280,7 @@ const Index = () => {
         {/* Main Content Area */}
         <div 
           ref={scrollContainerRef}
-          className="flex-1 h-screen overflow-y-auto overscroll-contain relative"
+          className="flex-1 h-dvh overflow-y-auto overscroll-contain relative"
           style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain' }}
         >
           {/* Page transition overlay */}

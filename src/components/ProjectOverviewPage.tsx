@@ -245,50 +245,42 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
 
       {/* Enhanced Summary Section */}
       <div className="px-4 pt-4">
-        <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-2xl border border-primary/20 overflow-hidden">
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
           {/* Header */}
-          <div className="px-4 pt-4 pb-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{showArchived ? 'Archived' : 'Active'} Portfolio</p>
+          <div className="px-4 pt-3 pb-1.5">
+            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{showArchived ? 'Archived' : 'Active'} Portfolio</p>
           </div>
-          {/* Stats Row */}
-          <div className="flex items-center justify-between px-4 pb-4 gap-2">
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-lg bg-primary/20 flex items-center justify-center flex-shrink-0">
+          {/* Stats Row - 3 column grid */}
+          <div className="grid grid-cols-3 gap-px bg-border mx-3 mb-3 rounded-xl overflow-hidden">
+            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
                 <Wallet size={14} className="text-primary" />
               </div>
-              <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-tight">Cost</p>
-                <p className="text-sm font-bold text-primary">
-                  <span className="lg:hidden">₹{formatCompactCurrency(totalInternalCost, false)}</span>
-                  <span className="hidden lg:inline">₹{totalInternalCost.toLocaleString()}</span>
-                </p>
-              </div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost</p>
+              <p className="text-sm font-bold text-primary">
+                <span className="lg:hidden">₹{formatCompactCurrency(totalInternalCost, false)}</span>
+                <span className="hidden lg:inline">₹{totalInternalCost.toLocaleString()}</span>
+              </p>
             </div>
-            <div className="w-px h-8 bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-lg bg-destructive/20 flex items-center justify-center flex-shrink-0">
+            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
+              <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center">
                 <Receipt size={14} className="text-destructive" />
               </div>
-              <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-tight">Spent</p>
-                <p className="text-sm font-bold text-destructive">
-                  <span className="lg:hidden">₹{formatCompactCurrency(totalSpent, false)}</span>
-                  <span className="hidden lg:inline">₹{totalSpent.toLocaleString()}</span>
-                </p>
-              </div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Spent</p>
+              <p className="text-sm font-bold text-destructive">
+                <span className="lg:hidden">₹{formatCompactCurrency(totalSpent, false)}</span>
+                <span className="hidden lg:inline">₹{totalSpent.toLocaleString()}</span>
+              </p>
             </div>
-            <div className="w-px h-8 bg-border flex-shrink-0" />
-            <div className="flex items-center gap-1.5">
-              <div className="w-7 h-7 rounded-lg bg-success/20 flex items-center justify-center flex-shrink-0">
-                <PiggyBank size={14} className="text-success" />
+            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
+              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", (totalClientCost - totalInternalCost) >= 0 ? "bg-success-light" : "bg-destructive/10")}>
+                <PiggyBank size={14} className={(totalClientCost - totalInternalCost) >= 0 ? "text-success" : "text-destructive"} />
               </div>
-              <div>
-                <p className="text-[9px] text-muted-foreground uppercase tracking-wide leading-tight">Margin</p>
-                <p className={cn("text-sm font-bold", (totalClientCost - totalInternalCost) >= 0 ? "text-success" : "text-destructive")}>
-                  <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalInternalCost, false)}</span>
-                  <span className="hidden lg:inline">₹{(totalClientCost - totalInternalCost).toLocaleString()}</span>
-                </p>
-              </div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Margin</p>
+              <p className={cn("text-sm font-bold", (totalClientCost - totalInternalCost) >= 0 ? "text-success" : "text-destructive")}>
+                <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalInternalCost, false)}</span>
+                <span className="hidden lg:inline">₹{(totalClientCost - totalInternalCost).toLocaleString()}</span>
+              </p>
             </div>
           </div>
         </div>
@@ -345,7 +337,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
           <motion.div
             animate={{ y: [0, -6, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="text-center py-12"
+            className="text-center py-8"
           >
             <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mx-auto mb-3">
               {showArchived ? <Archive size={24} className="text-muted-foreground" /> : <FolderKanban size={24} className="text-muted-foreground" />}
@@ -475,67 +467,56 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                     {/* Card Content */}
                     <button
                       onClick={() => setSelectedProject(project)}
-                      className="w-full px-3 pb-3 pt-3 text-left hover:bg-accent/30 transition-colors"
+                      className="w-full px-3 pb-2.5 pt-2 text-left hover:bg-accent/30 transition-colors"
                     >
-
-                      {/* Budget Progress */}
+                      {/* Budget Progress with inline stats */}
                       {project.internalCost > 0 && (
-                        <div className="mb-3">
+                        <div className="mb-2">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-[10px] text-muted-foreground">
-                              {Math.round(budgetPercent)}% used
+                              ₹{formatCompactCurrency(spent, false)} / ₹{formatCompactCurrency(project.internalCost, false)}
                             </span>
                             <span className={cn(
                               "text-[10px] font-medium",
-                              isOverBudget ? "text-red-500" : "text-muted-foreground"
+                              isOverBudget ? "text-destructive" : "text-muted-foreground"
                             )}>
-                              {isOverBudget ? 'Over budget!' : `₹${remaining.toLocaleString()} left`}
+                              {isOverBudget ? 'Over budget!' : `${Math.round(budgetPercent)}%`}
                             </span>
                           </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="h-2 bg-muted rounded-full overflow-hidden">
                             <motion.div
                               initial={{ width: 0 }}
                               animate={{ width: `${budgetPercent}%` }}
                               transition={{ duration: 0.5, ease: "easeOut" }}
                               className="h-full rounded-full"
                               style={{
-                                backgroundColor: isOverBudget ? '#EF4444' : project.color,
+                                backgroundColor: isOverBudget ? 'hsl(var(--destructive))' : project.color,
                               }}
                             />
                           </div>
                         </div>
                       )}
 
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-green-500/10 rounded-lg p-2">
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Income</p>
-                          <p className="text-xs font-semibold mt-0.5 text-green-600">₹{income.toLocaleString()}</p>
+                      {/* Compact Stats Row */}
+                      <div className="flex items-center gap-0 divide-x divide-border">
+                        <div className="flex-1 pr-2">
+                          <p className="text-[10px] text-muted-foreground">Income</p>
+                          <p className="text-xs font-semibold text-success">₹{formatCompactCurrency(income, false)}</p>
                         </div>
-                        <div className="bg-red-500/10 rounded-lg p-2">
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Expenses</p>
-                          <p className="text-xs font-semibold mt-0.5 text-red-600">₹{spent.toLocaleString()}</p>
+                        <div className="flex-1 px-2">
+                          <p className="text-[10px] text-muted-foreground">Spent</p>
+                          <p className="text-xs font-semibold text-destructive">₹{formatCompactCurrency(spent, false)}</p>
                         </div>
-                        <div className="bg-muted/50 rounded-lg p-2">
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
-                          <p className="text-xs font-semibold mt-0.5">₹{project.internalCost.toLocaleString()}</p>
-                        </div>
-                        <div className={cn(
-                          "rounded-lg p-2",
-                          net >= 0 ? "bg-green-500/10" : "bg-red-500/10"
-                        )}>
-                          <p className="text-[9px] text-muted-foreground uppercase tracking-wide">Net</p>
-                          <div className="flex items-center gap-1 mt-0.5">
+                        <div className="flex-1 pl-2">
+                          <p className="text-[10px] text-muted-foreground">Net</p>
+                          <div className="flex items-center gap-0.5">
                             {net >= 0 ? (
-                              <TrendingUp size={10} className="text-green-600" />
+                              <TrendingUp size={10} className="text-success" />
                             ) : (
-                              <TrendingDown size={10} className="text-red-600" />
+                              <TrendingDown size={10} className="text-destructive" />
                             )}
-                            <p className={cn(
-                              "text-xs font-semibold",
-                              net >= 0 ? "text-green-600" : "text-red-600"
-                            )}>
-                              {net >= 0 ? '+' : ''}₹{net.toLocaleString()}
+                            <p className={cn("text-xs font-semibold", net >= 0 ? "text-success" : "text-destructive")}>
+                              {net >= 0 ? '+' : ''}₹{formatCompactCurrency(Math.abs(net), false)}
                             </p>
                           </div>
                         </div>
