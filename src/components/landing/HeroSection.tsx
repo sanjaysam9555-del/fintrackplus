@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PhoneMockup } from "./PhoneMockup";
+import appIcon from "@/assets/app-icon.png";
 import homeTab from "@/assets/landing/real/home-tab.png";
 import projectsTab from "@/assets/landing/real/projects-tab.png";
 import expenseTab from "@/assets/landing/real/expense-tab.png";
@@ -22,7 +23,7 @@ export const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden px-4 pt-20 pb-12 md:pb-16">
+    <section className="relative min-h-[70vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden px-4 pt-20 pb-12 md:pb-16">
       {/* Animated background orbs */}
       <motion.div
         className="absolute top-20 right-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"
@@ -42,8 +43,14 @@ export const HeroSection = () => {
           initial="hidden"
           animate="visible"
           variants={{ visible: { transition: { staggerChildren: 0.12 } } }}
-          className="text-center md:text-left order-2 md:order-1"
+          className="text-center md:text-left order-1 md:order-1"
         >
+          {/* Logo + App Name — no animation delay */}
+          <div className="flex items-center gap-2.5 mb-5 justify-center md:justify-start">
+            <img src={appIcon} alt="FinTrack⁺ logo" className="w-9 h-9 rounded-lg" />
+            <span className="text-xl font-bold text-foreground tracking-tight">FinTrack⁺</span>
+          </div>
+
           <motion.div
             variants={springIn}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5"
@@ -96,7 +103,7 @@ export const HeroSection = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.3 }}
-          className="flex justify-center order-1 md:order-2"
+          className="flex justify-center order-2 md:order-2"
         >
           <motion.div
             animate={{ y: [0, -8, 0] }}
