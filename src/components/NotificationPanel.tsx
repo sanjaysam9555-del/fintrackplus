@@ -32,7 +32,7 @@ export const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) =
   const getIconColor = (type: string) => {
     switch (type) {
       case 'transaction':
-        return 'bg-primary/10 text-primary';
+        return 'bg-accent text-accent-foreground';
       case 'export':
         return 'bg-success/10 text-success';
       case 'profile':
@@ -63,7 +63,7 @@ export const NotificationPanel = ({ isOpen, onClose }: NotificationPanelProps) =
           >
             <div className="flex items-center justify-between p-4 border-b border-border">
               <div className="flex items-center gap-2">
-                <Bell size={20} className="text-primary" />
+                <Bell size={20} className="text-accent-foreground" />
                 <h2 className="text-lg font-bold">Notifications</h2>
                 {unreadCount > 0 && (
                   <span className="px-2 py-0.5 text-xs font-medium bg-destructive text-destructive-foreground rounded-full">

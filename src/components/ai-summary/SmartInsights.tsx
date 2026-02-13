@@ -39,8 +39,8 @@ const getInsightStyles = (type: string) => {
     default:
       return {
         container: 'bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20',
-        icon: 'bg-primary/20 text-primary',
-        text: 'text-primary',
+      icon: 'bg-accent text-accent-foreground',
+      text: 'text-accent-foreground',
       };
   }
 };
@@ -56,7 +56,7 @@ export const SmartInsights = ({ insights }: SmartInsightsProps) => {
       className="space-y-3"
     >
       <div className="flex items-center gap-2 mb-1">
-        <Lightbulb size={18} className="text-primary" />
+        <Lightbulb size={18} className="text-accent-foreground" />
         <h3 className="font-semibold">Smart Insights</h3>
       </div>
       

@@ -305,7 +305,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             Active
             <span className={cn(
               "px-1.5 py-0.5 rounded-md text-xs",
-              !showArchived ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"
+              !showArchived ? "bg-accent text-accent-foreground" : "bg-muted-foreground/20"
             )}>
               {activeProjects.length}
             </span>
@@ -323,7 +323,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             Archived
             <span className={cn(
               "px-1.5 py-0.5 rounded-md text-xs",
-              showArchived ? "bg-primary/10 text-primary" : "bg-muted-foreground/20"
+              showArchived ? "bg-accent text-accent-foreground" : "bg-muted-foreground/20"
             )}>
               {archivedProjects.length}
             </span>

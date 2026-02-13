@@ -131,7 +131,7 @@ export const DesktopSidebar = ({
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors relative",
                     isCollapsed && "justify-center px-0",
                     isActive 
-                      ? "bg-primary/10 text-primary" 
+                      ? "bg-accent text-accent-foreground" 
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
@@ -162,7 +162,7 @@ export const DesktopSidebar = ({
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors relative",
                     isCollapsed && "justify-center px-0",
                     isActive 
-                      ? "bg-primary/10 text-primary" 
+                      ? "bg-accent text-accent-foreground" 
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )}
                 >
