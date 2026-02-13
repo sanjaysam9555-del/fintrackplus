@@ -64,7 +64,7 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
               whileTap={{ scale: 0.9 }}
               className={cn(
                 "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-colors relative min-w-[44px]",
-                isActive ? "text-primary" : "text-muted-foreground"
+                isActive ? "text-accent-foreground" : "text-muted-foreground"
               )}
             >
               <tab.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
@@ -72,7 +72,7 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick }: GlassDockProps
               {isActive && (
                 <motion.div
                   layoutId="activeTab"
-                  className="absolute inset-0 bg-primary/10 rounded-xl -z-10"
+                  className="absolute inset-0 bg-accent rounded-xl -z-10"
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 />
               )}
