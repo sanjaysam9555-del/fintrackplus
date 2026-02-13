@@ -57,7 +57,7 @@ const showcaseFeatures = [
     icon: CalendarClock,
     title: "Part Payment Tracking",
     description: "Log total expected amounts, plan future installments with dates, confirm payments as they happen. Visual progress bar included.",
-    screens: [{ src: partPaymentCropped, alt: "Part payment tracker with installment timeline" }],
+    screens: [{ src: partPaymentCropped, alt: "Part payment tracker with installment timeline", fit: "contain" as const }],
   },
   {
     icon: Receipt,
