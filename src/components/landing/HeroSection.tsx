@@ -26,7 +26,7 @@ export const HeroSection = () => {
 
   return (
     <>
-      <section className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden px-4 pt-20 pb-12 md:pb-16">
+      <section className="relative min-h-[80vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden px-4 pt-16 md:pt-20 pb-8 md:pb-16">
         {/* Animated background orbs */}
         <motion.div
           className="absolute top-20 right-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"
@@ -34,7 +34,7 @@ export const HeroSection = () => {
           transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
         />
         <motion.div
-          className="absolute bottom-20 left-10 w-96 h-96 bg-success/8 rounded-full blur-3xl"
+          className="absolute bottom-20 left-10 w-96 h-96 bg-primary/8 rounded-full blur-3xl"
           animate={{ x: [0, -25, 0], y: [0, 15, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
         />
@@ -127,6 +127,12 @@ export const HeroSection = () => {
           </motion.div>
         </div>
       </section>
+
+      {/* Blended section divider */}
+      <div className="md:hidden relative py-2">
+        <div className="mx-auto w-2/3 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+        <div className="mx-auto w-1/3 h-px bg-gradient-to-r from-transparent via-primary/10 to-transparent mt-px blur-sm" />
+      </div>
 
       {/* Mobile-only carousel section */}
       <section className="md:hidden py-10 px-4 text-center">
