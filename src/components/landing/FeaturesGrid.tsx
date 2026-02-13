@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import {
   FolderKanban, Store, Users, CalendarClock,
   Banknote, Receipt, Camera, Brain,
-  Calendar, Repeat, Copy, WifiOff,
+  Calendar, Repeat,
   Search, Undo2, Palette, Moon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -114,8 +114,6 @@ const remainingFeatures = [
 const secondaryFeatures = [
   { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: fyCropped, objectPosition: "center" },
   { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: recurringCropped, objectPosition: "center" },
-  { icon: Copy, title: "Duplicate Detection", desc: "Smart warnings for same vendor + amount + date", screenshot: duplicateCropped, objectPosition: "center" },
-  { icon: WifiOff, title: "Offline-First Sync", desc: "Works without internet, syncs when back online", screenshot: cashOnlineCropped, objectPosition: "center" },
   { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: globalSearchCropped, objectPosition: "center" },
   { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, objectPosition: "center" },
   { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, objectPosition: "center" },
