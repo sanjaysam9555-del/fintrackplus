@@ -1,39 +1,61 @@
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { UserPlus, FolderPlus, PenLine } from "lucide-react";
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-};
+import { useEffect, useRef } from "react";
 
 const steps = [
   {
     icon: UserPlus,
-    number: "01",
+    number: 1,
     title: "Sign up in 30 seconds",
     description: "Email + password. Set up in under a minute.",
   },
   {
     icon: FolderPlus,
-    number: "02",
+    number: 2,
     title: "Create your first wedding project",
     description: "Set the client name, your internal budget, and what you're charging. Template it for future events.",
   },
   {
     icon: PenLine,
-    number: "03",
+    number: 3,
     title: "Start logging",
     description: "Every vendor payment, every cash handoff, every receipt. Your margins update in real time.",
   },
 ];
 
+const CountUpNumber = ({ target }: { target: number }) => {
+  const count = useMotionValue(0);
+  const rounded = useTransform(count, (v) => String(Math.round(v)).padStart(2, "0"));
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const unsubscribe = rounded.on("change", (v) => {
+      if (ref.current) ref.current.textContent = v;
+    });
+    return unsubscribe;
+  }, [rounded]);
+
+  return (
+    <motion.span
+      ref={ref}
+      onViewportEnter={() => {
+        animate(count, target, { duration: 0.8, ease: "easeOut" });
+      }}
+      viewport={{ once: true }}
+    >
+      00
+    </motion.span>
+  );
+};
+
 export const HowItWorks = () => (
   <section className="py-20 px-4 bg-muted/30">
     <div className="max-w-4xl mx-auto">
       <motion.div
-        initial="hidden" whileInView="visible"
+        initial={{ opacity: 0, y: 24 }}
+        whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        variants={fadeUp}
+        transition={{ duration: 0.5 }}
         className="text-center mb-10"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-foreground">
@@ -45,9 +67,10 @@ export const HowItWorks = () => (
         {steps.map((s, i) => (
           <motion.div
             key={s.number}
-            initial="hidden" whileInView="visible"
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.5, delay: i * 0.15 } } }}
+            transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.15 }}
             className="text-center"
           >
             <div className="relative mx-auto w-16 h-16 mb-5">
@@ -56,7 +79,7 @@ export const HowItWorks = () => (
                 <s.icon className="w-7 h-7 text-primary" />
               </div>
               <span className="absolute -top-2 -right-2 w-6 h-6 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
-                {s.number}
+                <CountUpNumber target={s.number} />
               </span>
             </div>
             <h3 className="text-lg font-semibold text-foreground mb-2">{s.title}</h3>
