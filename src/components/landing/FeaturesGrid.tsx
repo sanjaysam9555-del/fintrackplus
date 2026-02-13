@@ -12,18 +12,22 @@ import { PhoneMockup } from "./PhoneMockup";
 import projectsTab from "@/assets/landing/real/projects-tab.png";
 import projectEntries from "@/assets/landing/real/project-entries.png";
 import partners from "@/assets/landing/real/partners.png";
-import projectSubTab from "@/assets/landing/real/project-sub-tab.png";
 import gstForm from "@/assets/landing/real/gst-form.png";
 import reports from "@/assets/landing/real/reports.png";
-import vendors from "@/assets/landing/real/vendors.png";
-import homeTab from "@/assets/landing/real/home-tab.png";
-import expenseForm from "@/assets/landing/real/expense-form.png";
-import aiSummary from "@/assets/landing/real/ai-summary.png";
-import incomeTab from "@/assets/landing/real/income-tab.png";
-import expenseTab from "@/assets/landing/real/expense-tab.png";
 import activityLog from "@/assets/landing/real/activity-log.png";
 import categories from "@/assets/landing/real/categories.png";
-import aiSummary2 from "@/assets/landing/real/ai-summary-2.png";
+
+// Cropped feature images
+import aiInsightsCropped from "@/assets/landing/real/ai-insights-cropped.png";
+import receiptCropped from "@/assets/landing/real/receipt-cropped.png";
+import cashOnlineCropped from "@/assets/landing/real/cash-online-cropped.png";
+import darkModeCropped from "@/assets/landing/real/dark-mode-cropped.png";
+import globalSearchCropped from "@/assets/landing/real/global-search-cropped.png";
+import fyCropped from "@/assets/landing/real/fy-cropped.png";
+import partPaymentCropped from "@/assets/landing/real/part-payment-cropped.png";
+import recurringCropped from "@/assets/landing/real/recurring-cropped.png";
+import duplicateCropped from "@/assets/landing/real/duplicate-cropped.png";
+import vendorsCropped from "@/assets/landing/real/vendors.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -53,7 +57,7 @@ const showcaseFeatures = [
     icon: CalendarClock,
     title: "Part Payment Tracking",
     description: "Log total expected amounts, plan future installments with dates, confirm payments as they happen. Visual progress bar included.",
-    screens: [{ src: projectSubTab, alt: "Part payment tracker with installment timeline" }],
+    screens: [{ src: partPaymentCropped, alt: "Part payment tracker with installment timeline" }],
   },
   {
     icon: Receipt,
@@ -73,27 +77,27 @@ const remainingFeatures = [
     title: "Vendor Management",
     description: "Maintain a vendor directory with custom icons and colors. See total spend per vendor across all weddings.",
     gradient: "from-warning/20 to-warning/5",
-    screenshot: vendors,
+    screenshot: vendorsCropped,
     screenshotAlt: "Vendor directory with spend totals",
-    objectPosition: "center 25%",
+    objectPosition: "center",
   },
   {
     icon: Banknote,
     title: "Cash vs Online Split",
     description: "Every transaction tagged Cash or Online. Dashboard and partner balances reflect both modes separately.",
     gradient: "from-primary/20 to-primary/5",
-    screenshot: homeTab,
-    screenshotAlt: "Home tab showing cash and online balance split",
-    objectPosition: "center 15%",
+    screenshot: cashOnlineCropped,
+    screenshotAlt: "Cash and online balance split",
+    objectPosition: "center",
   },
   {
     icon: Camera,
     title: "Receipt Capture",
     description: "Attach photos of bills directly to transactions. Camera + gallery support on mobile. Included in exports.",
     gradient: "from-warning/20 to-warning/5",
-    screenshot: expenseForm,
-    screenshotAlt: "Expense add form with receipt capture",
-    objectPosition: "center 40%",
+    screenshot: receiptCropped,
+    screenshotAlt: "Receipt capture feature",
+    objectPosition: "center",
   },
   {
     icon: Brain,
@@ -101,21 +105,21 @@ const remainingFeatures = [
     badge: "AI Powered",
     description: "FY-level summaries, 6-month trend charts, category breakdowns, project health dashboard, and spending insights.",
     gradient: "from-primary/20 to-primary/5",
-    screenshot: aiSummary,
+    screenshot: aiInsightsCropped,
     screenshotAlt: "AI insights dashboard with charts and analysis",
-    objectPosition: "center 20%",
+    objectPosition: "center",
   },
 ];
 
 const secondaryFeatures = [
-  { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: incomeTab, objectPosition: "center 10%" },
-  { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: expenseTab, objectPosition: "center 20%" },
-  { icon: Copy, title: "Duplicate Detection", desc: "Smart warnings for same vendor + amount + date", screenshot: homeTab, objectPosition: "center 15%" },
-  { icon: WifiOff, title: "Offline-First Sync", desc: "Works without internet, syncs when back online", screenshot: homeTab, objectPosition: "center 15%" },
-  { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: homeTab, objectPosition: "center 15%" },
-  { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, objectPosition: "center 20%" },
-  { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, objectPosition: "center 20%" },
-  { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: aiSummary2, objectPosition: "center 20%" },
+  { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: fyCropped, objectPosition: "center" },
+  { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: recurringCropped, objectPosition: "center" },
+  { icon: Copy, title: "Duplicate Detection", desc: "Smart warnings for same vendor + amount + date", screenshot: duplicateCropped, objectPosition: "center" },
+  { icon: WifiOff, title: "Offline-First Sync", desc: "Works without internet, syncs when back online", screenshot: cashOnlineCropped, objectPosition: "center" },
+  { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: globalSearchCropped, objectPosition: "center" },
+  { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, objectPosition: "center" },
+  { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, objectPosition: "center" },
+  { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: darkModeCropped, objectPosition: "center" },
 ];
 
 export const FeaturesGrid = () => (
