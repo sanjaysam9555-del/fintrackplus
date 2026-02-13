@@ -75,6 +75,7 @@ const remainingFeatures = [
     gradient: "from-warning/20 to-warning/5",
     screenshot: vendors,
     screenshotAlt: "Vendor directory with spend totals",
+    objectPosition: "center 25%",
   },
   {
     icon: Banknote,
@@ -83,6 +84,7 @@ const remainingFeatures = [
     gradient: "from-primary/20 to-primary/5",
     screenshot: homeTab,
     screenshotAlt: "Home tab showing cash and online balance split",
+    objectPosition: "center 15%",
   },
   {
     icon: Camera,
@@ -91,6 +93,7 @@ const remainingFeatures = [
     gradient: "from-warning/20 to-warning/5",
     screenshot: expenseForm,
     screenshotAlt: "Expense add form with receipt capture",
+    objectPosition: "center 40%",
   },
   {
     icon: Brain,
@@ -100,18 +103,19 @@ const remainingFeatures = [
     gradient: "from-primary/20 to-primary/5",
     screenshot: aiSummary,
     screenshotAlt: "AI insights dashboard with charts and analysis",
+    objectPosition: "center 20%",
   },
 ];
 
 const secondaryFeatures = [
-  { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: incomeTab },
-  { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: expenseTab },
-  { icon: Copy, title: "Duplicate Detection", desc: "Smart warnings for same vendor + amount + date", screenshot: homeTab },
-  { icon: WifiOff, title: "Offline-First Sync", desc: "Works without internet, syncs when back online", screenshot: homeTab },
-  { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: homeTab },
-  { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog },
-  { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories },
-  { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: aiSummary2 },
+  { icon: Calendar, title: "Indian Financial Year", desc: "Apr–Mar FY by default, not calendar year", screenshot: incomeTab, objectPosition: "center 10%" },
+  { icon: Repeat, title: "Recurring Transactions", desc: "Monthly rent, EMIs, retainer fees — daily/weekly/monthly/yearly", screenshot: expenseTab, objectPosition: "center 20%" },
+  { icon: Copy, title: "Duplicate Detection", desc: "Smart warnings for same vendor + amount + date", screenshot: homeTab, objectPosition: "center 15%" },
+  { icon: WifiOff, title: "Offline-First Sync", desc: "Works without internet, syncs when back online", screenshot: homeTab, objectPosition: "center 15%" },
+  { icon: Search, title: "Global Search", desc: "Cmd+K to search transactions, vendors, projects instantly", screenshot: homeTab, objectPosition: "center 15%" },
+  { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, objectPosition: "center 20%" },
+  { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, objectPosition: "center 20%" },
+  { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: aiSummary2, objectPosition: "center 20%" },
 ];
 
 export const FeaturesGrid = () => (
@@ -186,7 +190,8 @@ export const FeaturesGrid = () => (
                 <img
                   src={f.screenshot}
                   alt={f.screenshotAlt}
-                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  style={{ objectPosition: f.objectPosition || "center top" }}
                   loading="lazy"
                 />
               </div>
@@ -233,7 +238,8 @@ export const FeaturesGrid = () => (
                 <img
                   src={f.screenshot}
                   alt={f.title}
-                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  style={{ objectPosition: f.objectPosition || "center top" }}
                   loading="lazy"
                 />
               </div>
