@@ -198,7 +198,7 @@ export const FeaturesGrid = () => (
                   loading="lazy"
                 />
               </div>
-              <div className="p-5 md:p-6">
+              <div className="p-5 md:p-6 bg-primary/5">
                 <div className="flex items-center gap-2 mb-2">
                   <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${f.gradient} flex items-center justify-center`}>
                     <f.icon className="w-4.5 h-4.5 text-foreground" />
@@ -285,7 +285,7 @@ export const FeaturesGrid = () => (
                   />
                 </div>
                 {/* Content */}
-                <div className="p-5 flex items-start gap-3">
+                <div className="p-5 flex items-start gap-3 bg-primary/5">
                   <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0 mt-0.5">
                     <f.icon className="w-4.5 h-4.5 text-primary" />
                   </div>
