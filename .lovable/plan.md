@@ -1,107 +1,75 @@
 
 
-# Landing Page Overhaul: Visuals, Pricing, and Mobile Optimization
+# Landing Page Visual Overhaul: Real Images + Hero Revamp
 
-## What's Changing
+## Problem
+The landing page is text-heavy with only CSS mockups and Lucide icons. There are no real images alongside pain points, features, personas, or the hero section. On mobile, the hero feels weak.
 
-### 1. Pricing Corrections (across multiple files)
-All references to "free", "no credit card" must be updated to reflect the paid model:
-- **Rs. 499/month subscription**
-- **7-day free trial** (to still have a low-friction entry point)
-- Credit card required at signup
+## Approach: AI-Generated Images
+We'll use the **Lovable AI image generation** (google/gemini-2.5-flash-image) via a one-time edge function to generate contextual images for each section, store them in file storage, and reference them in the landing page components.
 
-**Files affected:**
-- `HeroSection.tsx` -- CTA changes from "Start Free" to "Start 7-Day Free Trial", subtext changes to "Rs. 499/month after trial"
-- `HowItWorks.tsx` -- Step 1 description updated
-- `FAQSection.tsx` -- "Is it free?" answer rewritten with pricing details
-- `LandingFooter.tsx` -- "Get Started Free" changed to "Start Your Free Trial"
+### Images to Generate (8-10 total)
 
-### 2. New Pricing Section (new component)
-A dedicated pricing card section inserted between PersonaSection and FAQSection:
-- **File:** `src/components/landing/PricingSection.tsx`
-- Single plan card: "Rs. 499/month"
-- Feature checklist showing everything included
-- "Start 7-Day Free Trial" CTA
-- "Cancel anytime" reassurance text
+1. **Hero**: A stylized illustration of a wedding planner at a desk with a phone/tablet showing a finance dashboard, Indian wedding elements (marigolds, mandap) in the background
+2. **Pain Point 1 - Cash Leaks**: Illustration of scattered cash, WhatsApp messages, and a notebook with messy handwriting
+3. **Pain Point 2 - No Margin Visibility**: Illustration of a confused planner looking at bills stacking up
+4. **Pain Point 3 - GST Headaches**: Illustration of receipts scattered across a desk with a stressed expression
+5. **Persona - Solo Planner**: Illustration of a single professional with a phone managing events
+6. **Persona - Agency Team**: Illustration of a small team coordinating with tablets/phones
+7. **Persona - Event Coordinator**: Illustration of a coordinator presenting reports to a client
+8. **How It Works - Visual**: A clean illustration showing sign-up to dashboard flow
 
-### 3. Hero Section Overhaul (mobile-first)
-The current hero has a phone mockup that's too small on mobile and doesn't convey the app well.
+### Implementation
 
-**Changes to `HeroSection.tsx`:**
-- On mobile: hide the phone mockup entirely, replace with a horizontally scrollable row of 3 mini feature highlight cards (e.g., "Track ₹18L+", "5 Weddings", "Cash + Online") that give immediate visual context
-- On desktop: keep the phone mockup but make it larger and more detailed
-- Add social proof line: "Trusted by wedding planners across India"
-- Update CTA button and subtext for paid model
+#### Step 1: Edge Function for Image Generation
+Create `supabase/functions/generate-landing-images/index.ts`:
+- Calls the AI image generation API for each required image
+- Uploads results to a `landing-assets` storage bucket
+- Returns the public URLs
+- Protected by a manual trigger (not public)
 
-### 4. App Screen Mockups Alongside Features
-Since we can't capture real screenshots with data, we'll build **detailed CSS-rendered app screen mockups** that look like real screenshots. These will be placed alongside feature descriptions in an alternating layout (text left / mockup right, then swap).
+#### Step 2: Storage Bucket
+Create a `landing-assets` public storage bucket to store the generated images.
 
-**Changes to `FeaturesGrid.tsx`:**
-- Restructure the top 4 primary features into a "Feature Showcase" format: each feature gets a full-width row with text on one side and a detailed CSS mockup on the other
-- Alternating layout: odd features have text-left/mockup-right, even features swap
-- The remaining 4 primary features stay in the existing 2-column card grid
-- Each mockup is a realistic representation of the actual app screen for that feature
+#### Step 3: Component Updates
 
-**CSS Mockups to build (inline in FeaturesGrid):**
-1. **Wedding-as-a-Project** -- A project card showing "Sharma-Gupta Wedding", Internal Cost ₹14L, Client Cost ₹18L, margin bar at 22%, health badge "Healthy"
-2. **Partner Tracking** -- Two partner cards with Cash/Online split balances, transfer button
-3. **Part Payment Tracker** -- A vendor installment view with progress bar at 60%, upcoming dates
-4. **GST Export** -- A mock export preview showing CSV rows, receipt thumbnails, ZIP download button
+**`HeroSection.tsx`** -- Complete revamp:
+- Replace the CSS phone mockup with a real AI-generated hero image
+- On mobile: show the hero image above the text (full-width, rounded corners) instead of tiny stat cards
+- On desktop: large hero image on the right side with a subtle phone frame overlay
+- Keep the stat cards below the CTA on mobile as secondary content
 
-### 5. Mobile Optimization
-- All feature showcase mockups stack vertically on mobile (mockup below text)
-- Mockups scale down gracefully with `max-w-sm mx-auto` on mobile
-- Pain points section: cards stack to single column on very small screens
-- Secondary features grid: `grid-cols-2` on mobile (already correct)
-- Add `scroll-smooth` to the landing page for smooth anchor navigation on mobile
-- Hero section min-height reduced on mobile from `min-h-[90vh]` to `min-h-[80vh]` to show more content above the fold
+**`PainPointsSection.tsx`**:
+- Add an image above or beside each pain point card
+- On mobile: image sits above the text inside each card
+- On desktop: image as a small illustration to the left of the text
 
-### 6. Landing Page Structure Update
-**File: `src/pages/Landing.tsx`** -- Add the new PricingSection between PersonaSection and FAQSection.
+**`FeaturesGrid.tsx`**:
+- Keep the existing CSS mockups (they're actually good for showing app functionality)
+- Add a subtle background illustration behind each showcase row for visual richness
 
----
+**`PersonaSection.tsx`**:
+- Replace the generic Lucide icon with a contextual illustration for each persona type
+- Image fills the top portion of each card
 
-## Technical Details
+**`HowItWorks.tsx`**:
+- Add a step illustration above each step's icon
 
-### New File: `src/components/landing/PricingSection.tsx`
-- Single pricing card with glass-morphism styling
-- Checklist of all included features (12-15 items)
-- "Rs. 499/month" prominently displayed
-- "Start 7-Day Free Trial" button linking to `/auth`
-- Framer Motion fade-up animation
+### File Changes Summary
 
-### Modified: `src/components/landing/HeroSection.tsx`
-- Mobile: replace phone mockup with 3 mini stat cards in a horizontal row
-- Use `hidden md:flex` on phone mockup, `flex md:hidden` on mobile stat cards
-- CTA: "Start 7-Day Free Trial" with ArrowRight icon
-- Subtext: "Rs. 499/month after trial -- Cancel anytime"
-- Add a trust line with a subtle icon
+| File | Action |
+|------|--------|
+| `supabase/functions/generate-landing-images/index.ts` | Create -- edge function to generate and store images |
+| `src/components/landing/HeroSection.tsx` | Modify -- revamp with real image, better mobile layout |
+| `src/components/landing/PainPointsSection.tsx` | Modify -- add images to each card |
+| `src/components/landing/PersonaSection.tsx` | Modify -- replace icons with illustrations |
+| `src/components/landing/HowItWorks.tsx` | Modify -- add step illustrations |
 
-### Modified: `src/components/landing/FeaturesGrid.tsx`
-- Top 4 features become full-width alternating rows with CSS mockups
-- Each mockup is a `div` styled to look like a phone/app screen with realistic data
-- Bottom 4 primary features remain as 2-column cards
-- Secondary features grid unchanged
+### Technical Notes
+- Images are generated once via the edge function and stored permanently in the storage bucket
+- All `<img>` tags will use `loading="lazy"` for performance
+- Images will have proper `alt` text for accessibility
+- Responsive sizing: images use `object-cover` with appropriate aspect ratios per breakpoint
+- The CSS mockups in FeaturesGrid remain unchanged -- they effectively demonstrate app functionality
+- All images will be optimized illustrations (not photographs) for consistent visual style
 
-### Modified: `src/components/landing/HowItWorks.tsx`
-- Step 1 description: "Email + password. 7-day free trial, no commitment." (remove "no credit card")
-
-### Modified: `src/components/landing/FAQSection.tsx`
-- "Is it free?" rewritten: "FinTrack+ is Rs. 499/month. Every new account gets a 7-day free trial with full access to all features. Cancel anytime before the trial ends and you won't be charged."
-- Add new FAQ: "What payment methods do you accept?" -- "Credit card, debit card, and UPI. All payments are processed securely."
-
-### Modified: `src/components/landing/LandingFooter.tsx`
-- FinalCTA button text: "Start Your Free Trial"
-- Remove "Get Started Free"
-
-### Modified: `src/pages/Landing.tsx`
-- Import and add `PricingSection` between `PersonaSection` and `FAQSection`
-
-### Summary of all files changed:
-1. `src/components/landing/HeroSection.tsx` -- mobile hero, pricing text, CTA
-2. `src/components/landing/FeaturesGrid.tsx` -- alternating feature showcase with CSS mockups
-3. `src/components/landing/PricingSection.tsx` -- NEW pricing section
-4. `src/components/landing/HowItWorks.tsx` -- step 1 text fix
-5. `src/components/landing/FAQSection.tsx` -- pricing FAQ updates
-6. `src/components/landing/LandingFooter.tsx` -- CTA text fix
-7. `src/pages/Landing.tsx` -- add PricingSection import and placement
