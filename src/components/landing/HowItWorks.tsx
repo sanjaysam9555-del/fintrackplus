@@ -49,8 +49,8 @@ const CountUpNumber = ({ target }: { target: number }) => {
 };
 
 export const HowItWorks = () => (
-  <section className="py-20 px-4 bg-muted/30">
-    <div className="max-w-4xl mx-auto">
+  <section className="py-20 md:py-24 px-4 bg-muted/30">
+    <div className="max-w-6xl mx-auto">
       <motion.div
         initial={{ opacity: 0, y: 24 }}
         whileInView={{ opacity: 1, y: 0 }}

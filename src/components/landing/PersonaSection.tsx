@@ -40,7 +40,7 @@ const personas = [
 ];
 
 export const PersonaSection = () => (
-  <section className="relative py-24 px-4 overflow-hidden">
+  <section className="relative py-20 md:py-24 px-4 overflow-hidden">
     {/* Decorative background */}
     <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
     <motion.div
@@ -54,7 +54,7 @@ export const PersonaSection = () => (
       transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
     />
 
-    <div className="relative z-10 max-w-5xl mx-auto">
+    <div className="relative z-10 max-w-6xl mx-auto">
       <motion.div
         initial="hidden"
         whileInView="visible"

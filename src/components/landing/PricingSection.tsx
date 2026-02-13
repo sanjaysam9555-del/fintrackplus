@@ -36,7 +36,7 @@ export const PricingSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative py-24 px-4 overflow-hidden">
+    <section className="relative py-20 md:py-24 px-4 overflow-hidden">
       {/* Decorative background */}
       <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
       <motion.div

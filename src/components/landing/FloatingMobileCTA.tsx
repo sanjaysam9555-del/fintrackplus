@@ -25,11 +25,11 @@ export const FloatingMobileCTA = () => {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: "spring", stiffness: 200, damping: 24 }}
-          className="md:hidden fixed bottom-6 left-4 right-4 z-50"
+          className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-auto"
         >
           <Button
             size="lg"
-            className="w-full text-base rounded-2xl gap-2 shadow-lg shadow-primary/25"
+            className="text-sm px-6 rounded-full gap-2 shadow-lg shadow-primary/25"
             onClick={() => navigate("/auth")}
           >
             Get Started <ArrowRight className="w-4 h-4" />
