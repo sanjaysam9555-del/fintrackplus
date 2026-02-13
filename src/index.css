@@ -241,9 +241,8 @@ html, body {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
   
-  .safe-top {
-    padding-top: max(1rem, env(safe-area-inset-top));
-  }
+  
+
   
   /* Category icon backgrounds */
   .category-icon {
@@ -304,5 +303,9 @@ html, body {
   
   .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-top {
+    padding-top: max(1.5rem, env(safe-area-inset-top));
   }
 }
