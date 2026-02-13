@@ -1,72 +1,61 @@
 
-
-# Fix Dark Mode Contrast Across the App
+# Desktop Layout Optimization: Projects and AI Summary Pages
 
 ## Problem
+Both pages render as a single narrow column on desktop, wasting horizontal space. The Projects page stacks cards vertically with no grid, and the AI Summary page caps width at `max-w-4xl` with all cards in a single column.
 
-The app uses `bg-primary/10 text-primary` extensively for icon containers, badges, and active states. In dark mode, `--primary` is HSL(214, 78%, 50%) -- a medium blue that lacks contrast against dark surfaces. The same issue affects hardcoded Tailwind colors like `text-blue-500`, `text-purple-500`, and `text-amber-500` which don't brighten for dark mode.
+## Changes
 
-## Strategy
+### 1. Projects Page (`src/components/ProjectOverviewPage.tsx`)
 
-Two-pronged fix:
-1. **For `bg-primary/10 text-primary` patterns**: Replace with `bg-accent text-accent-foreground` which is already tuned for dark mode (75% lightness vs 50%)
-2. **For hardcoded Tailwind colors**: Add `dark:` variants with lighter shades (e.g., `text-blue-500 dark:text-blue-400`)
+**Portfolio summary**: On desktop (md+), make the summary stats row wider and more spacious with larger text sizes.
 
-## Files and Changes
+**Project cards**: Switch from `space-y-3` (single column) to a responsive grid:
+- Mobile: single column (current)
+- Desktop (md+): 2-column grid
+- Large desktop (lg+): 3-column grid
 
-### 1. `src/components/Dashboard.tsx`
-- Date picker buttons: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
-- Time filter pill: same fix
-- Settings grid "Categories" icon: same fix
-- "Logs" icon: `text-amber-500` to `text-amber-500 dark:text-amber-400`
-- "Reports" icon: `text-purple-500` to `text-purple-500 dark:text-purple-400`
+**Add form**: On desktop, constrain the add form width and use wider input layout.
 
-### 2. `src/components/UpcomingRecurringCard.tsx`
-- Repeat icon container: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
+**Overall container**: Remove `md:px-6` padding limitation so content fills the sidebar's remaining space properly. Add `md:max-w-6xl` to prevent ultra-wide stretching on very large monitors.
 
-### 3. `src/components/DesktopSidebar.tsx`
-- Active nav items: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
+### 2. AI Summary Page (`src/components/AISummaryPage.tsx`)
 
-### 4. `src/components/NotificationPanel.tsx`
-- Transaction icon color: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
-- Bell icon: `text-primary` to `text-accent-foreground`
+**Container**: Change `md:max-w-4xl` to `md:max-w-6xl` to use more horizontal space.
 
-### 5. `src/components/NotificationsPage.tsx`
-- Transaction: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
-- Purple: add `dark:text-purple-400`
-- Blue: add `dark:text-blue-400`
-- Emerald: add `dark:text-emerald-400`
-- Amber: add `dark:text-amber-400`
-- Orange: add `dark:text-orange-400`
+**Card grid**: Wrap the insight cards in a responsive grid layout on desktop:
+- FY Hero Card: full width
+- 6-Month Trend + Category Breakdown: side by side (2 columns on md+)
+- Smart Insights: full width
+- Project Health + Payment Methods: side by side (2 columns on md+)
 
-### 6. `src/components/SettingsPage.tsx`
-- Same icon color fixes as NotificationsPage for the `getIconColor` function
-- Badge colors already have dark variants (good)
+### 3. AI Summary Sub-components
 
-### 7. `src/components/settings/ReportsSection.tsx`
-- Balance stat card: `bg-primary/10` to `bg-accent`
-- Custom date buttons: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
-- CA Package button icon: `text-purple-500` to `text-purple-500 dark:text-purple-400`
+**CategoryBreakdown**: On desktop, make the pie chart and legend larger since there's more room. Increase pie chart size from `w-32 h-32` to `md:w-44 md:h-44`.
 
-### 8. `src/components/AddTransactionSheet.tsx`
-- Recurring frequency selected state: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
+**SpendingTrendChart**: Increase chart height from `h-40` to `md:h-52` on desktop for better data visualization.
 
-### 9. `src/components/ProjectOverviewPage.tsx`
-- Active/Archived tab badge: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
+---
 
-### 10. `src/components/PartnerTransferSheet.tsx`
-- Header icon, arrow icon: `text-primary` to `text-accent-foreground`
+## Technical Details
 
-### 11. `src/components/ai-summary/PaymentMethods.tsx`
-- Header icon: `text-primary` to `text-accent-foreground`
-- Online icon container: `bg-primary/10 text-primary` to `bg-accent text-accent-foreground`
+### File: `src/components/ProjectOverviewPage.tsx`
+- Line 147: Add `md:max-w-6xl` to container
+- Line 353: Change `<div className="space-y-3">` to `<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">`
+- Portfolio summary stats: bump text from `text-sm` to `md:text-base` for desktop readability
+- Add form: wrap with `md:max-w-lg` to prevent it stretching full width
 
-### 12. `src/components/ai-summary/SmartInsights.tsx`
-- Amber insight icon: add `dark:text-amber-400` variant
+### File: `src/components/AISummaryPage.tsx`
+- Line 201: Change `md:max-w-4xl` to `md:max-w-6xl`
+- Line 233: Replace `<div className="px-4 space-y-4">` with a CSS grid layout that places cards side-by-side on desktop:
+  - Use a 2-column grid on md+ with `grid-cols-1 md:grid-cols-2`
+  - FY Hero Card and Smart Insights span full width (`md:col-span-2`)
+  - Trend Chart + Category Breakdown sit side by side
+  - Project Health + Payment Methods sit side by side
 
-### 13. `src/components/GlobalSearchDialog.tsx`
-- Blue payment badge: `text-blue-500` to `text-blue-500 dark:text-blue-400`
+### File: `src/components/ai-summary/SpendingTrendChart.tsx`
+- Line 69: Change `h-40` to `h-40 md:h-52`
 
-## Summary
-
-The core fix is replacing ~40 instances of `text-primary` (50% lightness in dark) with `text-accent-foreground` (75% lightness in dark) and adding `dark:` variants for all hardcoded Tailwind color-500 classes. No new CSS variables needed -- the existing semantic tokens already solve this.
+### File: `src/components/ai-summary/CategoryBreakdown.tsx`
+- Line 74: Change `w-32 h-32` to `w-32 h-32 md:w-44 md:h-44`
+- Line 108: Increase truncate width on desktop `max-w-[100px] md:max-w-[160px]`
