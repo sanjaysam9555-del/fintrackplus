@@ -14,6 +14,7 @@ const Index = lazy(() => import("./pages/Index"));
 const AuthPage = lazy(() => import("./pages/Auth").then(m => ({ default: m.AuthPage })));
 const InstallPage = lazy(() => import("./pages/Install").then(m => ({ default: m.InstallPage })));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const Landing = lazy(() => import("./pages/Landing"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -117,9 +118,9 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
       <Routes>
-        {/* Install page is always accessible */}
+        {/* Public routes */}
         <Route path="/install" element={<InstallPage />} />
-        
+        <Route path="/landing" element={<Landing />} />
         {!user ? (
           <Route path="*" element={<AuthPage />} />
         ) : (
