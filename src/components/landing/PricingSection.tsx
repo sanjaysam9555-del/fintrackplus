@@ -1,11 +1,20 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+const stagger = {
+  visible: { transition: { staggerChildren: 0.04 } },
+};
+
+const itemPop = {
+  hidden: { opacity: 0, scale: 0.9 },
+  visible: { opacity: 1, scale: 1, transition: { type: "spring" as const, stiffness: 150, damping: 18 } },
 };
 
 const features = [
@@ -27,57 +36,89 @@ export const PricingSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-16 md:py-20 px-4">
-      <div className="max-w-lg mx-auto">
+    <section className="relative py-24 px-4 overflow-hidden">
+      {/* Decorative background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
+      <motion.div
+        className="absolute top-16 right-1/4 w-72 h-72 bg-primary/5 rounded-full blur-3xl"
+        animate={{ x: [0, -20, 0], y: [0, 15, 0] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute bottom-16 left-1/4 w-56 h-56 bg-primary/5 rounded-full blur-3xl"
+        animate={{ x: [0, 18, 0], y: [0, -12, 0] }}
+        transition={{ duration: 11, repeat: Infinity, ease: "easeInOut" }}
+      />
+
+      <div className="relative z-10 max-w-lg mx-auto">
         <motion.div
-          initial="hidden" whileInView="visible"
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true }}
           variants={fadeUp}
-          className="text-center mb-8"
+          className="text-center mb-12"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
-            Simple, transparent pricing
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
+            <Sparkles className="w-3.5 h-3.5" />
+            Simple pricing
+          </div>
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+            One plan. Everything included.
           </h2>
-          <p className="mt-3 text-sm md:text-base text-muted-foreground">
-            One plan. Everything included. No hidden fees.
+          <p className="mt-3 text-sm text-muted-foreground max-w-md mx-auto">
+            No tiers, no hidden fees. Full access from day one.
           </p>
         </motion.div>
 
         <motion.div
-          initial="hidden" whileInView="visible"
+          initial="hidden"
+          whileInView="visible"
           viewport={{ once: true }}
           variants={fadeUp}
-          className="bg-card/80 backdrop-blur-sm border-2 border-primary/30 rounded-2xl p-6 md:p-8 shadow-lg"
+          className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden"
         >
-          <div className="text-center mb-6">
-            <div className="text-4xl md:text-5xl font-bold text-foreground">
-              ₹499<span className="text-lg md:text-xl font-normal text-muted-foreground">/month</span>
+          {/* Price header */}
+          <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 md:px-8 py-8 text-center">
+            <div className="text-5xl md:text-6xl font-bold text-foreground tracking-tight">
+              ₹499
+              <span className="text-lg md:text-xl font-normal text-muted-foreground">/month</span>
             </div>
             <p className="mt-2 text-sm text-muted-foreground">
-              Full access to every feature
+              That's just ~₹17/day for complete peace of mind
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 mb-6">
-            {features.map((f) => (
-              <div key={f} className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-success mt-0.5 shrink-0" />
-                <span className="text-sm text-foreground">{f}</span>
-              </div>
-            ))}
+          {/* Features grid */}
+          <div className="px-6 md:px-8 py-6">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={stagger}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 mb-8"
+            >
+              {features.map((f) => (
+                <motion.div key={f} variants={itemPop} className="flex items-start gap-2.5">
+                  <div className="mt-0.5 shrink-0 w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary" />
+                  </div>
+                  <span className="text-sm text-foreground">{f}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <Button
+              size="lg"
+              className="w-full text-base rounded-xl gap-2"
+              onClick={() => navigate("/auth")}
+            >
+              Get Started <ArrowRight className="w-4 h-4" />
+            </Button>
+
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Credit card required · Cancel anytime
+            </p>
           </div>
-
-          <Button
-            size="lg"
-            className="w-full text-base rounded-xl gap-2"
-            onClick={() => navigate("/auth")}
-          >
-            Get Started <ArrowRight className="w-4 h-4" />
-          </Button>
-
-          <p className="mt-3 text-center text-xs text-muted-foreground">
-            Credit card required · Cancel anytime
-          </p>
         </motion.div>
       </div>
     </section>
