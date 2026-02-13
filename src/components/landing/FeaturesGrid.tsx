@@ -65,8 +65,8 @@ const showcaseFeatures = [
     badge: "Tax Ready",
     description: "Tag any transaction as GST. Export a CA-ready ZIP: transaction CSV, GST summary, and receipt images with professional headers.",
     screens: [
-      { src: gstForm, alt: "GST split transaction form" },
-      { src: reports, alt: "Reports page with export options" },
+      { src: gstForm, alt: "GST split transaction form", fit: "contain" as const },
+      { src: reports, alt: "Reports page with export options", fit: "contain" as const },
     ],
   },
 ];
