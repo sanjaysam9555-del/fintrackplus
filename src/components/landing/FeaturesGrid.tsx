@@ -177,9 +177,9 @@ export const FeaturesGrid = () => (
     </section>
 
     {/* Remaining primary features — card grid with screenshot thumbnails */}
-    <section className="py-12 md:py-16 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-5">
+    <section className="py-10 md:py-12 px-4">
+      <div className="max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
           {remainingFeatures.map((f, i) => (
             <motion.div
               key={f.title}
@@ -187,9 +187,9 @@ export const FeaturesGrid = () => (
               viewport={{ once: true, margin: "-50px" }}
               variants={{ ...fadeUp, visible: { ...fadeUp.visible, transition: { duration: 0.45, delay: i * 0.06 } } }}
               whileHover={{ scale: 1.03, y: -4 }}
-              className="bg-[#1966CD] border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
+              className="bg-[#1966CD] border rounded-xl overflow-hidden hover:shadow-lg transition-shadow group"
             >
-              <div className="h-36 overflow-hidden bg-muted/60 border-b border-border/30">
+              <div className="h-28 overflow-hidden bg-muted/60 border-b border-border/30">
                 <img
                   src={f.screenshot}
                   alt={f.screenshotAlt}
@@ -198,17 +198,17 @@ export const FeaturesGrid = () => (
                   loading="lazy"
                 />
               </div>
-              <div className="p-5 md:p-6">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={`w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center`}>
-                    <f.icon className="w-4.5 h-4.5 text-white" />
+              <div className="p-4 md:p-5">
+                <div className="flex items-center gap-2 mb-1.5">
+                  <div className={`w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center`}>
+                    <f.icon className="w-3.5 h-3.5 text-white" />
                   </div>
-                  <h3 className="text-base md:text-lg font-semibold text-white">{f.title}</h3>
+                  <h3 className="text-sm md:text-base font-semibold text-white">{f.title}</h3>
                   {f.badge && (
                     <Badge variant="secondary" className="text-[10px] px-2 py-0">{f.badge}</Badge>
                   )}
                 </div>
-                <p className="text-sm text-white/80 leading-relaxed">{f.description}</p>
+                <p className="text-xs text-white/80 leading-relaxed">{f.description}</p>
               </div>
             </motion.div>
           ))}
@@ -217,7 +217,7 @@ export const FeaturesGrid = () => (
     </section>
 
     {/* Secondary features — aesthetic card grid */}
-    <section className="relative py-24 px-4 overflow-hidden">
+    <section className="relative py-16 px-4 overflow-hidden">
       {/* Decorative background */}
       <div className="absolute inset-0 bg-gradient-to-b from-background via-muted/40 to-background" />
       <motion.div
@@ -231,7 +231,7 @@ export const FeaturesGrid = () => (
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
       />
 
-      <div className="relative z-10 max-w-5xl mx-auto">
+      <div className="relative z-10 max-w-4xl mx-auto">
         <motion.div
           initial="hidden"
           whileInView="visible"
@@ -256,7 +256,7 @@ export const FeaturesGrid = () => (
           whileInView="visible"
           viewport={{ once: true }}
           variants={{ visible: { transition: { staggerChildren: 0.06 } } }}
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-4"
         >
           {secondaryFeatures.map((f, i) => (
             <React.Fragment key={f.title}>
@@ -275,7 +275,7 @@ export const FeaturesGrid = () => (
                 className="border border-white/10 rounded-2xl bg-[#1966CD] shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group"
               >
                 {/* Screenshot thumbnail */}
-                <div className="h-36 md:h-40 overflow-hidden bg-muted/60 border-b border-border/30">
+                <div className="h-28 md:h-32 overflow-hidden bg-muted/60 border-b border-border/30">
                   <img
                     src={f.screenshot}
                     alt={f.title}
@@ -285,13 +285,13 @@ export const FeaturesGrid = () => (
                   />
                 </div>
                 {/* Content */}
-                <div className="p-5 flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
-                    <f.icon className="w-4.5 h-4.5 text-white" />
+                <div className="p-4 flex items-start gap-2.5">
+                  <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
+                    <f.icon className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-white mb-1">{f.title}</h4>
-                    <p className="text-xs text-white/80 leading-relaxed">{f.desc}</p>
+                    <h4 className="text-xs font-semibold text-white mb-0.5">{f.title}</h4>
+                    <p className="text-[11px] text-white/80 leading-relaxed">{f.desc}</p>
                   </div>
                 </div>
               </motion.div>
