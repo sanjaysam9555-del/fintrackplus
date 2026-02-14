@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Menu, X, Sparkles, LogIn } from "lucide-react";
+import { ArrowRight, Menu, X, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import appIcon from "@/assets/app-icon.png";
 import { getAppUrl } from "@/lib/domainUtils";
@@ -58,19 +58,17 @@ export const LandingHeader = () => {
               {l.label}
             </a>
           ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 rounded-full px-4 text-muted-foreground hover:text-foreground"
-            onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+          <a
+            href="#"
+            onClick={(e) => { e.preventDefault(); const url = getAppUrl('/auth?mode=login'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+            className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
-            <LogIn className="w-3.5 h-3.5" />
-            Login
-          </Button>
+            Existing User
+          </a>
           <Button
             size="sm"
             className={`gap-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-all ${showGlow ? "animate-[pulse_2s_ease-in-out_infinite] shadow-primary/40" : ""}`}
-            onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+            onClick={() => { const url = getAppUrl('/auth?mode=signup'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
           >
             <Sparkles className="w-3 h-3" />
             Get Started <ArrowRight className="w-3.5 h-3.5" />
@@ -108,19 +106,17 @@ export const LandingHeader = () => {
                   {l.label}
                 </a>
               ))}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2 gap-1.5 rounded-full text-muted-foreground hover:text-foreground"
-                onClick={() => { setMobileOpen(false); const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+              <a
+                href="#"
+                onClick={(e) => { e.preventDefault(); setMobileOpen(false); const url = getAppUrl('/auth?mode=login'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+                className="text-sm text-muted-foreground hover:text-foreground py-2 transition-colors cursor-pointer"
               >
-                <LogIn className="w-3.5 h-3.5" />
-                Login
-              </Button>
+                Existing User
+              </a>
               <Button
                 size="sm"
                 className="gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20"
-                onClick={() => { setMobileOpen(false); const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+                onClick={() => { setMobileOpen(false); const url = getAppUrl('/auth?mode=signup'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
               >
                 <Sparkles className="w-3 h-3" />
                 Get Started <ArrowRight className="w-3.5 h-3.5" />
