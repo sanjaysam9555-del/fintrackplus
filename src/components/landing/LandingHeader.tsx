@@ -80,7 +80,7 @@ export const LandingHeader = () => {
             transition={{ duration: 0.2 }}
             className="md:hidden overflow-hidden border-t border-border/50 bg-background/95 backdrop-blur-md"
           >
-            <div className="flex flex-col gap-1 px-4 py-3">
+            <div className="flex flex-col items-center gap-1 px-4 py-3">
               {navLinks.map((l) => (
                 <a
                   key={l.href}
