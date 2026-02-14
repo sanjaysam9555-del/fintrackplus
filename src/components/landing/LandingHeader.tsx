@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Menu, X, Sparkles, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import appIcon from "@/assets/app-icon.png";
+import { getAppUrl } from "@/lib/domainUtils";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -61,7 +62,7 @@ export const LandingHeader = () => {
             variant="ghost"
             size="sm"
             className="gap-1.5 rounded-full px-4 text-muted-foreground hover:text-foreground"
-            onClick={() => navigate("/auth")}
+            onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
           >
             <LogIn className="w-3.5 h-3.5" />
             Login
@@ -69,7 +70,7 @@ export const LandingHeader = () => {
           <Button
             size="sm"
             className={`gap-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-all ${showGlow ? "animate-[pulse_2s_ease-in-out_infinite] shadow-primary/40" : ""}`}
-            onClick={() => navigate("/auth")}
+            onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
           >
             <Sparkles className="w-3 h-3" />
             Get Started <ArrowRight className="w-3.5 h-3.5" />
@@ -111,7 +112,7 @@ export const LandingHeader = () => {
                 variant="ghost"
                 size="sm"
                 className="mt-2 gap-1.5 rounded-full text-muted-foreground hover:text-foreground"
-                onClick={() => { setMobileOpen(false); navigate("/auth"); }}
+                onClick={() => { setMobileOpen(false); const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
               >
                 <LogIn className="w-3.5 h-3.5" />
                 Login
@@ -119,7 +120,7 @@ export const LandingHeader = () => {
               <Button
                 size="sm"
                 className="gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20"
-                onClick={() => { setMobileOpen(false); navigate("/auth"); }}
+                onClick={() => { setMobileOpen(false); const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
               >
                 <Sparkles className="w-3 h-3" />
                 Get Started <ArrowRight className="w-3.5 h-3.5" />

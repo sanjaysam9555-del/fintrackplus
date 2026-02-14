@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PhoneMockup } from "./PhoneMockup";
+import { getAppUrl } from "@/lib/domainUtils";
 import appIcon from "@/assets/app-icon.png";
 import homeTab from "@/assets/landing/real/home-tab.png";
 import projectsTab from "@/assets/landing/real/projects-tab.png";
@@ -82,7 +83,7 @@ export const HeroSection = () => {
               <Button
                 size="lg"
                 className="relative text-base px-8 rounded-xl gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow overflow-hidden group"
-                onClick={() => navigate("/auth")}
+                onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
               >
                 {/* Shimmer effect */}
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />

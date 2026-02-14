@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useStatusBar } from "@/hooks/useStatusBar";
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
+import { isLandingDomain } from "@/lib/domainUtils";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -113,6 +114,18 @@ const AppRoutes = () => {
 
   if (loading) {
     return <AuthPageSkeleton />;
+  }
+
+  // On fintrackplus.com / www.fintrackplus.com → always show landing page
+  if (isLandingDomain()) {
+    return (
+      <Suspense fallback={<AuthPageSkeleton />}>
+        <Routes>
+          <Route path="/landing" element={<Landing />} />
+          <Route path="*" element={<Landing />} />
+        </Routes>
+      </Suspense>
+    );
   }
 
   return (
