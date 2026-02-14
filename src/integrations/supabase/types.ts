@@ -44,48 +44,6 @@ export type Database = {
         }
         Relationships: []
       }
-      google_sheets_integration: {
-        Row: {
-          access_token: string | null
-          connected_at: string | null
-          created_at: string
-          id: string
-          last_synced_at: string | null
-          refresh_token: string | null
-          spreadsheet_id: string | null
-          spreadsheet_url: string | null
-          token_expires_at: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          access_token?: string | null
-          connected_at?: string | null
-          created_at?: string
-          id?: string
-          last_synced_at?: string | null
-          refresh_token?: string | null
-          spreadsheet_id?: string | null
-          spreadsheet_url?: string | null
-          token_expires_at?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          access_token?: string | null
-          connected_at?: string | null
-          created_at?: string
-          id?: string
-          last_synced_at?: string | null
-          refresh_token?: string | null
-          spreadsheet_id?: string | null
-          spreadsheet_url?: string | null
-          token_expires_at?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       notifications: {
         Row: {
           created_at: string
