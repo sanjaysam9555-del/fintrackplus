@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Menu, X, Sparkles } from "lucide-react";
@@ -14,6 +14,13 @@ const navLinks = [
 export const LandingHeader = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showGlow, setShowGlow] = useState(false);
+
+  // Glow pulse on CTA after 3s of inactivity
+  useEffect(() => {
+    const timer = setTimeout(() => setShowGlow(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleNavClick = (href: string) => {
     setMobileOpen(false);
@@ -24,7 +31,7 @@ export const LandingHeader = () => {
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-4 h-14">
-        {/* Logo — rounded square container */}
+        {/* Logo */}
         <a
           href="#"
           onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
@@ -52,7 +59,7 @@ export const LandingHeader = () => {
           ))}
           <Button
             size="sm"
-            className="gap-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-shadow"
+            className={`gap-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-all ${showGlow ? "animate-[pulse_2s_ease-in-out_infinite] shadow-primary/40" : ""}`}
             onClick={() => navigate("/auth")}
           >
             <Sparkles className="w-3 h-3" />

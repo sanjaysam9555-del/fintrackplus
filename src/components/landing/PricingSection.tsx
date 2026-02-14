@@ -118,6 +118,24 @@ export const PricingSection = () => {
             <p className="mt-3 text-center text-xs text-muted-foreground">
               Credit card required · Cancel anytime
             </p>
+
+            {/* Money-back guarantee */}
+            <div className="mt-4 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-green-500/10 dark:bg-green-400/10 border border-green-500/20 dark:border-green-400/20">
+              <Check className="w-4 h-4 text-green-600 dark:text-green-400 shrink-0" />
+              <span className="text-xs text-green-700 dark:text-green-300 font-medium">
+                30-day money-back guarantee — no questions asked
+              </span>
+            </div>
+
+            {/* Cost comparison */}
+            <div className="mt-4 pt-4 border-t border-border/30 text-center">
+              <p className="text-[11px] text-muted-foreground">
+                Compare: Hiring an accountant costs <span className="line-through">₹15,000+/month</span>
+              </p>
+              <p className="text-xs text-foreground font-medium mt-0.5">
+                FinTrack⁺ = ₹499/month for everything
+              </p>
+            </div>
           </div>
         </motion.div>
       </div>
