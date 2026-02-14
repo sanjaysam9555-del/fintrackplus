@@ -1,60 +1,108 @@
 
-# Landing Page Improvements Plan
+# Landing Page Overhaul Plan
 
-## 1. Fix Floating CTA Centering on Mobile
-The current `left-1/2 -translate-x-1/2` approach can conflict with Framer Motion's transform. Fix by wrapping the button in a flex container that handles centering independently of the animation.
-
-## 2. Adjust Part Payment Tracking Phone Mockup
-The Part Payment Tracking showcase uses `fit: "contain"` which can leave whitespace inside the phone frame. Change it to `"cover"` with `object-top` positioning so the image fills the frame naturally, matching the other showcase items.
-
-## 3. Add Light Blue Glow Shadow Behind Cards
-Apply a subtle `shadow-[0_0_20px_rgba(25,102,205,0.15)]` (light blue glow) to all feature cards across:
-- Pain Points section (3 cards)
-- "More powerful tools" section (4 cards)
-- "And there's more..." section (6 cards)
-
-## 4. Add Dividers Between Cards
-Add visual separation using subtle gradient dividers or increased gap with separator lines between cards in:
-- Pain Points grid
-- Remaining features grid
-- Secondary features grid
-
-This will be done via a combination of increased card border opacity and a `ring-1 ring-primary/10` for a subtle blue outline that doubles as both divider and glow boundary.
-
-## 5. Add Sticky Navigation Header
-Create a new `LandingHeader` component with:
-- FinTrack+ logo on the left
-- Navigation links: Features, Pricing, FAQs
-- "Get Started" button on the right
-- Sticky positioning with glassmorphism backdrop
-- Smooth scroll to corresponding sections via anchor IDs
-- Add `id` attributes to Pricing and FAQ sections
+This plan covers 6 areas: logo fix, glow shadows, CTA redesign, Part Payment image fit, Persona section redesign, and "Wedding Planners" to "Indian Event Planners" text replacement.
 
 ---
 
-## Technical Details
+## 1. Fix Logo to Rounded Square (Not Circular)
 
-### Files to Create
-- `src/components/landing/LandingHeader.tsx` -- new sticky header with nav links
+The `appIcon` image file itself is circular/round. The CSS `rounded-xl` cannot make a round image appear square. The fix is to wrap the image in a square container with `rounded-xl`, a background color, and padding so the logo sits inside a visible rounded-square box.
 
-### Files to Modify
-- **`src/components/landing/FloatingMobileCTA.tsx`** -- wrap in a flex centering container instead of relying on translate
-- **`src/components/landing/FeaturesGrid.tsx`** -- change Part Payment `fit` to `"cover"`, add glow shadow + ring to remaining/secondary feature cards
-- **`src/components/landing/PainPointsSection.tsx`** -- add glow shadow + ring to pain point cards
-- **`src/components/landing/PricingSection.tsx`** -- add `id="pricing"` to section element
-- **`src/components/landing/FAQSection.tsx`** -- add `id="faqs"` to section element
-- **`src/pages/Landing.tsx`** -- import and add `LandingHeader` at top of page
+**Files**: `HeroSection.tsx`, `LandingHeader.tsx`
 
-### LandingHeader Design
-- Sticky top-0 with `bg-background/80 backdrop-blur-md border-b`
-- Logo + "FinTrack+" on left
-- Nav links using native `<a href="#features">` for smooth scroll
-- Compact "Get Started" button on the right
-- Hidden on mobile (mobile already has the floating CTA); or show a hamburger menu
+- Wrap the logo `<img>` in a `div` with `w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center` and size the img smaller inside (e.g. `w-7 h-7`)
+- Apply the same pattern in `LandingHeader.tsx` for consistency
+- This ensures the rounded-square shape is visible regardless of the source image shape
 
-### Card Glow + Divider Approach
-Cards will get:
-```
-shadow-[0_0_24px_rgba(25,102,205,0.12)] ring-1 ring-primary/10
-```
-This creates a cohesive light blue glow with a subtle ring border that acts as both a visual divider and aesthetic enhancement.
+---
+
+## 2. Add Glowing Shadows Behind Mockups, Feature Cards, and Pricing
+
+Currently only some cards have `shadow-[0_0_24px_...]`. The phone mockups and pricing card are missing the glow effect.
+
+**Files**: `PhoneMockup.tsx`, `PricingSection.tsx`, `HowItWorks.tsx`, `FeaturesGrid.tsx`
+
+- **PhoneMockup**: The existing `-inset-6 bg-primary/15 blur-3xl` glow div exists but may be too subtle. Increase to `bg-primary/20` and add `shadow-[0_0_32px_rgba(25,102,205,0.15)]` on the phone container
+- **PricingSection**: Add `shadow-[0_0_32px_rgba(25,102,205,0.15)] ring-1 ring-primary/10` to the pricing card
+- **HowItWorks**: Add a subtle glow to each step card container
+- **FeaturesGrid showcase cards**: Add glow shadow to the text+mockup showcase containers
+
+---
+
+## 3. Redesign CTAs (Header + Floating Mobile)
+
+Make both CTAs more creative and eye-catching.
+
+**Files**: `LandingHeader.tsx`, `FloatingMobileCTA.tsx`, `HeroSection.tsx`
+
+- **Header CTA**: Add a gradient background (`bg-gradient-to-r from-primary to-primary/80`), a subtle animated shimmer/pulse effect, and a glow shadow (`shadow-lg shadow-primary/25`)
+- **Floating Mobile CTA**: Replace the plain button with a glassmorphism pill featuring a gradient background, animated border glow, and a subtle pulsing ring animation. Add a `backdrop-blur-md` frosted glass effect with `bg-primary/90`
+- **Hero CTA**: Add gradient styling and a subtle hover scale animation for more visual impact
+
+---
+
+## 4. Part Payment Image -- Fit, Not Fill
+
+Currently the Part Payment Tracking showcase screen has no `fit` property specified, so PhoneMockup defaults to `object-cover`. Change it to `object-contain` so the image fits within the mockup frame without cropping.
+
+**File**: `FeaturesGrid.tsx`
+
+- Change the Part Payment screen entry to: `{ src: partPaymentCropped, alt: "...", fit: "contain" }`
+
+---
+
+## 5. Redesign "Who Is This For?" (Persona Section)
+
+Transform the current plain card grid into a more visually engaging layout.
+
+**File**: `PersonaSection.tsx`
+
+New design approach:
+- Use a **featured card layout**: the first persona (Solo Planners) spans full width as a horizontal card with a larger icon area and gradient accent, while the remaining two sit side by side below
+- Each card gets: a large gradient-filled icon area at the top, a numbered step indicator, the blue glow shadow and ring treatment
+- Highlights become checkmark items instead of plain pills for better readability
+- Add a subtle gradient border on the left side of each card for color accent
+- Each card gets a distinct accent color (primary, success, warning) for visual variety
+- Increase padding and font sizes for better readability
+
+---
+
+## 6. Replace "Wedding Planners" with "Indian Event Planners"
+
+Global text replacement across all landing page components.
+
+**Files**: `HeroSection.tsx`, `PainPointsSection.tsx`, `PersonaSection.tsx`, `FeaturesGrid.tsx`, `PricingSection.tsx`, `HowItWorks.tsx`, `LandingFooter.tsx`
+
+Key replacements:
+- "Built for Indian Wedding Planners" -> "Built for Indian Event Planners"
+- "Between Weddings" -> "Between Events"
+- "Every wedding planner in India" -> "Every event planner in India"
+- "Solo Wedding Planners" -> "Solo Event Planners"
+- "wedding projects" -> "event projects"
+- "Wedding-as-a-Project" -> "Event-as-a-Project"
+- "Create a project per wedding" -> "Create a project per event"
+- "across all weddings" -> "across all events"
+- "wedding finance" -> "event finance"
+- "Your next wedding deserves" -> "Your next event deserves"
+- "Join wedding planners" -> "Join event planners"
+- "Create your first wedding project" -> "Create your first event project"
+- "after the wedding is over" -> "after the event is over"
+- Alt text references updated similarly
+
+---
+
+## Technical Summary
+
+| File | Changes |
+|------|---------|
+| `HeroSection.tsx` | Logo wrapper, CTA gradient, text replacements |
+| `LandingHeader.tsx` | Logo wrapper, CTA glow + gradient |
+| `FloatingMobileCTA.tsx` | Glassmorphism pill with gradient + pulse animation |
+| `PhoneMockup.tsx` | Stronger glow behind mockup |
+| `PricingSection.tsx` | Card glow shadow, text replacement |
+| `PainPointsSection.tsx` | Text replacement |
+| `PersonaSection.tsx` | Full redesign with featured layout, glow, checkmarks, text replacement |
+| `FeaturesGrid.tsx` | Part Payment fit:contain, showcase glow, text replacements |
+| `HowItWorks.tsx` | Step card glow, text replacement |
+| `LandingFooter.tsx` | Text replacements |
