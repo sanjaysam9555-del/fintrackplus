@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getAppUrl } from "@/lib/domainUtils";
 
 export const FloatingMobileCTA = () => {
   const navigate = useNavigate();
@@ -27,7 +28,7 @@ export const FloatingMobileCTA = () => {
         >
           <button
             className="pointer-events-auto relative flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-full text-primary-foreground bg-gradient-to-r from-primary to-primary/80 backdrop-blur-md shadow-[0_8px_32px_rgba(25,102,205,0.3)] hover:shadow-[0_8px_40px_rgba(25,102,205,0.4)] transition-shadow"
-            onClick={() => navigate("/auth")}
+            onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
           >
             {/* Pulsing ring */}
             <span className="absolute inset-0 rounded-full border-2 border-primary/40 animate-ping opacity-30" />
