@@ -58,7 +58,7 @@ const showcaseFeatures = [
     icon: CalendarClock,
     title: "Part Payment Tracking",
     description: "Log total expected amounts, plan future installments with dates, confirm payments as they happen. Visual progress bar included.",
-    screens: [{ src: partPaymentCropped, alt: "Part payment tracker with installment timeline", fit: "contain" as const }],
+    screens: [{ src: partPaymentCropped, alt: "Part payment tracker with installment timeline" }],
   },
   {
     icon: Receipt,
@@ -202,7 +202,7 @@ export const FeaturesGrid = () => (
               viewport={{ once: true, margin: "-50px" }}
               transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.08 }}
               whileHover={{ scale: 1.02, y: -4 }}
-              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
+              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-[0_0_24px_rgba(25,102,205,0.12)] ring-1 ring-primary/10 hover:shadow-lg transition-shadow group"
             >
               {/* Screenshot with gradient overlay */}
               <div className="relative h-40 overflow-hidden">
@@ -270,7 +270,7 @@ export const FeaturesGrid = () => (
                 visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
               }}
               whileHover={{ y: -4, scale: 1.02 }}
-              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow duration-300 group"
+              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-[0_0_24px_rgba(25,102,205,0.12)] ring-1 ring-primary/10 hover:shadow-lg transition-shadow duration-300 group"
             >
               {/* Screenshot thumbnail */}
               <div className="h-36 md:h-40 overflow-hidden">

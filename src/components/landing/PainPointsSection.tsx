@@ -59,7 +59,7 @@ export const PainPointsSection = () => (
             viewport={{ once: true, margin: "-60px" }}
             transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.12 }}
             whileHover={{ scale: 1.03, y: -4 }}
-            className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group"
+            className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-[0_0_24px_rgba(25,102,205,0.12)] ring-1 ring-primary/10 hover:shadow-lg transition-shadow group"
           >
             {/* Image */}
             <div className="h-44 md:h-40 overflow-hidden">
