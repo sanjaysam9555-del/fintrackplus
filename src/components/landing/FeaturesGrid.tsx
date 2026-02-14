@@ -25,7 +25,7 @@ import cashOnlineCropped from "@/assets/landing/real/cash-online-cropped.png";
 import darkModeCropped from "@/assets/landing/real/dark-mode-cropped.png";
 import globalSearchCropped from "@/assets/landing/real/global-search-cropped.png";
 import fyCropped from "@/assets/landing/real/fy-cropped.png";
-import partPaymentCropped from "@/assets/landing/real/part-payment-cropped.png";
+import partPaymentCropped from "@/assets/landing/real/part-payment-form.png";
 import recurringCropped from "@/assets/landing/real/recurring-cropped.png";
 import duplicateCropped from "@/assets/landing/real/duplicate-cropped.png";
 import vendorsCropped from "@/assets/landing/real/vendors.png";
