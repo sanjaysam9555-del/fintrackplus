@@ -1,3 +1,4 @@
+import { LandingHeader } from "@/components/landing/LandingHeader";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { PainPointsSection } from "@/components/landing/PainPointsSection";
 import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
@@ -10,6 +11,7 @@ import { FloatingMobileCTA } from "@/components/landing/FloatingMobileCTA";
 
 const Landing = () => (
   <main className="min-h-screen bg-background text-foreground overflow-x-hidden scroll-smooth">
+    <LandingHeader />
     <HeroSection />
     <PainPointsSection />
     <FeaturesGrid />
