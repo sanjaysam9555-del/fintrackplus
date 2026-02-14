@@ -1,42 +1,60 @@
 
+# Landing Page Improvements Plan
 
-# Fix Image-Card Contrast in Feature Sections
+## 1. Fix Floating CTA Centering on Mobile
+The current `left-1/2 -translate-x-1/2` approach can conflict with Framer Motion's transform. Fix by wrapping the button in a flex container that handles centering independently of the animation.
 
-## Problem
-The screenshot thumbnails in both the "Remaining Features" (4-card grid) and "And there's more..." (6-card grid) sections have white/light app screenshots sitting on near-white card backgrounds. This makes the images look washed out and hard to distinguish from the card itself.
+## 2. Adjust Part Payment Tracking Phone Mockup
+The Part Payment Tracking showcase uses `fit: "contain"` which can leave whitespace inside the phone frame. Change it to `"cover"` with `object-top` positioning so the image fills the frame naturally, matching the other showcase items.
 
-## Solution
-Add a tinted background and an inset border/shadow to the image container areas so screenshots visually "pop" off the card, creating clear separation between the image and the card surface.
+## 3. Add Light Blue Glow Shadow Behind Cards
+Apply a subtle `shadow-[0_0_20px_rgba(25,102,205,0.15)]` (light blue glow) to all feature cards across:
+- Pain Points section (3 cards)
+- "More powerful tools" section (4 cards)
+- "And there's more..." section (6 cards)
 
-## Changes
+## 4. Add Dividers Between Cards
+Add visual separation using subtle gradient dividers or increased gap with separator lines between cards in:
+- Pain Points grid
+- Remaining features grid
+- Secondary features grid
 
-### File: `src/components/landing/FeaturesGrid.tsx`
+This will be done via a combination of increased card border opacity and a `ring-1 ring-primary/10` for a subtle blue outline that doubles as both divider and glow boundary.
 
-**1. Remaining Features section (4-card grid, ~line 192)**
+## 5. Add Sticky Navigation Header
+Create a new `LandingHeader` component with:
+- FinTrack+ logo on the left
+- Navigation links: Features, Pricing, FAQs
+- "Get Started" button on the right
+- Sticky positioning with glassmorphism backdrop
+- Smooth scroll to corresponding sections via anchor IDs
+- Add `id` attributes to Pricing and FAQ sections
 
-Update the image container from:
+---
+
+## Technical Details
+
+### Files to Create
+- `src/components/landing/LandingHeader.tsx` -- new sticky header with nav links
+
+### Files to Modify
+- **`src/components/landing/FloatingMobileCTA.tsx`** -- wrap in a flex centering container instead of relying on translate
+- **`src/components/landing/FeaturesGrid.tsx`** -- change Part Payment `fit` to `"cover"`, add glow shadow + ring to remaining/secondary feature cards
+- **`src/components/landing/PainPointsSection.tsx`** -- add glow shadow + ring to pain point cards
+- **`src/components/landing/PricingSection.tsx`** -- add `id="pricing"` to section element
+- **`src/components/landing/FAQSection.tsx`** -- add `id="faqs"` to section element
+- **`src/pages/Landing.tsx`** -- import and add `LandingHeader` at top of page
+
+### LandingHeader Design
+- Sticky top-0 with `bg-background/80 backdrop-blur-md border-b`
+- Logo + "FinTrack+" on left
+- Nav links using native `<a href="#features">` for smooth scroll
+- Compact "Get Started" button on the right
+- Hidden on mobile (mobile already has the floating CTA); or show a hamburger menu
+
+### Card Glow + Divider Approach
+Cards will get:
 ```
-bg-muted/30
+shadow-[0_0_24px_rgba(25,102,205,0.12)] ring-1 ring-primary/10
 ```
-to a darker tinted background with a subtle bottom border:
-```
-bg-muted/60 border-b border-border/30
-```
-
-**2. "And there's more..." section (6-card grid, ~line 278)**
-
-Update the image container from:
-```
-bg-muted/20
-```
-to:
-```
-bg-muted/60 border-b border-border/30
-```
-
-These two small changes give the image areas a noticeably darker tint compared to the card body, plus a subtle separator line. This works in both light and dark mode since `muted` and `border` use theme-aware CSS variables.
-
-| File | Change |
-|---|---|
-| `src/components/landing/FeaturesGrid.tsx` | Increase image container background opacity and add bottom border in both feature grid sections |
-
+This creates a cohesive light blue glow with a subtle ring border that acts as both a visual divider and aesthetic enhancement.
