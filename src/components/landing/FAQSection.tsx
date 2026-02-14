@@ -71,7 +71,7 @@ export const FAQSection = () => (
         variants={fadeUp}
         className="text-center mb-12"
       >
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-4">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary dark:text-foreground text-xs font-semibold mb-4">
           <HelpCircle className="w-3.5 h-3.5" />
           Got questions?
         </div>
