@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Menu, X, Sparkles } from "lucide-react";
+import { ArrowRight, Menu, X, Sparkles, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import appIcon from "@/assets/app-icon.png";
 
@@ -58,6 +58,15 @@ export const LandingHeader = () => {
             </a>
           ))}
           <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 rounded-full px-4 text-muted-foreground hover:text-foreground"
+            onClick={() => navigate("/auth")}
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            Login
+          </Button>
+          <Button
             size="sm"
             className={`gap-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-all ${showGlow ? "animate-[pulse_2s_ease-in-out_infinite] shadow-primary/40" : ""}`}
             onClick={() => navigate("/auth")}
@@ -99,8 +108,17 @@ export const LandingHeader = () => {
                 </a>
               ))}
               <Button
+                variant="ghost"
                 size="sm"
-                className="mt-2 gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20"
+                className="mt-2 gap-1.5 rounded-full text-muted-foreground hover:text-foreground"
+                onClick={() => { setMobileOpen(false); navigate("/auth"); }}
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                Login
+              </Button>
+              <Button
+                size="sm"
+                className="gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20"
                 onClick={() => { setMobileOpen(false); navigate("/auth"); }}
               >
                 <Sparkles className="w-3 h-3" />

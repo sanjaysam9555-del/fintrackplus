@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { LandingHeader } from "@/components/landing/LandingHeader";
 import { ScrollProgress } from "@/components/landing/ScrollProgress";
 import { HeroSection } from "@/components/landing/HeroSection";
@@ -19,31 +20,44 @@ const SectionDivider = () => (
   </div>
 );
 
-const Landing = () => (
-  <main className="min-h-screen bg-background text-foreground overflow-x-hidden scroll-smooth">
-    <LandingHeader />
-    <ScrollProgress />
-    <HeroSection />
-    <SectionDivider />
-    <PainPointsSection />
-    <SectionDivider />
-    <ComparisonSection />
-    <SectionDivider />
-    <FeaturesGrid />
-    <SectionDivider />
-    <HowItWorks />
-    <SectionDivider />
-    <SocialProofSection />
-    <SectionDivider />
-    <PersonaSection />
-    <SectionDivider />
-    <PricingSection />
-    <SectionDivider />
-    <FAQSection />
-    <FinalCTA />
-    <LandingFooter />
-    <FloatingMobileCTA />
-  </main>
-);
+const Landing = () => {
+  useEffect(() => {
+    const root = document.documentElement;
+    const original = Array.from(root.classList);
+    root.classList.remove('light', 'oled');
+    root.classList.add('dark');
+    return () => {
+      root.classList.remove('light', 'dark', 'oled');
+      original.forEach((c) => root.classList.add(c));
+    };
+  }, []);
+
+  return (
+    <main className="min-h-screen bg-background text-foreground overflow-x-hidden scroll-smooth">
+      <LandingHeader />
+      <ScrollProgress />
+      <HeroSection />
+      <SectionDivider />
+      <PainPointsSection />
+      <SectionDivider />
+      <ComparisonSection />
+      <SectionDivider />
+      <FeaturesGrid />
+      <SectionDivider />
+      <HowItWorks />
+      <SectionDivider />
+      <SocialProofSection />
+      <SectionDivider />
+      <PersonaSection />
+      <SectionDivider />
+      <PricingSection />
+      <SectionDivider />
+      <FAQSection />
+      <FinalCTA />
+      <LandingFooter />
+      <FloatingMobileCTA />
+    </main>
+  );
+};
 
 export default Landing;
