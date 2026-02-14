@@ -34,7 +34,7 @@ export const LandingHeader = () => {
             <img src={appIcon} alt="FinTrack⁺" className="w-full h-full object-cover scale-[1.3]" />
           </div>
           <span className="text-lg font-bold text-foreground tracking-tight">
-            FinTrack<sup className="text-primary text-xs">⁺</sup>
+            FinTrack<sup className="text-primary dark:text-foreground text-xs">⁺</sup>
           </span>
         </a>
 

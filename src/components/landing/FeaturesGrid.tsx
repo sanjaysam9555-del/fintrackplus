@@ -154,7 +154,7 @@ export const FeaturesGrid = () => (
                 {/* Text */}
                 <div className="flex-1 text-center md:text-left">
                   <div className="flex items-center gap-2 mb-2 justify-center md:justify-start">
-                    <f.icon className="w-6 h-6 text-primary" />
+                    <f.icon className="w-6 h-6 text-primary dark:text-foreground" />
                     <h3 className="text-lg md:text-xl font-semibold text-foreground">{f.title}</h3>
                     {f.badge && (
                       <Badge variant="secondary" className="text-[10px] px-2 py-0">{f.badge}</Badge>

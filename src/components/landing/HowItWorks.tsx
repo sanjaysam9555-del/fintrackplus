@@ -76,7 +76,7 @@ export const HowItWorks = () => (
             <div className="relative mx-auto w-16 h-16 mb-5">
               <div className="absolute inset-0 bg-primary/10 rounded-2xl rotate-6" />
               <div className="relative w-16 h-16 bg-card border rounded-2xl flex items-center justify-center">
-                <s.icon className="w-7 h-7 text-primary" />
+                <s.icon className="w-7 h-7 text-primary dark:text-foreground" />
               </div>
               <span className="absolute -top-2 -right-2 w-6 h-6 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
                 <CountUpNumber target={s.number} />
