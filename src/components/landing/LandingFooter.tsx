@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { getAppUrl } from "@/lib/domainUtils";
 import appIcon from "@/assets/app-icon.png";
 
 export const FinalCTA = () => {
@@ -29,7 +30,7 @@ export const FinalCTA = () => {
         <Button
           size="lg"
           className="text-base px-10 rounded-xl gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25"
-          onClick={() => navigate("/auth")}
+          onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
         >
           Get Started <ArrowRight className="w-4 h-4" />
         </Button>

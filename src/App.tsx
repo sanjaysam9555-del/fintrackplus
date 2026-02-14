@@ -13,9 +13,12 @@ import { isLandingDomain } from "@/lib/domainUtils";
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
 const AuthPage = lazy(() => import("./pages/Auth").then(m => ({ default: m.AuthPage })));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPassword").then(m => ({ default: m.ResetPasswordPage })));
 const InstallPage = lazy(() => import("./pages/Install").then(m => ({ default: m.InstallPage })));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Landing = lazy(() => import("./pages/Landing"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Terms = lazy(() => import("./pages/Terms"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -122,6 +125,8 @@ const AppRoutes = () => {
       <Suspense fallback={<AuthPageSkeleton />}>
         <Routes>
           <Route path="/landing" element={<Landing />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="*" element={<Landing />} />
         </Routes>
       </Suspense>
@@ -134,6 +139,9 @@ const AppRoutes = () => {
         {/* Public routes */}
         <Route path="/install" element={<InstallPage />} />
         <Route path="/landing" element={<Landing />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         {!user ? (
           <Route path="*" element={<AuthPage />} />
         ) : (
