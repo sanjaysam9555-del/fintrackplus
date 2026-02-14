@@ -58,7 +58,7 @@ export const HeroSection = () => {
 
             <motion.div
               variants={springIn}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary dark:text-foreground text-xs font-semibold mb-5"
             >
               <motion.span
                 animate={{ opacity: [0.7, 1, 0.7] }}
@@ -71,7 +71,7 @@ export const HeroSection = () => {
 
             <motion.h1 variants={springIn} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight">
               Stop Losing Money{" "}
-              <span className="text-primary">Between Events</span>
+              <span className="text-primary dark:text-foreground">Between Events</span>
             </motion.h1>
 
             <motion.p variants={springIn} className="mt-4 text-sm sm:text-base md:text-lg text-muted-foreground max-w-lg mx-auto md:mx-0">
