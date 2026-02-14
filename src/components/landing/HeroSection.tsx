@@ -50,8 +50,8 @@ export const HeroSection = () => {
           >
             {/* Logo + App Name — rounded square container */}
             <div className="flex items-center gap-2.5 mb-5 justify-center md:justify-start">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-                <img src={appIcon} alt="FinTrack⁺ logo" className="w-10 h-10 object-cover" />
+              <div className="w-10 h-10 rounded-xl shrink-0 overflow-hidden">
+                <img src={appIcon} alt="FinTrack⁺ logo" className="w-full h-full object-cover scale-125" />
               </div>
               <span className="text-xl font-bold text-foreground tracking-tight">FinTrack⁺</span>
             </div>
