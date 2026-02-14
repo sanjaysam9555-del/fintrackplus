@@ -18,7 +18,7 @@ const itemPop = {
 };
 
 const features = [
-  "Unlimited wedding projects",
+  "Unlimited event projects",
   "Vendor management & history",
   "Partner cash/online tracking",
   "Part payment & installments",
@@ -75,7 +75,7 @@ export const PricingSection = () => {
           whileInView="visible"
           viewport={{ once: true }}
           variants={fadeUp}
-          className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-sm hover:shadow-lg transition-shadow duration-300 overflow-hidden"
+          className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-[0_0_32px_rgba(25,102,205,0.15)] ring-1 ring-primary/10 hover:shadow-[0_0_40px_rgba(25,102,205,0.2)] transition-shadow duration-300 overflow-hidden"
         >
           {/* Price header */}
           <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 md:px-8 py-8 text-center">
@@ -109,7 +109,7 @@ export const PricingSection = () => {
 
             <Button
               size="lg"
-              className="w-full text-base rounded-xl gap-2"
+              className="w-full text-base rounded-xl gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25"
               onClick={() => navigate("/auth")}
             >
               Get Started <ArrowRight className="w-4 h-4" />

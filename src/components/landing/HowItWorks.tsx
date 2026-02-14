@@ -12,7 +12,7 @@ const steps = [
   {
     icon: FolderPlus,
     number: 2,
-    title: "Create your first wedding project",
+    title: "Create your first event project",
     description: "Set the client name, your internal budget, and what you're charging. Template it for future events.",
   },
   {
@@ -71,7 +71,7 @@ export const HowItWorks = () => (
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.15 }}
-            className="text-center"
+            className="text-center bg-card/50 backdrop-blur-sm rounded-2xl p-6 shadow-[0_0_24px_rgba(25,102,205,0.1)] ring-1 ring-primary/5"
           >
             <div className="relative mx-auto w-16 h-16 mb-5">
               <div className="absolute inset-0 bg-primary/10 rounded-2xl rotate-6" />

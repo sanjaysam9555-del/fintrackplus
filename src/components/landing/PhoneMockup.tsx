@@ -33,7 +33,7 @@ export const PhoneMockup = ({ screens, autoPlayMs = 3000, className }: PhoneMock
 
   return (
     <div className={cn("relative w-full max-w-[220px] mx-auto", className)}>
-      <div className="bg-foreground/10 rounded-[2rem] p-1.5 shadow-xl">
+      <div className="bg-foreground/10 rounded-[2rem] p-1.5 shadow-[0_0_32px_rgba(25,102,205,0.15)]">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-3.5 bg-foreground/10 rounded-b-xl z-10" />
         <div className="rounded-[1.6rem] overflow-hidden bg-background" ref={emblaRef}>
           <div className="flex">
@@ -66,8 +66,8 @@ export const PhoneMockup = ({ screens, autoPlayMs = 3000, className }: PhoneMock
           ))}
         </div>
       )}
-      {/* Glow */}
-      <div className="absolute -inset-6 bg-primary/15 rounded-[3rem] blur-3xl -z-10" />
+      {/* Enhanced glow */}
+      <div className="absolute -inset-6 bg-primary/20 rounded-[3rem] blur-3xl -z-10" />
     </div>
   );
 };
