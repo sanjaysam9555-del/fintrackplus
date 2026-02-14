@@ -38,12 +38,12 @@ const fadeUp = {
 const showcaseFeatures = [
   {
     icon: FolderKanban,
-    title: "Wedding-as-a-Project",
+    title: "Event-as-a-Project",
     badge: "Core",
-    description: "Create a project per wedding. Set Internal Cost and Client Cost. See real-time margin, health status, and budget consumption.",
+    description: "Create a project per event. Set Internal Cost and Client Cost. See real-time margin, health status, and budget consumption.",
     detail: "Duplicate projects to reuse templates across similar events.",
     screens: [
-      { src: projectsTab, alt: "Projects tab showing wedding event tracking" },
+      { src: projectsTab, alt: "Projects tab showing event tracking" },
       { src: projectEntries, alt: "Detailed project entries view" },
     ],
   },
@@ -58,7 +58,7 @@ const showcaseFeatures = [
     icon: CalendarClock,
     title: "Part Payment Tracking",
     description: "Log total expected amounts, plan future installments with dates, confirm payments as they happen. Visual progress bar included.",
-    screens: [{ src: partPaymentCropped, alt: "Part payment tracker with installment timeline" }],
+    screens: [{ src: partPaymentCropped, alt: "Part payment tracker with installment timeline", fit: "contain" as const }],
   },
   {
     icon: Receipt,
@@ -76,7 +76,7 @@ const remainingFeatures = [
   {
     icon: Store,
     title: "Vendor Management",
-    description: "Maintain a vendor directory with custom icons and colors. See total spend per vendor across all weddings.",
+    description: "Maintain a vendor directory with custom icons and colors. See total spend per vendor across all events.",
     screenshot: vendorsCropped,
     screenshotAlt: "Vendor directory with spend totals",
     iconBg: "bg-warning/10 text-warning",
@@ -136,7 +136,7 @@ export const FeaturesGrid = () => (
             Everything you need, nothing you don't
           </h2>
           <p className="mt-3 text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-            Purpose-built features for wedding finance — not a generic spreadsheet with a pretty skin.
+            Purpose-built features for event finance — not a generic spreadsheet with a pretty skin.
           </p>
         </motion.div>
 
@@ -202,7 +202,7 @@ export const FeaturesGrid = () => (
               viewport={{ once: true, margin: "-50px" }}
               transition={{ type: "spring", stiffness: 100, damping: 18, delay: i * 0.08 }}
               whileHover={{ scale: 1.02, y: -4 }}
-              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-[0_0_24px_rgba(25,102,205,0.12)] ring-1 ring-primary/10 hover:shadow-lg transition-shadow group"
+              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-[0_0_32px_rgba(25,102,205,0.15)] ring-1 ring-primary/10 hover:shadow-[0_0_40px_rgba(25,102,205,0.2)] transition-shadow group"
             >
               {/* Screenshot with gradient overlay */}
               <div className="relative h-40 overflow-hidden">
@@ -270,7 +270,7 @@ export const FeaturesGrid = () => (
                 visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
               }}
               whileHover={{ y: -4, scale: 1.02 }}
-              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-[0_0_24px_rgba(25,102,205,0.12)] ring-1 ring-primary/10 hover:shadow-lg transition-shadow duration-300 group"
+              className="bg-card/80 backdrop-blur-sm border rounded-2xl overflow-hidden shadow-[0_0_32px_rgba(25,102,205,0.15)] ring-1 ring-primary/10 hover:shadow-[0_0_40px_rgba(25,102,205,0.2)] transition-shadow duration-300 group"
             >
               {/* Screenshot thumbnail */}
               <div className="h-36 md:h-40 overflow-hidden">

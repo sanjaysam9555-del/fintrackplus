@@ -16,15 +16,15 @@ export const FinalCTA = () => {
         className="max-w-xl mx-auto"
       >
         <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
-          Your next wedding deserves{" "}
+          Your next event deserves{" "}
           <span className="text-primary">better books</span>.
         </h2>
         <p className="text-muted-foreground mb-8">
-          Join wedding planners across India who've switched from notebooks and spreadsheets to FinTrack⁺.
+          Join event planners across India who've switched from notebooks and spreadsheets to FinTrack⁺.
         </p>
         <Button
           size="lg"
-          className="text-base px-10 rounded-xl gap-2"
+          className="text-base px-10 rounded-xl gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25"
           onClick={() => navigate("/auth")}
         >
           Get Started <ArrowRight className="w-4 h-4" />

@@ -12,12 +12,12 @@ const painPoints = [
     description: "Vendors get paid in cash, amounts get lost in WhatsApp messages and notebooks. By the time you reconcile, thousands have slipped through.",
     iconBg: "bg-destructive/10 text-destructive",
     image: painCashLeak,
-    imageAlt: "Wedding planner reviewing budget overrun on tablet at venue",
+    imageAlt: "Event planner reviewing budget overrun on tablet at venue",
   },
   {
     icon: TrendingDown,
     title: "No visibility into margins",
-    description: "You quoted the client ₹18L but spent ₹14L or ₹20L? You only find out after the wedding is over and the damage is done.",
+    description: "You quoted the client ₹18L but spent ₹14L or ₹20L? You only find out after the event is over and the damage is done.",
     iconBg: "bg-warning/10 text-warning",
     image: painNoVisibility,
     imageAlt: "Cash exchange with WhatsApp and notebook at event backstage",
@@ -46,7 +46,7 @@ export const PainPointsSection = () => (
           Sound familiar?
         </h2>
         <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
-          Every wedding planner in India fights these battles. We built FinTrack⁺ to end them.
+          Every event planner in India fights these battles. We built FinTrack⁺ to end them.
         </p>
       </motion.div>
 

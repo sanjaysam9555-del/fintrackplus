@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { PhoneMockup } from "./PhoneMockup";
 import appIcon from "@/assets/app-icon.png";
@@ -12,7 +12,7 @@ import openingScreen from "@/assets/landing/real/opening-screen.png";
 const heroScreens = [
   { src: openingScreen, alt: "FinTrack⁺ opening screen with logo" },
   { src: homeTab, alt: "FinTrack⁺ home dashboard showing financial overview" },
-  { src: projectsTab, alt: "Projects tab showing wedding event tracking" },
+  { src: projectsTab, alt: "Projects tab showing event tracking" },
   { src: expenseTab, alt: "Expense tab with transaction list" },
 ];
 
@@ -48,9 +48,11 @@ export const HeroSection = () => {
             variants={{ visible: { transition: { staggerChildren: 0.12 } } }}
             className="text-center md:text-left order-1 md:order-1"
           >
-            {/* Logo + App Name */}
+            {/* Logo + App Name — rounded square container */}
             <div className="flex items-center gap-2.5 mb-5 justify-center md:justify-start">
-              <img src={appIcon} alt="FinTrack⁺ logo" className="w-10 h-10 rounded-xl object-cover aspect-square" />
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <img src={appIcon} alt="FinTrack⁺ logo" className="w-7 h-7 rounded-lg" />
+              </div>
               <span className="text-xl font-bold text-foreground tracking-tight">FinTrack⁺</span>
             </div>
 
@@ -64,12 +66,12 @@ export const HeroSection = () => {
               >
                 ✦
               </motion.span>
-              Built for Indian Wedding Planners
+              Built for Indian Event Planners
             </motion.div>
 
             <motion.h1 variants={springIn} className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight tracking-tight">
               Stop Losing Money{" "}
-              <span className="text-primary">Between Weddings</span>
+              <span className="text-primary">Between Events</span>
             </motion.h1>
 
             <motion.p variants={springIn} className="mt-4 text-sm sm:text-base md:text-lg text-muted-foreground max-w-lg mx-auto md:mx-0">
@@ -79,10 +81,14 @@ export const HeroSection = () => {
             <motion.div variants={springIn} className="mt-6 md:mt-8 flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
               <Button
                 size="lg"
-                className="text-base px-8 rounded-xl gap-2"
+                className="relative text-base px-8 rounded-xl gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow overflow-hidden group"
                 onClick={() => navigate("/auth")}
               >
-                Get Started <ArrowRight className="w-4 h-4" />
+                {/* Shimmer effect */}
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <Sparkles className="w-4 h-4" />
+                Get Started
+                <ArrowRight className="w-4 h-4" />
               </Button>
               <Button
                 variant="outline"

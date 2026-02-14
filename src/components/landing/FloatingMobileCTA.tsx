@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export const FloatingMobileCTA = () => {
@@ -10,7 +9,6 @@ export const FloatingMobileCTA = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show after scrolling past ~500px (roughly past hero CTA)
       setVisible(window.scrollY > 500);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -27,13 +25,16 @@ export const FloatingMobileCTA = () => {
           transition={{ type: "spring", stiffness: 200, damping: 24 }}
           className="md:hidden fixed bottom-6 inset-x-0 z-50 flex justify-center pointer-events-none"
         >
-          <Button
-            size="lg"
-            className="pointer-events-auto text-sm px-6 rounded-full gap-2 shadow-lg shadow-primary/25"
+          <button
+            className="pointer-events-auto relative flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-full text-primary-foreground bg-gradient-to-r from-primary to-primary/80 backdrop-blur-md shadow-[0_8px_32px_rgba(25,102,205,0.3)] hover:shadow-[0_8px_40px_rgba(25,102,205,0.4)] transition-shadow"
             onClick={() => navigate("/auth")}
           >
-            Get Started <ArrowRight className="w-4 h-4" />
-          </Button>
+            {/* Pulsing ring */}
+            <span className="absolute inset-0 rounded-full border-2 border-primary/40 animate-ping opacity-30" />
+            <Sparkles className="w-4 h-4" />
+            Get Started
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </motion.div>
       )}
     </AnimatePresence>

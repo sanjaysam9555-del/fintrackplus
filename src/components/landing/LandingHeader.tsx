@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, Menu, X, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import appIcon from "@/assets/app-icon.png";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -23,13 +24,18 @@ export const LandingHeader = () => {
   return (
     <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-4 h-14">
-        {/* Logo */}
+        {/* Logo — rounded square container */}
         <a
           href="#"
           onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-          className="text-lg font-bold text-foreground tracking-tight"
+          className="flex items-center gap-2"
         >
-          FinTrack<sup className="text-primary text-xs">⁺</sup>
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+            <img src={appIcon} alt="FinTrack⁺" className="w-5.5 h-5.5 rounded-md" />
+          </div>
+          <span className="text-lg font-bold text-foreground tracking-tight">
+            FinTrack<sup className="text-primary text-xs">⁺</sup>
+          </span>
         </a>
 
         {/* Desktop nav */}
@@ -44,7 +50,12 @@ export const LandingHeader = () => {
               {l.label}
             </a>
           ))}
-          <Button size="sm" className="gap-1.5 rounded-full px-4" onClick={() => navigate("/auth")}>
+          <Button
+            size="sm"
+            className="gap-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-shadow"
+            onClick={() => navigate("/auth")}
+          >
+            <Sparkles className="w-3 h-3" />
             Get Started <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </nav>
@@ -80,7 +91,12 @@ export const LandingHeader = () => {
                   {l.label}
                 </a>
               ))}
-              <Button size="sm" className="mt-2 gap-1.5 rounded-full" onClick={() => { setMobileOpen(false); navigate("/auth"); }}>
+              <Button
+                size="sm"
+                className="mt-2 gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20"
+                onClick={() => { setMobileOpen(false); navigate("/auth"); }}
+              >
+                <Sparkles className="w-3 h-3" />
                 Get Started <ArrowRight className="w-3.5 h-3.5" />
               </Button>
             </div>
