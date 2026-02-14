@@ -30,7 +30,7 @@ export const LandingHeader = () => {
           onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: "smooth" }); }}
           className="flex items-center gap-2"
         >
-          <div className="w-8 h-8 rounded-[10%] shrink-0 overflow-hidden">
+          <div className="w-8 h-8 rounded-[25%] shrink-0 overflow-hidden">
             <img src={appIcon} alt="FinTrack⁺" className="w-full h-full object-cover scale-[1.3]" />
           </div>
           <span className="text-lg font-bold text-foreground tracking-tight">
