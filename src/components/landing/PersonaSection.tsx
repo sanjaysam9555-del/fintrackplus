@@ -101,7 +101,7 @@ export const PersonaSection = () => (
             <div className="p-6 md:p-8 flex-1">
               <div className="flex items-center gap-2.5 mb-1">
                 <h3 className="text-lg md:text-xl font-bold text-foreground">{personas[0].title}</h3>
-                <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-0.5 rounded-full leading-normal">{personas[0].subtitle}</span>
+                <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full inline-flex items-center">{personas[0].subtitle}</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4 max-w-lg">{personas[0].description}</p>
               <div className="flex flex-wrap gap-x-6 gap-y-2">
