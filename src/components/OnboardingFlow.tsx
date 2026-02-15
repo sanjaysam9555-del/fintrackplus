@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowRight, 
@@ -8,7 +8,12 @@ import {
   PieChart, 
   Bell, 
   FolderKanban,
-  Sparkles
+  Sparkles,
+  Download,
+  Share,
+  Plus,
+  ChevronRight,
+  Smartphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -17,7 +22,24 @@ interface OnboardingFlowProps {
   userName?: string;
 }
 
-const steps = [
+type DeviceType = 'ios' | 'android' | 'desktop' | 'unknown';
+
+const detectDevice = (): DeviceType => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  if (/iphone|ipad|ipod/.test(userAgent)) return 'ios';
+  if (/android/.test(userAgent)) return 'android';
+  if (/windows|macintosh|linux/.test(userAgent) && !/mobile/.test(userAgent)) return 'desktop';
+  return 'unknown';
+};
+
+const isInStandaloneMode = (): boolean => {
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  );
+};
+
+const baseSteps = [
   {
     icon: Sparkles,
     title: 'Welcome to FinTrack+!',
@@ -45,16 +67,97 @@ const steps = [
   {
     icon: Bell,
     title: 'Stay Notified',
-    description: 'Get notifications for important updates and transaction summaries. You\'re all set!',
+    description: 'Get notifications for important updates and transaction summaries.',
     color: 'bg-rose-500',
   },
 ];
 
+const installStep = {
+  icon: Download,
+  title: 'Install the App',
+  description: 'Add FinTrack+ to your home screen for the best experience — faster access, offline support & full screen.',
+  color: 'bg-blue-500',
+};
+
+const InstallInstructions = ({ device }: { device: DeviceType }) => {
+  const instructions: Record<DeviceType, { steps: string[]; icon: React.ElementType }> = {
+    ios: {
+      steps: [
+        'Tap the Share button (□↑) in Safari',
+        'Scroll down and tap "Add to Home Screen"',
+        'Tap "Add" to confirm',
+      ],
+      icon: Share,
+    },
+    android: {
+      steps: [
+        'Tap the menu (⋮) in Chrome',
+        'Select "Add to Home screen" or "Install app"',
+        'Tap "Add" or "Install" to confirm',
+      ],
+      icon: Download,
+    },
+    desktop: {
+      steps: [
+        'Look for the install icon (+) in the address bar',
+        'Click "Install" and confirm',
+      ],
+      icon: Download,
+    },
+    unknown: {
+      steps: [
+        'Open your browser menu',
+        'Look for "Add to Home Screen" or "Install"',
+        'Confirm the installation',
+      ],
+      icon: Download,
+    },
+  };
+
+  const deviceLabels: Record<DeviceType, string> = {
+    ios: 'iPhone/iPad',
+    android: 'Android',
+    desktop: 'Desktop',
+    unknown: 'Your Device',
+  };
+
+  const info = instructions[device];
+
+  return (
+    <div className="mt-4 text-left space-y-3">
+      <div className="flex items-center justify-center gap-2 mb-3">
+        <Smartphone size={14} className="text-primary" />
+        <span className="text-xs text-muted-foreground">
+          Detected: <span className="font-medium text-foreground">{deviceLabels[device]}</span>
+        </span>
+      </div>
+      {info.steps.map((step, i) => (
+        <div key={i} className="flex items-start gap-3">
+          <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 text-xs font-bold">
+            {i + 1}
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">{step}</p>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState(0);
+  const [device, setDevice] = useState<DeviceType>('unknown');
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    setDevice(detectDevice());
+    setIsInstalled(isInStandaloneMode());
+  }, []);
+
+  const steps = [...baseSteps, installStep];
+  const totalSteps = steps.length;
 
   const handleNext = () => {
-    if (currentStep < steps.length - 1) {
+    if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
     } else {
       onComplete();
@@ -73,7 +176,7 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
 
   const step = steps[currentStep];
   const Icon = step.icon;
-  const isLastStep = currentStep === steps.length - 1;
+  const isLastStep = currentStep === totalSteps - 1;
   const isFirstStep = currentStep === 0;
 
   return (
@@ -126,12 +229,19 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
             </h2>
 
             {/* Description */}
-            <p className="text-muted-foreground mb-8 leading-relaxed">
-              {step.description}
+            <p className="text-muted-foreground mb-4 leading-relaxed">
+              {isLastStep && isInstalled
+                ? "You're already using FinTrack+ as an installed app. You're all set!"
+                : step.description}
             </p>
 
+            {/* Install instructions on last step */}
+            {isLastStep && !isInstalled && (
+              <InstallInstructions device={device} />
+            )}
+
             {/* Actions */}
-            <div className="flex gap-3">
+            <div className="flex gap-3 mt-6">
               {!isFirstStep && (
                 <Button
                   variant="outline"
