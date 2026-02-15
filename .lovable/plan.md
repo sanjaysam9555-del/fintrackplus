@@ -1,15 +1,26 @@
 
-# Replace OG Image
+# Fix: Replace Lovable Favicon with FinTrack+ Brand Icon
 
-## What
-Replace the current generated `public/og-image.png` with the uploaded branded image (blue background with FinTrack+ logo).
+## Problem
+The `public/favicon.ico` file is the default Lovable logo (heart icon). The `index.html` references this file, so the browser tab shows the Lovable brand instead of FinTrack+.
 
-## Change
-| File | Action |
+## Solution
+
+### `index.html`
+Update the favicon `<link>` tag to use the existing FinTrack+ app icon (`app-icon-192.png`) instead of the default `favicon.ico`:
+
+```html
+<!-- Before -->
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+
+<!-- After -->
+<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png" />
+```
+
+This reuses the existing branded icon already in the project -- no new files needed. The `.ico` file can remain but will no longer be referenced.
+
+### Files Changed
+
+| File | Change |
 |------|--------|
-| `public/og-image.png` | Overwrite with the uploaded `FinTrack_1.png` image |
-
-No other changes needed -- the `index.html` meta tags already point to `/og-image.png` with the correct domain and dimensions.
-
-## After Publishing
-WhatsApp and other platforms cache previews aggressively. After publishing, use [Meta's Sharing Debugger](https://developers.facebook.com/tools/debug/) to force a re-scrape of `https://fintrackplus.com/`.
+| `index.html` | Update favicon link to point to `/app-icon-192.png` |
