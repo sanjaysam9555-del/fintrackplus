@@ -1,57 +1,79 @@
 
 
-# Theme Default and Onboarding Theme Picker
+# Share Transaction Feature
 
-## Summary
-Three changes: (1) default theme becomes "dark" instead of "system", (2) Auth page and all non-landing pages also respect this default, (3) a new "Choose Display Mode" step is added to the onboarding flow just before the Install step.
+## Overview
+Add a "Share" button to transaction entries that generates a beautifully branded image card and shares it via the device's native share sheet (WhatsApp, iMessage, etc.).
 
-## What Changes
+## What Can Be Shared
+- Individual expense or income entries, rendered as a branded card containing:
+  - FinTrack+ logo and app name
+  - Transaction title/vendor
+  - Amount (color-coded: red for expense, green for income)
+  - Category with icon
+  - Date and time
+  - Payment method (Cash/Online)
+  - Project name (if linked)
+  - Notes (if present)
+  - A subtle "Tracked with FinTrack+" footer watermark
 
-### 1. Default theme: dark instead of system
-Currently the fallback when no theme is stored is `'system'`. Change it to `'dark'` in three places:
-- **`index.html`** inline script: change `var theme = localStorage.getItem('fintrack-theme') || 'system'` to `|| 'dark'`
-- **`src/hooks/useTheme.ts`**: change `const mode: ThemeMode = (stored as ThemeMode) || 'system'` to `|| 'dark'`
-- **`src/hooks/useTheme.ts`** `getStoredTheme`: same change
+## How It Works
+1. User taps **Share** on an expanded transaction item or in the transaction detail sheet
+2. The app renders a hidden branded card to an off-screen canvas using the Canvas API (no extra dependencies needed)
+3. The canvas is converted to a PNG blob
+4. The Web Share API (`navigator.share()`) is invoked with the image -- this opens the native share sheet on mobile (WhatsApp, iMessage, Telegram, etc.)
+5. On desktop or unsupported browsers, it falls back to downloading the image
 
-This means every new user (and anyone who never explicitly chose a theme) will see dark mode. Users who previously chose light or OLED will keep their choice since it is persisted in localStorage.
+## Where the Share Button Appears
+- **TransactionItem** (expanded view): A third button alongside Edit and Delete
+- **TransactionDetailSheet** (bottom sheet): A third button alongside Edit and Delete
 
-### 2. Cloud-sync theme preference to profiles table
-Add a `theme` column to the `profiles` table so that when a user logs in on a new device, their preference is restored.
+## Technical Details
 
-**Database migration:**
-```sql
-ALTER TABLE public.profiles
-  ADD COLUMN theme text NOT NULL DEFAULT 'dark';
-```
+### New File: `src/lib/shareTransaction.ts`
+A utility that:
+1. Creates an off-screen `<canvas>` element (400x520px, or auto-height based on content)
+2. Draws a branded card with:
+   - Dark or light background matching the current theme
+   - FinTrack+ logo (drawn from the app icon)
+   - Transaction details in a clean layout using Canvas 2D text rendering
+   - Rounded corners, color-coded amount, category label
+   - Footer: "Tracked with FinTrack+" in muted text
+3. Exports as PNG blob
+4. Calls `navigator.share({ files: [imageFile] })` if supported, else triggers download
 
-**`useTheme.ts` changes:**
-- On `setTheme`, write the chosen mode to `profiles.theme` (fire-and-forget, already stubbed).
-- Export a `loadCloudTheme(userId)` helper that reads `profiles.theme` and applies it if localStorage has no stored value yet.
-- In `useSyncEngine` (or `Index.tsx` after auth), call `loadCloudTheme` once on login so returning users get their saved preference.
-
-### 3. Onboarding: "Choose Display Mode" step before Install
-Insert a new step between the existing "Stay Notified" step and the "Install the App" step in `OnboardingFlow.tsx`.
-
-**New step UI:**
-- Icon: `Monitor` (from lucide-react)
-- Title: "Choose Your Look"
-- Description: "Pick a display mode that suits your style. You can always change this later in Settings."
-- Three tappable cards arranged horizontally:
-  - **Light** -- Sun icon, light preview swatch
-  - **Dark** -- Moon icon, dark preview swatch (pre-selected)
-  - **OLED Black** -- Smartphone icon, pure-black preview swatch
-- Tapping a card immediately applies the theme (calls `setTheme` from `useTheme`) so the user sees the change live behind the onboarding overlay.
-- The selected mode is persisted to localStorage and cloud (via the updated `setTheme`).
-
-Step order after the change: Welcome -> Transactions -> AI Insights -> Projects -> Notifications -> **Choose Display Mode** -> Install App
-
-### Files Changed
+### Modified Files
 
 | File | Change |
 |------|--------|
-| `index.html` | Default theme fallback: `'system'` to `'dark'` |
-| `src/hooks/useTheme.ts` | Default fallback to `'dark'`; cloud sync write on setTheme; add `loadCloudTheme` helper |
-| `src/components/OnboardingFlow.tsx` | Add "Choose Display Mode" step with interactive theme picker cards |
-| `src/pages/Index.tsx` | Call `loadCloudTheme` after auth to restore cloud-saved theme on new devices |
-| Database migration | Add `theme` column to `profiles` table |
+| `src/lib/shareTransaction.ts` | New -- canvas rendering + Web Share API utility |
+| `src/components/TransactionItem.tsx` | Add Share button in expanded actions row (between Edit and Delete) |
+| `src/components/TransactionDetailSheet.tsx` | Add Share button in bottom action bar (between Edit and Delete) |
+
+### Share Card Visual Layout
+
+```text
++----------------------------------+
+|  [Logo]  FinTrack+               |
+|----------------------------------|
+|                                  |
+|        EXPENSE / INCOME          |
+|         -Rs.12,500               |
+|                                  |
+|  Title     Vendor Photography    |
+|  Category  Shopping              |
+|  Date      15 Feb 2026, 2:30 PM |
+|  Payment   Online                |
+|  Project   Wedding XYZ           |
+|  Notes     Advance payment...    |
+|                                  |
+|----------------------------------|
+|    Tracked with FinTrack+        |
++----------------------------------+
+```
+
+### No New Dependencies
+- Uses the native Canvas API for image generation
+- Uses the Web Share API (Level 2 with file sharing) for sharing
+- Both are well-supported on modern mobile browsers (iOS Safari 15+, Chrome 76+)
 
