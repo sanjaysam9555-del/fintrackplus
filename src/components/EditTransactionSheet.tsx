@@ -50,17 +50,31 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(transaction.receiptUrl);
   const [isGst, setIsGst] = useState(transaction.isGst || false);
   
-  // When edit sheet is open, remove Vaul's body scroll lock so this sheet can scroll
+  // When edit sheet is open, continuously override Vaul's body scroll lock
   useEffect(() => {
     if (!isOpen) return;
     const body = document.body;
-    const original = body.style.overflow;
-    // Override Vaul's scroll lock
-    body.style.overflow = '';
-    body.style.setProperty('overflow', 'auto', 'important');
-    return () => {
-      body.style.overflow = original;
+    
+    const unlockScroll = () => {
+      if (body.style.overflow === 'hidden') {
+        body.style.removeProperty('overflow');
+      }
+      if (body.hasAttribute('data-scroll-locked')) {
+        body.removeAttribute('data-scroll-locked');
+      }
+      // Remove vaul's inline style that locks pointer-events
+      if (body.style.pointerEvents === 'none') {
+        body.style.removeProperty('pointer-events');
+      }
     };
+    
+    unlockScroll();
+    
+    // Watch for Vaul re-applying scroll lock
+    const observer = new MutationObserver(() => unlockScroll());
+    observer.observe(body, { attributes: true, attributeFilter: ['style', 'data-scroll-locked'] });
+    
+    return () => observer.disconnect();
   }, [isOpen]);
 
   // Reset state when transaction changes
@@ -185,7 +199,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
               </div>
             </div>
             
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-auto" data-vaul-no-drag style={{ WebkitOverflowScrolling: 'touch' }}>
               <div className="p-4 space-y-4 pb-8">
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">
