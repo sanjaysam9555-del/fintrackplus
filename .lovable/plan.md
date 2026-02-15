@@ -1,40 +1,35 @@
 
 
-# Enhanced Onboarding + Install Guide in Settings
+# Fix: Social Share Preview Image + Favicon
 
-## Overview
-Enhance the first-time user experience by adding an install instruction step at the end of the onboarding walkthrough, and add a "How to Install" button in Settings for returning users.
+## Problem
+When you share the app link on WhatsApp (or any social platform), the preview image doesn't appear. This is because:
+1. The `og:image` and `twitter:image` meta tags use **relative paths** (`/app-icon-512.png`) -- social media crawlers need full absolute URLs to fetch images
+2. The favicon reference points to a PNG (`/app-icon-192.png`) while the actual favicon file is `favicon.ico`
 
-## Changes
+## Solution
 
-### 1. `src/components/OnboardingFlow.tsx` -- Add install step as the final slide
+### 1. `index.html` -- Fix OG image to absolute URLs
 
-Add a 6th step to the onboarding flow with a Download/Smartphone icon that explains how to install the app. This step will:
-- Auto-detect the user's device (iOS/Android/Desktop) using the same detection logic from `Install.tsx`
-- Show device-specific install instructions inline (e.g., "Tap Share > Add to Home Screen" for iOS)
-- Change the final button text from "Get Started" on step 5 to step 6
-- Step 5 (Notifications) becomes a regular middle step; Step 6 (Install) becomes the new final step with "Get Started"
-- If the app is already installed (standalone mode), skip showing the install details and just say "You're all set!"
+Change the Open Graph and Twitter image meta tags from relative to absolute URLs:
 
-### 2. `src/components/SettingsPage.tsx` -- Add "How to Install" button
+```
+Before: <meta property="og:image" content="/app-icon-512.png" />
+After:  <meta property="og:image" content="https://bright-balance-beam.lovable.app/app-icon-512.png" />
+```
 
-Add a new item in the Settings page between the Appearance section and the Sign Out button:
-- Icon: Download
-- Label: "Install App"
-- Sublabel: "Add to home screen"
-- Clicking it navigates to the existing `/install` page (or `/application/install` via `appPath`)
-- If already installed, show sublabel as "Already installed" with a checkmark
+Same for `twitter:image`.
 
-This requires importing `useNavigate` and `appPath` into SettingsPage.
+### 2. `index.html` -- Fix favicon reference
 
-### 3. No changes to `Install.tsx`
-The existing Install page remains as-is for direct access.
+Update the favicon link to use the actual `.ico` file that exists in the public folder, and add a PNG fallback:
+
+```html
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
+<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png" />
+```
 
 ## Summary
 
-| File | Change |
-|------|--------|
-| `OnboardingFlow.tsx` | Add 6th install step with device detection and inline instructions |
-| `SettingsPage.tsx` | Add "Install App" menu item linking to the install page |
+One file changed (`index.html`), updating 3-4 meta tag values to use absolute URLs and fixing the favicon reference.
 
-Total: 2 files modified.
