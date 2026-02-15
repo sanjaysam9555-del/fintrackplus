@@ -1,42 +1,34 @@
 
 
-# Fix: Project Detail Sheet Crashes When Editing a Transaction
+# Fix: Edit Form Unscrollable When Opened From Project Detail Sheet
 
-## The Bug
+## Root Cause
 
-In `ProjectDetailSheet.tsx` (line 166), the Drawer's `open` prop is set to `isOpen && !isChildEditing`. When a user taps Edit on a transaction inside the project detail sheet:
-
-1. `isChildEditing` becomes `true`
-2. The Drawer's `open` becomes `false`
-3. This triggers `onOpenChange(false)`, which calls `onClose()`
-4. The project detail sheet unmounts permanently
-5. When the edit sheet closes, there's nothing to return to -- the app falls back to the Projects tab with the bottom dock hidden and everything unclickable
+The previous fix hides the `DrawerContent` panel with a CSS `hidden` class when a child edit sheet opens, but the **Vaul Drawer overlay** (the semi-transparent black backdrop at `z-50`) remains fully interactive. This overlay captures all touch and scroll events, preventing the EditTransactionSheet (rendered via React Portal at `z-[80]`) from receiving any input.
 
 ## The Fix
 
 **File: `src/components/ProjectDetailSheet.tsx`**
 
-Change the Drawer to stay open (but visually hidden) while a child edit sheet is active, instead of closing it. This follows the existing pattern used elsewhere in the app (per the codebase convention of using a `hidden` class on parent views for nested sheets).
+When `isChildEditing` is true, add `pointer-events-none` to **both** the `DrawerContent` and its parent overlay so touch events pass through to the edit sheet underneath.
 
-```text
-Line 166 - Before:
-  <Drawer open={isOpen && !isChildEditing} onOpenChange={...}>
+Since the Drawer component renders the overlay separately inside `DrawerPortal`, we need to wrap the entire Drawer output area. The cleanest approach: wrap the Drawer in a container div and apply `pointer-events-none` to it when a child is editing.
 
-After:
-  <Drawer open={isOpen} onOpenChange={(open) => {
-    if (!open && !isChildEditing) onClose();
-  }}>
+```
+<div className={isChildEditing ? "pointer-events-none" : ""}>
+  <Drawer open={isOpen} onOpenChange={...} shouldScaleBackground={false}>
+    <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")}>
+      ...
+    </DrawerContent>
+  </Drawer>
+</div>
 ```
 
-And add a `hidden` class to the `DrawerContent` when the child edit sheet is open so it disappears visually but stays mounted in the DOM:
+This ensures the Vaul overlay, backdrop, and all drawer internals stop intercepting pointer events while the edit transaction form is active. When the edit sheet closes, `isChildEditing` returns to `false` and the project detail sheet becomes interactive again.
 
-```text
-Line 167 - Before:
-  <DrawerContent className="max-h-[85vh]">
+### Files Modified
 
-After:
-  <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")}>
-```
-
-This is a two-line fix. The Drawer stays mounted, the edit sheet opens on top, and when it closes the project detail sheet reappears exactly where the user left off.
+| File | Change |
+|------|--------|
+| `src/components/ProjectDetailSheet.tsx` | Wrap Drawer in a div with conditional `pointer-events-none` |
 
