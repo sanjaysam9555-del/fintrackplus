@@ -25,7 +25,7 @@ export const PageTransition = ({ isLoading }: PageTransitionProps) => {
         <motion.img
           src={appIcon}
           alt="Loading"
-          className="w-12 h-12 rounded-xl"
+          className="w-12 h-12 rounded-[25%]"
           animate={{ 
             rotate: [0, 5, -5, 0],
             scale: [1, 1.05, 1],
