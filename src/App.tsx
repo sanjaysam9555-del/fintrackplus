@@ -20,6 +20,19 @@ const Landing = lazy(() => import("./pages/Landing"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 
+// Prefetch critical routes during idle time so they load instantly when needed
+if (typeof window !== 'undefined') {
+  const prefetch = () => {
+    import("./pages/Index");
+    import("./pages/Auth");
+  };
+  if ('requestIdleCallback' in window) {
+    (window as any).requestIdleCallback(prefetch);
+  } else {
+    setTimeout(prefetch, 1000);
+  }
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
