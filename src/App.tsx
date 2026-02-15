@@ -159,11 +159,18 @@ const AppRoutes = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+
+        {/* /application/ routes for cross-domain compatibility */}
+        <Route path="/application/install" element={<InstallPage />} />
+        <Route path="/application/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
+
         {!user ? (
           <Route path="*" element={<AuthPage />} />
         ) : (
           <>
             <Route path="/" element={<Index />} />
+            <Route path="/application" element={<Index />} />
             <Route path="*" element={<NotFound />} />
           </>
         )}
