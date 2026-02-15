@@ -11,11 +11,13 @@ import {
   Sparkles,
   Download,
   Share,
-  Plus,
-  ChevronRight,
-  Smartphone
+  Smartphone,
+  Monitor,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useTheme, type ThemeMode } from '@/hooks/useTheme';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -72,6 +74,13 @@ const baseSteps = [
   },
 ];
 
+const themeStep = {
+  icon: Monitor,
+  title: 'Choose Your Look',
+  description: 'Pick a display mode that suits your style. You can always change this later in Settings.',
+  color: 'bg-indigo-500',
+};
+
 const installStep = {
   icon: Download,
   title: 'Install the App',
@@ -79,6 +88,40 @@ const installStep = {
   color: 'bg-blue-500',
 };
 
+// ─── Theme Picker Cards ────────────────────────────────────────────
+const themeOptions: { mode: ThemeMode; label: string; icon: React.ElementType; swatch: string; swatchBorder: string }[] = [
+  { mode: 'light', label: 'Light', icon: Sun, swatch: 'bg-white', swatchBorder: 'border-gray-300' },
+  { mode: 'dark', label: 'Dark', icon: Moon, swatch: 'bg-slate-800', swatchBorder: 'border-slate-600' },
+  { mode: 'oled', label: 'OLED Black', icon: Smartphone, swatch: 'bg-black', swatchBorder: 'border-gray-700' },
+];
+
+const ThemePickerCards = ({ currentMode, onPick }: { currentMode: ThemeMode; onPick: (m: ThemeMode) => void }) => (
+  <div className="flex gap-3 mt-5 justify-center">
+    {themeOptions.map(({ mode, label, icon: Icon, swatch, swatchBorder }) => {
+      const selected = currentMode === mode;
+      return (
+        <button
+          key={mode}
+          onClick={() => onPick(mode)}
+          className={`flex flex-col items-center gap-2 rounded-2xl border-2 p-3 w-[100px] transition-all duration-200
+            ${selected ? 'border-primary ring-2 ring-primary/30 scale-105' : `border-border ${swatchBorder} hover:border-muted-foreground/40`}`}
+        >
+          <div className={`w-10 h-10 rounded-xl ${swatch} border ${swatchBorder} flex items-center justify-center`}>
+            <Icon size={18} className={mode === 'light' ? 'text-amber-500' : 'text-white'} />
+          </div>
+          <span className="text-xs font-medium">{label}</span>
+          {selected && (
+            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+              <Check size={10} className="text-primary-foreground" />
+            </motion.div>
+          )}
+        </button>
+      );
+    })}
+  </div>
+);
+
+// ─── Install Instructions ──────────────────────────────────────────
 const InstallInstructions = ({ device }: { device: DeviceType }) => {
   const instructions: Record<DeviceType, { steps: string[]; icon: React.ElementType }> = {
     ios: {
@@ -143,18 +186,21 @@ const InstallInstructions = ({ device }: { device: DeviceType }) => {
   );
 };
 
+// ─── Main Component ────────────────────────────────────────────────
 export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [device, setDevice] = useState<DeviceType>('unknown');
   const [isInstalled, setIsInstalled] = useState(false);
+  const { mode: currentThemeMode, setTheme } = useTheme();
 
   useEffect(() => {
     setDevice(detectDevice());
     setIsInstalled(isInStandaloneMode());
   }, []);
 
-  const steps = [...baseSteps, installStep];
+  const steps = [...baseSteps, themeStep, installStep];
   const totalSteps = steps.length;
+  const isThemeStep = currentStep === baseSteps.length; // index 5
 
   const handleNext = () => {
     if (currentStep < totalSteps - 1) {
@@ -235,6 +281,11 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
                 : step.description}
             </p>
 
+            {/* Theme picker on theme step */}
+            {isThemeStep && (
+              <ThemePickerCards currentMode={currentThemeMode} onPick={setTheme} />
+            )}
+
             {/* Install instructions on last step */}
             {isLastStep && !isInstalled && (
               <InstallInstructions device={device} />
@@ -286,3 +337,5 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
     </motion.div>
   );
 };
+
+export default OnboardingFlow;

@@ -172,7 +172,7 @@ export const useSyncEngine = () => {
     }
   }, [user, refreshPendingCount, pushToCloud]);
 
-  // Check for onboarding
+  // Check for onboarding + load cloud theme
   useEffect(() => {
     if (!user) return;
 
@@ -188,6 +188,11 @@ export const useSyncEngine = () => {
         setUserName(profile.name || '');
       }
     };
+
+    // Load cloud theme preference on login (only if no local pref)
+    import('./useTheme').then(({ loadCloudTheme }) => {
+      loadCloudTheme(user.id);
+    });
 
     checkOnboarding();
   }, [user]);

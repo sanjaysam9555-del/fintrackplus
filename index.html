@@ -61,7 +61,7 @@
     <script>
       // Apply stored theme immediately to prevent flash of light mode
       (function() {
-        var theme = localStorage.getItem('fintrack-theme') || 'system';
+        var theme = localStorage.getItem('fintrack-theme') || 'dark';
         var resolved = theme;
         if (theme === 'system') {
           resolved = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

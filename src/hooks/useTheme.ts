@@ -19,7 +19,7 @@ export const useTheme = () => {
   const [theme, setThemeState] = useState<ThemeState>(() => {
     // Initialize from localStorage
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
-    const mode: ThemeMode = (stored as ThemeMode) || 'system';
+    const mode: ThemeMode = (stored as ThemeMode) || 'dark';
     const resolved = resolveTheme(mode);
     return { mode, resolved };
   });
@@ -73,8 +73,10 @@ export const useTheme = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        // We could add a theme column to profiles table, but for now just localStorage
-        // This is a placeholder for cloud sync
+        await supabase
+          .from('profiles')
+          .update({ theme: mode } as any)
+          .eq('user_id', user.id);
       }
     } catch (e) {
       // Silently fail cloud sync
@@ -122,5 +124,37 @@ export const useTheme = () => {
 // Export a simple function for components that just need to read theme
 export const getStoredTheme = (): ThemeMode => {
   const stored = localStorage.getItem(THEME_STORAGE_KEY);
-  return (stored as ThemeMode) || 'system';
+  return (stored as ThemeMode) || 'dark';
+};
+
+/**
+ * Load theme from cloud profile when user logs in on a new device.
+ * Only applies if localStorage has no stored value yet.
+ */
+export const loadCloudTheme = async (userId: string) => {
+  const stored = localStorage.getItem(THEME_STORAGE_KEY);
+  if (stored) return; // User already has a local preference
+
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('theme')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const cloudTheme = (data as any)?.theme as ThemeMode | undefined;
+    if (cloudTheme && ['light', 'dark', 'oled'].includes(cloudTheme)) {
+      localStorage.setItem(THEME_STORAGE_KEY, cloudTheme);
+
+      const root = document.documentElement;
+      root.classList.remove('light', 'dark', 'oled');
+      if (cloudTheme === 'oled') {
+        root.classList.add('dark', 'oled');
+      } else {
+        root.classList.add(cloudTheme);
+      }
+    }
+  } catch {
+    // Silently fail
+  }
 };
