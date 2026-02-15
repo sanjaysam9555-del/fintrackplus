@@ -1,35 +1,17 @@
 
-
-# Fix: Social Share Preview Image + Favicon
+# Fix: Center Hero Section Vertically in Viewport
 
 ## Problem
-When you share the app link on WhatsApp (or any social platform), the preview image doesn't appear. This is because:
-1. The `og:image` and `twitter:image` meta tags use **relative paths** (`/app-icon-512.png`) -- social media crawlers need full absolute URLs to fetch images
-2. The favicon reference points to a PNG (`/app-icon-192.png`) while the actual favicon file is `favicon.ico`
+The hero content is not visually centered in the first viewport frame. The asymmetric padding (`pt-12 pb-8` on mobile, `pt-16 pb-16` on desktop) combined with `min-h-[80vh]` pushes the content downward instead of centering it.
 
 ## Solution
 
-### 1. `index.html` -- Fix OG image to absolute URLs
+### `src/components/landing/HeroSection.tsx`
 
-Change the Open Graph and Twitter image meta tags from relative to absolute URLs:
+Replace the current padding-heavy approach with proper viewport-aware centering:
 
-```
-Before: <meta property="og:image" content="/app-icon-512.png" />
-After:  <meta property="og:image" content="https://bright-balance-beam.lovable.app/app-icon-512.png" />
-```
+1. Change `min-h-[80vh] md:min-h-[90vh]` to `min-h-[calc(100vh-3.5rem)]` -- this makes the hero fill exactly the remaining viewport after the sticky header (h-14 = 3.5rem)
+2. Remove the unequal top/bottom padding (`pt-12 md:pt-16 pb-8 md:pb-16`) and replace with symmetric small padding (`py-6 md:py-8`) -- the `flex items-center justify-center` will handle the actual centering
+3. The content will now sit truly centered vertically and horizontally within the visible frame
 
-Same for `twitter:image`.
-
-### 2. `index.html` -- Fix favicon reference
-
-Update the favicon link to use the actual `.ico` file that exists in the public folder, and add a PNG fallback:
-
-```html
-<link rel="icon" type="image/x-icon" href="/favicon.ico" />
-<link rel="icon" type="image/png" sizes="192x192" href="/app-icon-192.png" />
-```
-
-## Summary
-
-One file changed (`index.html`), updating 3-4 meta tag values to use absolute URLs and fixing the favicon reference.
-
+This is a single line change on the `<section>` element's className.
