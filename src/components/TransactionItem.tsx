@@ -4,13 +4,14 @@ import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
-import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users, Paperclip, Receipt } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users, Paperclip, Receipt, Share2 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { EditTransactionSheet } from "./EditTransactionSheet";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { shareTransaction } from "@/lib/shareTransaction";
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -290,6 +291,22 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                         className="flex-1 h-8"
                       >
                         <Pencil size={12} className="mr-1" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          shareTransaction({
+                            transaction,
+                            categoryName: category?.name,
+                            projectName: project?.name,
+                            projectColor: project?.color,
+                          });
+                        }}
+                        className="flex-1 h-8"
+                      >
+                        <Share2 size={12} className="mr-1" /> Share
                       </Button>
                       <Button
                         size="sm"
