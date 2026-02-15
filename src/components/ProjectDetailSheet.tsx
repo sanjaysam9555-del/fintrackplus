@@ -164,7 +164,7 @@ export const ProjectDetailSheet = ({
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => { if (!open && !isChildEditing) onClose(); }} shouldScaleBackground={false}>
-      <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")} overlayClassName={isChildEditing ? "pointer-events-none opacity-0" : ""}>
+      <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")} overlayClassName={cn(isChildEditing && "hidden")}>
         <DrawerHeader className="border-b border-border pb-4 shrink-0">
           <div className="flex items-center gap-3">
             <div
