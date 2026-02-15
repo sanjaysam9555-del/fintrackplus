@@ -163,9 +163,8 @@ export const ProjectDetailSheet = ({
   const isHealthy = actualMargin >= 0;
 
   return (
-    <div className={isChildEditing ? "pointer-events-none" : ""}>
     <Drawer open={isOpen} onOpenChange={(open) => { if (!open && !isChildEditing) onClose(); }} shouldScaleBackground={false}>
-      <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")}>
+      <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")} overlayClassName={isChildEditing ? "pointer-events-none opacity-0" : ""}>
         <DrawerHeader className="border-b border-border pb-4 shrink-0">
           <div className="flex items-center gap-3">
             <div
@@ -436,6 +435,5 @@ export const ProjectDetailSheet = ({
         </div>
       </DrawerContent>
     </Drawer>
-    </div>
   );
 };
