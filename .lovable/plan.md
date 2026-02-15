@@ -1,30 +1,40 @@
 
 
-# Fix: Support /application/ routes on all domains
+# Enhanced Onboarding + Install Guide in Settings
 
-## Problem
-The `/application/` routes (like `/application/auth`) only work on `fintrackplus.com` because they're inside the `isLandingDomain()` block. On the preview/dev domain, navigating to `/application/auth` shows a 404 since those routes don't exist there.
-
-## Solution
-Add the `/application/*` routes to the non-landing domain block as well, so the app works consistently regardless of domain. This way:
-- `fintrackplus.com/application/auth` works
-- `preview-domain.lovable.app/application/auth` also works
-- `preview-domain.lovable.app/auth` continues to work as before
+## Overview
+Enhance the first-time user experience by adding an install instruction step at the end of the onboarding walkthrough, and add a "How to Install" button in Settings for returning users.
 
 ## Changes
 
-### 1. `src/App.tsx` -- Add /application/ routes to the non-landing block
-Add duplicate route entries for `/application/auth`, `/application/reset-password`, `/application/install`, and `/application` in the non-landing domain route block (lines 152-172). This ensures the same paths work on both domains.
+### 1. `src/components/OnboardingFlow.tsx` -- Add install step as the final slide
 
-The routes will mirror the existing ones:
-- `/application/install` renders InstallPage
-- `/application/reset-password` renders ResetPasswordPage
-- `/application/auth` renders AuthPage (or redirects if logged in)
-- `/application` renders Index (if logged in) or AuthPage
+Add a 6th step to the onboarding flow with a Download/Smartphone icon that explains how to install the app. This step will:
+- Auto-detect the user's device (iOS/Android/Desktop) using the same detection logic from `Install.tsx`
+- Show device-specific install instructions inline (e.g., "Tap Share > Add to Home Screen" for iOS)
+- Change the final button text from "Get Started" on step 5 to step 6
+- Step 5 (Notifications) becomes a regular middle step; Step 6 (Install) becomes the new final step with "Get Started"
+- If the app is already installed (standalone mode), skip showing the install details and just say "You're all set!"
 
-### 2. No other files need changes
-The `appPath()` helper already returns unprefixed paths on non-landing domains, so all internal navigation continues to work. This change just ensures that if someone directly visits an `/application/` URL on the preview domain, it doesn't 404.
+### 2. `src/components/SettingsPage.tsx` -- Add "How to Install" button
+
+Add a new item in the Settings page between the Appearance section and the Sign Out button:
+- Icon: Download
+- Label: "Install App"
+- Sublabel: "Add to home screen"
+- Clicking it navigates to the existing `/install` page (or `/application/install` via `appPath`)
+- If already installed, show sublabel as "Already installed" with a checkmark
+
+This requires importing `useNavigate` and `appPath` into SettingsPage.
+
+### 3. No changes to `Install.tsx`
+The existing Install page remains as-is for direct access.
 
 ## Summary
-One file changed (`App.tsx`), adding ~10 lines of route definitions to the non-landing block.
 
+| File | Change |
+|------|--------|
+| `OnboardingFlow.tsx` | Add 6th install step with device detection and inline instructions |
+| `SettingsPage.tsx` | Add "Install App" menu item linking to the install page |
+
+Total: 2 files modified.
