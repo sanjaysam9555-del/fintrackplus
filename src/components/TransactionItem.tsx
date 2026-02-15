@@ -302,6 +302,9 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                             categoryName: category?.name,
                             projectName: project?.name,
                             projectColor: project?.color,
+                            vendorName: transaction.vendor,
+                            partnerName: partner?.name,
+                            partnerColor: partner?.color,
                           });
                         }}
                         className="flex-1 h-8"
