@@ -255,6 +255,9 @@ export const TransactionDetailSheet = ({
                     categoryName: category?.name,
                     projectName: project?.name,
                     projectColor: project?.color,
+                    vendorName: transaction.vendor,
+                    partnerName: partner?.name,
+                    partnerColor: partner?.color,
                   })}
                 >
                   <Share2 size={16} className="mr-2" />

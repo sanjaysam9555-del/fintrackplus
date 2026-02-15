@@ -1,38 +1,49 @@
-import { Transaction, Category, Project } from './types';
-import { formatCurrency, formatDate, formatTime } from './constants';
+import { Transaction } from './types';
+import { formatCurrency, formatTime } from './constants';
 
 interface ShareData {
   transaction: Transaction;
   categoryName?: string;
   projectName?: string;
   projectColor?: string;
+  vendorName?: string;
+  partnerName?: string;
+  partnerColor?: string;
 }
 
 const CARD_WIDTH = 400;
 const PADDING = 24;
 const LINE_HEIGHT = 28;
 
-function getThemeColors(): { bg: string; card: string; text: string; muted: string; border: string; expense: string; income: string } {
+const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function formatShareDate(dateStr: string, timeStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  const day = DAYS[date.getDay()];
+  const month = MONTHS[date.getMonth()];
+  const formattedTime = formatTime(timeStr);
+  return `${day}, ${d} ${month} ${y}, ${formattedTime}`;
+}
+
+function formatFilenameDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const month = MONTHS[m - 1];
+  return `${d} ${month} ${y}`;
+}
+
+function getThemeColors() {
   const isDark = document.documentElement.classList.contains('dark');
   if (isDark) {
     return {
-      bg: '#0a0a0a',
-      card: '#141414',
-      text: '#f5f5f5',
-      muted: '#a1a1aa',
-      border: '#27272a',
-      expense: '#ef4444',
-      income: '#22c55e',
+      bg: '#0a0a0a', card: '#141414', text: '#f5f5f5', muted: '#a1a1aa',
+      border: '#27272a', expense: '#ef4444', income: '#22c55e',
     };
   }
   return {
-    bg: '#ffffff',
-    card: '#f8f9fa',
-    text: '#18181b',
-    muted: '#71717a',
-    border: '#e4e4e7',
-    expense: '#dc2626',
-    income: '#16a34a',
+    bg: '#ffffff', card: '#f8f9fa', text: '#18181b', muted: '#71717a',
+    border: '#e4e4e7', expense: '#dc2626', income: '#16a34a',
   };
 }
 
@@ -57,7 +68,6 @@ function drawDetailRow(ctx: CanvasRenderingContext2D, label: string, value: stri
 
   ctx.fillStyle = colors.text;
   ctx.font = '600 13px Inter, system-ui, sans-serif';
-  // Truncate long values
   const maxWidth = CARD_WIDTH - PADDING * 2 - 120;
   let displayValue = value;
   while (ctx.measureText(displayValue).width > maxWidth && displayValue.length > 3) {
@@ -66,31 +76,49 @@ function drawDetailRow(ctx: CanvasRenderingContext2D, label: string, value: stri
   ctx.fillText(displayValue, PADDING + 110, y);
 }
 
-export async function shareTransaction({ transaction, categoryName, projectName, projectColor }: ShareData): Promise<void> {
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+export async function shareTransaction({ transaction, categoryName, projectName, vendorName, partnerName, partnerColor }: ShareData): Promise<void> {
   const colors = getThemeColors();
   const isExpense = transaction.type === 'expense';
 
-  // Calculate dynamic height based on content
+  // Build rows
   const rows: [string, string][] = [];
   if (transaction.title || transaction.vendor) {
     rows.push(['Title', transaction.title || transaction.vendor]);
   }
+  if (vendorName || transaction.vendor) {
+    const vendor = vendorName || transaction.vendor;
+    if (vendor !== (transaction.title || '')) {
+      rows.push(['Vendor', vendor]);
+    }
+  }
   if (categoryName) rows.push(['Category', categoryName]);
-  rows.push(['Date', `${formatDate(transaction.date)}, ${formatTime(transaction.time)}`]);
+  rows.push(['Date', formatShareDate(transaction.date, transaction.time)]);
   rows.push(['Payment', transaction.paymentMethod === 'cash' ? 'Cash' : 'Online']);
   if (projectName) rows.push(['Project', projectName]);
+  if (partnerName) rows.push(['Handled By', partnerName]);
+  if (transaction.isGst) rows.push(['GST', 'Included']);
   if (transaction.notes) rows.push(['Notes', transaction.notes]);
 
   const cardHeight = 80 + 90 + rows.length * LINE_HEIGHT + 20 + 40 + 16;
 
   const canvas = document.createElement('canvas');
-  const scale = 2; // retina
+  const scale = 3;
   canvas.width = CARD_WIDTH * scale;
   canvas.height = cardHeight * scale;
   const ctx = canvas.getContext('2d')!;
   ctx.scale(scale, scale);
 
-  // Background with rounded corners
+  // Background
   roundRect(ctx, 0, 0, CARD_WIDTH, cardHeight, 16);
   ctx.fillStyle = colors.bg;
   ctx.fill();
@@ -101,22 +129,36 @@ export async function shareTransaction({ transaction, categoryName, projectName,
   ctx.lineWidth = 1;
   ctx.stroke();
 
-  // ── Header ──
+  // ── Header with app icon ──
   let y = 28;
+
+  // Try to load the real app icon
+  try {
+    const icon = await loadImage('/app-icon-192.png');
+    const iconSize = 28;
+    const iconX = PADDING;
+    const iconY = y - 16;
+    ctx.save();
+    roundRect(ctx, iconX, iconY, iconSize, iconSize, 6);
+    ctx.clip();
+    ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
+    ctx.restore();
+  } catch {
+    // Fallback: draw a colored circle
+    ctx.beginPath();
+    ctx.arc(PADDING + 14, y - 2, 14, 0, Math.PI * 2);
+    ctx.fillStyle = isExpense ? colors.expense : colors.income;
+    ctx.fill();
+    ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText('F+', PADDING + 14, y + 2);
+    ctx.textAlign = 'left';
+  }
+
   ctx.font = 'bold 18px Inter, system-ui, sans-serif';
   ctx.fillStyle = colors.text;
   ctx.fillText('FinTrack+', PADDING + 36, y + 4);
-
-  // Small logo circle
-  ctx.beginPath();
-  ctx.arc(PADDING + 14, y - 2, 14, 0, Math.PI * 2);
-  ctx.fillStyle = isExpense ? colors.expense : colors.income;
-  ctx.fill();
-  ctx.font = 'bold 12px Inter, system-ui, sans-serif';
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'center';
-  ctx.fillText('F+', PADDING + 14, y + 2);
-  ctx.textAlign = 'left';
 
   // Divider
   y += 20;
@@ -175,22 +217,22 @@ export async function shareTransaction({ transaction, categoryName, projectName,
     canvas.toBlob((b) => resolve(b!), 'image/png');
   });
 
-  const file = new File([blob], `fintrack-${transaction.type}-${transaction.date}.png`, { type: 'image/png' });
-
   const title = transaction.title || transaction.vendor || (isExpense ? 'Expense' : 'Income');
+  const filename = `${title} - ${formatFilenameDate(transaction.date)} - FinTrack+.png`;
+  const file = new File([blob], filename, { type: 'image/png' });
+
   const shareText = `${title} — ${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)}`;
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file], text: shareText });
     } catch (e) {
-      // User cancelled — ignore
       if ((e as Error).name !== 'AbortError') {
-        downloadFallback(blob, file.name);
+        downloadFallback(blob, filename);
       }
     }
   } else {
-    downloadFallback(blob, file.name);
+    downloadFallback(blob, filename);
   }
 }
 
