@@ -27,7 +27,7 @@ export const HeroSection = () => {
 
   return (
     <>
-      <section className="relative min-h-[80vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden px-4 pt-16 md:pt-20 pb-8 md:pb-16">
+      <section className="relative min-h-[80vh] md:min-h-[90vh] flex items-center justify-center overflow-hidden px-4 pt-12 md:pt-16 pb-8 md:pb-16">
         {/* Animated background orbs */}
         <motion.div
           className="absolute top-20 right-10 w-72 h-72 bg-primary/10 rounded-full blur-3xl"
