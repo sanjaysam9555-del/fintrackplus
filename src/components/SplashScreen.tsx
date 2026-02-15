@@ -13,9 +13,6 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      onAnimationComplete={(definition) => {
-        // Only call onComplete when the exit animation finishes
-      }}
     >
       <motion.div
         className="flex flex-col items-center gap-4"
@@ -23,11 +20,10 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         animate={{ scale: 1, opacity: 1 }}
         transition={{ 
           duration: 0.5, 
-          ease: [0.34, 1.56, 0.64, 1] // Spring-like bounce
+          ease: [0.34, 1.56, 0.64, 1]
         }}
         onAnimationComplete={() => {
-          // After the logo animates in, wait a moment then trigger complete
-          setTimeout(onComplete, 1500);
+          setTimeout(onComplete, 2500);
         }}
       >
         {/* Logo with pulse animation */}
@@ -104,6 +100,16 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             />
           ))}
         </motion.div>
+
+        {/* An App By Saffron Events */}
+        <motion.p
+          className="text-xs text-muted-foreground/60 mt-6 tracking-wider uppercase"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+        >
+          An App By <span className="font-semibold text-muted-foreground/80">Saffron Events</span>
+        </motion.p>
       </motion.div>
     </motion.div>
   );
