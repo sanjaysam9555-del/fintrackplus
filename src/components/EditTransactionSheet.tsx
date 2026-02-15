@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users } from "lucide-react";
@@ -50,6 +50,19 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(transaction.receiptUrl);
   const [isGst, setIsGst] = useState(transaction.isGst || false);
   
+  // When edit sheet is open, remove Vaul's body scroll lock so this sheet can scroll
+  useEffect(() => {
+    if (!isOpen) return;
+    const body = document.body;
+    const original = body.style.overflow;
+    // Override Vaul's scroll lock
+    body.style.overflow = '';
+    body.style.setProperty('overflow', 'auto', 'important');
+    return () => {
+      body.style.overflow = original;
+    };
+  }, [isOpen]);
+
   // Reset state when transaction changes
   useEffect(() => {
     setType(transaction.type);
