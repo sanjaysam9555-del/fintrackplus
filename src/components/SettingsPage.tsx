@@ -14,7 +14,8 @@ import {
   ScrollText,
   Monitor,
   Smartphone,
-  Users
+  Users,
+  Download
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,6 +31,8 @@ import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
 import { useTheme, ThemeMode } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { appPath } from "@/lib/domainUtils";
 
 // Action badge helper
 const getActionBadge = (notification: { type: string; details?: { from: string }[] }) => {
@@ -222,7 +225,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   const { categories, projects, userProfile, partners } = useFinanceStore();
   const { signOut, user } = useAuth();
   const { mode, setTheme, isDark, isOled } = useTheme();
+  const navigate = useNavigate();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const isInstalled = typeof window !== 'undefined' && (
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone === true
+  );
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
   
   const handleLogout = async () => {
@@ -473,6 +481,28 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         </motion.div>
       </div>
       
+      {/* Install App */}
+      <div className="px-4 mb-6">
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          onClick={() => navigate(appPath('/install'))}
+          className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10">
+            <Download size={20} className="text-blue-500" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-medium">Install App</p>
+            <p className="text-sm text-muted-foreground">
+              {isInstalled ? '✓ Already installed' : 'Add to home screen'}
+            </p>
+          </div>
+          <ChevronRight size={18} className="text-muted-foreground" />
+        </motion.button>
+      </div>
+
       {/* Logout Button */}
       <div className="px-4 mb-6">
         <Button 
