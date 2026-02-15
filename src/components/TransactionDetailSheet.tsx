@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, StickyNote, Paperclip, Users, RefreshCw } from "lucide-react";
+import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, StickyNote, Paperclip, Users, RefreshCw, Share2 } from "lucide-react";
 import { Transaction } from "@/lib/types";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
@@ -11,6 +11,7 @@ import { EditTransactionSheet } from "./EditTransactionSheet";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { shareTransaction } from "@/lib/shareTransaction";
 
 interface TransactionDetailSheetProps {
   transaction: Transaction | null;
@@ -245,6 +246,19 @@ export const TransactionDetailSheet = ({
                 >
                   <Pencil size={16} className="mr-2" />
                   Edit
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => shareTransaction({
+                    transaction,
+                    categoryName: category?.name,
+                    projectName: project?.name,
+                    projectColor: project?.color,
+                  })}
+                >
+                  <Share2 size={16} className="mr-2" />
+                  Share
                 </Button>
                 <Button
                   variant="destructive"
