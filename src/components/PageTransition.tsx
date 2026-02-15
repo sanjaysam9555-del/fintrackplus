@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import appIcon from '@/assets/app-icon.png';
 
 interface PageTransitionProps {
   isLoading: boolean;
@@ -23,9 +22,9 @@ export const PageTransition = ({ isLoading }: PageTransitionProps) => {
         transition={{ duration: 0.2 }}
       >
         <motion.img
-          src={appIcon}
+          src="/app-icon-192.png"
           alt="Loading"
-          className="w-12 h-12 rounded-[25%]"
+          className="w-12 h-12 rounded-[25%] overflow-hidden"
           animate={{ 
             rotate: [0, 5, -5, 0],
             scale: [1, 1.05, 1],
