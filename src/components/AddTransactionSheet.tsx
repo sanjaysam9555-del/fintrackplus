@@ -9,6 +9,7 @@ import { TransactionType, PaymentMethod, PlannedInstallment } from "@/lib/types"
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { renderCategoryIcon, renderVendorIcon } from "@/lib/iconUtils";
+import { appPath } from "@/lib/domainUtils";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -400,7 +401,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 onClick={() => {
                                   setShowCategories(false);
                                   onClose();
-                                  navigate('/?tab=settings');
+                                  navigate(appPath('/?tab=settings'));
                                 }}
                                 className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
                               >
@@ -413,7 +414,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               onClick={() => {
                                 setShowCategories(false);
                                 onClose();
-                                navigate('/?tab=settings');
+                                navigate(appPath('/?tab=settings'));
                               }}
                               className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
                             >
@@ -590,7 +591,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 onClick={() => {
                                   setShowVendors(false);
                                   onClose();
-                                  navigate('/?tab=settings');
+                                  navigate(appPath('/?tab=settings'));
                                 }}
                                 className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
                               >
@@ -603,7 +604,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               onClick={() => {
                                 setShowVendors(false);
                                 onClose();
-                                navigate('/?tab=settings');
+                                navigate(appPath('/?tab=settings'));
                               }}
                               className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
                             >
@@ -807,7 +808,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 onClick={() => {
                                   setShowProjects(false);
                                   onClose();
-                                  navigate('/?tab=settings');
+                                  navigate(appPath('/?tab=settings'));
                                 }}
                                 className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
                               >
@@ -820,7 +821,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               onClick={() => {
                                 setShowProjects(false);
                                 onClose();
-                                navigate('/?tab=settings');
+                                navigate(appPath('/?tab=settings'));
                               }}
                               className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
                             >

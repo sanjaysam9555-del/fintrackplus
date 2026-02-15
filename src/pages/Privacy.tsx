@@ -24,7 +24,7 @@ const Privacy = () => {
 
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-foreground">1. Introduction</h2>
-            <p>FinTrack⁺ ("we", "our", "us") is a product by Saffron Events. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application at fintrackplus.com and app.fintrackplus.com (the "Service").</p>
+            <p>FinTrack⁺ ("we", "our", "us") is a product by Saffron Events. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our web application at fintrackplus.com (the "Service").</p>
           </section>
 
           <section className="space-y-3">

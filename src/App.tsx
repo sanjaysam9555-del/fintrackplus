@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useStatusBar } from "@/hooks/useStatusBar";
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
-import { isLandingDomain } from "@/lib/domainUtils";
+import { isLandingDomain, appPath } from "@/lib/domainUtils";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -119,14 +119,30 @@ const AppRoutes = () => {
     return <AuthPageSkeleton />;
   }
 
-  // On fintrackplus.com / www.fintrackplus.com → always show landing page
+  // On fintrackplus.com / www.fintrackplus.com → landing + app under /application/*
   if (isLandingDomain()) {
     return (
-      <Suspense fallback={<AuthPageSkeleton />}>
+      <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
         <Routes>
+          {/* Public pages */}
           <Route path="/landing" element={<Landing />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+
+          {/* App routes under /application */}
+          <Route path="/application/install" element={<InstallPage />} />
+          <Route path="/application/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
+          {user ? (
+            <>
+              <Route path="/application" element={<Index />} />
+              <Route path="/application/*" element={<NotFound />} />
+            </>
+          ) : (
+            <Route path="/application/*" element={<AuthPage />} />
+          )}
+
+          {/* Everything else → landing */}
           <Route path="*" element={<Landing />} />
         </Routes>
       </Suspense>

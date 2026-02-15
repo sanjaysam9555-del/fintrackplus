@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { appPath } from '@/lib/domainUtils';
 
 type DeviceType = 'ios' | 'android' | 'desktop' | 'unknown';
 
@@ -189,7 +190,7 @@ export const InstallPage = () => {
       <div className="max-w-md mx-auto pt-safe">
         {/* Back button */}
         <motion.button
-          onClick={() => navigate('/')}
+          onClick={() => navigate(appPath('/'))}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -291,7 +292,7 @@ export const InstallPage = () => {
             transition={{ delay: 0.4 }}
           >
             <Button 
-              onClick={() => navigate('/')} 
+              onClick={() => navigate(appPath('/'))} 
               className="w-full h-12 rounded-xl"
             >
               Continue to App

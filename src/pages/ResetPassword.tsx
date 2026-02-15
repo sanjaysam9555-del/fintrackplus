@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { appPath } from '@/lib/domainUtils';
 
 export const ResetPasswordPage = () => {
   const [password, setPassword] = useState('');
@@ -67,7 +68,7 @@ export const ResetPasswordPage = () => {
             </div>
             <h2 className="text-xl font-bold text-foreground">Password Updated</h2>
             <p className="text-sm text-muted-foreground">Your password has been changed successfully.</p>
-            <Button className="w-full h-12 rounded-xl text-base font-semibold" onClick={() => navigate('/')}>
+            <Button className="w-full h-12 rounded-xl text-base font-semibold" onClick={() => navigate(appPath('/'))}>
               Continue to App
             </Button>
           </motion.div>
