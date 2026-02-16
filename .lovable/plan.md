@@ -1,51 +1,78 @@
 
-# Fix: Black Shadow After Closing Edit Form in Project Detail View
 
-## Problem
+# Project Labels Feature
 
-When closing the edit transaction form (via Close or Save), a black shadow covers the entire screen. It disappears after tapping anywhere.
+## Overview
+Add a tagging/labeling system for projects (e.g., #birthday, #wedding, #FromXYZ). Labels are user-defined, manageable via Settings, and assignable to projects during creation/editing. The Labels settings page will show expandable cards listing projects under each label.
 
-## Root Cause
+## Database Changes
 
-The `modal` prop on the Vaul Drawer toggles instantly when the edit sheet closes:
+**New table: `project_labels`**
+- `id` (uuid, PK)
+- `user_id` (uuid, NOT NULL)
+- `name` (text, NOT NULL) -- e.g. "Birthday", "Wedding"
+- `color` (text, default '#8B5CF6')
+- `created_at` (timestamptz, default now())
+- RLS: same user-scoped policies as other tables
 
-1. User closes edit form -> `onEditSheetChange(false)` fires immediately
-2. `isChildEditing` becomes `false` -> `modal` flips from `false` to `true`
-3. Vaul immediately re-creates its modal overlay (dark backdrop) and re-applies body scroll lock
-4. But the `DrawerContent` still has the `hidden` CSS class being removed at the same time
-5. This creates a flash of Vaul's overlay that requires a tap to dismiss
+**Alter `projects` table:**
+- Add `label_ids` column (jsonb, default '[]') -- array of label UUIDs
 
-## The Fix
+## Type Changes
 
-**File: `src/components/TransactionItem.tsx`**
+**`src/lib/types.ts`**
+- Add `ProjectLabel` interface: `{ id, name, color, createdAt }`
+- Add `labelIds?: string[]` to the `Project` interface
 
-Add a small delay (300ms) before notifying the parent that editing is done. This allows the edit sheet's exit animation to complete before Vaul switches back to modal mode.
+## Store Changes
 
-Change the `onClose` callback (around line 342-345):
+**`src/lib/store.ts`**
+- Add `projectLabels: ProjectLabel[]` to state
+- Add CRUD actions: `addProjectLabel`, `updateProjectLabel`, `deleteProjectLabel`
+- Include `projectLabels` in cloud sync (load/merge)
+- Update `addProject` and `updateProject` sync to handle `label_ids`
+- Map `label_ids` jsonb to `labelIds` string array in Project
 
+## UI Changes
+
+### 1. Project Add/Edit Form (`ProjectsSection.tsx`)
+- Add a multi-select label picker below the color selector
+- Show existing labels as tappable chips (selected = filled, unselected = outline)
+- Include a small "+ New Label" inline option that creates a label on the spot
+
+### 2. New Settings Section: `LabelsSection.tsx`
+- Header with back button and "Add" button (same pattern as Vendors/Categories)
+- Add form: name input + color picker
+- Label cards showing:
+  - Label name with color dot
+  - Project count subtitle
+  - Edit/Delete action buttons
+  - Expandable section (chevron) showing projects under that label as compact cards with project name, color, and budget info
+- Delete confirmation dialog
+
+### 3. Settings Page (`SettingsPage.tsx`)
+- Add "Labels" menu item under Data Management (with Tag icon)
+- Add `'labels'` to the `SettingsSection` type
+- Route to `LabelsSection` component
+
+### 4. Add Transaction Sheet (`AddTransactionSheet.tsx`)
+- No changes needed -- labels are project-level, not transaction-level
+
+## Component Structure
+
+```text
+Settings Page
+  +-- Labels (new menu item)
+       +-- LabelsSection.tsx (new file)
+            +-- Label cards (expandable)
+            +-- Add/Edit form
+            +-- Delete confirmation
 ```
-Before:
-  onClose={() => {
-    setIsEditing(false);
-    onEditSheetChange?.(false);
-  }}
 
-After:
-  onClose={() => {
-    setIsEditing(false);
-    setTimeout(() => onEditSheetChange?.(false), 300);
-  }}
-```
-
-This ensures:
-- The edit form's framer-motion exit animation (slide down + fade) completes first
-- Then Vaul's `modal` prop switches back to `true`
-- Vaul's overlay appears naturally as part of the already-visible drawer, with no flash
-
-**File: `src/components/EditTransactionSheet.tsx`**
-
-No changes needed -- the existing `stopPropagation` on buttons is already correct.
-
-**File: `src/components/ProjectDetailSheet.tsx`**
-
-No changes needed -- the `modal={!isChildEditing}` logic is correct, just needs the delayed state update from TransactionItem.
+## Implementation Order
+1. Database migration (new table + alter projects)
+2. Update types
+3. Update store with label CRUD + sync
+4. Create LabelsSection component
+5. Wire into SettingsPage
+6. Add label picker to ProjectsSection add/edit form
