@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useStatusBar } from "@/hooks/useStatusBar";
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
-import { isLandingDomain, isPWA, appPath } from "@/lib/domainUtils";
+import { isLandingDomain, isAppDomain, isPWA, appPath } from "@/lib/domainUtils";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -132,6 +132,30 @@ const AppRoutes = () => {
     return <AuthPageSkeleton />;
   }
 
+  // On app.fintrackplus.com → serve app routes directly (same as dev/preview)
+  if (isAppDomain()) {
+    return (
+      <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
+        <Routes>
+          <Route path="/install" element={<InstallPage />} />
+          <Route path="/landing" element={<Landing />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+          {!user ? (
+            <Route path="*" element={<AuthPage />} />
+          ) : (
+            <>
+              <Route path="/" element={<Index />} />
+              <Route path="*" element={<NotFound />} />
+            </>
+          )}
+        </Routes>
+      </Suspense>
+    );
+  }
+
   // On fintrackplus.com / www.fintrackplus.com → landing + app under /application/*
   if (isLandingDomain()) {
     return (
@@ -142,7 +166,7 @@ const AppRoutes = () => {
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
 
-          {/* App routes under /application */}
+          {/* App routes under /application (backward compat) */}
           <Route path="/application/install" element={<InstallPage />} />
           <Route path="/application/reset-password" element={<ResetPasswordPage />} />
           <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
