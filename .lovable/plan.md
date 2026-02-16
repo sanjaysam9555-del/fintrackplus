@@ -1,38 +1,48 @@
 
 
-# Fix Landing Page: Remove Duplicate Extra Features
+# Add "Featured In" and Testimonials Sections
 
-## Problem
-The "30+ features" section repeats features already showcased with screenshots above it: Budgets and Margins, Partner Balances, Income and Expense, Dashboard and Charts, Reports Export are all covered in the showcase/remaining/secondary sections. Sort and Filter + Advanced Filters are also two items for the same concept.
+## 1. New File: `src/components/landing/FeaturedInSection.tsx`
 
-## Changes
+A horizontal logo strip showing "As Featured In" with platform names: **WedMeGood**, **WeddingWire**, **Social Samosa**. Since we don't have actual logos, we'll use styled text-based brand pills with a subtle grayscale/muted aesthetic (common pattern for "featured in" strips). Each name will be displayed in a distinct font weight inside a row, separated by dots or pipes, with a fade-in animation.
 
-### File: `src/components/landing/FeaturesGrid.tsx`
+- Section header: Small uppercase "AS FEATURED IN" label
+- Brand names rendered as large, semi-bold, spaced-out text in `text-muted-foreground` style -- clean and editorial
+- Subtle fade-in animation on scroll
 
-**Remove these 7 items from `extraFeatures`:**
-- Budgets and Margins (covered in Projects showcase)
-- Partner Balances (covered in Partners showcase)
-- Income and Expense (implicit across the whole page)
-- Dashboard and Charts (covered in AI Insights card)
-- Reports Export (covered in GST/CA Export showcase)
-- Sort and Filter (merge concept into Advanced Filters rename)
-- Advanced Filters (keep one consolidated version)
+## 2. New File: `src/components/landing/TestimonialsSection.tsx`
 
-**Keep and refine these 9 unique items:**
-1. Labels -- color-coded tags for organizing projects
-2. Time Filters -- filter by week, month, year, or custom range
-3. Duplicate Detection -- smart warnings for similar entries
-4. Activity Log -- full change history and notifications
-5. Profile -- customize name and avatar
-6. Cloud Sync -- data syncs across devices
-7. Offline Mode -- works without internet
-8. Share Transactions -- share details via any app
-9. Install as App -- PWA, add to home screen
+Three testimonial cards in a responsive grid (1 column mobile, 3 columns desktop):
 
-**Add 1 consolidated item to replace removed duplicates:**
-- Sort, Filter and Search -- combine Sort and Filter + Advanced Filters into a single card: "Sort by date or amount, filter by category, vendor, project, and payment mode"
+| Name | Role | Company Type | Quote Theme |
+|------|------|-------------|-------------|
+| Gaurav Bhatia | Founder | Entertainment & SFX Co. | Tracking expenses across multiple event setups |
+| Abhinav Sharma | Lead Planner | Wedding Planning | Managing vendor payments and partner splits |
+| Gauri Arora | Co-founder | Production House | GST exports and financial visibility |
 
-**Update section header** from "30+ features" to something like "Plus all the essentials" since the count is now lower and the framing should complement the detailed sections above rather than compete with them.
+Each card will feature:
+- 5-star rating row
+- Quote text in italics
+- Name, role, and company in a footer area
+- Avatar fallback with initials (using existing Avatar component)
+- Card styling matching existing landing aesthetic: `bg-card/80 backdrop-blur-sm border ring-1 ring-primary/10` with the blue glow shadow
+- Staggered entrance animations
 
-This brings the extra features grid to 10 compact cards -- all truly unique content not covered elsewhere on the page.
+## 3. Update: `src/pages/Landing.tsx`
+
+- Import both new components
+- Place **FeaturedInSection** right after **SocialProofSection** (stats + featured in = strong trust block)
+- Place **TestimonialsSection** after FeaturedInSection, before PersonaSection
+- Add SectionDividers between them
+
+### Updated section order (around the change area):
+```
+SocialProofSection
+SectionDivider
+FeaturedInSection      <-- NEW
+SectionDivider
+TestimonialsSection    <-- NEW
+SectionDivider
+PersonaSection
+```
 
