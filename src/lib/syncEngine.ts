@@ -374,7 +374,12 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           internalCost: Number(p.budget_limit),
           clientCost: Number((p as unknown as { margin?: number }).margin) || 0,
           archived: (p as unknown as { archived?: boolean }).archived || false,
-          labelIds: (p as unknown as { label_ids?: string[] }).label_ids || [],
+          labelIds: (() => {
+            const raw = (p as unknown as { label_ids?: unknown }).label_ids;
+            if (Array.isArray(raw)) return raw as string[];
+            if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
+            return [];
+          })(),
           color: p.color,
           createdAt: p.created_at.split('T')[0]
         })),
