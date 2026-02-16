@@ -6,7 +6,7 @@ import { isLandingDomain } from '@/lib/domainUtils';
 const getAuthRedirectUrl = (path: string) => {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return isLandingDomain()
-    ? `https://app.fintrackplus.com${cleanPath}`
+    ? `https://fintrackplus.com/application${cleanPath}`
     : `${window.location.origin}${cleanPath}`;
 };
 

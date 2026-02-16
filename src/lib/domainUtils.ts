@@ -14,7 +14,7 @@ export const isAppDomain = () => {
 export const appPath = (path = '/') => {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   if (isLandingDomain()) {
-    return `https://app.fintrackplus.com${cleanPath}`;
+    return `/application${cleanPath}`;
   }
   return path;
 };
