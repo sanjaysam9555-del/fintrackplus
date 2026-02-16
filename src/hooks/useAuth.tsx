@@ -1,7 +1,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { appPath } from '@/lib/domainUtils';
+import { isLandingDomain } from '@/lib/domainUtils';
+
+const getAuthRedirectUrl = (path: string) => {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  return isLandingDomain()
+    ? `https://app.fintrackplus.com${cleanPath}`
+    : `${window.location.origin}${cleanPath}`;
+};
 
 interface AuthContextType {
   user: User | null;
@@ -44,7 +51,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: window.location.origin,
+        emailRedirectTo: getAuthRedirectUrl('/'),
         data: { name }
       }
     });
@@ -65,7 +72,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}${appPath('/reset-password')}`,
+      redirectTo: getAuthRedirectUrl('/reset-password'),
     });
     return { error };
   };
