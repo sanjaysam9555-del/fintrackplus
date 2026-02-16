@@ -1,64 +1,62 @@
 
-# Fix Testimonials, Featured Section, and Slashed Prices
 
-## 1. Remove em dashes from Testimonials
+# Route CTAs to app.fintrackplus.com
 
-**File: `src/components/landing/TestimonialsSection.tsx`**
+Now that `app.fintrackplus.com` is live as the dedicated app subdomain, we need to update the domain routing so all "Get Started" / "Existing User" links on the landing page point to `https://app.fintrackplus.com` instead of the current `/application/*` path prefix.
 
-Replace all "—" (em dashes) in the quote text:
-- Gaurav: "8-10 event setups" (use hyphen), "...every rupee goes. No more digging..." (replace dash with period)
-- Gauri: "...books were. First time..." (replace dash with period)
+## What changes
 
-## 2. Redesign "Featured In" Section
+### 1. Update `src/lib/domainUtils.ts`
 
-**File: `src/components/landing/FeaturedInSection.tsx`**
+The core routing utility. Currently `getAppUrl()` returns `/application/auth` on the landing domain. Update it to return `https://app.fintrackplus.com/auth` instead.
 
-The current section is plain muted text. Upgrade to a more polished look:
-- Add a subtle pill/badge style for each brand name with a border, slight background tint, and padding
-- Use a separator dot or vertical divider between brands
-- Add a faint gradient line above the brand row for visual separation
-- Slightly increase font size and give each brand a subtle hover glow or shimmer animation
-- Keep the muted/editorial tone but make it feel intentional and premium, not just plain text
+- Add `app.fintrackplus.com` to the domain detection (it should NOT be treated as a landing domain)
+- Update `getAppUrl()` to return absolute URLs pointing to `app.fintrackplus.com` when on the landing domain
+- `appPath()` used by in-app navigation (settings, install page) should also route to the app subdomain when on the landing domain
 
-## 3. Add Slashed Prices Everywhere
+### 2. Update `src/App.tsx` routing
 
-### 3a. HeroSection (line 116)
-**File: `src/components/landing/HeroSection.tsx`**
+- Add `app.fintrackplus.com` as an "app domain" -- when the user is on this subdomain, serve the app routes directly (no `/application` prefix needed)
+- Keep `/application/*` routes for backward compatibility (existing bookmarks, PWA installs)
+- On `fintrackplus.com`, the landing page still serves as the root, but CTAs now link out to the subdomain
 
-Change: `Starts at ~₹17/day`
-To: `Starts at <span class="line-through text-muted-foreground">~₹27/day</span> <span class="font-semibold text-foreground">~₹17/day</span>`
+### 3. Files using `getAppUrl()` (no changes needed)
 
-(₹799/month = ~₹27/day, ₹499/month = ~₹17/day)
+These files all use the pattern `const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url);` which already handles absolute URLs correctly via `window.location.href`:
 
-### 3b. ComparisonSection bottom row (lines 83-86)
-**File: `src/components/landing/ComparisonSection.tsx`**
+- `LandingHeader.tsx` -- Get Started and Existing User links
+- `HeroSection.tsx` -- main CTA button
+- `PricingSection.tsx` -- Get Started button
+- `LandingFooter.tsx` -- Final CTA button
+- `FloatingMobileCTA.tsx` -- floating mobile button
 
-Change the FinTrack+ price cell to show:
-- Slashed `₹799` above the `₹499`
-- Slashed `~₹27/day` before `~₹17/day`
+Since these already check for `http` and use `window.location.href` for absolute URLs, they will automatically work once `getAppUrl()` returns `https://app.fintrackplus.com/...`.
 
-### 3c. PricingSection per-day line (line 111)
-**File: `src/components/landing/PricingSection.tsx`**
+## Technical Details
 
-Change: `That's just ~₹17/day for complete peace of mind`
-To: `That's just <span class="line-through">~₹27/day</span> ~₹17/day for complete peace of mind`
+```text
+Before:
+  fintrackplus.com  -->  Landing (/) + App (/application/*)
+  getAppUrl('/auth') --> "/application/auth"
 
-### 3d. LandingFooter (line 38)
-**File: `src/components/landing/LandingFooter.tsx`**
+After:
+  fintrackplus.com      -->  Landing page only
+  app.fintrackplus.com  -->  App (/, /auth, /install, etc.)
+  getAppUrl('/auth')    --> "https://app.fintrackplus.com/auth"
+```
 
-Change: `₹499/month`
-To: `<span class="line-through">₹799</span> ₹499/month`
+### Key changes in `domainUtils.ts`:
 
-### 3e. FAQSection (line 43)
-**File: `src/components/landing/FAQSection.tsx`**
+- `isLandingDomain()`: stays the same (fintrackplus.com / www)
+- New `isAppDomain()`: detects `app.fintrackplus.com`
+- `getAppUrl()`: returns `https://app.fintrackplus.com{path}` when on landing domain
+- `appPath()`: same behavior -- returns absolute app subdomain URL when on landing domain
 
-Update the pricing FAQ answer to include the slashed original price.
+### Key changes in `App.tsx`:
 
-## Summary of Files Changed
-- `TestimonialsSection.tsx` -- remove em dashes from quotes
-- `FeaturedInSection.tsx` -- redesign with pill badges and visual polish
-- `HeroSection.tsx` -- add slashed ₹27/day before ₹17/day
-- `ComparisonSection.tsx` -- add slashed ₹799 and ₹27/day in bottom row
-- `PricingSection.tsx` -- add slashed ₹27/day in the per-day subtitle
-- `LandingFooter.tsx` -- add slashed ₹799 before ₹499
-- `FAQSection.tsx` -- add slashed price in FAQ answer
+- Add `isAppDomain()` check: when on `app.fintrackplus.com`, serve standard app routes (same as the current non-landing-domain branch)
+- Keep existing `isLandingDomain()` branch but the `/application/*` routes remain for backward compatibility
+
+## Files Changed
+- `src/lib/domainUtils.ts` -- update URL generation to point to app subdomain
+- `src/App.tsx` -- add app subdomain routing branch
