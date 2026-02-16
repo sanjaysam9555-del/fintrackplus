@@ -1,83 +1,91 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
   ArrowLeft, FolderKanban, Users, Grid3X3, Store, Tag,
   Wallet, CreditCard, Receipt, RefreshCw, FileBarChart,
   Brain, Search, Copy, Undo2, Moon, Camera, CalendarRange,
-  X, Sparkles
+  Sparkles, BarChart3, Share2, Bell, Cloud, WifiOff,
+  SlidersHorizontal, Clock, ArrowDownUp, TrendingUp,
+  PiggyBank, UserCircle, PlusCircle, Download
 } from "lucide-react";
-
-// Import real screenshots
-import projectsTab from "@/assets/landing/real/projects-tab.png";
-import partners from "@/assets/landing/real/partners.png";
-import categories from "@/assets/landing/real/categories.png";
-import vendors from "@/assets/landing/real/vendors.png";
-import cashOnline from "@/assets/landing/real/cash-online-cropped.png";
-import partPayment from "@/assets/landing/real/part-payment-cropped.png";
-import gstForm from "@/assets/landing/real/gst-form.png";
-import recurringCropped from "@/assets/landing/real/recurring-cropped.png";
-import reports from "@/assets/landing/real/reports.png";
-import aiInsights from "@/assets/landing/real/ai-insights-cropped.png";
-import globalSearch from "@/assets/landing/real/global-search-cropped.png";
-import duplicateCropped from "@/assets/landing/real/duplicate-cropped.png";
-import darkMode from "@/assets/landing/real/dark-mode-cropped.png";
-import receiptCropped from "@/assets/landing/real/receipt-cropped.png";
-import fyCropped from "@/assets/landing/real/fy-cropped.png";
 
 interface Feature {
   icon: React.ElementType;
   title: string;
   description: string;
-  screenshot?: string;
   color: string;
 }
 
 interface FeatureGroup {
   title: string;
   subtitle: string;
+  accent: string;
   features: Feature[];
 }
 
 const featureGroups: FeatureGroup[] = [
   {
-    title: "Core Features",
-    subtitle: "Organize your business data",
+    title: "Organize",
+    subtitle: "Structure your business data",
+    accent: "from-amber-500/20 to-orange-500/20",
     features: [
-      { icon: FolderKanban, title: "Projects", description: "Track income & expenses per project with budgets and margins", screenshot: projectsTab, color: "bg-amber-500/10 text-amber-500" },
-      { icon: Users, title: "Partners", description: "Manage multiple business partners with separate balances", screenshot: partners, color: "bg-blue-500/10 text-blue-500" },
-      { icon: Grid3X3, title: "Categories", description: "Custom categories with icons and colors for quick tagging", screenshot: categories, color: "bg-purple-500/10 text-purple-500" },
-      { icon: Store, title: "Vendors", description: "Keep a directory of all your vendors and suppliers", screenshot: vendors, color: "bg-emerald-500/10 text-emerald-500" },
-      { icon: Tag, title: "Labels", description: "Flexible labels to tag and filter projects your way", color: "bg-pink-500/10 text-pink-500" },
+      { icon: FolderKanban, title: "Projects", description: "Track income & expenses per project", color: "bg-amber-500/15 text-amber-500" },
+      { icon: TrendingUp, title: "Budgets & Margins", description: "Set internal cost and client cost per project", color: "bg-orange-500/15 text-orange-500" },
+      { icon: Users, title: "Partners", description: "Multiple partners with separate balances", color: "bg-blue-500/15 text-blue-500" },
+      { icon: PiggyBank, title: "Partner Balances", description: "Opening + period income − expense = closing", color: "bg-sky-500/15 text-sky-500" },
+      { icon: Grid3X3, title: "Categories", description: "Custom icons and colors for quick tagging", color: "bg-purple-500/15 text-purple-500" },
+      { icon: Store, title: "Vendors", description: "Directory of all your vendors & suppliers", color: "bg-emerald-500/15 text-emerald-500" },
+      { icon: Tag, title: "Labels", description: "Flexible tags to filter projects your way", color: "bg-pink-500/15 text-pink-500" },
     ]
   },
   {
-    title: "Finance Tools",
-    subtitle: "Powerful money management",
+    title: "Track Money",
+    subtitle: "Powerful finance management",
+    accent: "from-green-500/20 to-emerald-500/20",
     features: [
-      { icon: Wallet, title: "Cash vs Online", description: "Split every transaction into cash and online payment modes", screenshot: cashOnline, color: "bg-green-500/10 text-green-500" },
-      { icon: CreditCard, title: "Part Payments", description: "Track installments and partial payments with due reminders", screenshot: partPayment, color: "bg-orange-500/10 text-orange-500" },
-      { icon: Receipt, title: "GST Tagging", description: "Mark transactions as GST-applicable for easy tax filing", screenshot: gstForm, color: "bg-red-500/10 text-red-500" },
-      { icon: RefreshCw, title: "Recurring", description: "Auto-detect and manage recurring transactions effortlessly", screenshot: recurringCropped, color: "bg-cyan-500/10 text-cyan-500" },
-      { icon: FileBarChart, title: "Reports", description: "Export detailed reports in CSV or PDF format anytime", screenshot: reports, color: "bg-indigo-500/10 text-indigo-500" },
+      { icon: PlusCircle, title: "Income & Expense", description: "Log every transaction with rich details", color: "bg-green-500/15 text-green-500" },
+      { icon: Wallet, title: "Cash vs Online", description: "Split payments into cash and online modes", color: "bg-teal-500/15 text-teal-500" },
+      { icon: CreditCard, title: "Part Payments", description: "Track installments with due date reminders", color: "bg-orange-500/15 text-orange-500" },
+      { icon: Receipt, title: "GST Tagging", description: "Mark transactions for easy tax filing", color: "bg-red-500/15 text-red-500" },
+      { icon: RefreshCw, title: "Recurring", description: "Auto-detect and manage recurring entries", color: "bg-cyan-500/15 text-cyan-500" },
     ]
   },
   {
-    title: "Smart Features",
+    title: "Analyze",
     subtitle: "AI-powered intelligence",
+    accent: "from-violet-500/20 to-indigo-500/20",
     features: [
-      { icon: Brain, title: "AI Insights", description: "Get smart summaries and spending analysis powered by AI", screenshot: aiInsights, color: "bg-violet-500/10 text-violet-500" },
-      { icon: Search, title: "Global Search", description: "Find any transaction, vendor, or project instantly", screenshot: globalSearch, color: "bg-sky-500/10 text-sky-500" },
-      { icon: Copy, title: "Duplicate Detection", description: "Automatic warnings when you enter similar transactions", screenshot: duplicateCropped, color: "bg-yellow-500/10 text-yellow-500" },
-      { icon: Undo2, title: "Undo Delete", description: "Accidentally deleted something? Undo it within seconds", color: "bg-rose-500/10 text-rose-500" },
+      { icon: BarChart3, title: "Dashboard & Charts", description: "Visual cash flow trends at a glance", color: "bg-indigo-500/15 text-indigo-500" },
+      { icon: Brain, title: "AI Insights", description: "Smart summaries and spending analysis", color: "bg-violet-500/15 text-violet-500" },
+      { icon: FileBarChart, title: "Reports Export", description: "Download CSV or PDF reports anytime", color: "bg-blue-500/15 text-blue-500" },
+      { icon: CalendarRange, title: "Financial Year", description: "Set FY start month and view by fiscal year", color: "bg-fuchsia-500/15 text-fuchsia-500" },
+      { icon: Clock, title: "Time Filters", description: "Filter by week, month, year, or custom range", color: "bg-rose-500/15 text-rose-500" },
     ]
   },
   {
-    title: "Customization",
-    subtitle: "Make it yours",
+    title: "Find & Fix",
+    subtitle: "Never lose track",
+    accent: "from-sky-500/20 to-blue-500/20",
     features: [
-      { icon: Moon, title: "Dark & OLED Mode", description: "Choose light, dark, or true OLED black for AMOLED screens", screenshot: darkMode, color: "bg-slate-500/10 text-slate-500" },
-      { icon: Camera, title: "Receipt Capture", description: "Attach receipt photos to any transaction for records", screenshot: receiptCropped, color: "bg-teal-500/10 text-teal-500" },
-      { icon: CalendarRange, title: "Financial Year", description: "Set your FY start month and view data by financial year", screenshot: fyCropped, color: "bg-fuchsia-500/10 text-fuchsia-500" },
+      { icon: Search, title: "Global Search", description: "Find any transaction, vendor, or project instantly", color: "bg-sky-500/15 text-sky-500" },
+      { icon: Copy, title: "Duplicate Detection", description: "Warnings when you enter similar transactions", color: "bg-yellow-500/15 text-yellow-500" },
+      { icon: Undo2, title: "Undo Delete", description: "Restore accidentally deleted entries in seconds", color: "bg-rose-500/15 text-rose-500" },
+      { icon: Bell, title: "Activity Log", description: "Full history of all changes and notifications", color: "bg-amber-500/15 text-amber-500" },
+      { icon: ArrowDownUp, title: "Sort & Filter", description: "Sort by date, amount, or recency with filters", color: "bg-slate-500/15 text-slate-500" },
+      { icon: SlidersHorizontal, title: "Advanced Filters", description: "Filter by category, vendor, project, and more", color: "bg-gray-500/15 text-gray-500" },
+    ]
+  },
+  {
+    title: "Personalize",
+    subtitle: "Make it yours",
+    accent: "from-pink-500/20 to-rose-500/20",
+    features: [
+      { icon: Moon, title: "Dark & OLED Mode", description: "Light, dark, or true black for AMOLED screens", color: "bg-slate-500/15 text-slate-500" },
+      { icon: Camera, title: "Receipt Capture", description: "Attach receipt photos to any transaction", color: "bg-teal-500/15 text-teal-500" },
+      { icon: UserCircle, title: "Profile", description: "Customize your name and avatar", color: "bg-blue-500/15 text-blue-500" },
+      { icon: Cloud, title: "Cloud Sync", description: "Your data syncs across devices automatically", color: "bg-cyan-500/15 text-cyan-500" },
+      { icon: WifiOff, title: "Offline Mode", description: "Works without internet, syncs when back online", color: "bg-orange-500/15 text-orange-500" },
+      { icon: Share2, title: "Share Transactions", description: "Share transaction details via any app", color: "bg-green-500/15 text-green-500" },
+      { icon: Download, title: "Install as App", description: "Add to home screen for a native app feel", color: "bg-purple-500/15 text-purple-500" },
     ]
   }
 ];
@@ -87,8 +95,6 @@ interface AppFeaturesGuideProps {
 }
 
 export const AppFeaturesGuide = ({ onBack }: AppFeaturesGuideProps) => {
-  const [expandedImage, setExpandedImage] = useState<string | null>(null);
-
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
@@ -98,58 +104,52 @@ export const AppFeaturesGuide = ({ onBack }: AppFeaturesGuideProps) => {
             <ArrowLeft size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold">App Features</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Sparkles size={22} className="text-primary" />
+              App Features
+            </h1>
             <p className="text-sm text-muted-foreground">Everything you can do</p>
           </div>
         </div>
       </div>
 
       {/* Feature Groups */}
-      <div className="px-4 space-y-8">
+      <div className="px-4 space-y-6">
         {featureGroups.map((group, groupIndex) => (
           <motion.div
             key={group.title}
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: groupIndex * 0.1 }}
+            transition={{ delay: groupIndex * 0.08 }}
           >
-            <div className="mb-3">
-              <h2 className="text-lg font-bold">{group.title}</h2>
-              <p className="text-sm text-muted-foreground">{group.subtitle}</p>
+            {/* Group Header */}
+            <div className="flex items-center gap-3 mb-3">
+              <div className={`h-8 w-1 rounded-full bg-gradient-to-b ${group.accent}`} />
+              <div>
+                <h2 className="text-base font-bold">{group.title}</h2>
+                <p className="text-xs text-muted-foreground">{group.subtitle}</p>
+              </div>
             </div>
-            <div className="space-y-3">
+
+            {/* Feature Rows */}
+            <div className="space-y-1.5 ml-1">
               {group.features.map((feature, featureIndex) => {
                 const Icon = feature.icon;
                 return (
                   <motion.div
                     key={feature.title}
-                    initial={{ opacity: 0, x: -10 }}
+                    initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: groupIndex * 0.1 + featureIndex * 0.04 }}
-                    className="bg-card rounded-2xl border border-border overflow-hidden shadow-card"
+                    transition={{ delay: groupIndex * 0.08 + featureIndex * 0.03 }}
+                    className="flex items-center gap-3 py-2 px-2 rounded-xl hover:bg-muted/50 transition-colors"
                   >
-                    <div className="p-4 flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${feature.color}`}>
-                        <Icon size={20} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm">{feature.title}</p>
-                        <p className="text-sm text-muted-foreground mt-0.5">{feature.description}</p>
-                      </div>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${feature.color}`}>
+                      <Icon size={18} />
                     </div>
-                    {feature.screenshot && (
-                      <button
-                        onClick={() => setExpandedImage(feature.screenshot!)}
-                        className="w-full border-t border-border"
-                      >
-                        <img
-                          src={feature.screenshot}
-                          alt={feature.title}
-                          className="w-full h-40 object-cover object-top"
-                          loading="lazy"
-                        />
-                      </button>
-                    )}
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm leading-tight">{feature.title}</p>
+                      <p className="text-xs text-muted-foreground leading-tight">{feature.description}</p>
+                    </div>
                   </motion.div>
                 );
               })}
@@ -157,38 +157,6 @@ export const AppFeaturesGuide = ({ onBack }: AppFeaturesGuideProps) => {
           </motion.div>
         ))}
       </div>
-
-      {/* Expanded Image Overlay */}
-      <AnimatePresence>
-        {expandedImage && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
-            onClick={() => setExpandedImage(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.8 }}
-              className="relative max-w-md w-full"
-            >
-              <button
-                onClick={() => setExpandedImage(null)}
-                className="absolute -top-10 right-0 p-2 text-white/80 hover:text-white"
-              >
-                <X size={24} />
-              </button>
-              <img
-                src={expandedImage}
-                alt="Feature screenshot"
-                className="w-full rounded-2xl shadow-2xl"
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
