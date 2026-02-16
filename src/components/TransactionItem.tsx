@@ -341,7 +341,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
         isOpen={isEditing}
       onClose={() => {
           setIsEditing(false);
-          setTimeout(() => onEditSheetChange?.(false), 300);
+          onEditSheetChange?.(false);
         }}
         transaction={transaction}
         userId={userId}
