@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users } from "lucide-react";
@@ -49,29 +49,6 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [vendorSearch, setVendorSearch] = useState("");
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(transaction.receiptUrl);
   const [isGst, setIsGst] = useState(transaction.isGst || false);
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Prevent Vaul's touch handlers from intercepting scroll inside the form
-  useEffect(() => {
-    if (!isOpen) return;
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const stopProp = (e: TouchEvent) => {
-      // Only stop propagation if the scrollable area can scroll
-      if (el.scrollHeight > el.clientHeight) {
-        e.stopPropagation();
-      }
-    };
-
-    el.addEventListener('touchstart', stopProp, { passive: true });
-    el.addEventListener('touchmove', stopProp, { passive: true });
-    
-    return () => {
-      el.removeEventListener('touchstart', stopProp);
-      el.removeEventListener('touchmove', stopProp);
-    };
-  }, [isOpen]);
 
 
   // Reset state when transaction changes
@@ -196,7 +173,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
               </div>
             </div>
             
-            <div ref={scrollRef} className="overflow-y-scroll overscroll-contain touch-pan-y" data-vaul-no-drag style={{ WebkitOverflowScrolling: 'touch', maxHeight: 'calc(85vh - 140px)' }}>
+            <div className="overflow-y-scroll overscroll-contain touch-pan-y" data-vaul-no-drag style={{ WebkitOverflowScrolling: 'touch', maxHeight: 'calc(85vh - 140px)' }}>
               <div className="p-4 space-y-4 pb-8">
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">

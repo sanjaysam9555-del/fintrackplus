@@ -163,7 +163,7 @@ export const ProjectDetailSheet = ({
   const isHealthy = actualMargin >= 0;
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => { if (!open && !isChildEditing) onClose(); }} shouldScaleBackground={false}>
+    <Drawer open={isOpen} onOpenChange={(open) => { if (!open && !isChildEditing) onClose(); }} shouldScaleBackground={false} modal={!isChildEditing}>
       <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")} overlayClassName={cn(isChildEditing && "hidden")}>
         <DrawerHeader className="border-b border-border pb-4 shrink-0">
           <div className="flex items-center gap-3">
