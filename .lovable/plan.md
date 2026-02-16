@@ -1,114 +1,42 @@
 
 
-# App Enhancement Plan: Documents, Installment Reminders, and Category Details
+# Fix: PWA Opens Landing Page Instead of Dashboard
 
-## Feature 1: Project Documents System
+## Root Cause
 
-### Overview
-Add the ability to attach documents (contracts, invoices, etc.) to projects, and provide a "Documents" section to browse all project files.
+Two issues are combining to cause this problem:
 
-### Database Changes
-- Create a `project_documents` table: `id`, `user_id`, `project_id`, `file_name`, `file_url`, `file_type`, `file_size`, `uploaded_at`
-- RLS policies scoped to `user_id`
-- Create a `project-documents` storage bucket (private, with user-scoped RLS)
+1. The `manifest.json` file sets `start_url: "/"` -- so when someone opens the app from their home screen, it always navigates to the root URL `/`
+2. On the production domain (`fintrackplus.com`), the route `/*` is a catch-all that renders the Landing page -- so the app always shows the marketing page first
 
-### UI Changes
+## Solution
 
-**Project Detail Sheet (`ProjectDetailSheet.tsx`)**
-- Add a "Documents" collapsible section below the existing vendor breakdown
-- Upload button that opens file picker (accepts PDF, images, DOCX, etc.)
-- Files uploaded to the `project-documents` storage bucket
-- Each document shown as a card with file name, type icon, size, and date
-- Tap to open/download, swipe or long-press to delete
+### 1. Update `manifest.json` start URL
 
-**Settings > Projects (`ProjectsSection.tsx` and `ProjectOverviewPage.tsx`)**
-- Show document count on project cards (e.g., "3 documents")
+Change `start_url` from `/` to `/application` so the PWA launches directly into the app area instead of the landing page.
 
-**No separate "Documents" tab** initially -- documents live inside their project's detail sheet, keeping things simple and contextual. A global "Documents" view can be added later if needed.
+### 2. Smart catch-all route in `App.tsx`
 
-### Technical Details
-- Upload flow: file picker -> upload to `project-documents` bucket -> insert row in `project_documents` table -> display in list
-- Store actions: `addProjectDocument`, `deleteProjectDocument`, fetch documents per project
-- Sync engine: add `project_documents` to cloud sync and realtime subscriptions
+Update the catch-all route on the landing domain so that when the app is running in **standalone/PWA mode** (i.e., launched from home screen), it redirects to `/application` (which shows dashboard or login) instead of showing the landing page.
 
----
+### 3. Add PWA detection utility in `domainUtils.ts`
 
-## Feature 2: Installment Due Date Reminders
+Add a helper function to detect if the app is running as an installed PWA (standalone mode), using `window.matchMedia('(display-mode: standalone)')`.
 
-### Overview
-When the app opens (or on the dashboard), check for any planned installments whose `expectedDate` matches today (or is overdue). Show a prominent reminder dialog/banner so the user can quickly mark them as received.
+## Technical Details
 
-### No Database Changes Needed
-Installment data already exists in `planned_installments` JSONB on transactions.
+**`public/manifest.json`**
+- Change `"start_url": "/"` to `"start_url": "/application"`
 
-### UI Changes
+**`src/lib/domainUtils.ts`**
+- Add `isPWA()` helper that checks `display-mode: standalone` or `navigator.standalone` (iOS Safari)
 
-**New Component: `InstallmentDueReminder.tsx`**
-- On dashboard load, scan all transactions with `isPartPayment = true` and `plannedInstallments` containing entries where `status = 'pending'` and `expectedDate <= today`
-- Display a modal/dialog listing each due installment:
-  - Transaction title/vendor
-  - Installment amount and expected date
-  - "Mark as Received" button (calls existing `confirmInstallment` store action)
-  - "Remind Later" / dismiss option
-- After confirming, the installment is marked received (same logic already in `PartPaymentTracker`)
+**`src/App.tsx`**
+- In the landing domain route block, change the catch-all from always rendering `<Landing />` to:
+  - If running as PWA (standalone mode): `<Navigate to="/application" replace />`
+  - Otherwise: `<Landing />`
 
-**Dashboard (`Dashboard.tsx`)**
-- Render `InstallmentDueReminder` at the top of the dashboard
-- Show a subtle banner if there are due installments, tapping opens the full reminder dialog
-- Works for both income and expense installments
-
-### Technical Details
-- Uses existing `confirmInstallment` from the store -- no new store actions needed
-- Filter logic: `transaction.plannedInstallments.filter(i => i.status === 'pending' && i.expectedDate <= format(today, 'yyyy-MM-dd'))`
-- Dismissed reminders tracked in local state (session-level, reappears next session)
-
----
-
-## Feature 3: Category Detail View (like Vendors)
-
-### Overview
-In Settings > Categories, tapping a category card opens a detail page showing all transactions under that category, with project filter chips -- matching the existing Vendors detail view pattern.
-
-### No Database Changes Needed
-Transaction data already references `categoryId`.
-
-### UI Changes
-
-**Categories Section (`CategoriesSection.tsx`)**
-- Add a `detailCategoryId` state (same pattern as `detailVendorName` in VendorsSection)
-- Category cards become tappable (chevron indicator)
-- Tapping opens a detail view with:
-  - Category header (icon, color, name, type badge)
-  - Transaction count and total amount
-  - Income/Expense segmented filter (since a category is typed, but we show all matching entries)
-  - Project filter chips (same as vendors)
-  - Scrollable list of transactions using `TransactionItem` component
-- Edit and Delete buttons remain accessible from the detail view header
-- Back button returns to category list
-
-### Technical Details
-- Compute `categoryStats` from transactions (total, count, projectIds, all transactions) -- same pattern as `vendorStats` in VendorsSection
-- Reuse `TransactionItem` component for rendering entries
-- Add `onEditSheetChange` prop support for nested edit sheets
-- Project filter chips use the same toggle pattern as VendorsSection
-
----
-
-## Implementation Order
-
-1. **Category Detail View** -- smallest scope, no DB changes, follows existing vendor pattern exactly
-2. **Installment Due Reminders** -- no DB changes, new component wired into Dashboard
-3. **Project Documents** -- requires new table, storage bucket, and upload UI
-
-## Files to Create/Modify
-
-| File | Change |
-|------|--------|
-| `src/components/settings/CategoriesSection.tsx` | Add detail view with transaction list |
-| `src/components/InstallmentDueReminder.tsx` | New -- due installment dialog |
-| `src/components/Dashboard.tsx` | Add InstallmentDueReminder |
-| `supabase/migrations/` | New migration for `project_documents` table + storage bucket |
-| `src/lib/store.ts` | Add document CRUD actions |
-| `src/lib/syncEngine.ts` | Add document sync |
-| `src/components/ProjectDetailSheet.tsx` | Add documents section with upload |
-
+## Files Modified
+1. `public/manifest.json` -- update start_url
+2. `src/lib/domainUtils.ts` -- add isPWA() helper
+3. `src/App.tsx` -- smart catch-all with PWA detection
