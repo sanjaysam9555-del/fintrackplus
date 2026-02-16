@@ -1,48 +1,64 @@
 
+# Fix Testimonials, Featured Section, and Slashed Prices
 
-# Add "Featured In" and Testimonials Sections
+## 1. Remove em dashes from Testimonials
 
-## 1. New File: `src/components/landing/FeaturedInSection.tsx`
+**File: `src/components/landing/TestimonialsSection.tsx`**
 
-A horizontal logo strip showing "As Featured In" with platform names: **WedMeGood**, **WeddingWire**, **Social Samosa**. Since we don't have actual logos, we'll use styled text-based brand pills with a subtle grayscale/muted aesthetic (common pattern for "featured in" strips). Each name will be displayed in a distinct font weight inside a row, separated by dots or pipes, with a fade-in animation.
+Replace all "—" (em dashes) in the quote text:
+- Gaurav: "8-10 event setups" (use hyphen), "...every rupee goes. No more digging..." (replace dash with period)
+- Gauri: "...books were. First time..." (replace dash with period)
 
-- Section header: Small uppercase "AS FEATURED IN" label
-- Brand names rendered as large, semi-bold, spaced-out text in `text-muted-foreground` style -- clean and editorial
-- Subtle fade-in animation on scroll
+## 2. Redesign "Featured In" Section
 
-## 2. New File: `src/components/landing/TestimonialsSection.tsx`
+**File: `src/components/landing/FeaturedInSection.tsx`**
 
-Three testimonial cards in a responsive grid (1 column mobile, 3 columns desktop):
+The current section is plain muted text. Upgrade to a more polished look:
+- Add a subtle pill/badge style for each brand name with a border, slight background tint, and padding
+- Use a separator dot or vertical divider between brands
+- Add a faint gradient line above the brand row for visual separation
+- Slightly increase font size and give each brand a subtle hover glow or shimmer animation
+- Keep the muted/editorial tone but make it feel intentional and premium, not just plain text
 
-| Name | Role | Company Type | Quote Theme |
-|------|------|-------------|-------------|
-| Gaurav Bhatia | Founder | Entertainment & SFX Co. | Tracking expenses across multiple event setups |
-| Abhinav Sharma | Lead Planner | Wedding Planning | Managing vendor payments and partner splits |
-| Gauri Arora | Co-founder | Production House | GST exports and financial visibility |
+## 3. Add Slashed Prices Everywhere
 
-Each card will feature:
-- 5-star rating row
-- Quote text in italics
-- Name, role, and company in a footer area
-- Avatar fallback with initials (using existing Avatar component)
-- Card styling matching existing landing aesthetic: `bg-card/80 backdrop-blur-sm border ring-1 ring-primary/10` with the blue glow shadow
-- Staggered entrance animations
+### 3a. HeroSection (line 116)
+**File: `src/components/landing/HeroSection.tsx`**
 
-## 3. Update: `src/pages/Landing.tsx`
+Change: `Starts at ~₹17/day`
+To: `Starts at <span class="line-through text-muted-foreground">~₹27/day</span> <span class="font-semibold text-foreground">~₹17/day</span>`
 
-- Import both new components
-- Place **FeaturedInSection** right after **SocialProofSection** (stats + featured in = strong trust block)
-- Place **TestimonialsSection** after FeaturedInSection, before PersonaSection
-- Add SectionDividers between them
+(₹799/month = ~₹27/day, ₹499/month = ~₹17/day)
 
-### Updated section order (around the change area):
-```
-SocialProofSection
-SectionDivider
-FeaturedInSection      <-- NEW
-SectionDivider
-TestimonialsSection    <-- NEW
-SectionDivider
-PersonaSection
-```
+### 3b. ComparisonSection bottom row (lines 83-86)
+**File: `src/components/landing/ComparisonSection.tsx`**
 
+Change the FinTrack+ price cell to show:
+- Slashed `₹799` above the `₹499`
+- Slashed `~₹27/day` before `~₹17/day`
+
+### 3c. PricingSection per-day line (line 111)
+**File: `src/components/landing/PricingSection.tsx`**
+
+Change: `That's just ~₹17/day for complete peace of mind`
+To: `That's just <span class="line-through">~₹27/day</span> ~₹17/day for complete peace of mind`
+
+### 3d. LandingFooter (line 38)
+**File: `src/components/landing/LandingFooter.tsx`**
+
+Change: `₹499/month`
+To: `<span class="line-through">₹799</span> ₹499/month`
+
+### 3e. FAQSection (line 43)
+**File: `src/components/landing/FAQSection.tsx`**
+
+Update the pricing FAQ answer to include the slashed original price.
+
+## Summary of Files Changed
+- `TestimonialsSection.tsx` -- remove em dashes from quotes
+- `FeaturedInSection.tsx` -- redesign with pill badges and visual polish
+- `HeroSection.tsx` -- add slashed ₹27/day before ₹17/day
+- `ComparisonSection.tsx` -- add slashed ₹799 and ₹27/day in bottom row
+- `PricingSection.tsx` -- add slashed ₹27/day in the per-day subtitle
+- `LandingFooter.tsx` -- add slashed ₹799 before ₹499
+- `FAQSection.tsx` -- add slashed price in FAQ answer
