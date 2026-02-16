@@ -108,7 +108,7 @@ export const PricingSection = () => {
             </div>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              That's just ~₹17/day for complete peace of mind
+              That's just <span className="line-through">~₹27/day</span> ~₹17/day for complete peace of mind
             </p>
 
             <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-warning dark:text-yellow-400 font-medium">

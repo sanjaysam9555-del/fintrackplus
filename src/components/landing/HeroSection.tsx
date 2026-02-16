@@ -113,7 +113,7 @@ export const HeroSection = () => {
             </motion.div>
 
             <motion.p variants={springIn} className="mt-3 text-xs text-muted-foreground">
-              Join 500+ planners already using FinTrack⁺ · Starts at <span className="font-semibold text-foreground">~₹17/day</span>
+              Join 500+ planners already using FinTrack⁺ · Starts at <span className="line-through">~₹27/day</span>{" "}<span className="font-semibold text-foreground">~₹17/day</span>
             </motion.p>
           </motion.div>
 
