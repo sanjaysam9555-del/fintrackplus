@@ -798,7 +798,7 @@ export const useFinanceStore = create<FinanceStore>()(
               budget_limit: project.internalCost,
               margin: project.clientCost || 0,
               color: project.color,
-              label_ids: JSON.stringify(project.labelIds || []),
+              label_ids: project.labelIds || [],
             },
             userId: uid,
           });
@@ -878,7 +878,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.clientCost !== undefined) dbUpdates.margin = updates.clientCost;
           if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
           if (updates.color) dbUpdates.color = updates.color;
-          if (updates.labelIds !== undefined) dbUpdates.label_ids = JSON.stringify(updates.labelIds);
+          if (updates.labelIds !== undefined) dbUpdates.label_ids = updates.labelIds;
           
           addToSyncQueue({
             type: 'update',
@@ -1334,7 +1334,7 @@ export const useFinanceStore = create<FinanceStore>()(
               type: 'update',
               entity: 'project',
               entityId: proj.id,
-              data: { label_ids: JSON.stringify(proj.labelIds?.filter(lid => lid !== id) || []) },
+              data: { label_ids: proj.labelIds?.filter(lid => lid !== id) || [] },
               userId,
             });
           }
