@@ -1,52 +1,60 @@
 
+# Fix All CTA and Auth Redirects Using Path-Based Routing
 
-# Fix Remaining Domain Routing Issues
+## The Problem
 
-Two issues found during the flow review that need fixing before everything is production-ready.
+Lovable's hosting redirects all non-primary custom domains to the primary domain (`fintrackplus.com`) at the server level, before any client-side code executes. This means `app.fintrackplus.com` will always bounce users back to `fintrackplus.com` -- no amount of JavaScript can fix a server-level redirect.
 
-## Issue 1: PWA manifest start_url
+This is why `/application/` path-based routing was working before and the subdomain approach is not.
 
-**File: `public/manifest.json`**
+## The Solution
 
-The `start_url` is still set to `/application`, which was the old path prefix. Since PWA users will now install from `app.fintrackplus.com`, the start URL should be `/` (the root of the app subdomain).
+Revert all links and redirects to use the path-based approach that was already working:
 
-Change `"start_url": "/application"` to `"start_url": "/"`.
+- Landing page: `fintrackplus.com` (root `/`)
+- App/Auth: `fintrackplus.com/application/auth`
+- Get Started: `fintrackplus.com/application/auth?mode=signup`
+- Existing User: `fintrackplus.com/application/auth?mode=login`
 
-## Issue 2: Password reset redirect URL is broken on landing domain
+## Changes
 
-**File: `src/hooks/useAuth.tsx`** (line 68)
+### 1. `src/lib/domainUtils.ts`
 
-Current code:
+Revert `appPath()` to return `/application` paths instead of `https://app.fintrackplus.com`:
+
 ```
-redirectTo: `${window.location.origin}${appPath('/reset-password')}`
-```
-
-When a user triggers "Forgot Password" from the landing domain (`fintrackplus.com`):
-- `window.location.origin` = `https://fintrackplus.com`
-- `appPath('/reset-password')` = `https://app.fintrackplus.com/reset-password` (absolute URL)
-- Result: `https://fintrackplus.comhttps://app.fintrackplus.com/reset-password` (broken!)
-
-**Fix:** The reset password redirect should always point to `app.fintrackplus.com`. Use a helper that returns a full absolute URL correctly:
-
-```typescript
-// If on landing domain, redirect to app subdomain
-// If on app domain or dev, use current origin
-const resetUrl = isLandingDomain()
-  ? `https://app.fintrackplus.com/reset-password`
-  : `${window.location.origin}/reset-password`;
+Before:  return `https://app.fintrackplus.com${cleanPath}`;
+After:   return `/application${cleanPath}`;
 ```
 
-This also applies to the `emailRedirectTo` in `signUp` (line 47), which uses `window.location.origin`. For sign-up email verification links clicked from `fintrackplus.com`, users would land back on the landing page rather than the app. This should also point to `app.fintrackplus.com` when on the landing domain.
+This fixes every CTA button (Get Started, Existing User, floating mobile CTA, final CTA) since they all call `getAppUrl()` which calls `appPath()`.
 
-## Summary of Changes
+### 2. `src/hooks/useAuth.tsx`
 
-| File | Change |
-|------|--------|
-| `public/manifest.json` | Update `start_url` from `/application` to `/` |
-| `src/hooks/useAuth.tsx` | Fix `resetPassword` redirect URL to avoid double-origin on landing domain |
-| `src/hooks/useAuth.tsx` | Fix `signUp` emailRedirectTo to point to app subdomain when on landing domain |
+Update `getAuthRedirectUrl` to use the same path-based approach:
 
-## Technical Detail
+- On landing domain: `https://fintrackplus.com/application{path}`
+- On preview/dev: `{origin}{path}`
 
-The root cause is that `appPath()` returns an **absolute URL** (`https://app.fintrackplus.com/...`) when on the landing domain, but the auth code prepends `window.location.origin` to it, creating a malformed double-URL. The fix is to use `appPath()` directly (since it already returns a full URL on landing domain) or use conditional logic with `isLandingDomain()`.
+This fixes email verification links and password reset links sent via email.
 
+### 3. `public/manifest.json`
+
+Revert `start_url` from `/` back to `/application` so PWA installs launch into the app dashboard.
+
+### 4. Manual step: Remove `app.fintrackplus.com` from domain settings
+
+Since the subdomain just redirects to the primary domain, it serves no purpose. Go to **Settings -> Domains** and remove `app.fintrackplus.com`. Keep `fintrackplus.com` and `www.fintrackplus.com`.
+
+## What the user experience will be
+
+- Visit `fintrackplus.com` or `www.fintrackplus.com` -- sees the landing page
+- Click "Get Started" -- navigates to `fintrackplus.com/application/auth?mode=signup`
+- Click "Existing User" -- navigates to `fintrackplus.com/application/auth?mode=login`
+- Email verification link -- opens `fintrackplus.com/application/`
+- Password reset link -- opens `fintrackplus.com/application/reset-password`
+- PWA install -- launches at `fintrackplus.com/application/`
+
+## Why not subdomains?
+
+A true subdomain setup (`app.fintrackplus.com`) would require a **second, separate Lovable project** for the app. That is a significant architectural change (splitting code, duplicating shared components, managing two deployments). The path-based approach gives the exact same user experience within a single project and is already proven to work.
