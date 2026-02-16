@@ -1,42 +1,75 @@
 
+# Fix: Installment Confirmation with Payment Method Selection
 
-# Fix: PWA Opens Landing Page Instead of Dashboard
-
-## Root Cause
-
-Two issues are combining to cause this problem:
-
-1. The `manifest.json` file sets `start_url: "/"` -- so when someone opens the app from their home screen, it always navigates to the root URL `/`
-2. On the production domain (`fintrackplus.com`), the route `/*` is a catch-all that renders the Landing page -- so the app always shows the marketing page first
+## Problem
+When confirming an installment as received, the system always copies the **parent transaction's payment method** (e.g., cash). In reality, different installments may be received via different methods -- installment 2 might come in cash while installment 3 arrives online. The current flow has no way to specify this, leading to inaccurate cash vs. online balance tracking.
 
 ## Solution
+Add a **confirmation step** before marking an installment as received. Instead of immediately confirming, the user sees a small inline form where they can choose the payment method (cash / online) and optionally change the partner. This applies everywhere installments are confirmed: the Dashboard reminder dialog, the Part Payment Tracker, and the Installment Row component.
 
-### 1. Update `manifest.json` start URL
+## Changes
 
-Change `start_url` from `/` to `/application` so the PWA launches directly into the app area instead of the landing page.
+### 1. Update store: `confirmInstallment` accepts payment method override
+**File:** `src/lib/store.ts`
+- Add an optional `overrides` parameter to `confirmInstallment`: `{ paymentMethod?: PaymentMethod, partnerId?: string }`
+- Use `overrides.paymentMethod ?? parent.paymentMethod` when creating the linked transaction
+- Same for `partnerId`
 
-### 2. Smart catch-all route in `App.tsx`
+### 2. Create a reusable confirmation mini-form component
+**File:** `src/components/InstallmentConfirmForm.tsx` (new)
+- Small inline card that appears when user taps "Confirm" / "Received"
+- Shows:
+  - Payment method toggle: Cash / Online (radio buttons, defaulting to parent's method)
+  - Partner selector dropdown (optional, defaults to parent's partner)
+  - "Confirm Payment" button and "Cancel" link
+- Calls `confirmInstallment` with the chosen overrides
 
-Update the catch-all route on the landing domain so that when the app is running in **standalone/PWA mode** (i.e., launched from home screen), it redirects to `/application` (which shows dashboard or login) instead of showing the landing page.
+### 3. Update InstallmentDueReminder dialog
+**File:** `src/components/InstallmentDueReminder.tsx`
+- Replace the one-click "Received" button with a two-step flow:
+  - First tap: expand the installment card to show the `InstallmentConfirmForm`
+  - Second tap: confirm with chosen payment method
 
-### 3. Add PWA detection utility in `domainUtils.ts`
+### 4. Update PartPaymentTracker
+**File:** `src/components/PartPaymentTracker.tsx`
+- Same two-step flow for the "Confirm" button on pending installments
+- Show `InstallmentConfirmForm` inline when user clicks "Confirm"
 
-Add a helper function to detect if the app is running as an installed PWA (standalone mode), using `window.matchMedia('(display-mode: standalone)')`.
+### 5. Update InstallmentRow
+**File:** `src/components/InstallmentRow.tsx`
+- When `showConfirmButton` is true, clicking "Confirm Payment Received" expands the `InstallmentConfirmForm` instead of immediately confirming
 
 ## Technical Details
 
-**`public/manifest.json`**
-- Change `"start_url": "/"` to `"start_url": "/application"`
+**Store signature change:**
+```
+confirmInstallment(
+  parentTransactionId: string,
+  installmentId: string,
+  userId?: string,
+  overrides?: { paymentMethod?: PaymentMethod; partnerId?: string }
+)
+```
 
-**`src/lib/domainUtils.ts`**
-- Add `isPWA()` helper that checks `display-mode: standalone` or `navigator.standalone` (iOS Safari)
+**InstallmentConfirmForm props:**
+```
+interface InstallmentConfirmFormProps {
+  defaultPaymentMethod: PaymentMethod;
+  defaultPartnerId?: string;
+  amount: number;
+  onConfirm: (paymentMethod: PaymentMethod, partnerId?: string) => void;
+  onCancel: () => void;
+}
+```
 
-**`src/App.tsx`**
-- In the landing domain route block, change the catch-all from always rendering `<Landing />` to:
-  - If running as PWA (standalone mode): `<Navigate to="/application" replace />`
-  - Otherwise: `<Landing />`
+The form uses the existing `RadioGroup` component for cash/online selection and a simple `Select` dropdown for partners (populated from the store's partners list). It's compact enough to render inline within cards without opening a separate dialog.
 
-## Files Modified
-1. `public/manifest.json` -- update start_url
-2. `src/lib/domainUtils.ts` -- add isPWA() helper
-3. `src/App.tsx` -- smart catch-all with PWA detection
+## Files Summary
+
+| File | Action |
+|------|--------|
+| `src/lib/store.ts` | Modify `confirmInstallment` to accept overrides |
+| `src/components/InstallmentConfirmForm.tsx` | Create new reusable form component |
+| `src/components/InstallmentDueReminder.tsx` | Use two-step confirm flow |
+| `src/components/PartPaymentTracker.tsx` | Use two-step confirm flow |
+| `src/components/InstallmentRow.tsx` | Use two-step confirm flow |
