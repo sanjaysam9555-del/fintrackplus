@@ -1,48 +1,56 @@
 
+
 # Fix: Edit Transaction Form Not Scrollable in Project Detail View
 
-## Root Cause
+## Root Cause (Definitive)
 
-The parent Vaul `Drawer` (ProjectDetailSheet) remains `open={true}` even when the child edit sheet appears. Vaul holds a **body scroll lock** (`overflow: hidden`, `data-scroll-locked`) for the entire time its drawer is open. The current MutationObserver hack tries to strip these attributes, but Vaul immediately re-applies them, creating an infinite loop that destabilizes touch event handling on mobile.
+The `ProjectDetailSheet` uses a Vaul `Drawer` component. When a transaction is clicked for editing:
 
-The `overflow-hidden` on the outer `motion.div` container combined with this body-level fight makes the inner `overflow-y-auto` div unable to scroll on touch devices.
+1. The Vaul Drawer stays `open={true}` (content is just hidden via CSS `hidden` class)
+2. Vaul maintains a **body-level scroll lock** (`overflow: hidden`, `data-scroll-locked`) as long as it's open
+3. The `EditTransactionSheet` renders via `createPortal` at body level, but the body is scroll-locked by Vaul
+4. Previous fixes (MutationObserver, stopPropagation, explicit heights) all failed because Vaul continuously re-enforces its lock
 
 ## The Fix
 
-**File: `src/components/EditTransactionSheet.tsx`**
+**Set `modal={false}` on the Vaul Drawer when the child edit sheet is open.** This tells Vaul to release its body scroll lock and pointer-event blocking, allowing the portaled `EditTransactionSheet` to scroll freely.
 
-Replace the MutationObserver approach with a simpler, more reliable strategy:
+### Changes
 
-1. **Remove the MutationObserver `useEffect` entirely** -- it fights Vaul in an infinite loop and is the core problem.
+**File: `src/components/ProjectDetailSheet.tsx`** (1 line change)
 
-2. **Change the scrollable container** from using flex-based height calculation to an explicit calculated max-height using CSS `calc()`. This removes reliance on flex layout working correctly inside a fixed container with `overflow-hidden`:
-
-   - Change the outer `motion.div` from `max-h-[85vh] flex flex-col overflow-hidden` to just `max-h-[85vh]` (remove `flex flex-col overflow-hidden`)
-   - Give the scrollable `div` an explicit `max-h-[calc(85vh-140px)]` (subtracting the header and footer heights) with `overflow-y-scroll` (forced, not auto)
-
-3. **Add `touch-action: pan-y`** on the scrollable container to explicitly tell the browser to allow vertical touch scrolling, preventing Vaul's gesture system from intercepting it.
-
-4. **Keep** `data-vaul-no-drag` and `WebkitOverflowScrolling: 'touch'` as they help on iOS.
-
-### Summary of Changes
+Line 166 -- add the `modal` prop that toggles based on `isChildEditing`:
 
 ```text
-Before (line 173):
-  className="fixed bottom-0 left-0 right-0 z-[80] bg-card rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden"
+Before:
+  <Drawer open={isOpen} onOpenChange={...} shouldScaleBackground={false}>
 
 After:
-  className="fixed bottom-0 left-0 right-0 z-[80] bg-card rounded-t-3xl max-h-[85vh] overflow-hidden"
-
-
-Before (line 202):
-  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-auto" data-vaul-no-drag ...>
-
-After:
-  <div className="overflow-y-scroll overscroll-contain touch-pan-y" data-vaul-no-drag 
-       style={{ WebkitOverflowScrolling: 'touch', maxHeight: 'calc(85vh - 140px)' }}>
+  <Drawer open={isOpen} onOpenChange={...} shouldScaleBackground={false} modal={!isChildEditing}>
 ```
 
-- Lines 53-78 (MutationObserver useEffect): **Delete entirely**
-- The 140px accounts for: drag handle (~12px) + header bar (~68px) + sticky footer (~60px)
+When `isChildEditing` is `true`, `modal={false}` causes Vaul to:
+- Remove `overflow: hidden` from the body
+- Remove `data-scroll-locked` attribute
+- Remove `pointer-events: none`
+- Stop intercepting touch events globally
 
-This approach does not fight Vaul at all. It simply gives the scrollable region an explicit pixel-based height constraint and forces scroll behavior, which works reliably on all mobile browsers regardless of body scroll state.
+When editing finishes, `modal` goes back to `true` and Vaul re-applies its normal scroll lock for the drawer.
+
+**File: `src/components/EditTransactionSheet.tsx`** (cleanup)
+
+Remove the `stopPropagation` useEffect and `scrollRef` that were previously added as workarounds -- they are no longer needed since Vaul will no longer be locking scrolling.
+
+- Delete lines 52-74 (the `scrollRef` and touch event `useEffect`)
+- Remove `ref={scrollRef}` from the scrollable div (line 199)
+
+### Why This Works
+
+This is the correct API-level solution. Instead of fighting Vaul's scroll lock with hacks, we tell Vaul to stop locking. The `modal` prop is the official Vaul mechanism for this. The drawer content is already hidden via CSS when editing, so there's no visual difference.
+
+### Technical Details
+
+- `modal={false}` in Vaul/Radix means the dialog doesn't trap focus or lock scroll
+- The drawer remains mounted (preserving state) but becomes non-modal
+- When editing ends, `isChildEditing` becomes `false`, restoring `modal={true}`
+- The existing explicit `maxHeight: calc(85vh - 140px)` and `overflow-y-scroll` on the edit form remain and handle the actual scrolling
