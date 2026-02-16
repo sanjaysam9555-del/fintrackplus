@@ -52,10 +52,18 @@ export const ProjectDetailSheet = ({
 }: ProjectDetailSheetProps) => {
   const { getCategoryById, updateProject, transactions: allTransactions } = useFinanceStore();
   const [isChildEditing, setIsChildEditing] = useState(false);
+  const [isModalEnabled, setIsModalEnabled] = useState(true);
   
   const handleChildEditSheetChange = useCallback((open: boolean) => {
     setIsChildEditing(open);
     onEditSheetChange?.(open);
+    if (open) {
+      // Immediately disable modal when editing starts
+      setIsModalEnabled(false);
+    } else {
+      // Delay re-enabling modal so overlay doesn't flash
+      setTimeout(() => setIsModalEnabled(true), 400);
+    }
   }, [onEditSheetChange]);
   const [notes, setNotes] = useState("");
   const [isSavingNotes, setIsSavingNotes] = useState(false);
@@ -163,7 +171,7 @@ export const ProjectDetailSheet = ({
   const isHealthy = actualMargin >= 0;
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => { if (!open && !isChildEditing) onClose(); }} shouldScaleBackground={false} modal={!isChildEditing}>
+    <Drawer open={isOpen} onOpenChange={(open) => { if (!open && !isChildEditing) onClose(); }} shouldScaleBackground={false} modal={isModalEnabled}>
       <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")} overlayClassName={cn(isChildEditing && "hidden")}>
         <DrawerHeader className="border-b border-border pb-4 shrink-0">
           <div className="flex items-center gap-3">
