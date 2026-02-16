@@ -1,33 +1,37 @@
 
 
-# Redesign App Features Guide: Flowing Icon-Based Layout
+# Add Missing Features to Landing Page
 
-## Overview
-Replace the current screenshot-heavy feature guide with a clean, flowing, icon-driven design. No images -- just elegant cards with colorful icons, titles, and concise descriptions. Also expand the feature list to cover everything the app offers.
+## Problem
+The landing page currently showcases ~16 features with screenshots, but the app has ~30 features total. About 14 features from the App Features Guide are missing from the landing page:
 
-## Design Approach
-- Remove all screenshot imports and the image overlay logic
-- Each feature group gets a visually distinct header with a gradient accent
-- Features within a group are rendered as compact pill/chip-style rows with colored icon circles -- no large cards, just a flowing list
-- Add missing features: Notifications/Activity Log, Cloud Sync, Offline Mode, Onboarding, Sorting/Filtering, Time Filters, Cash Flow Charts, Share Transactions, Profile Customization, PWA/Install, Project Budgets and Margins, Partner Balances
+**Missing features:**
+- Budgets and Margins, Partner Balances, Labels (Organize)
+- Income and Expense logging (Track Money)
+- Dashboard and Charts, Reports Export, Time Filters (Analyze)
+- Duplicate Detection, Activity Log, Sort and Filter, Advanced Filters (Find and Fix)
+- Profile, Cloud Sync, Offline Mode, Share Transactions, Install as App (Personalize)
 
-## Updated Feature Groups
+## Approach
+Add a new "Everything Else" section at the bottom of the features area (after the existing "And there's more" secondary grid). This section will use a clean, icon-driven layout -- no screenshots -- matching the landing page's existing card aesthetic.
 
-1. **Organize** -- Projects, Partners, Categories, Vendors, Labels, Project Budgets and Margins
-2. **Track Money** -- Income and Expense Logging, Cash vs Online Split, Part Payments and Installments, GST Tagging, Recurring Transactions
-3. **Analyze** -- Dashboard and Cash Flow Charts, AI Insights and Summaries, Reports Export (CSV/PDF), Financial Year View, Time Filters (Week/Month/Year/Custom)
-4. **Find and Fix** -- Global Search, Duplicate Detection, Undo Delete, Activity Log and Notifications, Sort and Filter Transactions
-5. **Personalize** -- Dark and OLED Mode, Receipt Capture, Profile Customization, Cloud Sync, Offline Mode, Share Transactions
+The layout will be a tight 2-column (mobile) / 3-column (tablet) / 4-column (desktop) grid of compact icon cards. Each card has a colored icon circle, a bold title, and a one-line description. This keeps it scannable and visually consistent without needing images.
+
+## Visual Design
+- Section header: "30+ features. Zero complexity." with a subtitle
+- Cards: Compact, minimal -- 40px colored icon circle, title, one-line description
+- Card style: Same `bg-card/80 backdrop-blur-sm border ring-1 ring-primary/10` as existing landing cards
+- Staggered entrance animations matching the rest of the page
 
 ## Technical Changes
 
-### File: `src/components/settings/AppFeaturesGuide.tsx` (full rewrite)
-- Remove all image imports (15 imports removed)
-- Remove `expandedImage` state and the `AnimatePresence` overlay
-- Remove the `screenshot` field from the `Feature` interface
-- Expand the `featureGroups` array to ~28 features across 5 groups
-- Add new Lucide icons: `BarChart3`, `Share2`, `Bell`, `CloudIcon`, `WifiOff`, `SlidersHorizontal`, `Clock`, `ArrowDownUp`, `TrendingUp`, `PiggyBank`, `Shield`
-- Render each feature as a compact row: 36px icon circle + title + one-line description
-- Group headers use a subtle gradient line accent for visual flow
-- Staggered entrance animations remain for polish
+### File: `src/components/landing/FeaturesGrid.tsx`
+
+1. Import additional Lucide icons: `Tag`, `PlusCircle`, `TrendingUp`, `PiggyBank`, `Wallet`, `BarChart3`, `FileBarChart`, `Clock`, `Copy`, `Bell`, `ArrowDownUp`, `SlidersHorizontal`, `UserCircle`, `Cloud`, `WifiOff`, `Share2`, `Download`
+
+2. Add a new `extraFeatures` array with the ~15 missing features, each having: icon, title, one-line description, and icon color class
+
+3. Add a fourth section block after the existing secondary features section, rendering the extra features in a responsive grid of compact icon-and-text cards (no screenshots)
+
+4. The section uses a clean header and the same motion animation patterns already in the file
 
