@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Transaction, Category, Project, ProjectLabel, FinanceState, TransactionType, UserProfile, Notification, Vendor, Partner, NotificationChange } from './types';
+import { Transaction, Category, Project, ProjectLabel, FinanceState, TransactionType, PaymentMethod, UserProfile, Notification, Vendor, Partner, NotificationChange } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
@@ -59,7 +59,7 @@ interface FinanceStore extends FinanceState {
   addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
-  confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string) => void;
+  confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; partnerId?: string }) => void;
   
   // Category actions
   addCategory: (category: Omit<Category, 'id'>, userId?: string) => void;
@@ -534,7 +534,7 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       // Confirm an installment payment - creates linked transaction and updates parent
-      confirmInstallment: async (parentTransactionId, installmentId, userId) => {
+      confirmInstallment: async (parentTransactionId, installmentId, userId, overrides) => {
         const parent = get().transactions.find(t => t.id === parentTransactionId);
         if (!parent || !parent.plannedInstallments) return;
         
@@ -553,8 +553,8 @@ export const useFinanceStore = create<FinanceStore>()(
           vendor: parent.vendor,
           categoryId: parent.categoryId,
           projectId: parent.projectId,
-          partnerId: parent.partnerId,
-          paymentMethod: parent.paymentMethod,
+          partnerId: overrides?.partnerId ?? parent.partnerId,
+          paymentMethod: overrides?.paymentMethod ?? parent.paymentMethod,
           date: today.toISOString().split('T')[0],
           time: `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`,
           notes: `Installment payment for ${parent.title || parent.vendor}`,
