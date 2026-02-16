@@ -125,17 +125,11 @@ const secondaryFeatures = [
 ];
 
 const extraFeatures = [
-  { icon: TrendingUp, title: "Budgets & Margins", desc: "Set internal cost vs client cost — see real-time profit margins", iconBg: "bg-success/10 text-success" },
-  { icon: Wallet, title: "Partner Balances", desc: "Track separate cash and online balances per business partner", iconBg: "bg-primary/10 text-primary" },
   { icon: Tag, title: "Labels", desc: "Color-coded labels to organize projects and transactions your way", iconBg: "bg-warning/10 text-warning" },
-  { icon: PlusCircle, title: "Income & Expense", desc: "One-tap logging with vendor, category, payment mode, and notes", iconBg: "bg-success/10 text-success" },
-  { icon: BarChart3, title: "Dashboard & Charts", desc: "Visual cash flow charts, income vs expense breakdowns at a glance", iconBg: "bg-primary/10 text-primary" },
-  { icon: FileBarChart, title: "Reports Export", desc: "Download CSV and PDF reports with receipt images in a ZIP", iconBg: "bg-warning/10 text-warning" },
+  { icon: SlidersHorizontal, title: "Sort, Filter & Search", desc: "Sort by date or amount, filter by category, vendor, project, and payment mode", iconBg: "bg-primary/10 text-primary" },
   { icon: Clock, title: "Time Filters", desc: "Filter by week, month, year, or custom date range instantly", iconBg: "bg-primary/10 text-primary" },
   { icon: Copy, title: "Duplicate Detection", desc: "Smart alerts when a transaction looks like a duplicate entry", iconBg: "bg-destructive/10 text-destructive" },
   { icon: Bell, title: "Activity Log", desc: "Full history of changes — never lose track of what happened", iconBg: "bg-warning/10 text-warning" },
-  { icon: ArrowDownUp, title: "Sort & Filter", desc: "Sort by date, amount, or vendor — filter by category or payment mode", iconBg: "bg-success/10 text-success" },
-  { icon: SlidersHorizontal, title: "Advanced Filters", desc: "Combine multiple filters for precise transaction searches", iconBg: "bg-primary/10 text-primary" },
   { icon: UserCircle, title: "Profile", desc: "Customize your name, avatar, and app preferences", iconBg: "bg-warning/10 text-warning" },
   { icon: Cloud, title: "Cloud Sync", desc: "Your data syncs securely across devices in real time", iconBg: "bg-primary/10 text-primary" },
   { icon: WifiOff, title: "Offline Mode", desc: "Works without internet — syncs automatically when back online", iconBg: "bg-success/10 text-success" },
@@ -334,10 +328,10 @@ export const FeaturesGrid = () => (
             Full toolkit
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
-            30+ features. Zero complexity.
+            Plus all the essentials
           </h2>
           <p className="mt-3 text-sm text-muted-foreground max-w-md mx-auto">
-            Everything else that makes FinTrack+ the complete financial toolkit for event professionals
+            The finishing touches that make FinTrack+ feel complete
           </p>
         </motion.div>
 
