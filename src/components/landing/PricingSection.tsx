@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Sparkles, Zap, Clock } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getAppUrl } from "@/lib/domainUtils";
 
@@ -61,7 +61,7 @@ export const PricingSection = () => {
         >
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary dark:text-foreground text-xs font-semibold mb-4">
             <Sparkles className="w-3.5 h-3.5" />
-            Simple pricing
+            Launch offer
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-foreground">
             One plan. Everything included.
@@ -78,15 +78,43 @@ export const PricingSection = () => {
           variants={fadeUp}
           className="border border-border/50 rounded-2xl bg-card/50 backdrop-blur-sm shadow-[0_0_32px_rgba(25,102,205,0.15)] ring-1 ring-primary/10 hover:shadow-[0_0_40px_rgba(25,102,205,0.2)] transition-shadow duration-300 overflow-hidden"
         >
-          {/* Price header */}
+          {/* Limited-time badge */}
           <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 md:px-8 py-8 text-center">
-            <div className="text-5xl md:text-6xl font-bold text-foreground tracking-tight">
-              ₹499
-              <span className="text-lg md:text-xl font-normal text-muted-foreground">/month</span>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              whileInView={{ scale: 1, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.3 }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-destructive/15 text-destructive dark:text-red-400 text-xs font-bold mb-4 ring-1 ring-destructive/20 animate-pulse"
+            >
+              <Zap className="w-3 h-3" />
+              Limited-time launch price — 38% OFF
+            </motion.div>
+
+            <div className="flex items-center justify-center gap-3 mb-1">
+              <span className="text-2xl md:text-3xl font-medium text-muted-foreground line-through decoration-2 decoration-destructive/60">
+                ₹799
+              </span>
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                whileInView={{ scale: 1, opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.4 }}
+                className="text-5xl md:text-6xl font-bold text-foreground tracking-tight"
+              >
+                ₹499
+                <span className="text-lg md:text-xl font-normal text-muted-foreground">/month</span>
+              </motion.div>
             </div>
+
             <p className="mt-2 text-sm text-muted-foreground">
               That's just ~₹17/day for complete peace of mind
             </p>
+
+            <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-warning dark:text-yellow-400 font-medium">
+              <Clock className="w-3 h-3" />
+              Price increases to ₹799 after early access ends
+            </div>
           </div>
 
           {/* Features grid */}
@@ -133,8 +161,10 @@ export const PricingSection = () => {
               <p className="text-[11px] text-muted-foreground">
                 Compare: Hiring an accountant costs <span className="line-through">₹15,000+/month</span>
               </p>
-              <p className="text-xs text-foreground font-medium mt-0.5">
-                FinTrack⁺ = ₹499/month for everything
+              <p className="text-xs font-medium mt-0.5">
+                <span className="text-foreground">FinTrack⁺ = </span>
+                <span className="text-primary dark:text-primary">₹499/month</span>
+                <span className="text-muted-foreground"> (save ₹300/month vs regular price)</span>
               </p>
             </div>
           </div>
