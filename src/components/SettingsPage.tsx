@@ -378,10 +378,11 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-2xl p-4 shadow-card border border-border"
+          onClick={() => setShowProfileEdit(true)}
+          className="bg-card rounded-2xl p-3 shadow-card border border-border cursor-pointer hover:bg-muted/50 transition-colors"
         >
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center">
               {userProfile.avatar ? (
                 <img 
                   src={userProfile.avatar} 
@@ -389,7 +390,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <span className="text-2xl font-bold text-primary">
+                <span className="text-xl font-bold text-primary">
                   {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
                 </span>
               )}
@@ -399,14 +400,8 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
               <p className="text-sm text-muted-foreground">{user?.email}</p>
               <p className="text-xs text-success mt-1">Cloud Sync Enabled</p>
             </div>
+            <ChevronRight size={18} className="text-muted-foreground" />
           </div>
-          <button 
-            onClick={() => setShowProfileEdit(true)}
-            className="w-full mt-4 flex items-center justify-center gap-2 p-2.5 bg-accent text-accent-foreground rounded-xl font-medium text-sm hover:bg-accent/80 transition-colors"
-          >
-            <Pencil size={14} />
-            Edit Profile
-          </button>
         </motion.div>
       </div>
       
