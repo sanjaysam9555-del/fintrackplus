@@ -35,7 +35,7 @@ export const FinalCTA = () => {
           Get Started <ArrowRight className="w-4 h-4" />
         </Button>
         <p className="mt-3 text-xs text-muted-foreground">
-          ₹499/month · Credit card required
+          <span className="line-through">₹799</span> ₹499/month · Credit card required
         </p>
       </motion.div>
     </section>

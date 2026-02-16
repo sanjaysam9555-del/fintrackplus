@@ -14,18 +14,18 @@ export const FeaturedInSection = () => (
       <p className="text-[11px] uppercase tracking-[0.25em] text-muted-foreground/60 font-semibold mb-6">
         As Featured In
       </p>
-      <div className="flex items-center justify-center gap-4 md:gap-8 flex-wrap">
+      <div className="flex items-center justify-center gap-3 md:gap-4 flex-wrap">
         {brands.map((brand, i) => (
-          <motion.span
+          <motion.div
             key={brand}
             initial={{ opacity: 0, y: 10 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.15 + i * 0.1, duration: 0.4 }}
-            className="text-lg md:text-2xl font-semibold tracking-wide text-muted-foreground/50 select-none"
+            className="px-5 py-2.5 rounded-full border border-primary/15 bg-primary/5 backdrop-blur-sm text-base md:text-lg font-semibold tracking-wide text-muted-foreground/70 hover:text-foreground hover:border-primary/30 hover:bg-primary/10 hover:shadow-[0_0_20px_rgba(25,102,205,0.12)] transition-all duration-300 select-none"
           >
             {brand}
-          </motion.span>
+          </motion.div>
         ))}
       </div>
     </motion.div>

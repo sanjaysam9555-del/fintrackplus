@@ -8,7 +8,7 @@ const testimonials = [
     role: "Founder",
     company: "SparkFX Entertainment",
     quote:
-      "We run 8–10 event setups a month with different vendors each time. FinTrack⁺ finally gave us one place to see exactly where every rupee goes — no more digging through WhatsApp and Excel.",
+      "We run 8-10 event setups a month with different vendors each time. FinTrack⁺ finally gave us one place to see exactly where every rupee goes. No more digging through WhatsApp and Excel.",
     initials: "GB",
     color: "bg-primary/20 text-primary",
   },
@@ -26,7 +26,7 @@ const testimonials = [
     role: "Co-founder",
     company: "Reel Productions",
     quote:
-      "GST tagging and one-tap exports saved us hours every month-end. Our CA was genuinely impressed with how clean the books were — first time that's ever happened.",
+      "GST tagging and one-tap exports saved us hours every month-end. Our CA was genuinely impressed with how clean the books were. First time that's ever happened.",
     initials: "GA",
     color: "bg-warning/20 text-warning",
   },
