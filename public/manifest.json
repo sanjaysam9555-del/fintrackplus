@@ -2,7 +2,7 @@
   "name": "FinTrack+",
   "short_name": "FinTrack+",
   "description": "Finance tracker for Indian event planners. Track expenses, vendors, partners, and GST — offline-first with cloud sync.",
-  "start_url": "/",
+  "start_url": "/application",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",

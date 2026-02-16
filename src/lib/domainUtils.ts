@@ -16,6 +16,10 @@ export const appPath = (path = '/') => {
   return path;
 };
 
+export const isPWA = () =>
+  window.matchMedia('(display-mode: standalone)').matches ||
+  (window.navigator as any).standalone === true;
+
 export const getAppUrl = (path = '/auth') => {
   return appPath(path);
 };
