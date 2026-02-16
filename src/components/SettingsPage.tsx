@@ -5,6 +5,7 @@ import {
   Moon,
   Sun,
   Pencil,
+  Sparkles,
   Grid3X3,
   Store,
   FolderKanban,
@@ -28,6 +29,7 @@ import { ProjectsSection } from "./settings/ProjectsSection";
 import { ReportsSection } from "./settings/ReportsSection";
 import { PartnersSection } from "./settings/PartnersSection";
 import { LabelsSection } from "./settings/LabelsSection";
+import { AppFeaturesGuide } from "./settings/AppFeaturesGuide";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
@@ -214,7 +216,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'projects' | 'labels' | 'reports' | 'logs' | 'partners' | null;
+type SettingsSection = 'categories' | 'vendors' | 'projects' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -343,6 +345,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   if (activeSection === 'reports') {
     return <ReportsSection onBack={handleBack} />;
   }
+  if (activeSection === 'features') {
+    return <AppFeaturesGuide onBack={handleBack} />;
+  }
   if (activeSection === 'logs') {
     return (
       <div className="min-h-screen pb-24">
@@ -403,6 +408,26 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
             <ChevronRight size={18} className="text-muted-foreground" />
           </div>
         </motion.div>
+      </div>
+
+      {/* Learn App Features */}
+      <div className="px-4 mb-6">
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          onClick={() => handleSectionChange('features')}
+          className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors"
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
+            <Sparkles size={20} className="text-primary" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-medium">Learn App Features</p>
+            <p className="text-sm text-muted-foreground">Discover what you can do</p>
+          </div>
+          <ChevronRight size={18} className="text-muted-foreground" />
+        </motion.button>
       </div>
       
       {/* Menu Sections */}
