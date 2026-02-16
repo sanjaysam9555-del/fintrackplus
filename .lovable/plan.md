@@ -1,40 +1,48 @@
 
-
-# Fix: Edit Form Blocked by Drawer Overlay (Portal Escape Issue)
+# Fix: Edit Transaction Form Not Scrollable in Project Detail View
 
 ## Root Cause
 
-The current fix wraps the Drawer in a `<div className="pointer-events-none">`, but the Vaul Drawer uses a **React Portal** (`DrawerPortal`) internally, which renders both the overlay and content directly to `document.body` -- completely outside the wrapper div. This means `pointer-events-none` on the wrapper has zero effect on the overlay.
+The parent Vaul `Drawer` (ProjectDetailSheet) remains `open={true}` even when the child edit sheet appears. Vaul holds a **body scroll lock** (`overflow: hidden`, `data-scroll-locked`) for the entire time its drawer is open. The current MutationObserver hack tries to strip these attributes, but Vaul immediately re-applies them, creating an infinite loop that destabilizes touch event handling on mobile.
 
-The `DrawerOverlay` (a full-screen `fixed inset-0 z-50` element) remains visible and interactive, capturing all touch/scroll events before they reach the `EditTransactionSheet` portal at `z-[80]`.
+The `overflow-hidden` on the outer `motion.div` container combined with this body-level fight makes the inner `overflow-y-auto` div unable to scroll on touch devices.
 
-## The Fix (2 files)
+## The Fix
 
-### 1. `src/components/ui/drawer.tsx`
+**File: `src/components/EditTransactionSheet.tsx`**
 
-Add an optional `overlayClassName` prop to `DrawerContent` so consumers can style the overlay independently:
+Replace the MutationObserver approach with a simpler, more reliable strategy:
+
+1. **Remove the MutationObserver `useEffect` entirely** -- it fights Vaul in an infinite loop and is the core problem.
+
+2. **Change the scrollable container** from using flex-based height calculation to an explicit calculated max-height using CSS `calc()`. This removes reliance on flex layout working correctly inside a fixed container with `overflow-hidden`:
+
+   - Change the outer `motion.div` from `max-h-[85vh] flex flex-col overflow-hidden` to just `max-h-[85vh]` (remove `flex flex-col overflow-hidden`)
+   - Give the scrollable `div` an explicit `max-h-[calc(85vh-140px)]` (subtracting the header and footer heights) with `overflow-y-scroll` (forced, not auto)
+
+3. **Add `touch-action: pan-y`** on the scrollable container to explicitly tell the browser to allow vertical touch scrolling, preventing Vaul's gesture system from intercepting it.
+
+4. **Keep** `data-vaul-no-drag` and `WebkitOverflowScrolling: 'touch'` as they help on iOS.
+
+### Summary of Changes
 
 ```text
-Before:
-  DrawerContent accepts: className, children, ...props
+Before (line 173):
+  className="fixed bottom-0 left-0 right-0 z-[80] bg-card rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden"
 
 After:
-  DrawerContent accepts: className, overlayClassName, children, ...props
+  className="fixed bottom-0 left-0 right-0 z-[80] bg-card rounded-t-3xl max-h-[85vh] overflow-hidden"
+
+
+Before (line 202):
+  <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-auto" data-vaul-no-drag ...>
+
+After:
+  <div className="overflow-y-scroll overscroll-contain touch-pan-y" data-vaul-no-drag 
+       style={{ WebkitOverflowScrolling: 'touch', maxHeight: 'calc(85vh - 140px)' }}>
 ```
 
-The `overlayClassName` gets passed through to `<DrawerOverlay className={overlayClassName} />`.
+- Lines 53-78 (MutationObserver useEffect): **Delete entirely**
+- The 140px accounts for: drag handle (~12px) + header bar (~68px) + sticky footer (~60px)
 
-### 2. `src/components/ProjectDetailSheet.tsx`
-
-- Remove the wrapper `<div className={isChildEditing ? "pointer-events-none" : ""}>` (it does nothing for portaled content)
-- Pass `overlayClassName` to `DrawerContent` to hide the overlay when editing:
-
-```text
-<DrawerContent 
-  className={cn("max-h-[85vh]", isChildEditing && "hidden")}
-  overlayClassName={isChildEditing ? "pointer-events-none opacity-0" : ""}
->
-```
-
-This ensures both the overlay and the content panel become invisible and non-interactive when a child edit sheet is open, allowing the `EditTransactionSheet` portal to receive all touch and scroll events.
-
+This approach does not fight Vaul at all. It simply gives the scrollable region an explicit pixel-based height constraint and forces scroll behavior, which works reliably on all mobile browsers regardless of body scroll state.
