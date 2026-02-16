@@ -50,32 +50,6 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(transaction.receiptUrl);
   const [isGst, setIsGst] = useState(transaction.isGst || false);
   
-  // When edit sheet is open, continuously override Vaul's body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const body = document.body;
-    
-    const unlockScroll = () => {
-      if (body.style.overflow === 'hidden') {
-        body.style.removeProperty('overflow');
-      }
-      if (body.hasAttribute('data-scroll-locked')) {
-        body.removeAttribute('data-scroll-locked');
-      }
-      // Remove vaul's inline style that locks pointer-events
-      if (body.style.pointerEvents === 'none') {
-        body.style.removeProperty('pointer-events');
-      }
-    };
-    
-    unlockScroll();
-    
-    // Watch for Vaul re-applying scroll lock
-    const observer = new MutationObserver(() => unlockScroll());
-    observer.observe(body, { attributes: true, attributeFilter: ['style', 'data-scroll-locked'] });
-    
-    return () => observer.disconnect();
-  }, [isOpen]);
 
   // Reset state when transaction changes
   useEffect(() => {
@@ -170,7 +144,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-[80] bg-card rounded-t-3xl max-h-[85vh] flex flex-col overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-[80] bg-card rounded-t-3xl max-h-[85vh] overflow-hidden"
           >
             <div className="flex justify-center pt-3">
               <div className="w-10 h-1 bg-muted rounded-full" />
@@ -199,7 +173,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
               </div>
             </div>
             
-            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain touch-auto" data-vaul-no-drag style={{ WebkitOverflowScrolling: 'touch' }}>
+            <div className="overflow-y-scroll overscroll-contain touch-pan-y" data-vaul-no-drag style={{ WebkitOverflowScrolling: 'touch', maxHeight: 'calc(85vh - 140px)' }}>
               <div className="p-4 space-y-4 pb-8">
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">
