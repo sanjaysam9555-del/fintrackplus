@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { useStatusBar } from "@/hooks/useStatusBar";
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
-import { isLandingDomain, appPath } from "@/lib/domainUtils";
+import { isLandingDomain, isPWA, appPath } from "@/lib/domainUtils";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -155,8 +155,8 @@ const AppRoutes = () => {
             <Route path="/application/*" element={<AuthPage />} />
           )}
 
-          {/* Everything else → landing */}
-          <Route path="*" element={<Landing />} />
+          {/* Everything else → landing (PWA users go straight to app) */}
+          <Route path="*" element={isPWA() ? <Navigate to="/application" replace /> : <Landing />} />
         </Routes>
       </Suspense>
     );
