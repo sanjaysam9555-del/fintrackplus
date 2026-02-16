@@ -4,6 +4,7 @@ import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
+import { InstallmentDueReminder } from "./InstallmentDueReminder";
 
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, ScrollText, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search, ArrowUpDown } from "lucide-react";
@@ -649,6 +650,11 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         </div>
       </div>
       
+      {/* Installment Due Reminders */}
+      <div className="px-4 lg:px-0">
+        <InstallmentDueReminder userId={userId} />
+      </div>
+
       {/* Summary Cards - 3 Column Grid */}
       <div className="px-4 lg:px-0 mb-6">
         <motion.div

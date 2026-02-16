@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ShoppingBag, Utensils, Car, Zap, Film, Heart, Plane, Wallet, Briefcase, TrendingUp, Coffee, Home, Gift, GraduationCap, Stethoscope, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ShoppingBag, Utensils, Car, Zap, Film, Heart, Plane, Wallet, Briefcase, TrendingUp, Coffee, Home, Gift, GraduationCap, Stethoscope, MoreHorizontal, ChevronRight } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { toast } from "sonner";
 import { LucideIcon } from "lucide-react";
+import { CategoryDetailView } from "./CategoryDetailView";
+import { CURRENCY_SYMBOL } from "@/lib/constants";
 
 interface CategoriesSectionProps {
   onBack: () => void;
@@ -37,12 +39,36 @@ const getIconComponent = (iconId: string): LucideIcon => {
 };
 
 export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) => {
-  const { categories, addCategory, updateCategory, deleteCategory } = useFinanceStore();
+  const { categories, addCategory, updateCategory, deleteCategory, transactions } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [formData, setFormData] = useState({ name: '', icon: 'other', color: '#10B981', type: 'expense' as 'income' | 'expense' });
+  const [detailCategoryId, setDetailCategoryId] = useState<string | null>(null);
+
+  // Compute transaction counts per category
+  const categoryTransactionCounts = categories.reduce<Record<string, { count: number; total: number }>>((acc, cat) => {
+    const catTxns = transactions.filter(t => t.categoryId === cat.id);
+    acc[cat.id] = { count: catTxns.length, total: catTxns.reduce((s, t) => s + t.amount, 0) };
+    return acc;
+  }, {});
+
+  const formatAmount = (amount: number) => `${CURRENCY_SYMBOL}${amount.toLocaleString('en-IN')}`;
+
+  // Detail view
+  const detailCategory = detailCategoryId ? categories.find(c => c.id === detailCategoryId) : null;
+  if (detailCategory) {
+    return (
+      <CategoryDetailView
+        category={detailCategory}
+        onBack={() => setDetailCategoryId(null)}
+        onEdit={() => { startEdit(detailCategory); setDetailCategoryId(null); }}
+        onDelete={() => { setDeleteId(detailCategory.id); setDetailCategoryId(null); }}
+        userId={userId}
+      />
+    );
+  }
 
   const filteredCategories = filterType === 'all' ? categories : categories.filter(c => c.type === filterType);
 
@@ -252,27 +278,40 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
               </div>
             ) : (
               <div className="flex items-center gap-3">
-                {(() => {
-                  const IconComp = getIconComponent(cat.icon);
-                  return (
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: `${cat.color}20` }}
-                    >
-                      <IconComp size={18} style={{ color: cat.color }} />
-                    </div>
-                  );
-                })()}
-                <div className="flex-1">
-                  <p className="font-medium">{cat.name}</p>
-                  <p className="text-sm text-muted-foreground capitalize">{cat.type}</p>
+                <button
+                  className="flex items-center gap-3 flex-1 text-left min-w-0"
+                  onClick={() => setDetailCategoryId(cat.id)}
+                >
+                  {(() => {
+                    const IconComp = getIconComponent(cat.icon);
+                    return (
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: `${cat.color}20` }}
+                      >
+                        <IconComp size={18} style={{ color: cat.color }} />
+                      </div>
+                    );
+                  })()}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{cat.name}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      <span className="capitalize">{cat.type}</span>
+                      {categoryTransactionCounts[cat.id]?.count > 0 && (
+                        <> · {categoryTransactionCounts[cat.id].count} txn{categoryTransactionCounts[cat.id].count !== 1 ? 's' : ''} · {formatAmount(categoryTransactionCounts[cat.id].total)}</>
+                      )}
+                    </p>
+                  </div>
+                </button>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button onClick={(e) => { e.stopPropagation(); startEdit(cat); }} className="p-2 hover:bg-muted rounded-lg">
+                    <Pencil size={16} className="text-muted-foreground" />
+                  </button>
+                  <button onClick={(e) => { e.stopPropagation(); setDeleteId(cat.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
+                    <Trash2 size={16} className="text-destructive" />
+                  </button>
+                  <ChevronRight size={16} className="text-muted-foreground" />
                 </div>
-                <button onClick={() => startEdit(cat)} className="p-2 hover:bg-muted rounded-lg">
-                  <Pencil size={16} className="text-muted-foreground" />
-                </button>
-                <button onClick={() => setDeleteId(cat.id)} className="p-2 hover:bg-destructive/10 rounded-lg">
-                  <Trash2 size={16} className="text-destructive" />
-                </button>
               </div>
             )}
           </motion.div>
