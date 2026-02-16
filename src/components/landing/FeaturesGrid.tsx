@@ -135,6 +135,9 @@ const extraFeatures = [
   { icon: WifiOff, title: "Offline Mode", desc: "Works without internet — syncs automatically when back online", iconBg: "bg-success/10 text-success" },
   { icon: Share2, title: "Share Transactions", desc: "Share transaction details with partners or clients via any app", iconBg: "bg-warning/10 text-warning" },
   { icon: Download, title: "Install as App", desc: "Add to home screen for a native app experience — no app store needed", iconBg: "bg-destructive/10 text-destructive" },
+  { icon: FileBarChart, title: "Project Documents", desc: "Attach contracts, invoices, and files directly to any project", iconBg: "bg-success/10 text-success" },
+  { icon: ArrowDownUp, title: "Track from Anywhere", desc: "View transactions by project, vendor, partner, or category — all linked", iconBg: "bg-primary/10 text-primary" },
+  { icon: PlusCircle, title: "Quick Add", desc: "One-tap logging with vendor, category, payment mode, and notes", iconBg: "bg-success/10 text-success" },
 ];
 
 export const FeaturesGrid = () => (
