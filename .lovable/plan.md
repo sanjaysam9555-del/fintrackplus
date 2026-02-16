@@ -1,37 +1,38 @@
 
 
-# Add Missing Features to Landing Page
+# Fix Landing Page: Remove Duplicate Extra Features
 
 ## Problem
-The landing page currently showcases ~16 features with screenshots, but the app has ~30 features total. About 14 features from the App Features Guide are missing from the landing page:
+The "30+ features" section repeats features already showcased with screenshots above it: Budgets and Margins, Partner Balances, Income and Expense, Dashboard and Charts, Reports Export are all covered in the showcase/remaining/secondary sections. Sort and Filter + Advanced Filters are also two items for the same concept.
 
-**Missing features:**
-- Budgets and Margins, Partner Balances, Labels (Organize)
-- Income and Expense logging (Track Money)
-- Dashboard and Charts, Reports Export, Time Filters (Analyze)
-- Duplicate Detection, Activity Log, Sort and Filter, Advanced Filters (Find and Fix)
-- Profile, Cloud Sync, Offline Mode, Share Transactions, Install as App (Personalize)
-
-## Approach
-Add a new "Everything Else" section at the bottom of the features area (after the existing "And there's more" secondary grid). This section will use a clean, icon-driven layout -- no screenshots -- matching the landing page's existing card aesthetic.
-
-The layout will be a tight 2-column (mobile) / 3-column (tablet) / 4-column (desktop) grid of compact icon cards. Each card has a colored icon circle, a bold title, and a one-line description. This keeps it scannable and visually consistent without needing images.
-
-## Visual Design
-- Section header: "30+ features. Zero complexity." with a subtitle
-- Cards: Compact, minimal -- 40px colored icon circle, title, one-line description
-- Card style: Same `bg-card/80 backdrop-blur-sm border ring-1 ring-primary/10` as existing landing cards
-- Staggered entrance animations matching the rest of the page
-
-## Technical Changes
+## Changes
 
 ### File: `src/components/landing/FeaturesGrid.tsx`
 
-1. Import additional Lucide icons: `Tag`, `PlusCircle`, `TrendingUp`, `PiggyBank`, `Wallet`, `BarChart3`, `FileBarChart`, `Clock`, `Copy`, `Bell`, `ArrowDownUp`, `SlidersHorizontal`, `UserCircle`, `Cloud`, `WifiOff`, `Share2`, `Download`
+**Remove these 7 items from `extraFeatures`:**
+- Budgets and Margins (covered in Projects showcase)
+- Partner Balances (covered in Partners showcase)
+- Income and Expense (implicit across the whole page)
+- Dashboard and Charts (covered in AI Insights card)
+- Reports Export (covered in GST/CA Export showcase)
+- Sort and Filter (merge concept into Advanced Filters rename)
+- Advanced Filters (keep one consolidated version)
 
-2. Add a new `extraFeatures` array with the ~15 missing features, each having: icon, title, one-line description, and icon color class
+**Keep and refine these 9 unique items:**
+1. Labels -- color-coded tags for organizing projects
+2. Time Filters -- filter by week, month, year, or custom range
+3. Duplicate Detection -- smart warnings for similar entries
+4. Activity Log -- full change history and notifications
+5. Profile -- customize name and avatar
+6. Cloud Sync -- data syncs across devices
+7. Offline Mode -- works without internet
+8. Share Transactions -- share details via any app
+9. Install as App -- PWA, add to home screen
 
-3. Add a fourth section block after the existing secondary features section, rendering the extra features in a responsive grid of compact icon-and-text cards (no screenshots)
+**Add 1 consolidated item to replace removed duplicates:**
+- Sort, Filter and Search -- combine Sort and Filter + Advanced Filters into a single card: "Sort by date or amount, filter by category, vendor, project, and payment mode"
 
-4. The section uses a clean header and the same motion animation patterns already in the file
+**Update section header** from "30+ features" to something like "Plus all the essentials" since the count is now lower and the framing should complement the detailed sections above rather than compete with them.
+
+This brings the extra features grid to 10 compact cards -- all truly unique content not covered elsewhere on the page.
 
