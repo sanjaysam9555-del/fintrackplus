@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { X, Check, CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -5,8 +6,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
-import { PlannedInstallment } from "@/lib/types";
+import { PlannedInstallment, PaymentMethod } from "@/lib/types";
 import { format, parseISO } from "date-fns";
+import { InstallmentConfirmForm } from "@/components/InstallmentConfirmForm";
 
 interface InstallmentRowProps {
   installment: PlannedInstallment;
@@ -14,8 +16,10 @@ interface InstallmentRowProps {
   onUpdate: (updates: Partial<PlannedInstallment>) => void;
   onRemove: () => void;
   showConfirmButton?: boolean;
-  onConfirm?: () => void;
+  onConfirm?: (paymentMethod: PaymentMethod, partnerId?: string) => void;
   readOnly?: boolean;
+  defaultPaymentMethod?: PaymentMethod;
+  defaultPartnerId?: string;
 }
 
 export const InstallmentRow = ({
@@ -25,8 +29,12 @@ export const InstallmentRow = ({
   onRemove,
   showConfirmButton,
   onConfirm,
-  readOnly = false
+  readOnly = false,
+  defaultPaymentMethod = 'cash',
+  defaultPartnerId
 }: InstallmentRowProps) => {
+  const [showForm, setShowForm] = useState(false);
+
   return (
     <div className={cn(
       "p-3 border rounded-xl space-y-2",
@@ -115,15 +123,28 @@ export const InstallmentRow = ({
         </p>
       )}
       
-      {showConfirmButton && installment.status === 'pending' && (
+      {showConfirmButton && installment.status === 'pending' && !showForm && (
         <Button
-          onClick={onConfirm}
+          onClick={() => setShowForm(true)}
           size="sm"
           className="w-full bg-success hover:bg-success/90 text-white"
         >
           <Check size={14} className="mr-1" />
           Confirm Payment Received
         </Button>
+      )}
+      
+      {showForm && installment.status === 'pending' && (
+        <InstallmentConfirmForm
+          defaultPaymentMethod={defaultPaymentMethod}
+          defaultPartnerId={defaultPartnerId}
+          amount={installment.amount}
+          onConfirm={(pm, pid) => {
+            onConfirm?.(pm, pid);
+            setShowForm(false);
+          }}
+          onCancel={() => setShowForm(false)}
+        />
       )}
     </div>
   );

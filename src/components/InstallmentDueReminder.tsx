@@ -6,6 +6,8 @@ import { format } from "date-fns";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { InstallmentConfirmForm } from "@/components/InstallmentConfirmForm";
+import { PaymentMethod } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +34,7 @@ export const InstallmentDueReminder = ({ userId }: InstallmentDueReminderProps) 
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const [showDialog, setShowDialog] = useState(false);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [expandedConfirmId, setExpandedConfirmId] = useState<string | null>(null);
 
   const todayStr = format(new Date(), 'yyyy-MM-dd');
 
@@ -57,9 +60,10 @@ export const InstallmentDueReminder = ({ userId }: InstallmentDueReminderProps) 
     return due;
   }, [transactions, todayStr, dismissedIds]);
 
-  const handleConfirm = async (item: DueInstallment) => {
+  const handleConfirm = async (item: DueInstallment, paymentMethod: PaymentMethod, partnerId?: string) => {
     setConfirmingId(item.installmentId);
-    confirmInstallment(item.parentTransactionId, item.installmentId, userId);
+    confirmInstallment(item.parentTransactionId, item.installmentId, userId, { paymentMethod, partnerId });
+    setExpandedConfirmId(null);
     setTimeout(() => setConfirmingId(null), 500);
   };
 
@@ -162,17 +166,33 @@ export const InstallmentDueReminder = ({ userId }: InstallmentDueReminderProps) 
                       >
                         Later
                       </Button>
-                      <Button
-                        size="sm"
-                        className="h-7 text-xs"
-                        disabled={confirmingId === item.installmentId}
-                        onClick={() => handleConfirm(item)}
-                      >
-                        <Check size={14} className="mr-1" />
-                        {confirmingId === item.installmentId ? 'Done!' : 'Received'}
-                      </Button>
+                      {expandedConfirmId !== item.installmentId && (
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={confirmingId === item.installmentId}
+                          onClick={() => setExpandedConfirmId(item.installmentId)}
+                        >
+                          <Check size={14} className="mr-1" />
+                          {confirmingId === item.installmentId ? 'Done!' : 'Received'}
+                        </Button>
+                      )}
                     </div>
                   </div>
+
+                  {expandedConfirmId === item.installmentId && (
+                    <InstallmentConfirmForm
+                      defaultPaymentMethod={
+                        (transactions.find(t => t.id === item.parentTransactionId)?.paymentMethod as PaymentMethod) || 'cash'
+                      }
+                      defaultPartnerId={
+                        transactions.find(t => t.id === item.parentTransactionId)?.partnerId
+                      }
+                      amount={item.amount}
+                      onConfirm={(pm, pid) => handleConfirm(item, pm, pid)}
+                      onCancel={() => setExpandedConfirmId(null)}
+                    />
+                  )}
                 </motion.div>
               );
             })}

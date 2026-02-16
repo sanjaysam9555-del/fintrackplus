@@ -2,13 +2,14 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SplitSquareHorizontal, Plus, ChevronRight, TrendingUp, TrendingDown, Check, Pencil } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
-import { Transaction, PlannedInstallment } from "@/lib/types";
+import { Transaction, PlannedInstallment, PaymentMethod } from "@/lib/types";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { format, parseISO } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
+import { InstallmentConfirmForm } from "@/components/InstallmentConfirmForm";
 
 interface PartPaymentTrackerProps {
   onAddNextPayment?: (parentTransaction: Transaction) => void;
@@ -19,6 +20,7 @@ export const PartPaymentTracker = ({ onAddNextPayment, onEditPayment }: PartPaym
   const { transactions, categories, projects, partners, confirmInstallment } = useFinanceStore();
   const { user } = useAuth();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmingInstId, setConfirmingInstId] = useState<string | null>(null);
 
   // Get all part payment transactions
   const partPayments = useMemo(() => {
@@ -188,7 +190,7 @@ export const PartPaymentTracker = ({ onAddNextPayment, onEditPayment }: PartPaym
                         {group.parent.plannedInstallments
                           .filter(i => i.status === 'pending')
                           .map((inst) => (
-                            <div key={inst.id} className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                          <div key={inst.id} className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-2">
                               <div className="flex items-center justify-between">
                                 <div>
                                   <p className="text-sm font-medium">
@@ -200,18 +202,32 @@ export const PartPaymentTracker = ({ onAddNextPayment, onEditPayment }: PartPaym
                                     </p>
                                   )}
                                 </div>
-                                <Button
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    confirmInstallment(group.parent.id, inst.id, user?.id);
-                                  }}
-                                  className="bg-success hover:bg-success/90 text-white text-xs"
-                                >
-                                  <Check size={12} className="mr-1" />
-                                  Confirm
-                                </Button>
+                                {confirmingInstId !== inst.id && (
+                                  <Button
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setConfirmingInstId(inst.id);
+                                    }}
+                                    className="bg-success hover:bg-success/90 text-white text-xs"
+                                  >
+                                    <Check size={12} className="mr-1" />
+                                    Confirm
+                                  </Button>
+                                )}
                               </div>
+                              {confirmingInstId === inst.id && (
+                                <InstallmentConfirmForm
+                                  defaultPaymentMethod={group.parent.paymentMethod as PaymentMethod}
+                                  defaultPartnerId={group.parent.partnerId}
+                                  amount={inst.amount}
+                                  onConfirm={(pm, pid) => {
+                                    confirmInstallment(group.parent.id, inst.id, user?.id, { paymentMethod: pm, partnerId: pid });
+                                    setConfirmingInstId(null);
+                                  }}
+                                  onCancel={() => setConfirmingInstId(null)}
+                                />
+                              )}
                             </div>
                           ))}
                       </div>
