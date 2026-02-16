@@ -330,7 +330,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                         {project.description && (
                           <p className="text-sm text-muted-foreground">{project.description}</p>
                         )}
-                        {project.labelIds && project.labelIds.length > 0 && (
+                        {Array.isArray(project.labelIds) && project.labelIds.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
                             {project.labelIds.map(lid => {
                               const label = projectLabels.find(l => l.id === lid);
