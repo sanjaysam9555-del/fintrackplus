@@ -1,56 +1,51 @@
 
+# Fix: Black Shadow After Closing Edit Form in Project Detail View
 
-# Fix: Edit Transaction Form Not Scrollable in Project Detail View
+## Problem
 
-## Root Cause (Definitive)
+When closing the edit transaction form (via Close or Save), a black shadow covers the entire screen. It disappears after tapping anywhere.
 
-The `ProjectDetailSheet` uses a Vaul `Drawer` component. When a transaction is clicked for editing:
+## Root Cause
 
-1. The Vaul Drawer stays `open={true}` (content is just hidden via CSS `hidden` class)
-2. Vaul maintains a **body-level scroll lock** (`overflow: hidden`, `data-scroll-locked`) as long as it's open
-3. The `EditTransactionSheet` renders via `createPortal` at body level, but the body is scroll-locked by Vaul
-4. Previous fixes (MutationObserver, stopPropagation, explicit heights) all failed because Vaul continuously re-enforces its lock
+The `modal` prop on the Vaul Drawer toggles instantly when the edit sheet closes:
+
+1. User closes edit form -> `onEditSheetChange(false)` fires immediately
+2. `isChildEditing` becomes `false` -> `modal` flips from `false` to `true`
+3. Vaul immediately re-creates its modal overlay (dark backdrop) and re-applies body scroll lock
+4. But the `DrawerContent` still has the `hidden` CSS class being removed at the same time
+5. This creates a flash of Vaul's overlay that requires a tap to dismiss
 
 ## The Fix
 
-**Set `modal={false}` on the Vaul Drawer when the child edit sheet is open.** This tells Vaul to release its body scroll lock and pointer-event blocking, allowing the portaled `EditTransactionSheet` to scroll freely.
+**File: `src/components/TransactionItem.tsx`**
 
-### Changes
+Add a small delay (300ms) before notifying the parent that editing is done. This allows the edit sheet's exit animation to complete before Vaul switches back to modal mode.
 
-**File: `src/components/ProjectDetailSheet.tsx`** (1 line change)
+Change the `onClose` callback (around line 342-345):
 
-Line 166 -- add the `modal` prop that toggles based on `isChildEditing`:
-
-```text
+```
 Before:
-  <Drawer open={isOpen} onOpenChange={...} shouldScaleBackground={false}>
+  onClose={() => {
+    setIsEditing(false);
+    onEditSheetChange?.(false);
+  }}
 
 After:
-  <Drawer open={isOpen} onOpenChange={...} shouldScaleBackground={false} modal={!isChildEditing}>
+  onClose={() => {
+    setIsEditing(false);
+    setTimeout(() => onEditSheetChange?.(false), 300);
+  }}
 ```
 
-When `isChildEditing` is `true`, `modal={false}` causes Vaul to:
-- Remove `overflow: hidden` from the body
-- Remove `data-scroll-locked` attribute
-- Remove `pointer-events: none`
-- Stop intercepting touch events globally
+This ensures:
+- The edit form's framer-motion exit animation (slide down + fade) completes first
+- Then Vaul's `modal` prop switches back to `true`
+- Vaul's overlay appears naturally as part of the already-visible drawer, with no flash
 
-When editing finishes, `modal` goes back to `true` and Vaul re-applies its normal scroll lock for the drawer.
+**File: `src/components/EditTransactionSheet.tsx`**
 
-**File: `src/components/EditTransactionSheet.tsx`** (cleanup)
+No changes needed -- the existing `stopPropagation` on buttons is already correct.
 
-Remove the `stopPropagation` useEffect and `scrollRef` that were previously added as workarounds -- they are no longer needed since Vaul will no longer be locking scrolling.
+**File: `src/components/ProjectDetailSheet.tsx`**
 
-- Delete lines 52-74 (the `scrollRef` and touch event `useEffect`)
-- Remove `ref={scrollRef}` from the scrollable div (line 199)
-
-### Why This Works
-
-This is the correct API-level solution. Instead of fighting Vaul's scroll lock with hacks, we tell Vaul to stop locking. The `modal` prop is the official Vaul mechanism for this. The drawer content is already hidden via CSS when editing, so there's no visual difference.
-
-### Technical Details
-
-- `modal={false}` in Vaul/Radix means the dialog doesn't trap focus or lock scroll
-- The drawer remains mounted (preserving state) but becomes non-modal
-- When editing ends, `isChildEditing` becomes `false`, restoring `modal={true}`
-- The existing explicit `maxHeight: calc(85vh - 140px)` and `overflow-y-scroll` on the edit form remain and handle the actual scrolling
+No changes needed -- the `modal={!isChildEditing}` logic is correct, just needs the delayed state update from TransactionItem.
