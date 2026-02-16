@@ -445,6 +445,7 @@ export const createRealtimeSubscription = (
     .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors', filter: `user_id=eq.${userId}` }, debouncedCallback)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${userId}` }, debouncedCallback)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'project_labels', filter: `user_id=eq.${userId}` }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'project_documents', filter: `user_id=eq.${userId}` }, debouncedCallback)
     .subscribe();
 
   return {

@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search } from "lucide-react";
+import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet } from "lucide-react";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
+import { useProjectDocuments } from "@/hooks/useProjectDocuments";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { formatCurrency } from "@/lib/constants";
 import {
   Drawer,
@@ -62,6 +64,9 @@ export const ProjectDetailSheet = ({
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [docsOpen, setDocsOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { documents, isLoading: docsLoading, isUploading, uploadDocument, deleteDocument } = useProjectDocuments(project?.id, userId);
   
   // Get transactions for this project reactively from the store
   const projectTransactions = useMemo(() => {
@@ -423,6 +428,103 @@ export const ProjectDetailSheet = ({
                 </div>
               </div>
             )}
+
+            {/* Documents Section */}
+            <Collapsible open={docsOpen} onOpenChange={setDocsOpen}>
+              <CollapsibleTrigger asChild>
+                <button className="w-full flex items-center justify-between py-2">
+                  <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                    <FileText size={14} className="text-muted-foreground" />
+                    Documents {documents.length > 0 && `(${documents.length})`}
+                  </h3>
+                  <ChevronDown size={14} className={`text-muted-foreground transition-transform duration-200 ${docsOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-2 pb-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.txt,.csv"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 20 * 1024 * 1024) {
+                          toast.error("File too large. Max 20MB.");
+                          return;
+                        }
+                        uploadDocument(file);
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-muted-foreground/20 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                  >
+                    {isUploading ? (
+                      <><Loader2 size={14} className="animate-spin" /> Uploading...</>
+                    ) : (
+                      <><Upload size={14} /> Upload Document</>
+                    )}
+                  </button>
+
+                  {docsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <Loader2 size={20} className="animate-spin text-muted-foreground" />
+                    </div>
+                  ) : documents.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-2">No documents yet</p>
+                  ) : (
+                    documents.map(doc => {
+                      const getDocIcon = () => {
+                        if (doc.fileType.startsWith('image/')) return Image;
+                        if (doc.fileType.includes('spreadsheet') || doc.fileType.includes('excel') || doc.fileName.endsWith('.csv')) return FileSpreadsheet;
+                        if (doc.fileType.includes('pdf')) return FileText;
+                        return File;
+                      };
+                      const DocIcon = getDocIcon();
+                      const formatSize = (bytes: number) => {
+                        if (bytes < 1024) return `${bytes} B`;
+                        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+                        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+                      };
+
+                      return (
+                        <div key={doc.id} className="flex items-center gap-2.5 bg-muted/50 rounded-lg p-2.5">
+                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <DocIcon size={16} className="text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{doc.fileName}</p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {formatSize(doc.fileSize)} · {new Date(doc.uploadedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <a
+                            href={doc.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1.5 hover:bg-muted rounded-lg shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink size={14} className="text-muted-foreground" />
+                          </a>
+                          <button
+                            onClick={() => deleteDocument(doc.id)}
+                            className="p-1.5 hover:bg-destructive/10 rounded-lg shrink-0"
+                          >
+                            <Trash2 size={14} className="text-destructive" />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             {sortedTransactions.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
