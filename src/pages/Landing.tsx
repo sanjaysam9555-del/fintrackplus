@@ -7,6 +7,8 @@ import { ComparisonSection } from "@/components/landing/ComparisonSection";
 import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { SocialProofSection } from "@/components/landing/SocialProofSection";
+import { FeaturedInSection } from "@/components/landing/FeaturedInSection";
+import { TestimonialsSection } from "@/components/landing/TestimonialsSection";
 import { PersonaSection } from "@/components/landing/PersonaSection";
 import { PricingSection } from "@/components/landing/PricingSection";
 import { FAQSection } from "@/components/landing/FAQSection";
@@ -47,6 +49,10 @@ const Landing = () => {
       <HowItWorks />
       <SectionDivider />
       <SocialProofSection />
+      <SectionDivider />
+      <FeaturedInSection />
+      <SectionDivider />
+      <TestimonialsSection />
       <SectionDivider />
       <PersonaSection />
       <SectionDivider />
