@@ -1,78 +1,50 @@
 
 
-# Project Labels Feature
+# Fix: Labels in Projects Tab Add Form + Label Badges on Project Cards
 
-## Overview
-Add a tagging/labeling system for projects (e.g., #birthday, #wedding, #FromXYZ). Labels are user-defined, manageable via Settings, and assignable to projects during creation/editing. The Labels settings page will show expandable cards listing projects under each label.
+## Problem
+The label picker and label badges were only added to `ProjectsSection.tsx` (Settings > Projects), but the main **Projects tab** uses a completely separate component -- `ProjectOverviewPage.tsx` -- which has its own add form and project cards that were never updated.
 
-## Database Changes
+## Changes
 
-**New table: `project_labels`**
-- `id` (uuid, PK)
-- `user_id` (uuid, NOT NULL)
-- `name` (text, NOT NULL) -- e.g. "Birthday", "Wedding"
-- `color` (text, default '#8B5CF6')
-- `created_at` (timestamptz, default now())
-- RLS: same user-scoped policies as other tables
+### 1. `src/components/ProjectOverviewPage.tsx` -- Add Form
 
-**Alter `projects` table:**
-- Add `label_ids` column (jsonb, default '[]') -- array of label UUIDs
+- Add `labelIds: []` to `formData` state
+- Add `projectLabels`, `addProjectLabel` to the store destructuring
+- Add a label chip picker + inline "+ New label" input below the color selector (same pattern as `ProjectsSection.tsx`)
+- Pass `labelIds` when calling `addProject()`
 
-## Type Changes
+### 2. `src/components/ProjectOverviewPage.tsx` -- Project Cards
 
-**`src/lib/types.ts`**
-- Add `ProjectLabel` interface: `{ id, name, color, createdAt }`
-- Add `labelIds?: string[]` to the `Project` interface
+- After the project name and health dot, render label badges (small colored pills with `#name`) when `Array.isArray(project.labelIds) && project.labelIds.length > 0`
+- Pull `projectLabels` from the store to resolve label names/colors
 
-## Store Changes
+### 3. `src/components/settings/ProjectsSection.tsx` -- Verify Label Rendering
 
-**`src/lib/store.ts`**
-- Add `projectLabels: ProjectLabel[]` to state
-- Add CRUD actions: `addProjectLabel`, `updateProjectLabel`, `deleteProjectLabel`
-- Include `projectLabels` in cloud sync (load/merge)
-- Update `addProject` and `updateProject` sync to handle `label_ids`
-- Map `label_ids` jsonb to `labelIds` string array in Project
+- The `Array.isArray` guard was already added in the last fix. Confirm labels render on project cards in Settings as well. The existing code at line 333 already handles this correctly.
 
-## UI Changes
+## Technical Details
 
-### 1. Project Add/Edit Form (`ProjectsSection.tsx`)
-- Add a multi-select label picker below the color selector
-- Show existing labels as tappable chips (selected = filled, unselected = outline)
-- Include a small "+ New Label" inline option that creates a label on the spot
-
-### 2. New Settings Section: `LabelsSection.tsx`
-- Header with back button and "Add" button (same pattern as Vendors/Categories)
-- Add form: name input + color picker
-- Label cards showing:
-  - Label name with color dot
-  - Project count subtitle
-  - Edit/Delete action buttons
-  - Expandable section (chevron) showing projects under that label as compact cards with project name, color, and budget info
-- Delete confirmation dialog
-
-### 3. Settings Page (`SettingsPage.tsx`)
-- Add "Labels" menu item under Data Management (with Tag icon)
-- Add `'labels'` to the `SettingsSection` type
-- Route to `LabelsSection` component
-
-### 4. Add Transaction Sheet (`AddTransactionSheet.tsx`)
-- No changes needed -- labels are project-level, not transaction-level
-
-## Component Structure
-
-```text
-Settings Page
-  +-- Labels (new menu item)
-       +-- LabelsSection.tsx (new file)
-            +-- Label cards (expandable)
-            +-- Add/Edit form
-            +-- Delete confirmation
+**Store usage** (already available):
+```typescript
+const { projectLabels, addProjectLabel } = useFinanceStore();
 ```
 
-## Implementation Order
-1. Database migration (new table + alter projects)
-2. Update types
-3. Update store with label CRUD + sync
-4. Create LabelsSection component
-5. Wire into SettingsPage
-6. Add label picker to ProjectsSection add/edit form
+**Form state change** in `ProjectOverviewPage.tsx`:
+```typescript
+// Before
+const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981' });
+
+// After
+const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] as string[] });
+```
+
+**Label picker UI** -- added below the color picker in the add form, matching the pattern from `ProjectsSection.tsx`:
+- Tappable chip buttons for each existing label (filled when selected, outline when not)
+- Inline text input for creating a new label on the spot
+
+**Label badges on cards** -- inserted after the transaction count line, showing small colored pills for each assigned label.
+
+## Files Modified
+1. `src/components/ProjectOverviewPage.tsx` -- add label picker to form + label badges on cards
+
