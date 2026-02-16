@@ -8,6 +8,7 @@ import {
   Grid3X3,
   Store,
   FolderKanban,
+  Tag,
   FileBarChart,
   ArrowLeft,
   LogOut,
@@ -26,6 +27,7 @@ import { VendorsSection } from "./settings/VendorsSection";
 import { ProjectsSection } from "./settings/ProjectsSection";
 import { ReportsSection } from "./settings/ReportsSection";
 import { PartnersSection } from "./settings/PartnersSection";
+import { LabelsSection } from "./settings/LabelsSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
@@ -212,7 +214,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'projects' | 'reports' | 'logs' | 'partners' | null;
+type SettingsSection = 'categories' | 'vendors' | 'projects' | 'labels' | 'reports' | 'logs' | 'partners' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -222,7 +224,7 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, onBackToHome }: SettingsPageProps) => {
-  const { categories, projects, userProfile, partners } = useFinanceStore();
+  const { categories, projects, userProfile, partners, projectLabels } = useFinanceStore();
   const { signOut, user } = useAuth();
   const { mode, setTheme, isDark, isOled } = useTheme();
   const navigate = useNavigate();
@@ -289,9 +291,15 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         },
         { 
           icon: FolderKanban, 
-          label: "Project Labels", 
+          label: "Projects", 
           sublabel: `${projects.length} projects`,
           onClick: () => handleSectionChange('projects')
+        },
+        { 
+          icon: Tag, 
+          label: "Labels", 
+          sublabel: `${projectLabels.length} label${projectLabels.length !== 1 ? 's' : ''}`,
+          onClick: () => handleSectionChange('labels')
         },
         { 
           icon: FileBarChart, 
@@ -328,6 +336,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   }
   if (activeSection === 'projects') {
     return <ProjectsSection onBack={handleBack} userId={user?.id} />;
+  }
+  if (activeSection === 'labels') {
+    return <LabelsSection onBack={handleBack} userId={user?.id} />;
   }
   if (activeSection === 'reports') {
     return <ReportsSection onBack={handleBack} />;

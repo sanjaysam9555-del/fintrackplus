@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,13 +15,14 @@ interface ProjectsSectionProps {
 const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1'];
 
 export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
-  const { projects, addProject, updateProject, deleteProject, getProjectSpending } = useFinanceStore();
+  const { projects, addProject, updateProject, deleteProject, getProjectSpending, projectLabels, addProjectLabel } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [archiveProject, setArchiveProject] = useState<typeof projects[0] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981' });
+  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] as string[] });
+  const [newLabelName, setNewLabelName] = useState('');
 
   // Filter projects
   const activeProjects = projects.filter(p => !p.archived);
@@ -42,10 +43,12 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       internalCost: formData.internalCost,
       clientCost: formData.clientCost,
       color: formData.color,
+      labelIds: formData.labelIds,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981' });
+    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] });
+    setNewLabelName('');
   };
 
   const handleUpdate = (id: string) => {
@@ -60,9 +63,11 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       internalCost: formData.internalCost,
       clientCost: formData.clientCost,
       color: formData.color,
+      labelIds: formData.labelIds,
     }, userId);
     toast.success("Project updated");
     setEditingId(null);
+    setNewLabelName('');
   };
 
   const handleDelete = () => {
@@ -90,7 +95,9 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       internalCost: project.internalCost,
       clientCost: project.clientCost || 0,
       color: project.color,
+      labelIds: project.labelIds || [],
     });
+    setNewLabelName('');
   };
 
   const renderFormFields = (isEdit: boolean, projectId?: string) => (
@@ -146,6 +153,77 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           ))}
         </div>
       </div>
+      {/* Label Picker */}
+      <div>
+        <p className="text-xs text-muted-foreground mb-2">Labels</p>
+        <div className="flex flex-wrap gap-1.5">
+          {projectLabels.map((label) => {
+            const isSelected = formData.labelIds.includes(label.id);
+            return (
+              <button
+                key={label.id}
+                type="button"
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    labelIds: isSelected
+                      ? formData.labelIds.filter(id => id !== label.id)
+                      : [...formData.labelIds, label.id],
+                  });
+                }}
+                className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1 ${
+                  isSelected
+                    ? 'text-white'
+                    : 'bg-muted text-foreground hover:bg-muted/80'
+                }`}
+                style={isSelected ? { backgroundColor: label.color } : undefined}
+              >
+                <Tag size={10} />
+                #{label.name}
+              </button>
+            );
+          })}
+        </div>
+        {/* Inline new label */}
+        <div className="flex items-center gap-2 mt-2">
+          <Input
+            placeholder="+ New label"
+            value={newLabelName}
+            onChange={(e) => setNewLabelName(e.target.value)}
+            className="h-8 text-xs flex-1"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newLabelName.trim()) {
+                e.preventDefault();
+                if (projectLabels.some(l => l.name.toLowerCase() === newLabelName.trim().toLowerCase())) {
+                  toast.error("Label already exists");
+                  return;
+                }
+                addProjectLabel({ name: newLabelName.trim(), color: '#8B5CF6' }, userId);
+                setNewLabelName('');
+                toast.success("Label created");
+              }
+            }}
+          />
+          {newLabelName.trim() && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              onClick={() => {
+                if (projectLabels.some(l => l.name.toLowerCase() === newLabelName.trim().toLowerCase())) {
+                  toast.error("Label already exists");
+                  return;
+                }
+                addProjectLabel({ name: newLabelName.trim(), color: '#8B5CF6' }, userId);
+                setNewLabelName('');
+                toast.success("Label created");
+              }}
+            >
+              Add
+            </Button>
+          )}
+        </div>
+      </div>
       {isEdit ? (
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setEditingId(null)} className="flex-1">
@@ -170,10 +248,10 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-xl font-bold">Project Labels</h1>
+          <h1 className="text-xl font-bold">Projects</h1>
         </div>
         {!showArchived && (
-          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981' }); }}>
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}>
             <Plus size={16} className="mr-1" /> Add
           </Button>
         )}
@@ -251,6 +329,23 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                         </div>
                         {project.description && (
                           <p className="text-sm text-muted-foreground">{project.description}</p>
+                        )}
+                        {project.labelIds && project.labelIds.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {project.labelIds.map(lid => {
+                              const label = projectLabels.find(l => l.id === lid);
+                              if (!label) return null;
+                              return (
+                                <span
+                                  key={lid}
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium"
+                                  style={{ backgroundColor: label.color }}
+                                >
+                                  #{label.name}
+                                </span>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
                       <button 

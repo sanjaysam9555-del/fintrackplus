@@ -40,14 +40,16 @@ export const useCloudSync = () => {
         vendorsResult,
         projectsResult,
         transactionsResult,
-        partnersResult
+        partnersResult,
+        projectLabelsResult
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
         supabase.from('categories').select('*').eq('user_id', user.id),
         supabase.from('vendors').select('*').eq('user_id', user.id),
         supabase.from('projects').select('*').eq('user_id', user.id),
         supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
-        supabase.from('partners').select('*').eq('user_id', user.id)
+        supabase.from('partners').select('*').eq('user_id', user.id),
+        supabase.from('project_labels').select('*').eq('user_id', user.id)
       ]);
 
       const firstError =
@@ -56,7 +58,8 @@ export const useCloudSync = () => {
         vendorsResult.error ||
         projectsResult.error ||
         transactionsResult.error ||
-        partnersResult.error;
+        partnersResult.error ||
+        projectLabelsResult.error;
 
       if (firstError) {
         throw firstError;
@@ -68,7 +71,7 @@ export const useCloudSync = () => {
       const cloudProjects = projectsResult.data;
       const cloudTransactions = transactionsResult.data;
       const cloudPartners = partnersResult.data;
-
+      const cloudProjectLabels = projectLabelsResult.data;
       // Check if onboarding should be shown
       if (profile && !profile.onboarding_completed) {
         setShowOnboarding(true);
@@ -98,6 +101,7 @@ export const useCloudSync = () => {
           internalCost: Number(p.budget_limit),
           clientCost: Number((p as unknown as { margin?: number }).margin) || 0,
           archived: (p as unknown as { archived?: boolean }).archived || false,
+          labelIds: (p as unknown as { label_ids?: string[] }).label_ids || [],
           color: p.color,
           createdAt: p.created_at.split('T')[0]
         })) || [],
@@ -135,6 +139,12 @@ export const useCloudSync = () => {
           initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
           avatarUrl: (p as { avatar_url?: string }).avatar_url || undefined,
           createdAt: (p as { created_at: string }).created_at.split('T')[0]
+        })) || [],
+        projectLabels: cloudProjectLabels?.map(l => ({
+          id: (l as { id: string }).id,
+          name: (l as { name: string }).name,
+          color: (l as { color: string }).color,
+          createdAt: (l as { created_at: string }).created_at.split('T')[0]
         })) || []
       });
 
@@ -296,6 +306,16 @@ export const useCloudSync = () => {
           event: '*',
           schema: 'public',
           table: 'partners',
+          filter: `user_id=eq.${user.id}`,
+        },
+        debouncedFetch
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'project_labels',
           filter: `user_id=eq.${user.id}`,
         },
         debouncedFetch

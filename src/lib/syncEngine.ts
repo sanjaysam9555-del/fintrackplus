@@ -9,11 +9,11 @@
  */
 
 import { supabase } from '@/integrations/supabase/client';
-import { Transaction, Category, Vendor, Project } from './types';
+import { Transaction, Category, Vendor, Project, ProjectLabel } from './types';
 
 // ============ Types ============
 
-export type SyncEntityType = 'transaction' | 'category' | 'vendor' | 'project' | 'partner';
+export type SyncEntityType = 'transaction' | 'category' | 'vendor' | 'project' | 'partner' | 'project_label';
 export type SyncOperationType = 'insert' | 'update' | 'delete';
 
 export interface SyncOperation {
@@ -63,13 +63,14 @@ const getBackoffDelay = (retryCount: number): number => {
   return Math.floor(delay + jitter);
 };
 
-const getTableName = (entity: SyncEntityType): 'transactions' | 'categories' | 'vendors' | 'projects' | 'partners' => {
+const getTableName = (entity: SyncEntityType): 'transactions' | 'categories' | 'vendors' | 'projects' | 'partners' | 'project_labels' => {
   switch (entity) {
     case 'transaction': return 'transactions';
     case 'category': return 'categories';
     case 'vendor': return 'vendors';
     case 'project': return 'projects';
     case 'partner': return 'partners';
+    case 'project_label': return 'project_labels';
   }
 };
 
@@ -298,7 +299,7 @@ export const processSyncQueue = async (): Promise<{ synced: number; failed: numb
 
 // ============ Cloud Data Fetching ============
 
-import { Partner } from './types';
+import { Partner, ProjectLabel as ProjectLabelType } from './types';
 
 export interface CloudData {
   profile?: { name: string; avatar?: string | null };
@@ -307,6 +308,7 @@ export interface CloudData {
   projects: Project[];
   transactions: Transaction[];
   partners: Partner[];
+  projectLabels: ProjectLabelType[];
 }
 
 export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudData | null; error: string | null }> => {
@@ -317,14 +319,16 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       vendorsResult,
       projectsResult,
       transactionsResult,
-      partnersResult
+      partnersResult,
+      projectLabelsResult
     ] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('categories').select('*').eq('user_id', userId),
       supabase.from('vendors').select('*').eq('user_id', userId),
       supabase.from('projects').select('*').eq('user_id', userId),
       supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
-      supabase.from('partners').select('*').eq('user_id', userId)
+      supabase.from('partners').select('*').eq('user_id', userId),
+      supabase.from('project_labels').select('*').eq('user_id', userId)
     ]);
 
     const firstError =
@@ -333,7 +337,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       vendorsResult.error ||
       projectsResult.error ||
       transactionsResult.error ||
-      partnersResult.error;
+      partnersResult.error ||
+      projectLabelsResult.error;
 
     if (firstError) {
       return { data: null, error: firstError.message };
@@ -345,7 +350,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
     const cloudProjects = projectsResult.data || [];
     const cloudTransactions = transactionsResult.data || [];
     const cloudPartners = partnersResult.data || [];
-
+    const cloudProjectLabels = projectLabelsResult.data || [];
     return {
       data: {
         profile: profile ? { name: profile.name, avatar: profile.avatar_url } : undefined,
@@ -369,6 +374,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           internalCost: Number(p.budget_limit),
           clientCost: Number((p as unknown as { margin?: number }).margin) || 0,
           archived: (p as unknown as { archived?: boolean }).archived || false,
+          labelIds: (p as unknown as { label_ids?: string[] }).label_ids || [],
           color: p.color,
           createdAt: p.created_at.split('T')[0]
         })),
@@ -397,6 +403,12 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
           avatarUrl: (p as { avatar_url?: string }).avatar_url || undefined,
           createdAt: (p as { created_at: string }).created_at.split('T')[0]
+        })),
+        projectLabels: cloudProjectLabels.map(l => ({
+          id: (l as { id: string }).id,
+          name: (l as { name: string }).name,
+          color: (l as { color: string }).color,
+          createdAt: (l as { created_at: string }).created_at.split('T')[0]
         }))
       },
       error: null
@@ -427,6 +439,7 @@ export const createRealtimeSubscription = (
     .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, debouncedCallback)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors', filter: `user_id=eq.${userId}` }, debouncedCallback)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${userId}` }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'project_labels', filter: `user_id=eq.${userId}` }, debouncedCallback)
     .subscribe();
 
   return {

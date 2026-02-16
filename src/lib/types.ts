@@ -10,6 +10,13 @@ export interface Category {
   type: TransactionType;
 }
 
+export interface ProjectLabel {
+  id: string;
+  name: string;
+  color: string;
+  createdAt: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -19,6 +26,7 @@ export interface Project {
   clientCost: number;     // mapped to DB margin column
   color: string;
   archived?: boolean;
+  labelIds?: string[];
   createdAt: string;
 }
 
