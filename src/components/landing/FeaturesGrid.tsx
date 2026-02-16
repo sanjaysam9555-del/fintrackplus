@@ -5,6 +5,9 @@ import {
   Banknote, Receipt, Camera, Brain,
   Calendar, Repeat,
   Search, Undo2, Palette, Moon,
+  Tag, TrendingUp, Wallet, BarChart3, FileBarChart,
+  Clock, Copy, Bell, ArrowDownUp, SlidersHorizontal,
+  UserCircle, Cloud, WifiOff, Share2, Download, PlusCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PhoneMockup } from "./PhoneMockup";
@@ -119,6 +122,25 @@ const secondaryFeatures = [
   { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, iconBg: "bg-destructive/10 text-destructive" },
   { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, iconBg: "bg-warning/10 text-warning" },
   { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: darkModeCropped, iconBg: "bg-primary/10 text-primary" },
+];
+
+const extraFeatures = [
+  { icon: TrendingUp, title: "Budgets & Margins", desc: "Set internal cost vs client cost — see real-time profit margins", iconBg: "bg-success/10 text-success" },
+  { icon: Wallet, title: "Partner Balances", desc: "Track separate cash and online balances per business partner", iconBg: "bg-primary/10 text-primary" },
+  { icon: Tag, title: "Labels", desc: "Color-coded labels to organize projects and transactions your way", iconBg: "bg-warning/10 text-warning" },
+  { icon: PlusCircle, title: "Income & Expense", desc: "One-tap logging with vendor, category, payment mode, and notes", iconBg: "bg-success/10 text-success" },
+  { icon: BarChart3, title: "Dashboard & Charts", desc: "Visual cash flow charts, income vs expense breakdowns at a glance", iconBg: "bg-primary/10 text-primary" },
+  { icon: FileBarChart, title: "Reports Export", desc: "Download CSV and PDF reports with receipt images in a ZIP", iconBg: "bg-warning/10 text-warning" },
+  { icon: Clock, title: "Time Filters", desc: "Filter by week, month, year, or custom date range instantly", iconBg: "bg-primary/10 text-primary" },
+  { icon: Copy, title: "Duplicate Detection", desc: "Smart alerts when a transaction looks like a duplicate entry", iconBg: "bg-destructive/10 text-destructive" },
+  { icon: Bell, title: "Activity Log", desc: "Full history of changes — never lose track of what happened", iconBg: "bg-warning/10 text-warning" },
+  { icon: ArrowDownUp, title: "Sort & Filter", desc: "Sort by date, amount, or vendor — filter by category or payment mode", iconBg: "bg-success/10 text-success" },
+  { icon: SlidersHorizontal, title: "Advanced Filters", desc: "Combine multiple filters for precise transaction searches", iconBg: "bg-primary/10 text-primary" },
+  { icon: UserCircle, title: "Profile", desc: "Customize your name, avatar, and app preferences", iconBg: "bg-warning/10 text-warning" },
+  { icon: Cloud, title: "Cloud Sync", desc: "Your data syncs securely across devices in real time", iconBg: "bg-primary/10 text-primary" },
+  { icon: WifiOff, title: "Offline Mode", desc: "Works without internet — syncs automatically when back online", iconBg: "bg-success/10 text-success" },
+  { icon: Share2, title: "Share Transactions", desc: "Share transaction details with partners or clients via any app", iconBg: "bg-warning/10 text-warning" },
+  { icon: Download, title: "Install as App", desc: "Add to home screen for a native app experience — no app store needed", iconBg: "bg-destructive/10 text-destructive" },
 ];
 
 export const FeaturesGrid = () => (
@@ -291,6 +313,56 @@ export const FeaturesGrid = () => (
                   <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
                 </div>
               </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+
+    {/* Extra features — compact icon cards, no screenshots */}
+    <section className="py-20 md:py-24 px-4">
+      <div className="max-w-6xl mx-auto">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={fadeUp}
+          className="text-center mb-10 md:mb-12"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary dark:text-foreground text-xs font-semibold mb-4">
+            <Wallet className="w-3.5 h-3.5" />
+            Full toolkit
+          </div>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+            30+ features. Zero complexity.
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground max-w-md mx-auto">
+            Everything else that makes FinTrack+ the complete financial toolkit for event professionals
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={{ visible: { transition: { staggerChildren: 0.05 } } }}
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4"
+        >
+          {extraFeatures.map((f) => (
+            <motion.div
+              key={f.title}
+              variants={{
+                hidden: { opacity: 0, y: 20, scale: 0.97 },
+                visible: { opacity: 1, y: 0, scale: 1, transition: { type: "spring" as const, stiffness: 120, damping: 18 } },
+              }}
+              whileHover={{ y: -3, scale: 1.03 }}
+              className="bg-card/80 backdrop-blur-sm border rounded-xl p-4 shadow-[0_0_32px_rgba(25,102,205,0.15)] ring-1 ring-primary/10 hover:shadow-[0_0_40px_rgba(25,102,205,0.2)] transition-shadow duration-300"
+            >
+              <div className={`w-10 h-10 rounded-xl ${f.iconBg} flex items-center justify-center mb-3`}>
+                <f.icon className="w-5 h-5" />
+              </div>
+              <h4 className="text-sm font-semibold text-foreground mb-1">{f.title}</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
             </motion.div>
           ))}
         </motion.div>
