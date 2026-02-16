@@ -140,6 +140,30 @@ export type Database = {
         }
         Relationships: []
       }
+      project_labels: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       projects: {
         Row: {
           archived: boolean
@@ -148,6 +172,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          label_ids: Json
           margin: number
           name: string
           notes: string | null
@@ -160,6 +185,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          label_ids?: Json
           margin?: number
           name: string
           notes?: string | null
@@ -172,6 +198,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          label_ids?: Json
           margin?: number
           name?: string
           notes?: string | null

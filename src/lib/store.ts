@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { Transaction, Category, Project, FinanceState, TransactionType, UserProfile, Notification, Vendor, Partner, NotificationChange } from './types';
+import { Transaction, Category, Project, ProjectLabel, FinanceState, TransactionType, UserProfile, Notification, Vendor, Partner, NotificationChange } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
@@ -41,6 +41,7 @@ interface CloudData {
   projects: Project[];
   transactions: Transaction[];
   partners: Partner[];
+  projectLabels: ProjectLabel[];
 }
 
 interface FinanceStore extends FinanceState {
@@ -84,6 +85,12 @@ interface FinanceStore extends FinanceState {
   getPartnerBalances: () => PartnerBalance[];
   getPartnerBalancesForPeriod: (startDate: string, endDate: string) => PartnerPeriodBalance[];
   
+  // Project Label actions
+  projectLabels: ProjectLabel[];
+  addProjectLabel: (label: Omit<ProjectLabel, 'id' | 'createdAt'>, userId?: string) => void;
+  updateProjectLabel: (id: string, updates: Partial<ProjectLabel>, userId?: string) => void;
+  deleteProjectLabel: (id: string, userId?: string) => void;
+  
   // Cloud sync
   syncStatus: SyncStatus;
   lastSyncedAt: string | null;
@@ -117,6 +124,7 @@ export const useFinanceStore = create<FinanceStore>()(
       projects: [],
       vendors: [],
       partners: [],
+      projectLabels: [],
       userProfile: { name: 'User' },
       notifications: [],
       syncStatus: 'idle',
@@ -200,6 +208,7 @@ export const useFinanceStore = create<FinanceStore>()(
         vendors: mergeData(data.vendors, currentState.vendors, 'vendor'),
         projects: mergeData(data.projects, currentState.projects, 'project'),
         partners: mergeData(data.partners, currentState.partners, 'partner'),
+        projectLabels: mergeData(data.projectLabels, currentState.projectLabels, 'project_label'),
         userProfile: data.profile || currentState.userProfile || { name: 'User' },
       });
     },
@@ -789,6 +798,7 @@ export const useFinanceStore = create<FinanceStore>()(
               budget_limit: project.internalCost,
               margin: project.clientCost || 0,
               color: project.color,
+              label_ids: JSON.stringify(project.labelIds || []),
             },
             userId: uid,
           });
@@ -868,6 +878,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.clientCost !== undefined) dbUpdates.margin = updates.clientCost;
           if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
           if (updates.color) dbUpdates.color = updates.color;
+          if (updates.labelIds !== undefined) dbUpdates.label_ids = JSON.stringify(updates.labelIds);
           
           addToSyncQueue({
             type: 'update',
@@ -1239,6 +1250,103 @@ export const useFinanceStore = create<FinanceStore>()(
         }
       },
       
+      // Project Label actions - Optimistic local-first with background sync
+      addProjectLabel: async (label, userId) => {
+        const id = uuidv4();
+        const createdAt = new Date().toISOString().split('T')[0];
+        
+        set((state) => ({
+          projectLabels: [...state.projectLabels, { ...label, id, createdAt }]
+        }));
+
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+         
+        if (uid) {
+          addToSyncQueue({
+            type: 'insert',
+            entity: 'project_label',
+            entityId: id,
+            data: {
+              name: label.name,
+              color: label.color,
+            },
+            userId: uid,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+      },
+      
+      updateProjectLabel: async (id, updates, userId) => {
+        set((state) => ({
+          projectLabels: state.projectLabels.map((l) => 
+            l.id === id ? { ...l, ...updates } : l
+          )
+        }));
+        
+        if (userId) {
+          const dbUpdates: Record<string, unknown> = {};
+          if (updates.name) dbUpdates.name = updates.name;
+          if (updates.color) dbUpdates.color = updates.color;
+          
+          addToSyncQueue({
+            type: 'update',
+            entity: 'project_label',
+            entityId: id,
+            data: dbUpdates,
+            userId,
+          });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+      },
+      
+      deleteProjectLabel: async (id, userId) => {
+        // Also remove this label from any projects that reference it
+        set((state) => ({
+          projectLabels: state.projectLabels.filter((l) => l.id !== id),
+          projects: state.projects.map(p => 
+            p.labelIds?.includes(id) 
+              ? { ...p, labelIds: p.labelIds.filter(lid => lid !== id) }
+              : p
+          )
+        }));
+        
+        if (userId) {
+          addToSyncQueue({
+            type: 'delete',
+            entity: 'project_label',
+            entityId: id,
+            data: {},
+            userId,
+          });
+          
+          // Also update projects that had this label
+          const projectsWithLabel = get().projects.filter(p => p.labelIds?.includes(id));
+          for (const proj of projectsWithLabel) {
+            addToSyncQueue({
+              type: 'update',
+              entity: 'project',
+              entityId: proj.id,
+              data: { label_ids: JSON.stringify(proj.labelIds?.filter(lid => lid !== id) || []) },
+              userId,
+            });
+          }
+          
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+      },
+      
       getPartnerBalances: () => {
         const { transactions, partners } = get();
         
@@ -1328,6 +1436,7 @@ export const useFinanceStore = create<FinanceStore>()(
           projects: [],
           vendors: [],
           partners: [],
+          projectLabels: [],
         });
       },
       
@@ -1337,6 +1446,7 @@ export const useFinanceStore = create<FinanceStore>()(
         projects: [],
         vendors: [],
         partners: [],
+        projectLabels: [],
       }),
       
       // Computed helpers
@@ -1392,6 +1502,7 @@ export const useFinanceStore = create<FinanceStore>()(
         projects: state.projects,
         vendors: state.vendors,
         partners: state.partners,
+        projectLabels: state.projectLabels,
         userProfile: state.userProfile,
         notifications: state.notifications,
         lastSyncedAt: state.lastSyncedAt,
