@@ -3,15 +3,18 @@ export const isLandingDomain = () => {
   return host === 'fintrackplus.com' || host === 'www.fintrackplus.com';
 };
 
+export const isAppDomain = () => {
+  return window.location.hostname === 'app.fintrackplus.com';
+};
+
 /**
- * Prefix a path with /application when running on the production domain.
+ * Prefix a path with the app subdomain (on landing domain) or /application (legacy).
  * On preview/dev domains the path is returned as-is.
  */
 export const appPath = (path = '/') => {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
   if (isLandingDomain()) {
-    // Ensure no double slash
-    const cleanPath = path.startsWith('/') ? path : `/${path}`;
-    return `/application${cleanPath}`;
+    return `https://app.fintrackplus.com${cleanPath}`;
   }
   return path;
 };
