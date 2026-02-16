@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check, Tag } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
@@ -49,13 +49,14 @@ const getHealthDot = (status: HealthStatus): string => {
 };
 
 export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
-  const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject } = useFinanceStore();
+  const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject, projectLabels, addProjectLabel } = useFinanceStore();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [archiveProject, setArchiveProject] = useState<Project | null>(null);
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981' });
+  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] as string[] });
+  const [newLabelName, setNewLabelName] = useState('');
 
   const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1'];
   const computedMargin = formData.clientCost - formData.internalCost;
@@ -71,10 +72,12 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       internalCost: formData.internalCost,
       clientCost: formData.clientCost,
       color: formData.color,
+      labelIds: formData.labelIds,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981' });
+    setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] });
+    setNewLabelName('');
   };
 
   // Filter projects
@@ -163,7 +166,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             <Search size={18} className="text-muted-foreground" />
           </button>
           <button 
-            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981' }); }}
+            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}
             className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             title="Add Project"
           >
@@ -233,6 +236,77 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                       style={{ backgroundColor: color }}
                     />
                   ))}
+                </div>
+              </div>
+              {/* Label Picker */}
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Labels</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {projectLabels.map((label) => {
+                    const isSelected = formData.labelIds.includes(label.id);
+                    return (
+                      <button
+                        key={label.id}
+                        type="button"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            labelIds: isSelected
+                              ? formData.labelIds.filter(id => id !== label.id)
+                              : [...formData.labelIds, label.id],
+                          });
+                        }}
+                        className={cn(
+                          "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                          isSelected
+                            ? 'text-white'
+                            : 'bg-muted text-foreground hover:bg-muted/80'
+                        )}
+                        style={isSelected ? { backgroundColor: label.color } : undefined}
+                      >
+                        <Tag size={10} />
+                        #{label.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <Input
+                    placeholder="+ New label"
+                    value={newLabelName}
+                    onChange={(e) => setNewLabelName(e.target.value)}
+                    className="h-8 text-xs flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && newLabelName.trim()) {
+                        e.preventDefault();
+                        if (projectLabels.some(l => l.name.toLowerCase() === newLabelName.trim().toLowerCase())) {
+                          toast.error("Label already exists");
+                          return;
+                        }
+                        addProjectLabel({ name: newLabelName.trim(), color: '#8B5CF6' }, userId);
+                        setNewLabelName('');
+                        toast.success("Label created");
+                      }
+                    }}
+                  />
+                  {newLabelName.trim() && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 text-xs"
+                      onClick={() => {
+                        if (projectLabels.some(l => l.name.toLowerCase() === newLabelName.trim().toLowerCase())) {
+                          toast.error("Label already exists");
+                          return;
+                        }
+                        addProjectLabel({ name: newLabelName.trim(), color: '#8B5CF6' }, userId);
+                        setNewLabelName('');
+                        toast.success("Label created");
+                      }}
+                    >
+                      Add
+                    </Button>
+                  )}
                 </div>
               </div>
               <Button onClick={handleAddProject} className="w-full" size="sm">
@@ -407,6 +481,23 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           <p className="text-[10px] text-muted-foreground mt-0.5">
                             {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
                           </p>
+                          {Array.isArray(project.labelIds) && project.labelIds.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {project.labelIds.map(lid => {
+                                const label = projectLabels.find(l => l.id === lid);
+                                if (!label) return null;
+                                return (
+                                  <span
+                                    key={lid}
+                                    className="text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium"
+                                    style={{ backgroundColor: label.color }}
+                                  >
+                                    #{label.name}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       </button>
                       
