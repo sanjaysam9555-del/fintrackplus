@@ -340,20 +340,10 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
                 <Wallet size={14} className="text-accent-foreground" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Client Cost</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
               <p className="text-sm font-bold text-foreground">
                 <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost, false)}</span>
                 <span className="hidden lg:inline">₹{totalClientCost.toLocaleString()}</span>
-              </p>
-            </div>
-            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-                <PiggyBank size={14} className="text-accent-foreground" />
-              </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
-              <p className="text-sm font-bold text-foreground">
-                <span className="lg:hidden">₹{formatCompactCurrency(totalInternalCost, false)}</span>
-                <span className="hidden lg:inline">₹{totalInternalCost.toLocaleString()}</span>
               </p>
             </div>
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
@@ -374,16 +364,6 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               <p className="text-sm font-bold text-destructive">
                 <span className="lg:hidden">₹{formatCompactCurrency(totalSpent, false)}</span>
                 <span className="hidden lg:inline">₹{totalSpent.toLocaleString()}</span>
-              </p>
-            </div>
-            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-                <Wallet size={14} className="text-accent-foreground" />
-              </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Exp. Margin</p>
-              <p className="text-sm font-bold text-foreground">
-                <span className="lg:hidden">₹{formatCompactCurrency(totalExpectedMargin, false)}</span>
-                <span className="hidden lg:inline">₹{totalExpectedMargin.toLocaleString()}</span>
               </p>
             </div>
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
@@ -632,21 +612,14 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                         </div>
                       )}
 
-                      {/* Compact Stats Row - 3x2 grid with dividers */}
+                      {/* Compact Stats Row - 2x2 grid with dividers */}
                       <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden mt-1">
                         <div className="bg-card p-2 flex flex-col items-center gap-0.5">
                           <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
                             <Wallet size={12} className="text-accent-foreground" />
                           </div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Client Cost</p>
+                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
                           <p className="text-xs font-bold text-foreground">₹{formatCompactCurrency(project.clientCost || 0, false)}</p>
-                        </div>
-                        <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                          <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-                            <PiggyBank size={12} className="text-accent-foreground" />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
-                          <p className="text-xs font-bold text-foreground">₹{formatCompactCurrency(project.internalCost, false)}</p>
                         </div>
                         <div className="bg-card p-2 flex flex-col items-center gap-0.5">
                           <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
@@ -663,13 +636,6 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           <p className="text-xs font-bold text-destructive">₹{formatCompactCurrency(spent, false)}</p>
                         </div>
                         <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                          <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-                            <Wallet size={12} className="text-accent-foreground" />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Exp. Margin</p>
-                          <p className="text-xs font-bold text-foreground">₹{formatCompactCurrency(project.expectedMargin || 0, false)}</p>
-                        </div>
-                        <div className="bg-card p-2 flex flex-col items-center gap-0.5">
                           <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: ((project.clientCost || 0) - spent) >= 0 ? 'hsl(142 71% 45% / 0.1)' : 'hsl(var(--destructive) / 0.1)' }}>
                             {((project.clientCost || 0) - spent) >= 0 ? (
                               <TrendingUp size={12} className="text-green-500" />
@@ -679,7 +645,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           </div>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
                           <p className={cn("text-xs font-bold", ((project.clientCost || 0) - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                            ₹{formatCompactCurrency(Math.abs((project.clientCost || 0) - spent), false)}
+                            ₹{formatCompactCurrency((project.clientCost || 0) - spent, false)}
                           </p>
                         </div>
                       </div>
