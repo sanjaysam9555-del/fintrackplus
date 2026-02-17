@@ -1,50 +1,61 @@
 
 
-# Redesign Project Cards for Better Readability
+# Redesign Financial Summary in Project Cards
 
-## Current Problems
+## Changes to `src/components/settings/ProjectsSection.tsx`
 
-- The project name, description, labels, and 3 action buttons (archive, edit, delete) are all squeezed into a single horizontal row, making it cramped on mobile
-- Financial data (Spent vs Internal Cost) uses tiny, same-weight text that's hard to scan
-- No visual separation between the project identity, financial summary, and actions
-- The margin (Client Cost - Internal Cost) isn't shown on the card at all, despite being a key metric
+### 1. Reduce section height
+- Tighten the padding on the financial summary section: reduce `pt-3` to `pt-2` and `space-y-2` to `space-y-1.5`
+- Make the progress bar slimmer: `h-1.5` to `h-1`
 
-## New Card Layout
+### 2. Add colored icons to each metric
+Import `IndianRupee` (or `CircleDollarSign`) and `TrendingUp`/`TrendingDown` from lucide-react for the icons. Each metric gets a small icon next to its label:
 
-Each project card will be restructured into clear vertical sections:
+- **Cost** (currently "Budget"): Blue icon (`text-blue-500`)
+- **Spent**: Red icon (`text-red-500`), number styled white (`text-foreground`) like Cost
+- **Net** (currently "Margin"): Green icon + number when positive, red icon + number when negative
 
-```text
-+------------------------------------------+
-| [Icon]  Project Name            [...menu]|
-|         Description text                 |
-|         #wedding  #corporate             |
-+------------------------------------------+
-|  Spent        Budget       Margin        |
-|  ₹45,000      ₹1,00,000   ₹55,000       |
-|  [===progress bar==================]     |
-+------------------------------------------+
+### 3. Rename "Margin" to "Net"
+Change the label text from "Margin" to "Net" in the financial grid.
+
+### 4. Color rules for values
+- Cost number: `text-foreground` (white in dark mode)
+- Spent number: `text-foreground` (white in dark mode, same as Cost) -- currently it turns red when over budget, keep that behavior
+- Net number: `text-green-600 dark:text-green-400` when positive, `text-destructive` when negative
+
+### Technical Detail
+
+Lines ~380-416 of the file will be updated. The 3-column grid stays, but each cell gets an icon+label row and properly colored values:
+
+```tsx
+<div className="border-t border-border pt-2 space-y-1.5">
+  <div className="grid grid-cols-3 gap-2">
+    <div>
+      <div className="flex items-center gap-1">
+        <Wallet size={11} className="text-blue-500" />
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Cost</p>
+      </div>
+      <p className="text-sm font-semibold text-foreground">...</p>
+    </div>
+    <div>
+      <div className="flex items-center gap-1">
+        <TrendingDown size={11} className="text-red-500" />
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Spent</p>
+      </div>
+      <p className="text-sm font-semibold text-foreground">...</p>
+    </div>
+    <div>
+      <div className="flex items-center gap-1">
+        <TrendingUp size={11} className={net >= 0 ? 'text-green-500' : 'text-red-500'} />
+        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Net</p>
+      </div>
+      <p className={`text-sm font-semibold ${net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>...</p>
+    </div>
+  </div>
+  <!-- progress bar with h-1 -->
+</div>
 ```
 
-Key changes:
+Also update the form's computed margin label from "Margin" to "Net" (line ~125 area).
 
-1. **Collapse 3 action buttons into a single "..." overflow menu** -- Archive, Edit, Delete move into a dropdown, decluttering the card
-2. **Add a 3-column financial summary row** showing Spent, Budget (Internal Cost), and Margin side by side with clear labels and color-coded values (green for positive margin, red for negative/over-budget)
-3. **Give the project name more prominence** -- slightly larger font weight
-4. **Move labels below description** with a small gap for breathing room
-5. **Client Cost displayed** as the Margin calculation (Client Cost - Internal Cost) directly on the card
-
-## Technical Changes
-
-### `src/components/settings/ProjectsSection.tsx`
-
-- Import `DropdownMenu` components from `@radix-ui/react-dropdown-menu` (already available via `src/components/ui/dropdown-menu.tsx`) and `MoreVertical` icon from lucide
-- Replace the 3 inline action buttons with a single `DropdownMenu` containing Archive, Edit, and Delete options
-- Restructure the card body into:
-  - **Header row**: Icon + Name + overflow menu
-  - **Description**: Below header, if present
-  - **Labels**: Below description, if present  
-  - **Financial grid**: 3-column grid showing Spent / Budget / Margin with the progress bar underneath
-- Show the Margin value (clientCost - internalCost) on the card when clientCost > 0
-- Show financial section when either internalCost or clientCost is greater than 0
-
-No other files need changes.
+Only one file changes: `src/components/settings/ProjectsSection.tsx`.
