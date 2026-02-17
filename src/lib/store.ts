@@ -797,6 +797,7 @@ export const useFinanceStore = create<FinanceStore>()(
               description: project.description || null,
               budget_limit: project.internalCost,
               margin: project.clientCost || 0,
+              expected_margin: project.expectedMargin || 0,
               color: project.color,
               label_ids: project.labelIds || [],
             },
@@ -876,6 +877,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
           if (updates.internalCost !== undefined) dbUpdates.budget_limit = updates.internalCost;
           if (updates.clientCost !== undefined) dbUpdates.margin = updates.clientCost;
+          if (updates.expectedMargin !== undefined) dbUpdates.expected_margin = updates.expectedMargin;
           if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
           if (updates.color) dbUpdates.color = updates.color;
           if (updates.labelIds !== undefined) dbUpdates.label_ids = updates.labelIds;

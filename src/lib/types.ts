@@ -24,6 +24,7 @@ export interface Project {
   notes?: string;
   internalCost: number;   // mapped to DB budget_limit
   clientCost: number;     // mapped to DB margin column
+  expectedMargin: number; // mapped to DB expected_margin column
   color: string;
   archived?: boolean;
   labelIds?: string[];

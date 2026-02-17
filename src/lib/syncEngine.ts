@@ -373,6 +373,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           description: p.description || undefined,
           internalCost: Number(p.budget_limit),
           clientCost: Number((p as unknown as { margin?: number }).margin) || 0,
+          expectedMargin: Number((p as unknown as { expected_margin?: number }).expected_margin) || 0,
           archived: (p as unknown as { archived?: boolean }).archived || false,
           labelIds: (() => {
             const raw = (p as unknown as { label_ids?: unknown }).label_ids;

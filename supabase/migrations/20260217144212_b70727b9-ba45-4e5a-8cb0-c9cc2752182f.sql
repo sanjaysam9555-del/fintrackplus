@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN expected_margin numeric NOT NULL DEFAULT 0;

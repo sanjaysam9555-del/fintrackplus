@@ -212,6 +212,7 @@ export type Database = {
           color: string
           created_at: string
           description: string | null
+          expected_margin: number
           id: string
           label_ids: Json
           margin: number
@@ -225,6 +226,7 @@ export type Database = {
           color?: string
           created_at?: string
           description?: string | null
+          expected_margin?: number
           id?: string
           label_ids?: Json
           margin?: number
@@ -238,6 +240,7 @@ export type Database = {
           color?: string
           created_at?: string
           description?: string | null
+          expected_margin?: number
           id?: string
           label_ids?: Json
           margin?: number

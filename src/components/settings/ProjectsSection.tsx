@@ -16,13 +16,13 @@ interface ProjectsSectionProps {
 const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1'];
 
 export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
-  const { projects, addProject, updateProject, deleteProject, getProjectSpending, projectLabels, addProjectLabel } = useFinanceStore();
+  const { projects, addProject, updateProject, deleteProject, getProjectSpending, getProjectIncome, projectLabels, addProjectLabel } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [archiveProject, setArchiveProject] = useState<typeof projects[0] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] as string[] });
+  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[] });
   const [newLabelName, setNewLabelName] = useState('');
 
   // Filter projects
@@ -43,12 +43,13 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       notes: formData.notes.trim() || undefined,
       internalCost: formData.internalCost,
       clientCost: formData.clientCost,
+      expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] });
+    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] });
     setNewLabelName('');
   };
 
@@ -63,6 +64,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       notes: formData.notes.trim() || undefined,
       internalCost: formData.internalCost,
       clientCost: formData.clientCost,
+      expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
     }, userId);
@@ -95,6 +97,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       notes: project.notes || '',
       internalCost: project.internalCost,
       clientCost: project.clientCost || 0,
+      expectedMargin: project.expectedMargin || 0,
       color: project.color,
       labelIds: project.labelIds || [],
     });
@@ -132,6 +135,12 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
         placeholder="Client Cost (₹) — what you charge"
         value={formData.clientCost || ''}
         onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
+      />
+      <Input
+        type="number"
+        placeholder="Expected Margin (₹)"
+        value={formData.expectedMargin || ''}
+        onChange={(e) => setFormData({ ...formData, expectedMargin: Number(e.target.value) || 0 })}
       />
       {(formData.internalCost > 0 || formData.clientCost > 0) && (
         <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
@@ -252,7 +261,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           <h1 className="text-xl font-bold">Projects</h1>
         </div>
         {!showArchived && (
-          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}>
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}>
             <Plus size={16} className="mr-1" /> Add
           </Button>
         )}
@@ -379,6 +388,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
 
                     {/* Financial Summary */}
                     {(project.internalCost > 0 || project.clientCost > 0) && (() => {
+                      const projectIncome = getProjectIncome(project.id);
                       const netMargin = (project.clientCost || 0) - spent;
                       return (
                         <div className="border-t border-border pt-2 space-y-1.5">
@@ -397,7 +407,16 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                             </div>
                             <div>
                               <div className="flex items-center gap-1">
-                                <TrendingDown size={11} className="text-red-500" />
+                                <TrendingUp size={11} className="text-green-500" />
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Income</p>
+                              </div>
+                              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                                ₹{projectIncome.toLocaleString()}
+                              </p>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1">
+                                <TrendingDown size={11} className="text-destructive" />
                                 <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Expenses</p>
                               </div>
                               <p className="text-sm font-semibold text-destructive">
@@ -405,11 +424,17 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                               </p>
                             </div>
                             <div>
+                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Expected Margin</p>
+                              <p className="text-sm font-semibold text-foreground">
+                                ₹{(project.expectedMargin || 0).toLocaleString()}
+                              </p>
+                            </div>
+                            <div>
                               <div className="flex items-center gap-1">
                                 {netMargin >= 0 ? (
                                   <TrendingUp size={11} className="text-green-500" />
                                 ) : (
-                                  <TrendingDown size={11} className="text-red-500" />
+                                  <TrendingDown size={11} className="text-destructive" />
                                 )}
                                 <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
                               </div>
