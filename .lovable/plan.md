@@ -1,41 +1,33 @@
 
 
-# Fix: Negative Balance Display in Red
+# Fix: Header Behind Status Bar in PWA Mode (iPhone)
 
 ## Problem
-1. The Balance summary card on the Home Tab always shows in the default text color, even when the balance is negative (expenses exceed income). It should show green for positive and red for negative.
-2. The Cash Flow Trend card always displays the absolute value of the net amount in the default color, without indicating whether it's positive or negative.
+When opened as a home-screen app (PWA) on iPhones with a notch/Dynamic Island, the header content overlaps with the system status bar. The current `safe-top` utility applies a fixed fallback of `3.25rem` which isn't enough, and `env(safe-area-inset-top)` may still return `0` in some PWA contexts.
+
+## Solution
+Use the `display-mode: standalone` CSS media query to apply a larger fallback **only** when the app is running as an installed PWA. This ensures:
+- In a normal browser: minimal/no extra top padding (no wasted space)
+- In PWA/home-screen mode: enough padding to clear the notch/Dynamic Island
 
 ## Changes
 
-### 1. `src/components/SummaryCard.tsx`
-- Make the balance card's text color dynamic based on the `amount` value
-- When `type === 'balance'` and `amount < 0`, use `text-destructive` (red); when `amount >= 0`, use `text-success` (green)
-- Add a minus sign prefix for negative balance values
-- Update the `AnimatedNumber` usage so that for the balance type, it shows `-` when negative and no prefix when positive
+### `src/index.css` -- Update `.safe-top` utility
 
-### 2. `src/components/CashFlowChart.tsx`
-- Make the total net amount text color dynamic: green when positive, red when negative
-- Show a `-` prefix when `totalNet` is negative
-- Update the selected point display similarly
+```css
+.safe-top {
+  padding-top: max(1rem, env(safe-area-inset-top));
+}
 
-## Technical Details
+/* When running as an installed PWA / home screen app */
+@media (display-mode: standalone) {
+  .safe-top {
+    padding-top: max(3.75rem, env(safe-area-inset-top));
+  }
+}
+```
 
-**SummaryCard.tsx changes:**
-- In the component body, determine the balance text color dynamically:
-  ```typescript
-  const textColor = type === 'balance'
-    ? (amount >= 0 ? 'text-success' : 'text-destructive')
-    : colors.text;
-  ```
-- For the balance prefix, use: `type === 'balance' && amount < 0 ? '-' : (type === 'expense' ? '-' : '')`
-- Also update the icon background color for balance to reflect positive/negative
+- **Browser mode**: Uses a smaller fallback (`1rem`) since the browser chrome already handles the status bar area.
+- **PWA standalone mode**: Uses `3.75rem` (60px) as the fallback, enough to clear the Dynamic Island on modern iPhones, while `env(safe-area-inset-top)` takes over if the browser supports it.
 
-**CashFlowChart.tsx changes:**
-- Change the total net display to use conditional coloring:
-  ```typescript
-  <p className={cn("text-2xl font-bold", totalNet >= 0 ? "text-success" : "text-destructive")}>
-    {totalNet < 0 ? '-' : ''}₹{formatCurrency(Math.abs(totalNet))}
-  </p>
-  ```
-- Same for `selectedPoint.net` display
+This is a single-file, few-line change. No re-adding the PWA to the home screen should be required for the CSS change to take effect (only the meta tag change from the prior fix needed that).
