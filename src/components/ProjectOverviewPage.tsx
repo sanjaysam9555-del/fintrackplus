@@ -219,7 +219,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               </div>
               {(formData.internalCost > 0 || formData.clientCost > 0) && (
                 <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Margin</span>
+                  <span className="text-xs text-muted-foreground">Est. Net Margin</span>
                   <span className={cn("text-sm font-semibold", computedMargin >= 0 ? "text-success" : "text-destructive")}>
                     ₹{computedMargin.toLocaleString()}
                   </span>
@@ -324,13 +324,23 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
           <div className="px-4 pt-3 pb-1.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{showArchived ? 'Archived' : 'Active'} Portfolio</p>
           </div>
-          {/* Stats Row - 3 column grid */}
-          <div className="grid grid-cols-3 gap-px bg-border mx-3 mb-3 rounded-xl overflow-hidden">
+          {/* Stats Row - 2x2 grid */}
+          <div className="grid grid-cols-2 gap-px bg-border mx-3 mb-3 rounded-xl overflow-hidden">
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
               <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
                 <Wallet size={14} className="text-accent-foreground" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Client Cost</p>
+              <p className="text-sm font-bold text-foreground">
+                <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost, false)}</span>
+                <span className="hidden lg:inline">₹{totalClientCost.toLocaleString()}</span>
+              </p>
+            </div>
+            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
+              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
+                <PiggyBank size={14} className="text-accent-foreground" />
+              </div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
               <p className="text-sm font-bold text-foreground">
                 <span className="lg:hidden">₹{formatCompactCurrency(totalInternalCost, false)}</span>
                 <span className="hidden lg:inline">₹{totalInternalCost.toLocaleString()}</span>
@@ -340,20 +350,24 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center">
                 <Receipt size={14} className="text-destructive" />
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Spent</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
               <p className="text-sm font-bold text-destructive">
                 <span className="lg:hidden">₹{formatCompactCurrency(totalSpent, false)}</span>
                 <span className="hidden lg:inline">₹{totalSpent.toLocaleString()}</span>
               </p>
             </div>
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", (totalClientCost - totalInternalCost) >= 0 ? "bg-success-light" : "bg-destructive/10")}>
-                <PiggyBank size={14} className={(totalClientCost - totalInternalCost) >= 0 ? "text-success" : "text-destructive"} />
+              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", (totalClientCost - totalSpent) >= 0 ? "bg-success-light" : "bg-destructive/10")}>
+                {(totalClientCost - totalSpent) >= 0 ? (
+                  <TrendingUp size={14} className="text-success" />
+                ) : (
+                  <TrendingDown size={14} className="text-destructive" />
+                )}
               </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Margin</p>
-              <p className={cn("text-sm font-bold", (totalClientCost - totalInternalCost) >= 0 ? "text-success" : "text-destructive")}>
-                <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalInternalCost, false)}</span>
-                <span className="hidden lg:inline">₹{(totalClientCost - totalInternalCost).toLocaleString()}</span>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
+              <p className={cn("text-sm font-bold", (totalClientCost - totalSpent) >= 0 ? "text-success" : "text-destructive")}>
+                <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalSpent, false)}</span>
+                <span className="hidden lg:inline">₹{(totalClientCost - totalSpent).toLocaleString()}</span>
               </p>
             </div>
           </div>
@@ -588,26 +602,30 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                         </div>
                       )}
 
-                      {/* Compact Stats Row */}
-                      <div className="flex items-center gap-0 divide-x divide-border">
-                        <div className="flex-1 pr-2">
-                          <p className="text-[10px] text-muted-foreground">Income</p>
-                          <p className="text-xs font-semibold text-success">₹{formatCompactCurrency(income, false)}</p>
+                      {/* Compact Stats Row - 2x2 grid */}
+                      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Client Cost</p>
+                          <p className="text-xs font-semibold text-foreground">₹{formatCompactCurrency(project.clientCost || 0, false)}</p>
                         </div>
-                        <div className="flex-1 px-2">
-                          <p className="text-[10px] text-muted-foreground">Spent</p>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Internal Cost</p>
+                          <p className="text-xs font-semibold text-foreground">₹{formatCompactCurrency(project.internalCost, false)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Expenses</p>
                           <p className="text-xs font-semibold text-destructive">₹{formatCompactCurrency(spent, false)}</p>
                         </div>
-                        <div className="flex-1 pl-2">
-                          <p className="text-[10px] text-muted-foreground">Net</p>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Net Margin</p>
                           <div className="flex items-center gap-0.5">
-                            {net >= 0 ? (
+                            {((project.clientCost || 0) - spent) >= 0 ? (
                               <TrendingUp size={10} className="text-success" />
                             ) : (
                               <TrendingDown size={10} className="text-destructive" />
                             )}
-                            <p className={cn("text-xs font-semibold", net >= 0 ? "text-success" : "text-destructive")}>
-                              {net >= 0 ? '+' : ''}₹{formatCompactCurrency(Math.abs(net), false)}
+                            <p className={cn("text-xs font-semibold", ((project.clientCost || 0) - spent) >= 0 ? "text-success" : "text-destructive")}>
+                              ₹{formatCompactCurrency(Math.abs((project.clientCost || 0) - spent), false)}
                             </p>
                           </div>
                         </div>
