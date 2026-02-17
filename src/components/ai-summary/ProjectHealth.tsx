@@ -41,7 +41,7 @@ const getStatusText = (percent: number) => {
 
 export const ProjectHealth = ({ projects }: ProjectHealthProps) => {
   // Filter projects with budgets
-  const projectsWithBudget = projects.filter(p => p.internalCost > 0 && !p.archived);
+  const projectsWithBudget = projects.filter(p => p.income > 0 && !p.archived);
   
   if (projectsWithBudget.length === 0) return null;
   
@@ -49,7 +49,7 @@ export const ProjectHealth = ({ projects }: ProjectHealthProps) => {
   const sortedProjects = projectsWithBudget
     .map(p => ({
       ...p,
-      percent: (p.spent / p.internalCost) * 100,
+      percent: (p.spent / p.income) * 100,
     }))
     .sort((a, b) => b.percent - a.percent)
     .slice(0, 4);
@@ -103,7 +103,7 @@ export const ProjectHealth = ({ projects }: ProjectHealthProps) => {
             {/* Budget details */}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>Spent: {formatAmount(project.spent)}</span>
-              <span>Internal Cost: {formatAmount(project.internalCost)}</span>
+              <span>Income: {formatAmount(project.income)}</span>
             </div>
           </motion.div>
         ))}
