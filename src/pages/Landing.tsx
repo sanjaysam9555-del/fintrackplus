@@ -3,6 +3,7 @@ import { LandingHeader } from "@/components/landing/LandingHeader";
 import { ScrollProgress } from "@/components/landing/ScrollProgress";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { PainPointsSection } from "@/components/landing/PainPointsSection";
+import { ChaosToClarity } from "@/components/landing/ChaosToClarity";
 import { ComparisonSection } from "@/components/landing/ComparisonSection";
 import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
 import { HowItWorks } from "@/components/landing/HowItWorks";
@@ -41,6 +42,8 @@ const Landing = () => {
       <HeroSection />
       <SectionDivider />
       <PainPointsSection />
+      <SectionDivider />
+      <ChaosToClarity />
       <SectionDivider />
       <ComparisonSection />
       <SectionDivider />
