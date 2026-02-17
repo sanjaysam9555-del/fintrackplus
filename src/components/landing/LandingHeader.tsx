@@ -30,7 +30,7 @@ export const LandingHeader = () => {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
+    <header className="sticky top-0 z-[70] bg-background/80 backdrop-blur-md border-b border-border/50">
       <div className="max-w-6xl mx-auto flex items-center justify-between px-4 h-14">
         {/* Logo */}
         <a
@@ -93,30 +93,31 @@ export const LandingHeader = () => {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="md:hidden overflow-hidden border-t border-border/50 bg-background/95 backdrop-blur-md"
+            className="md:hidden border-t border-border/50 bg-background/95 backdrop-blur-md"
+            style={{ overflow: "hidden" }}
           >
             <div className="flex flex-col items-center gap-1 px-4 py-3">
               {navLinks.map((l) => (
                 <a
                   key={l.href}
                   href={l.href}
-                  onClick={(e) => { e.preventDefault(); handleNavClick(l.href); }}
-                  className="text-sm text-muted-foreground hover:text-foreground py-2 transition-colors"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleNavClick(l.href); }}
+                  className="w-full text-center text-sm text-muted-foreground hover:text-foreground py-2 transition-colors"
                 >
                   {l.label}
                 </a>
               ))}
               <a
                 href="#"
-                onClick={(e) => { e.preventDefault(); setMobileOpen(false); const url = getAppUrl('/auth?mode=login'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
-                className="text-sm text-muted-foreground hover:text-foreground py-2 transition-colors cursor-pointer"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); const url = getAppUrl('/auth?mode=login'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+                className="w-full text-center text-sm text-muted-foreground hover:text-foreground py-2 transition-colors cursor-pointer"
               >
                 Existing User
               </a>
               <Button
                 size="sm"
-                className="gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20"
-                onClick={() => { setMobileOpen(false); const url = getAppUrl('/auth?mode=signup'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+                className="gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 mt-1"
+                onClick={(e) => { e.stopPropagation(); setMobileOpen(false); const url = getAppUrl('/auth?mode=signup'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
               >
                 <Sparkles className="w-3 h-3" />
                 Get Started <ArrowRight className="w-3.5 h-3.5" />
