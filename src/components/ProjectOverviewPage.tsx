@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check, Tag, ArrowDown } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check, Tag, ArrowDown, Pencil } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
@@ -55,8 +55,43 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
   const [archiveProject, setArchiveProject] = useState<Project | null>(null);
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[] });
   const [newLabelName, setNewLabelName] = useState('');
+
+  const startEdit = (project: Project) => {
+    setEditingProjectId(project.id);
+    setShowAddForm(false);
+    setFormData({
+      name: project.name,
+      description: project.description || '',
+      internalCost: project.internalCost,
+      clientCost: project.clientCost || 0,
+      expectedMargin: project.expectedMargin || 0,
+      color: project.color,
+      labelIds: project.labelIds || [],
+    });
+    setNewLabelName('');
+  };
+
+  const handleUpdateProject = (id: string) => {
+    if (!formData.name.trim()) {
+      toast.error("Please enter a project name");
+      return;
+    }
+    updateProject(id, {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      internalCost: formData.internalCost,
+      clientCost: formData.clientCost,
+      expectedMargin: formData.expectedMargin,
+      color: formData.color,
+      labelIds: formData.labelIds,
+    }, userId);
+    toast.success("Project updated");
+    setEditingProjectId(null);
+    setNewLabelName('');
+  };
 
   const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1'];
   const computedMargin = formData.clientCost - formData.internalCost;
@@ -517,6 +552,16 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           <DropdownMenuItem 
                             onClick={(e) => {
                               e.stopPropagation();
+                              startEdit(project);
+                            }}
+                            className="gap-2"
+                          >
+                            <Pencil size={14} />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={(e) => {
+                              e.stopPropagation();
                               handleDuplicate(project);
                             }}
                             className="gap-2"
@@ -557,77 +602,184 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                       </DropdownMenu>
                     </div>
                     
-                    {/* Card Content */}
-                    <button
-                      onClick={() => setSelectedProject(project)}
-                      className="w-full px-3 pb-2.5 pt-2 text-left hover:bg-accent/30 transition-colors"
-                    >
-                      {/* Budget Progress with inline stats */}
-                      {project.internalCost > 0 && (
-                        <div className="mb-2">
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-[10px] text-muted-foreground">
-                              ₹{formatCompactCurrency(spent, false)} / ₹{formatCompactCurrency(project.internalCost, false)}
-                            </span>
-                            <span className={cn(
-                              "text-[10px] font-medium",
-                              isOverBudget ? "text-destructive" : "text-muted-foreground"
-                            )}>
-                              {isOverBudget ? 'Over budget!' : `${Math.round(budgetPercent)}%`}
-                            </span>
+                    {/* Edit Form or Card Content */}
+                    {editingProjectId === project.id ? (
+                      <div className="px-3 pb-3 pt-2 space-y-3">
+                        <Input
+                          placeholder="Project name"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          autoFocus
+                        />
+                        <Input
+                          placeholder="Description (optional)"
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Cost Given to Client (₹)"
+                          value={formData.clientCost || ''}
+                          onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
+                        />
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Color</p>
+                          <div className="flex gap-2">
+                            {COLOR_OPTIONS.map((color) => (
+                              <button
+                                key={color}
+                                onClick={() => setFormData({ ...formData, color })}
+                                className={cn("w-7 h-7 rounded-full transition-all", formData.color === color ? 'ring-2 ring-offset-2 ring-primary' : '')}
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
                           </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${budgetPercent}%` }}
-                              transition={{ duration: 0.5, ease: "easeOut" }}
-                              className="h-full rounded-full"
-                              style={{
-                                backgroundColor: isOverBudget ? 'hsl(var(--destructive))' : project.color,
+                        </div>
+                        {/* Label Picker */}
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Labels</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {projectLabels.map((label) => {
+                              const isSelected = formData.labelIds.includes(label.id);
+                              return (
+                                <button
+                                  key={label.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData({
+                                      ...formData,
+                                      labelIds: isSelected
+                                        ? formData.labelIds.filter(id => id !== label.id)
+                                        : [...formData.labelIds, label.id],
+                                    });
+                                  }}
+                                  className={cn(
+                                    "px-2.5 py-1 rounded-full text-xs font-medium transition-all flex items-center gap-1",
+                                    isSelected ? 'text-white' : 'bg-muted text-foreground hover:bg-muted/80'
+                                  )}
+                                  style={isSelected ? { backgroundColor: label.color } : undefined}
+                                >
+                                  <Tag size={10} />
+                                  #{label.name}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <Input
+                              placeholder="+ New label"
+                              value={newLabelName}
+                              onChange={(e) => setNewLabelName(e.target.value)}
+                              className="h-8 text-xs flex-1"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && newLabelName.trim()) {
+                                  e.preventDefault();
+                                  if (projectLabels.some(l => l.name.toLowerCase() === newLabelName.trim().toLowerCase())) {
+                                    toast.error("Label already exists");
+                                    return;
+                                  }
+                                  addProjectLabel({ name: newLabelName.trim(), color: '#8B5CF6' }, userId);
+                                  setNewLabelName('');
+                                  toast.success("Label created");
+                                }
                               }}
                             />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Compact Stats Row - 2x2 grid with dividers */}
-                      <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden mt-1">
-                        <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                          <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-                            <Wallet size={12} className="text-accent-foreground" />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
-                          <p className="text-xs font-bold text-foreground">₹{formatCompactCurrency(project.clientCost || 0, false)}</p>
-                        </div>
-                        <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                          <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
-                            <ArrowDown size={12} className="text-green-500" />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
-                          <p className="text-xs font-bold text-green-600 dark:text-green-400">₹{formatCompactCurrency(income, false)}</p>
-                        </div>
-                        <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                          <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center">
-                            <Receipt size={12} className="text-destructive" />
-                          </div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
-                          <p className="text-xs font-bold text-destructive">₹{formatCompactCurrency(spent, false)}</p>
-                        </div>
-                        <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: (income - spent) >= 0 ? 'hsl(142 71% 45% / 0.1)' : 'hsl(var(--destructive) / 0.1)' }}>
-                            {(income - spent) >= 0 ? (
-                              <TrendingUp size={12} className="text-green-500" />
-                            ) : (
-                              <TrendingDown size={12} className="text-destructive" />
+                            {newLabelName.trim() && (
+                              <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => {
+                                if (projectLabels.some(l => l.name.toLowerCase() === newLabelName.trim().toLowerCase())) {
+                                  toast.error("Label already exists");
+                                  return;
+                                }
+                                addProjectLabel({ name: newLabelName.trim(), color: '#8B5CF6' }, userId);
+                                setNewLabelName('');
+                                toast.success("Label created");
+                              }}>
+                                Add
+                              </Button>
                             )}
                           </div>
-                          <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-                          <p className={cn("text-xs font-bold", (income - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                            ₹{formatCompactCurrency(income - spent, false)}
-                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" onClick={() => setEditingProjectId(null)} className="flex-1" size="sm">
+                            Cancel
+                          </Button>
+                          <Button onClick={() => handleUpdateProject(project.id)} className="flex-1" size="sm">
+                            Save
+                          </Button>
                         </div>
                       </div>
-                    </button>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedProject(project)}
+                        className="w-full px-3 pb-2.5 pt-2 text-left hover:bg-accent/30 transition-colors"
+                      >
+                        {/* Budget Progress with inline stats */}
+                        {project.internalCost > 0 && (
+                          <div className="mb-2">
+                            <div className="flex justify-between items-center mb-1">
+                              <span className="text-[10px] text-muted-foreground">
+                                ₹{formatCompactCurrency(spent, false)} / ₹{formatCompactCurrency(project.internalCost, false)}
+                              </span>
+                              <span className={cn(
+                                "text-[10px] font-medium",
+                                isOverBudget ? "text-destructive" : "text-muted-foreground"
+                              )}>
+                                {isOverBudget ? 'Over budget!' : `${Math.round(budgetPercent)}%`}
+                              </span>
+                            </div>
+                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${budgetPercent}%` }}
+                                transition={{ duration: 0.5, ease: "easeOut" }}
+                                className="h-full rounded-full"
+                                style={{
+                                  backgroundColor: isOverBudget ? 'hsl(var(--destructive))' : project.color,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Compact Stats Row - 2x2 grid with dividers */}
+                        <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden mt-1">
+                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+                            <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
+                              <Wallet size={12} className="text-accent-foreground" />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
+                            <p className="text-xs font-bold text-foreground">₹{formatCompactCurrency(project.clientCost || 0, false)}</p>
+                          </div>
+                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+                            <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
+                              <ArrowDown size={12} className="text-green-500" />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
+                            <p className="text-xs font-bold text-green-600 dark:text-green-400">₹{formatCompactCurrency(income, false)}</p>
+                          </div>
+                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+                            <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center">
+                              <Receipt size={12} className="text-destructive" />
+                            </div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
+                            <p className="text-xs font-bold text-destructive">₹{formatCompactCurrency(spent, false)}</p>
+                          </div>
+                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+                            <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: (income - spent) >= 0 ? 'hsl(142 71% 45% / 0.1)' : 'hsl(var(--destructive) / 0.1)' }}>
+                              {(income - spent) >= 0 ? (
+                                <TrendingUp size={12} className="text-green-500" />
+                              ) : (
+                                <TrendingDown size={12} className="text-destructive" />
+                              )}
+                            </div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
+                            <p className={cn("text-xs font-bold", (income - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                              ₹{formatCompactCurrency(income - spent, false)}
+                            </p>
+                          </div>
+                        </div>
+                      </button>
+                    )}
                   </motion.div>
                 );
               })}
