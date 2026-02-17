@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Instagram } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getAppUrl } from "@/lib/domainUtils";
 import appIcon from "@/assets/app-icon.png";
@@ -58,10 +58,13 @@ export const LandingFooter = () => (
         </div>
 
         {/* Links */}
-        <div className="flex gap-6 text-sm">
+        <div className="flex items-center gap-6 text-sm">
           <a href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
           <a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms</a>
           <a href="mailto:support@fintrackplus.in" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+          <a href="https://www.instagram.com/fintrack_plus/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Instagram">
+            <Instagram className="w-4 h-4" />
+          </a>
         </div>
       </div>
 
