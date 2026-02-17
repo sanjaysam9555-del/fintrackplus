@@ -13,6 +13,7 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import saffronLogo from '@/assets/saffron-logo.png';
 import { useFinanceStore } from '@/lib/store';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -203,9 +204,16 @@ export const DesktopSidebar = ({
             {!isCollapsed && "Sign Out"}
           </button>
           {!isCollapsed && (
-            <p className="text-[10px] text-muted-foreground text-center mt-3">
-              FinTrack<sup className="text-[0.5em]">+</sup> v1.0.0
-            </p>
+            <>
+              <div className="flex items-center justify-center gap-1.5 mt-3">
+                <span className="text-[10px] text-muted-foreground">An App By</span>
+                <img src={saffronLogo} alt="Saffron Events" className="h-3.5 dark:brightness-0 dark:invert" />
+                <span className="text-[10px] font-semibold text-muted-foreground">Saffron Events</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center mt-1">
+                FinTrack<sup className="text-[0.5em]">+</sup> v1.0.0
+              </p>
+            </>
           )}
         </div>
       </motion.aside>

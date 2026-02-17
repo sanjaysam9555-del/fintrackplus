@@ -37,6 +37,7 @@ import { useTheme, ThemeMode } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { appPath } from "@/lib/domainUtils";
+import saffronLogo from "@/assets/saffron-logo.png";
 
 // Action badge helper
 const getActionBadge = (notification: { type: string; details?: { from: string }[] }) => {
@@ -544,6 +545,17 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           <LogOut size={18} className="mr-2" />
           Sign Out
         </Button>
+      </div>
+
+      {/* Saffron Events Branding */}
+      <div className="px-4 mb-4 flex items-center justify-center gap-2">
+        <span className="text-xs text-muted-foreground">An App By</span>
+        <img 
+          src={saffronLogo} 
+          alt="Saffron Events" 
+          className="h-4 dark:brightness-0 dark:invert"
+        />
+        <span className="text-xs font-semibold text-muted-foreground">Saffron Events</span>
       </div>
       
       {/* App Info */}
