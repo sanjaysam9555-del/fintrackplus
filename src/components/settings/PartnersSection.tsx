@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { PartnerDetailSheet } from "./PartnerDetailSheet";
+import { PartnerTransferSheet } from "@/components/PartnerTransferSheet";
 import { Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -44,6 +45,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [showTransferSheet, setShowTransferSheet] = useState(false);
   
   // Form state
   const [name, setName] = useState("");
@@ -577,6 +579,21 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         )}
       </div>
       
+      {/* Transfer Between Partners Button */}
+      {partners.length >= 2 && (
+        <div className="px-4 mt-4">
+          <Button
+            variant="outline"
+            className="w-full"
+            size="lg"
+            onClick={() => setShowTransferSheet(true)}
+          >
+            <ArrowLeftRight size={18} className="mr-2" />
+            Transfer Between Partners
+          </Button>
+        </div>
+      )}
+      
       {/* Add Partner Button */}
       <div className="px-4 mt-4">
         <Dialog open={isAddOpen} onOpenChange={(open) => {
@@ -597,6 +614,13 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           </DialogContent>
         </Dialog>
       </div>
+      
+      {/* Partner Transfer Sheet */}
+      <PartnerTransferSheet
+        isOpen={showTransferSheet}
+        onClose={() => setShowTransferSheet(false)}
+        userId={userId}
+      />
       
       {/* Partner Detail Sheet */}
       {selectedPartner && selectedBalanceData && (
