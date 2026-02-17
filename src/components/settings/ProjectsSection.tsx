@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag, MoreVertical } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag, MoreVertical, Wallet, TrendingDown, TrendingUp } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -135,7 +135,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       />
       {(formData.internalCost > 0 || formData.clientCost > 0) && (
         <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Margin</span>
+          <span className="text-sm text-muted-foreground">Net</span>
           <span className={`text-sm font-semibold ${computedMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}>
             ₹{computedMargin.toLocaleString()}
           </span>
@@ -378,43 +378,55 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                     </div>
 
                     {/* Financial Summary */}
-                    {(project.internalCost > 0 || project.clientCost > 0) && (
-                      <div className="border-t border-border pt-3 space-y-2">
-                        <div className="grid grid-cols-3 gap-2">
-                          <div>
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Spent</p>
-                            <p className={`text-sm font-semibold ${percentage > 100 ? 'text-destructive' : 'text-foreground'}`}>
-                              ₹{spent.toLocaleString()}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Budget</p>
-                            <p className="text-sm font-semibold text-foreground">
-                              ₹{project.internalCost.toLocaleString()}
-                            </p>
-                          </div>
-                          {project.clientCost > 0 && (
+                    {(project.internalCost > 0 || project.clientCost > 0) && (() => {
+                      const net = (project.clientCost || 0) - project.internalCost;
+                      return (
+                        <div className="border-t border-border pt-2 space-y-1.5">
+                          <div className="grid grid-cols-3 gap-2">
                             <div>
-                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Margin</p>
-                              <p className={`text-sm font-semibold ${(project.clientCost - project.internalCost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                                ₹{(project.clientCost - project.internalCost).toLocaleString()}
+                              <div className="flex items-center gap-1">
+                                <Wallet size={11} className="text-blue-500" />
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Cost</p>
+                              </div>
+                              <p className="text-sm font-semibold text-foreground">
+                                ₹{project.internalCost.toLocaleString()}
                               </p>
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-1">
+                                <TrendingDown size={11} className="text-red-500" />
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Spent</p>
+                              </div>
+                              <p className={`text-sm font-semibold ${percentage > 100 ? 'text-destructive' : 'text-foreground'}`}>
+                                ₹{spent.toLocaleString()}
+                              </p>
+                            </div>
+                            {project.clientCost > 0 && (
+                              <div>
+                                <div className="flex items-center gap-1">
+                                  <TrendingUp size={11} className={net >= 0 ? 'text-green-500' : 'text-red-500'} />
+                                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Net</p>
+                                </div>
+                                <p className={`text-sm font-semibold ${net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                                  ₹{net.toLocaleString()}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          {project.internalCost > 0 && (
+                            <div className="h-1 bg-muted rounded-full overflow-hidden">
+                              <div
+                                className="h-full rounded-full transition-all"
+                                style={{
+                                  width: `${Math.min(percentage, 100)}%`,
+                                  backgroundColor: percentage > 100 ? 'hsl(var(--destructive))' : project.color,
+                                }}
+                              />
                             </div>
                           )}
                         </div>
-                        {project.internalCost > 0 && (
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all"
-                              style={{
-                                width: `${Math.min(percentage, 100)}%`,
-                                backgroundColor: percentage > 100 ? 'hsl(var(--destructive))' : project.color,
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 )}
               </motion.div>
