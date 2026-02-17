@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag, MoreVertical } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
 interface ProjectsSectionProps {
@@ -312,26 +313,27 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                 {editingId === project.id ? (
                   renderFormFields(true, project.id)
                 ) : (
-                  <div>
-                    <div className="flex items-center gap-3">
+                  <div className="space-y-3">
+                    {/* Header: Icon + Name + Overflow Menu */}
+                    <div className="flex items-start gap-3">
                       <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center"
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                         style={{ backgroundColor: `${project.color}20` }}
                       >
                         <FolderKanban size={18} style={{ color: project.color }} />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{project.name}</p>
+                          <p className="font-semibold text-[15px] truncate">{project.name}</p>
                           {project.archived && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground">Archived</span>
+                            <span className="text-[10px] px-1.5 py-0.5 bg-muted rounded text-muted-foreground shrink-0">Archived</span>
                           )}
                         </div>
                         {project.description && (
-                          <p className="text-sm text-muted-foreground">{project.description}</p>
+                          <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{project.description}</p>
                         )}
                         {Array.isArray(project.labelIds) && project.labelIds.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
+                          <div className="flex flex-wrap gap-1 mt-1.5">
                             {project.labelIds.map(lid => {
                               const label = projectLabels.find(l => l.id === lid);
                               if (!label) return null;
@@ -348,39 +350,69 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                           </div>
                         )}
                       </div>
-                      <button 
-                        onClick={() => setArchiveProject(project)} 
-                        className="p-2 hover:bg-muted rounded-lg"
-                        title={project.archived ? 'Restore' : 'Archive'}
-                      >
-                        {project.archived ? (
-                          <ArchiveRestore size={16} className="text-muted-foreground" />
-                        ) : (
-                          <Archive size={16} className="text-muted-foreground" />
-                        )}
-                      </button>
-                      <button onClick={() => startEdit(project)} className="p-2 hover:bg-muted rounded-lg">
-                        <Pencil size={16} className="text-muted-foreground" />
-                      </button>
-                      <button onClick={() => setDeleteId(project.id)} className="p-2 hover:bg-destructive/10 rounded-lg">
-                        <Trash2 size={16} className="text-destructive" />
-                      </button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button className="p-1.5 hover:bg-muted rounded-lg shrink-0 -mr-1">
+                            <MoreVertical size={16} className="text-muted-foreground" />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-40">
+                          <DropdownMenuItem onClick={() => startEdit(project)}>
+                            <Pencil size={14} className="mr-2" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setArchiveProject(project)}>
+                            {project.archived ? (
+                              <><ArchiveRestore size={14} className="mr-2" /> Restore</>
+                            ) : (
+                              <><Archive size={14} className="mr-2" /> Archive</>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDeleteId(project.id)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 size={14} className="mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
-                    {project.internalCost > 0 && (
-                      <div className="mt-3">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-muted-foreground">Spent: ₹{spent.toLocaleString()}</span>
-                          <span className="text-muted-foreground">Internal Cost: ₹{project.internalCost.toLocaleString()}</span>
+
+                    {/* Financial Summary */}
+                    {(project.internalCost > 0 || project.clientCost > 0) && (
+                      <div className="border-t border-border pt-3 space-y-2">
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Spent</p>
+                            <p className={`text-sm font-semibold ${percentage > 100 ? 'text-destructive' : 'text-foreground'}`}>
+                              ₹{spent.toLocaleString()}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Budget</p>
+                            <p className="text-sm font-semibold text-foreground">
+                              ₹{project.internalCost.toLocaleString()}
+                            </p>
+                          </div>
+                          {project.clientCost > 0 && (
+                            <div>
+                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Margin</p>
+                              <p className={`text-sm font-semibold ${(project.clientCost - project.internalCost) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                                ₹{(project.clientCost - project.internalCost).toLocaleString()}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{
-                              width: `${Math.min(percentage, 100)}%`,
-                              backgroundColor: percentage > 100 ? '#EF4444' : project.color,
-                            }}
-                          />
-                        </div>
+                        {project.internalCost > 0 && (
+                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all"
+                              style={{
+                                width: `${Math.min(percentage, 100)}%`,
+                                backgroundColor: percentage > 100 ? 'hsl(var(--destructive))' : project.color,
+                              }}
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
