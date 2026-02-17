@@ -208,14 +208,21 @@ const Index = () => {
     swipeThreshold: 100,
   });
   
+  // Track previous view to know if we're transitioning to/from settings
+  const prevViewRef = useRef<ViewMode>(viewMode);
+  useEffect(() => {
+    prevViewRef.current = viewMode;
+  }, [viewMode]);
+  
   // Animation variants for settings on mobile
   const settingsMotionProps = useMemo(() => {
-    if (isMobile && viewMode === 'settings') {
+    const isSettingsTransition = isMobile && (viewMode === 'settings' || prevViewRef.current === 'settings');
+    if (isSettingsTransition) {
       return {
-        initial: { x: '100%', opacity: 1 } as const,
-        animate: { x: 0, opacity: 1 } as const,
-        exit: { x: '100%', opacity: 1 } as const,
-        transition: { type: 'spring' as const, damping: 25, stiffness: 300 },
+        initial: viewMode === 'settings' ? { x: '100%', opacity: 1 } : { x: 0, opacity: 1 },
+        animate: { x: 0, opacity: 1 },
+        exit: viewMode === 'settings' ? { x: 0, opacity: 1 } : { x: '100%', opacity: 1 },
+        transition: { type: 'spring' as const, damping: 20, stiffness: 200 },
       };
     }
     return {
