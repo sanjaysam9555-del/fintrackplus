@@ -1,66 +1,62 @@
 
 
-# Add Expected Margin + Income to Project Financial Metrics
+# Match Project Card Layout to Portfolio Summary
 
-## Overview
+## What Changes
 
-Update the project financial model from 4 metrics to 6 metrics across all views, adding "Income (Actual)" and "Expected Margin" (user-entered field).
+The individual project cards (lines 636-670) currently use a plain text grid without icons, dividers, or center alignment. The portfolio summary section (lines 338-401) uses a polished layout with:
+- `gap-px bg-border` creating thin divider lines between cells
+- Centered content (`items-center`)
+- Icon badges (colored background circles with icons)
+- Rounded overflow container
 
-## New 6-Metric Model
+The project cards will be updated to match this exact style.
 
-| # | Label | Source | Notes |
-|---|-------|--------|-------|
-| 1 | Client Cost | `project.clientCost` | Existing field |
-| 2 | Internal Cost | `project.internalCost` | Existing field |
-| 3 | Income (Actual) | `getProjectIncome(id)` | Already computed but not displayed |
-| 4 | Expenses (Actual) | `getProjectSpending(id)` | Already computed |
-| 5 | Expected Margin | `project.expectedMargin` | **New field** -- user enters manually |
-| 6 | Net Margin | `clientCost - expenses` | Calculated |
+## File: `src/components/ProjectOverviewPage.tsx`
 
-## Database Migration
+Replace the compact stats grid (lines 636-670) with the same layout pattern used in the portfolio summary:
 
-Add an `expected_margin` column to the `projects` table:
-
-```sql
-ALTER TABLE public.projects ADD COLUMN expected_margin numeric NOT NULL DEFAULT 0;
+```
+grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden
 ```
 
-## Changes by File
+Each cell will have:
+- A small icon badge (w-6 h-6 rounded-lg with colored background)
+- Centered label text
+- Centered value text with appropriate coloring
 
-### 1. `src/lib/types.ts`
-- Add `expectedMargin: number` to the `Project` interface
+The 6 metrics remain the same:
+1. Client Cost -- Wallet icon, accent bg, foreground text
+2. Internal Cost -- PiggyBank icon, accent bg, foreground text
+3. Income -- ArrowDown icon, green bg, green text
+4. Expenses -- Receipt icon, red bg, red text
+5. Exp. Margin -- Wallet icon, accent bg, foreground text
+6. Net Margin -- TrendingUp/Down icon, dynamic green/red
 
-### 2. `src/lib/store.ts`
-- Map `expectedMargin` to/from DB column `expected_margin` in all project CRUD operations (addProject, updateProject, cloud sync reads)
-- Include `expectedMargin` in the form data defaults
+The budget progress bar above the grid stays unchanged.
 
-### 3. `src/components/ProjectOverviewPage.tsx`
+### Technical Detail
 
-**Portfolio Summary** (lines 328-373): Expand from 2x2 to 3x2 grid:
-- Row 1: Client Cost | Internal Cost
-- Row 2: Income (Actual) | Expenses (Actual)
-- Row 3: Expected Margin | Net Margin
+Lines 635-670 will be replaced with:
 
-Add `totalIncome` calculation alongside existing totals.
+```tsx
+<div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden mt-1">
+  <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+    <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
+      <Wallet size={12} className="text-accent-foreground" />
+    </div>
+    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Client Cost</p>
+    <p className="text-xs font-bold text-foreground">...</p>
+  </div>
+  <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+    <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
+      <PiggyBank size={12} className="text-accent-foreground" />
+    </div>
+    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
+    <p className="text-xs font-bold text-foreground">...</p>
+  </div>
+  <!-- Income, Expenses, Exp. Margin, Net Margin cells follow same pattern -->
+</div>
+```
 
-**Add Project Form** (lines 206-227): Add an "Expected Margin" input field.
-
-**Project Cards** (lines 606-632): Expand the 2x2 compact stats to a 3x2 grid showing all 6 metrics.
-
-### 4. `src/components/ProjectDetailSheet.tsx`
-
-**Financial Summary** (lines 259-281): Expand from 2x2 to 3x2 grid adding Income (Actual) and Expected Margin cells.
-
-### 5. `src/components/settings/ProjectsSection.tsx`
-
-**Form fields** (lines 124-143): Add an "Expected Margin" input field to the add/edit form. Update `formData` state to include `expectedMargin`.
-
-**Project cards** (lines 380-430): Expand the financial summary grid from 2x2 to 3x2, adding Income (Actual) via `getProjectIncome` and Expected Margin from the project data.
-
-### 6. Styling Details
-
-- Income (Actual): Green text with downward arrow icon (money coming in)
-- Expenses (Actual): Red text (existing)
-- Expected Margin: Foreground text (static user-entered value)
-- Net Margin: Dynamic green/red based on positive/negative
-- All grids use `grid-cols-2` with 3 rows for clean mobile readability
+Only one file changes: `src/components/ProjectOverviewPage.tsx`.
