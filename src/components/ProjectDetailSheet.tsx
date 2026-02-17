@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet } from "lucide-react";
+import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, Wallet, TrendingUp, TrendingDown } from "lucide-react";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
 import { useProjectDocuments } from "@/hooks/useProjectDocuments";
@@ -255,64 +255,39 @@ export const ProjectDetailSheet = ({
             </div>
           ) : (
           <div className="p-3 space-y-4 w-full min-w-0">
-            {/* Financial Summary - 3x2 Grid */}
-            <div className="grid grid-cols-2 gap-2 w-full">
-              <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
-                <p className="text-[10px] text-muted-foreground">Client Cost</p>
-                <p className="text-base font-bold truncate">₹{project.clientCost.toLocaleString()}</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
-                <p className="text-[10px] text-muted-foreground">Internal Cost</p>
-                <p className="text-base font-bold truncate">₹{project.internalCost.toLocaleString()}</p>
-              </div>
-              <div className="bg-green-500/10 rounded-lg p-2 overflow-hidden">
-                <p className="text-[10px] text-muted-foreground">Income</p>
-                <div className="flex items-center gap-1 min-w-0">
-                  <ArrowDown size={12} className="text-green-500 shrink-0" />
-                  <p className="text-base font-bold text-green-600 dark:text-green-400 truncate">₹{income.toLocaleString()}</p>
+            {/* Financial Summary - 2x2 Grid */}
+            <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden w-full">
+              <div className="bg-card p-3 flex flex-col items-center gap-0.5">
+                <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
+                  <Wallet size={12} className="text-accent-foreground" />
                 </div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
+                <p className="text-sm font-bold text-foreground">₹{project.clientCost.toLocaleString()}</p>
               </div>
-              <div className="bg-red-500/10 rounded-lg p-2 overflow-hidden">
-                <p className="text-[10px] text-muted-foreground">Expenses</p>
-                <div className="flex items-center gap-1 min-w-0">
-                  <ArrowUp size={12} className="text-red-500 shrink-0" />
-                  <p className="text-base font-bold text-red-500 truncate">₹{spent.toLocaleString()}</p>
+              <div className="bg-card p-3 flex flex-col items-center gap-0.5">
+                <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <ArrowDown size={12} className="text-green-500" />
                 </div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
+                <p className="text-sm font-bold text-green-600 dark:text-green-400">₹{income.toLocaleString()}</p>
               </div>
-              <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
-                <p className="text-[10px] text-muted-foreground">Expected Margin</p>
-                <p className="text-base font-bold truncate">₹{(project.expectedMargin || 0).toLocaleString()}</p>
+              <div className="bg-card p-3 flex flex-col items-center gap-0.5">
+                <div className="w-6 h-6 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <ArrowUp size={12} className="text-red-500" />
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
+                <p className="text-sm font-bold text-destructive">₹{spent.toLocaleString()}</p>
               </div>
-              <div className={cn("rounded-lg p-2 overflow-hidden", (project.clientCost - spent) >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-                <p className="text-[10px] text-muted-foreground">Net Margin</p>
-                <p className={cn("text-base font-bold truncate", (project.clientCost - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500")}>
+              <div className="bg-card p-3 flex flex-col items-center gap-0.5">
+                <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", (project.clientCost - spent) >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
+                  {(project.clientCost - spent) >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
+                </div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
+                <p className={cn("text-sm font-bold", (project.clientCost - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
                   ₹{(project.clientCost - spent).toLocaleString()}
                 </p>
               </div>
             </div>
-
-            {/* Budget Tracking vs Internal Cost */}
-            {project.internalCost > 0 && (
-              <div className="bg-card rounded-xl border border-border p-4 w-full overflow-hidden">
-                <p className="text-sm font-medium mb-2">Cost Analysis</p>
-                <div className="flex items-center justify-between text-sm gap-2 min-w-0">
-                  <span className="text-muted-foreground shrink-0">Internal Cost</span>
-                  <span className="font-medium truncate">₹{project.internalCost.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-1 gap-2 min-w-0">
-                  <span className="text-muted-foreground shrink-0">Spent So Far</span>
-                  <span className={cn("font-medium truncate", spent <= project.internalCost ? "text-green-500" : "text-red-500")}>
-                    ₹{spent.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-border gap-2 min-w-0">
-                  <span className="text-muted-foreground shrink-0">Remaining</span>
-                  <span className={cn("font-bold truncate", (project.internalCost - spent) >= 0 ? "text-green-500" : "text-red-500")}>
-                    ₹{(project.internalCost - spent).toLocaleString()}
-                  </span>
-                </div>
-              </div>
-            )}
 
             {/* Project Notes */}
             <div>

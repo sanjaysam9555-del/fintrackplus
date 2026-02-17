@@ -207,34 +207,12 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
-              <div className="grid grid-cols-2 gap-2">
-                <Input
-                  type="number"
-                  placeholder="Internal Cost (₹)"
-                  value={formData.internalCost || ''}
-                  onChange={(e) => setFormData({ ...formData, internalCost: Number(e.target.value) || 0 })}
-                />
-                <Input
-                  type="number"
-                  placeholder="Client Cost (₹)"
-                  value={formData.clientCost || ''}
-                  onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
-                />
-              </div>
               <Input
                 type="number"
-                placeholder="Expected Margin (₹)"
-                value={formData.expectedMargin || ''}
-                onChange={(e) => setFormData({ ...formData, expectedMargin: Number(e.target.value) || 0 })}
+                placeholder="Cost Given to Client (₹)"
+                value={formData.clientCost || ''}
+                onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
               />
-              {(formData.internalCost > 0 || formData.clientCost > 0) && (
-                <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">Est. Net Margin</span>
-                  <span className={cn("text-sm font-semibold", computedMargin >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                    ₹{computedMargin.toLocaleString()}
-                  </span>
-                </div>
-              )}
               <div>
                 <p className="text-xs text-muted-foreground mb-2">Color</p>
                 <div className="flex gap-2">

@@ -126,30 +126,10 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       />
       <Input
         type="number"
-        placeholder="Internal Cost (₹) — your cost"
-        value={formData.internalCost || ''}
-        onChange={(e) => setFormData({ ...formData, internalCost: Number(e.target.value) || 0 })}
-      />
-      <Input
-        type="number"
-        placeholder="Client Cost (₹) — what you charge"
+        placeholder="Cost Given to Client (₹)"
         value={formData.clientCost || ''}
         onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
       />
-      <Input
-        type="number"
-        placeholder="Expected Margin (₹)"
-        value={formData.expectedMargin || ''}
-        onChange={(e) => setFormData({ ...formData, expectedMargin: Number(e.target.value) || 0 })}
-      />
-      {(formData.internalCost > 0 || formData.clientCost > 0) && (
-        <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Est. Net Margin</span>
-          <span className={`text-sm font-semibold ${computedMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-            ₹{computedMargin.toLocaleString()}
-          </span>
-        </div>
-      )}
       <div>
         <p className="text-xs text-muted-foreground mb-2">Color</p>
         <div className="flex gap-2">
@@ -387,49 +367,40 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                     </div>
 
                     {/* Financial Summary */}
-                    {(project.internalCost > 0 || (project.clientCost || 0) > 0) && (() => {
+                    {((project.clientCost || 0) > 0 || spent > 0) && (() => {
                       const projectIncome = getProjectIncome(project.id);
                       const netMargin = (project.clientCost || 0) - spent;
                       return (
-                        <div className="border-t border-border pt-2 space-y-1.5">
-                          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
-                            <div>
-                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
-                              <p className="text-sm font-semibold text-foreground">
-                                ₹{(project.clientCost || 0).toLocaleString()}
-                              </p>
+                        <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden mt-2">
+                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+                            <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
+                              <Wallet size={12} className="text-accent-foreground" />
                             </div>
-                            <div>
-                              <div className="flex items-center gap-1">
-                                <TrendingUp size={11} className="text-green-500" />
-                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Income</p>
-                              </div>
-                              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-                                ₹{projectIncome.toLocaleString()}
-                              </p>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
+                            <p className="text-xs font-bold text-foreground">₹{(project.clientCost || 0).toLocaleString()}</p>
+                          </div>
+                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+                            <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
+                              <TrendingUp size={12} className="text-green-500" />
                             </div>
-                            <div>
-                              <div className="flex items-center gap-1">
-                                <TrendingDown size={11} className="text-destructive" />
-                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Expenses</p>
-                              </div>
-                              <p className="text-sm font-semibold text-destructive">
-                                ₹{spent.toLocaleString()}
-                              </p>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
+                            <p className="text-xs font-bold text-green-600 dark:text-green-400">₹{projectIncome.toLocaleString()}</p>
+                          </div>
+                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+                            <div className="w-6 h-6 rounded-lg bg-red-500/10 flex items-center justify-center">
+                              <TrendingDown size={12} className="text-red-500" />
                             </div>
-                            <div>
-                              <div className="flex items-center gap-1">
-                                {netMargin >= 0 ? (
-                                  <TrendingUp size={11} className="text-green-500" />
-                                ) : (
-                                  <TrendingDown size={11} className="text-destructive" />
-                                )}
-                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-                              </div>
-                              <p className={`text-sm font-semibold ${netMargin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                                ₹{netMargin.toLocaleString()}
-                              </p>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
+                            <p className="text-xs font-bold text-destructive">₹{spent.toLocaleString()}</p>
+                          </div>
+                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
+                            <div className={`w-6 h-6 rounded-lg flex items-center justify-center ${netMargin >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                              {netMargin >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
                             </div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
+                            <p className={`text-xs font-bold ${netMargin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                              ₹{netMargin.toLocaleString()}
+                            </p>
                           </div>
                         </div>
                       );
