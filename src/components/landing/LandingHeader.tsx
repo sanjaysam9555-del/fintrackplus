@@ -24,9 +24,14 @@ export const LandingHeader = () => {
   }, []);
 
   const handleNavClick = (href: string) => {
-    setMobileOpen(false);
     const el = document.querySelector(href);
-    el?.scrollIntoView({ behavior: "smooth" });
+    if (el) {
+      setMobileOpen(false);
+      // Small delay to let menu close animation start, then scroll
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    }
   };
 
   return (
