@@ -14,7 +14,10 @@ import {
   Smartphone,
   Monitor,
   Sun,
-  Moon
+  Moon,
+  SlidersHorizontal,
+  Store,
+  Grid3X3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme, type ThemeMode } from '@/hooks/useTheme';
@@ -41,6 +44,13 @@ const isInStandaloneMode = (): boolean => {
   );
 };
 
+const setupStep = {
+  icon: SlidersHorizontal,
+  title: 'Set Up Your Workspace',
+  description: 'Before you start tracking, head to Settings to add your Projects, Vendors, and Categories. This helps you organize entries from day one.',
+  color: 'bg-teal-500',
+};
+
 const baseSteps = [
   {
     icon: Sparkles,
@@ -48,10 +58,11 @@ const baseSteps = [
     description: 'Your personal finance companion. Let\'s take a quick tour to help you get started.',
     color: 'bg-primary',
   },
+  setupStep,
   {
     icon: PlusCircle,
     title: 'Track Your Transactions',
-    description: 'Tap the + button at the bottom to add income or expenses. Categorize them for better insights.',
+    description: 'Tap the + button at the bottom dock. Use the toggle at the top of the form to switch between Expense and Income — one button handles both!',
     color: 'bg-emerald-500',
   },
   {
@@ -87,6 +98,41 @@ const installStep = {
   description: 'Add FinTrack+ to your home screen for the best experience — faster access, offline support & full screen.',
   color: 'bg-blue-500',
 };
+
+// ─── Setup Suggestion Visual ───────────────────────────────────────
+const SetupSuggestion = () => (
+  <div className="mt-4 text-left space-y-3">
+    {[
+      { icon: FolderKanban, label: 'Add Projects', example: 'e.g., Wedding, Renovation', color: 'text-amber-500' },
+      { icon: Store, label: 'Add Vendors', example: 'e.g., suppliers, freelancers', color: 'text-blue-500' },
+      { icon: Grid3X3, label: 'Add Categories', example: 'e.g., Travel, Catering', color: 'text-violet-500' },
+    ].map(({ icon: Icon, label, example, color }) => (
+      <div key={label} className="flex items-center gap-3 p-2 rounded-xl bg-muted/50">
+        <div className={`w-8 h-8 rounded-lg bg-background flex items-center justify-center ${color}`}>
+          <Icon size={16} />
+        </div>
+        <div>
+          <span className="text-sm font-medium">{label}</span>
+          <span className="text-xs text-muted-foreground ml-1">({example})</span>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+// ─── Transaction Toggle Preview ────────────────────────────────────
+const TransactionTogglePreview = () => (
+  <div className="mt-4 flex justify-center">
+    <div className="inline-flex rounded-full bg-muted p-1 gap-1">
+      <div className="px-4 py-1.5 rounded-full bg-destructive/15 text-destructive text-xs font-semibold">
+        Expense
+      </div>
+      <div className="px-4 py-1.5 rounded-full bg-emerald-500/15 text-emerald-600 text-xs font-semibold">
+        Income
+      </div>
+    </div>
+  </div>
+);
 
 // ─── Theme Picker Cards ────────────────────────────────────────────
 const themeOptions: { mode: ThemeMode; label: string; icon: React.ElementType; swatch: string; swatchBorder: string }[] = [
@@ -200,7 +246,9 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
 
   const steps = [...baseSteps, themeStep, installStep];
   const totalSteps = steps.length;
-  const isThemeStep = currentStep === baseSteps.length; // index 5
+  const isThemeStep = currentStep === baseSteps.length; // index after base steps
+  const isSetupStep = currentStep === 1;
+  const isTransactionStep = currentStep === 2;
 
   const handleNext = () => {
     if (currentStep < totalSteps - 1) {
@@ -280,6 +328,12 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
                 ? "You're already using FinTrack+ as an installed app. You're all set!"
                 : step.description}
             </p>
+
+            {/* Setup suggestion on setup step */}
+            {isSetupStep && <SetupSuggestion />}
+
+            {/* Transaction toggle preview on transaction step */}
+            {isTransactionStep && <TransactionTogglePreview />}
 
             {/* Theme picker on theme step */}
             {isThemeStep && (
