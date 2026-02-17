@@ -1,39 +1,36 @@
 
-
-# Fix Progress Bar to Reflect Expenses vs Income
+# Add Explicit Save Button for Project Notes
 
 ## Problem
-The progress bar on project cards uses `internalCost` (budget) as the denominator, and only shows when `internalCost > 0`. It should instead show **Expenses as a percentage of Income**, turning red at 80%.
-
-The AI Summary "Project Health" component also uses `internalCost` for its calculations.
+The auto-save debounce mechanism for project notes has a race condition: after `updateProject` updates the store optimistically, `project.notes` matches the local `notes` state, so subsequent edits may not trigger saves correctly. The user wants a reliable, explicit save button.
 
 ## Changes
 
-### 1. `src/components/ProjectOverviewPage.tsx` -- Project Cards
+### `src/components/ProjectDetailSheet.tsx`
 
-**Update variables (lines 470-474):**
-- Remove `remaining`, `healthStatus`, `isOverBudget` based on `internalCost`
-- Change `budgetPercent` from `spent / internalCost` to `spent / income`
-- Change `isOverBudget` to `income > 0 && spent > income`
+1. **Remove the debounce auto-save logic** (the `useEffect` at lines 158-169 and the `saveNotesRef` pattern at lines 149-156).
 
-**Update progress bar (lines 717-742):**
-- Remove the `internalCost > 0` condition -- show the bar whenever `income > 0`
-- Change the label from `spent / internalCost` to `spent / income`
-- Turn the bar red (`destructive`) when percent >= 80%, amber when >= 60%, green otherwise
-- Show "Over income!" when expenses exceed income
+2. **Add a `handleSaveNotes` function** that directly calls `updateProject(project.id, { notes }, userId)` and shows a success toast.
 
-### 2. `src/components/ai-summary/ProjectHealth.tsx`
+3. **Add a Save button** next to the "Project Notes" heading. The button will:
+   - Show "Save" with a save icon when there are unsaved changes (i.e., `notes !== (project.notes || "")`)
+   - Show a brief "Saved" confirmation state after saving
+   - Be disabled when there are no changes
+   - Use the same compact styling as other action buttons in the app
 
-**Update filter (line 44):**
-- Change from `p.internalCost > 0` to `p.income > 0` (show projects with income)
+4. **Keep the `isSavingNotes` state** to show a loading spinner on the button during save.
 
-**Update percent calculation (line 52):**
-- Change from `p.spent / p.internalCost` to `p.spent / p.income`
+5. **Keep the `prevProjectId` ref logic** so notes initialize correctly when opening a project.
 
-**Update thresholds (lines 24-40):**
-- Keep 80% amber, 100% red logic (already correct)
+### UI Layout
+The notes section header will look like:
 
-**Update labels (lines 104-107):**
-- Change "Internal Cost" label to "Income"
-- Show `project.income` instead of `project.internalCost`
+```
+[StickyNote icon] Project Notes          [Save button]
+[Textarea field]
+```
 
+The Save button will be a small, styled button that appears enabled only when the local notes differ from the saved notes, providing clear feedback that changes need saving.
+
+### Sync
+The `updateProject` function in the store already handles syncing notes to the database via the sync queue (line 877: `if (updates.notes !== undefined) dbUpdates.notes = updates.notes`), so no store changes are needed. The save will go through the same sync pipeline as all other data.
