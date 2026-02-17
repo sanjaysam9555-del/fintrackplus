@@ -135,7 +135,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       />
       {(formData.internalCost > 0 || formData.clientCost > 0) && (
         <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Net</span>
+          <span className="text-sm text-muted-foreground">Est. Net Margin</span>
           <span className={`text-sm font-semibold ${computedMargin >= 0 ? 'text-green-600' : 'text-red-500'}`}>
             ₹{computedMargin.toLocaleString()}
           </span>
@@ -379,15 +379,18 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
 
                     {/* Financial Summary */}
                     {(project.internalCost > 0 || project.clientCost > 0) && (() => {
-                      const net = (project.clientCost || 0) - project.internalCost;
+                      const netMargin = (project.clientCost || 0) - spent;
                       return (
                         <div className="border-t border-border pt-2 space-y-1.5">
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                             <div>
-                              <div className="flex items-center gap-1">
-                                <Wallet size={11} className="text-blue-500" />
-                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Cost</p>
-                              </div>
+                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Client Cost</p>
+                              <p className="text-sm font-semibold text-foreground">
+                                ₹{(project.clientCost || 0).toLocaleString()}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
                               <p className="text-sm font-semibold text-foreground">
                                 ₹{project.internalCost.toLocaleString()}
                               </p>
@@ -395,23 +398,25 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                             <div>
                               <div className="flex items-center gap-1">
                                 <TrendingDown size={11} className="text-red-500" />
-                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Spent</p>
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Expenses</p>
                               </div>
-                              <p className={`text-sm font-semibold ${percentage > 100 ? 'text-destructive' : 'text-foreground'}`}>
+                              <p className="text-sm font-semibold text-destructive">
                                 ₹{spent.toLocaleString()}
                               </p>
                             </div>
-                            {project.clientCost > 0 && (
-                              <div>
-                                <div className="flex items-center gap-1">
-                                  <TrendingUp size={11} className={net >= 0 ? 'text-green-500' : 'text-red-500'} />
-                                  <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Net</p>
-                                </div>
-                                <p className={`text-sm font-semibold ${net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
-                                  ₹{net.toLocaleString()}
-                                </p>
+                            <div>
+                              <div className="flex items-center gap-1">
+                                {netMargin >= 0 ? (
+                                  <TrendingUp size={11} className="text-green-500" />
+                                ) : (
+                                  <TrendingDown size={11} className="text-red-500" />
+                                )}
+                                <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
                               </div>
-                            )}
+                              <p className={`text-sm font-semibold ${netMargin >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>
+                                ₹{netMargin.toLocaleString()}
+                              </p>
+                            </div>
                           </div>
                           {project.internalCost > 0 && (
                             <div className="h-1 bg-muted rounded-full overflow-hidden">
