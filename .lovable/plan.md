@@ -1,69 +1,66 @@
 
 
-# Unify Project Financial Metrics
+# Add Expected Margin + Income to Project Financial Metrics
 
-## Problem
+## Overview
 
-The current code uses inconsistent metrics and formulas across three areas:
-- **Portfolio summary**: Shows Cost, Spent, Margin (Client Cost - Internal Cost)
-- **Project cards**: Show Income, Spent, Net (Income - Spent)
-- **Project detail sheet**: Shows Internal Cost, Client Cost, Expenses, Margin (Client Cost - Internal Cost)
+Update the project financial model from 4 metrics to 6 metrics across all views, adding "Income (Actual)" and "Expected Margin" (user-entered field).
 
-The user wants a consistent 4-metric model everywhere with the correct Net Margin formula.
+## New 6-Metric Model
 
-## New 4-Metric Model
+| # | Label | Source | Notes |
+|---|-------|--------|-------|
+| 1 | Client Cost | `project.clientCost` | Existing field |
+| 2 | Internal Cost | `project.internalCost` | Existing field |
+| 3 | Income (Actual) | `getProjectIncome(id)` | Already computed but not displayed |
+| 4 | Expenses (Actual) | `getProjectSpending(id)` | Already computed |
+| 5 | Expected Margin | `project.expectedMargin` | **New field** -- user enters manually |
+| 6 | Net Margin | `clientCost - expenses` | Calculated |
 
-| Metric | Label | Source | Color |
-|--------|-------|--------|-------|
-| 1 | Client Cost | `project.clientCost` | Foreground (white/black) |
-| 2 | Internal Cost | `project.internalCost` | Foreground (white/black) |
-| 3 | Expenses | `getProjectSpending(id)` (actual expenses) | Red |
-| 4 | Net Margin | `clientCost - expenses (actual)` | Green if positive, Red if negative |
+## Database Migration
 
-## Files Changed
+Add an `expected_margin` column to the `projects` table:
 
-### 1. `src/components/ProjectOverviewPage.tsx`
+```sql
+ALTER TABLE public.projects ADD COLUMN expected_margin numeric NOT NULL DEFAULT 0;
+```
 
-**Portfolio Summary (lines 320-361)**: Replace the 3-column grid (Cost / Spent / Margin) with a 4-column grid:
-- Client Cost (with Wallet icon, blue)
-- Internal Cost (with a suitable icon, foreground)
-- Expenses (with Receipt icon, red)
-- Net Margin = `totalClientCost - totalSpent` (dynamic green/red)
+## Changes by File
 
-Update the totals calculation to use the new formula for net margin.
+### 1. `src/lib/types.ts`
+- Add `expectedMargin: number` to the `Project` interface
 
-**Project Cards (lines 591-614)**: Replace the 3-column stats row (Income / Spent / Net) with 4 metrics:
-- Client Cost
-- Internal Cost
-- Expenses (actual spent)
-- Net Margin = `clientCost - spent`
+### 2. `src/lib/store.ts`
+- Map `expectedMargin` to/from DB column `expected_margin` in all project CRUD operations (addProject, updateProject, cloud sync reads)
+- Include `expectedMargin` in the form data defaults
 
-### 2. `src/components/ProjectDetailSheet.tsx`
+### 3. `src/components/ProjectOverviewPage.tsx`
 
-**Financial Summary grid (lines 259-281)**: Update the 2x2 grid to show:
-- Client Cost (was already there)
-- Internal Cost (was already there)
-- Expenses (keep as is)
-- Net Margin = `clientCost - spent` (currently shows `clientCost - internalCost` as "Margin")
+**Portfolio Summary** (lines 328-373): Expand from 2x2 to 3x2 grid:
+- Row 1: Client Cost | Internal Cost
+- Row 2: Income (Actual) | Expenses (Actual)
+- Row 3: Expected Margin | Net Margin
 
-### 3. `src/components/settings/ProjectsSection.tsx`
+Add `totalIncome` calculation alongside existing totals.
 
-**Project cards financial section**: Update the 3-column grid (Cost / Spent / Net) to show 4 metrics in a 2x2 grid:
-- Client Cost
-- Internal Cost
-- Expenses (actual spent)
-- Net Margin = `clientCost - spent`
+**Add Project Form** (lines 206-227): Add an "Expected Margin" input field.
 
-Rename labels to match: "Client Cost", "Internal Cost", "Expenses", "Net Margin".
+**Project Cards** (lines 606-632): Expand the 2x2 compact stats to a 3x2 grid showing all 6 metrics.
 
-### 4. Form labels (in both ProjectOverviewPage and ProjectsSection)
+### 4. `src/components/ProjectDetailSheet.tsx`
 
-Update the "Margin" preview label in the add/edit forms to "Net Margin" and change the formula shown to reflect `Client Cost - Expenses` with a note that this will be calculated from actual expenses once transactions are added.
+**Financial Summary** (lines 259-281): Expand from 2x2 to 3x2 grid adding Income (Actual) and Expected Margin cells.
 
-## Technical Notes
+### 5. `src/components/settings/ProjectsSection.tsx`
 
-- The `formatCompactCurrency` function is already available for compact number display on mobile
-- No database or type changes needed -- all data fields already exist
-- The portfolio summary on mobile will use a 2x2 grid instead of 4 columns to avoid cramping
-- The project card stats will use a 2x2 grid for readability on mobile
+**Form fields** (lines 124-143): Add an "Expected Margin" input field to the add/edit form. Update `formData` state to include `expectedMargin`.
 
+**Project cards** (lines 380-430): Expand the financial summary grid from 2x2 to 3x2, adding Income (Actual) via `getProjectIncome` and Expected Margin from the project data.
+
+### 6. Styling Details
+
+- Income (Actual): Green text with downward arrow icon (money coming in)
+- Expenses (Actual): Red text (existing)
+- Expected Margin: Foreground text (static user-entered value)
+- Net Margin: Dynamic green/red based on positive/negative
+- All grids use `grid-cols-2` with 3 rows for clean mobile readability
