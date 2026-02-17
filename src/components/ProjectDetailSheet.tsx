@@ -130,22 +130,30 @@ export const ProjectDetailSheet = ({
   }, [isOpen]);
   
   // Sync notes state with project
+  // Only set notes from project on initial open or project ID change
+  const prevProjectId = useRef<string | null>(null);
   useEffect(() => {
-    if (project) {
+    if (project && project.id !== prevProjectId.current) {
       setNotes(project.notes || "");
+      prevProjectId.current = project.id;
     }
   }, [project]);
+
+  // Reset when sheet closes
+  useEffect(() => {
+    if (!isOpen) {
+      prevProjectId.current = null;
+    }
+  }, [isOpen]);
   
   // Debounced save for notes
-  const saveNotes = useCallback((newNotes: string) => {
+  const saveNotesRef = useRef<(newNotes: string) => void>(() => {});
+  saveNotesRef.current = (newNotes: string) => {
     if (!project || !userId) return;
-    
     setIsSavingNotes(true);
     updateProject(project.id, { notes: newNotes }, userId);
-    
-    // Show saving indicator briefly
     setTimeout(() => setIsSavingNotes(false), 500);
-  }, [project, userId, updateProject]);
+  };
   
   // Debounce notes updates
   useEffect(() => {
@@ -153,12 +161,12 @@ export const ProjectDetailSheet = ({
     
     const timer = setTimeout(() => {
       if (notes !== (project.notes || "")) {
-        saveNotes(notes);
+        saveNotesRef.current(notes);
       }
-    }, 500);
+    }, 800);
     
     return () => clearTimeout(timer);
-  }, [notes, project, saveNotes]);
+  }, [notes, project?.id]);
   
   if (!project) return null;
 
