@@ -185,15 +185,12 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
   
   // Payment method split (FY expenses)
   const paymentSplit = useMemo(() => {
-    const cash = transactions
-      .filter(t => t.type === 'expense' && t.paymentMethod === 'cash' && t.date >= fyRange.start && t.date <= fyRange.end)
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    const online = transactions
-      .filter(t => t.type === 'expense' && t.paymentMethod === 'online' && t.date >= fyRange.start && t.date <= fyRange.end)
-      .reduce((sum, t) => sum + t.amount, 0);
-    
-    return { cash, online };
+    const fyTxns = transactions.filter(t => t.date >= fyRange.start && t.date <= fyRange.end);
+    const expenseCash = fyTxns.filter(t => t.type === 'expense' && t.paymentMethod === 'cash').reduce((s, t) => s + t.amount, 0);
+    const expenseOnline = fyTxns.filter(t => t.type === 'expense' && t.paymentMethod === 'online').reduce((s, t) => s + t.amount, 0);
+    const incomeCash = fyTxns.filter(t => t.type === 'income' && t.paymentMethod === 'cash').reduce((s, t) => s + t.amount, 0);
+    const incomeOnline = fyTxns.filter(t => t.type === 'income' && t.paymentMethod === 'online').reduce((s, t) => s + t.amount, 0);
+    return { expenseCash, expenseOnline, incomeCash, incomeOnline };
   }, [transactions, fyRange]);
   
   const hasData = transactions.length > 0;
@@ -256,8 +253,10 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
           {/* Project Health + Payment Methods side by side */}
           <ProjectHealth projects={projectsWithSpending} />
           <PaymentMethods 
-            cashTotal={paymentSplit.cash} 
-            onlineTotal={paymentSplit.online} 
+            expenseCash={paymentSplit.expenseCash}
+            expenseOnline={paymentSplit.expenseOnline}
+            incomeCash={paymentSplit.incomeCash}
+            incomeOnline={paymentSplit.incomeOnline}
           />
           
           {/* Pending Installments - full width */}
