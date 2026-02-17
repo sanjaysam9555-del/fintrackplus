@@ -28,16 +28,24 @@ export const PendingInstallments = ({ transactions }: PendingInstallmentsProps) 
     const items: PendingItem[] = [];
 
     transactions
-      .filter(t => t.isPartPayment && t.plannedInstallments && t.plannedInstallments.length > 0)
+      .filter(t => t.isPartPayment)
       .forEach(t => {
-        const pending = (t.plannedInstallments as PlannedInstallment[]).filter(
-          i => i.status === 'pending'
-        );
+        // Handle plannedInstallments being either a string or array
+        let installments: PlannedInstallment[] = [];
+        if (t.plannedInstallments) {
+          if (typeof t.plannedInstallments === 'string') {
+            try { installments = JSON.parse(t.plannedInstallments as unknown as string); } catch { /* ignore */ }
+          } else if (Array.isArray(t.plannedInstallments)) {
+            installments = t.plannedInstallments;
+          }
+        }
+        
+        const pending = installments.filter(i => i.status === 'pending');
         if (pending.length === 0) return;
         const pendingAmount = pending.reduce((sum, i) => sum + i.amount, 0);
         items.push({
           transactionId: t.id,
-          vendor: t.vendor,
+          vendor: t.title || t.vendor,
           totalExpected: t.totalExpectedAmount || t.amount,
           pendingAmount,
           pendingCount: pending.length,
