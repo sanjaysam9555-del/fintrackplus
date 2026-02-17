@@ -1,33 +1,21 @@
 
 
-# Fix: Header Behind Status Bar in PWA Mode (iPhone)
+# Fix: Toast Notifications Auto-Dismiss and Close Button
 
 ## Problem
-When opened as a home-screen app (PWA) on iPhones with a notch/Dynamic Island, the header content overlaps with the system status bar. The current `safe-top` utility applies a fixed fallback of `3.25rem` which isn't enough, and `env(safe-area-inset-top)` may still return `0` in some PWA contexts.
+Toast notifications (the floating bar at the bottom confirming an entry was recorded) stay on screen far too long and have no close button to dismiss them manually.
 
-## Solution
-Use the `display-mode: standalone` CSS media query to apply a larger fallback **only** when the app is running as an installed PWA. This ensures:
-- In a normal browser: minimal/no extra top padding (no wasted space)
-- In PWA/home-screen mode: enough padding to clear the notch/Dynamic Island
+## Root Cause
+The app uses two toast systems:
+1. **Sonner** -- used for transaction success messages (`toast.success(...)` with `duration: 3000`). While the duration is set to 3 seconds, the Sonner `Toaster` component doesn't have `closeButton` enabled.
+2. **Radix Toast** (`use-toast.ts`) -- has `TOAST_REMOVE_DELAY` set to `1,000,000ms` (~16 minutes), so dismissed toasts linger in the DOM and may still be visible.
 
 ## Changes
 
-### `src/index.css` -- Update `.safe-top` utility
+### 1. `src/components/ui/sonner.tsx` -- Add close button
+Add `closeButton` prop to the Sonner `Toaster` component so every toast gets an X button for manual dismissal.
 
-```css
-.safe-top {
-  padding-top: max(1rem, env(safe-area-inset-top));
-}
+### 2. `src/hooks/use-toast.ts` -- Reduce remove delay
+Change `TOAST_REMOVE_DELAY` from `1000000` (16+ minutes) to `2000` (2 seconds) so Radix-based toasts auto-dismiss properly.
 
-/* When running as an installed PWA / home screen app */
-@media (display-mode: standalone) {
-  .safe-top {
-    padding-top: max(3.75rem, env(safe-area-inset-top));
-  }
-}
-```
-
-- **Browser mode**: Uses a smaller fallback (`1rem`) since the browser chrome already handles the status bar area.
-- **PWA standalone mode**: Uses `3.75rem` (60px) as the fallback, enough to clear the Dynamic Island on modern iPhones, while `env(safe-area-inset-top)` takes over if the browser supports it.
-
-This is a single-file, few-line change. No re-adding the PWA to the home screen should be required for the CSS change to take effect (only the meta tag change from the prior fix needed that).
+Both changes are single-line edits.
