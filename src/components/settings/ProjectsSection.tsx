@@ -369,7 +369,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                     {/* Financial Summary */}
                     {((project.clientCost || 0) > 0 || spent > 0) && (() => {
                       const projectIncome = getProjectIncome(project.id);
-                      const netMargin = (project.clientCost || 0) - spent;
+                      const netMargin = projectIncome - spent;
                       return (
                         <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden mt-2">
                           <div className="bg-card p-2 flex flex-col items-center gap-0.5">

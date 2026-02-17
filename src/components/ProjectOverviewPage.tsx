@@ -345,17 +345,17 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               </p>
             </div>
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", (totalClientCost - totalSpent) >= 0 ? "bg-green-500/10" : "bg-destructive/10")}>
-                {(totalClientCost - totalSpent) >= 0 ? (
+              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", (totalIncome - totalSpent) >= 0 ? "bg-green-500/10" : "bg-destructive/10")}>
+                {(totalIncome - totalSpent) >= 0 ? (
                   <TrendingUp size={14} className="text-green-500" />
                 ) : (
                   <TrendingDown size={14} className="text-destructive" />
                 )}
               </div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-              <p className={cn("text-sm font-bold", (totalClientCost - totalSpent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalSpent, false)}</span>
-                <span className="hidden lg:inline">₹{(totalClientCost - totalSpent).toLocaleString()}</span>
+              <p className={cn("text-sm font-bold", (totalIncome - totalSpent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                <span className="lg:hidden">₹{formatCompactCurrency(totalIncome - totalSpent, false)}</span>
+                <span className="hidden lg:inline">₹{(totalIncome - totalSpent).toLocaleString()}</span>
               </p>
             </div>
           </div>
@@ -614,16 +614,16 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           <p className="text-xs font-bold text-destructive">₹{formatCompactCurrency(spent, false)}</p>
                         </div>
                         <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: ((project.clientCost || 0) - spent) >= 0 ? 'hsl(142 71% 45% / 0.1)' : 'hsl(var(--destructive) / 0.1)' }}>
-                            {((project.clientCost || 0) - spent) >= 0 ? (
+                          <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: (income - spent) >= 0 ? 'hsl(142 71% 45% / 0.1)' : 'hsl(var(--destructive) / 0.1)' }}>
+                            {(income - spent) >= 0 ? (
                               <TrendingUp size={12} className="text-green-500" />
                             ) : (
                               <TrendingDown size={12} className="text-destructive" />
                             )}
                           </div>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-                          <p className={cn("text-xs font-bold", ((project.clientCost || 0) - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                            ₹{formatCompactCurrency((project.clientCost || 0) - spent, false)}
+                          <p className={cn("text-xs font-bold", (income - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                            ₹{formatCompactCurrency(income - spent, false)}
                           </p>
                         </div>
                       </div>

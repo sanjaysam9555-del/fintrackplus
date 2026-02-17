@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { ProfileEditSheet } from "./ProfileEditSheet";
 import { CategoriesSection } from "./settings/CategoriesSection";
 import { VendorsSection } from "./settings/VendorsSection";
-import { ProjectsSection } from "./settings/ProjectsSection";
+
 import { ReportsSection } from "./settings/ReportsSection";
 import { PartnersSection } from "./settings/PartnersSection";
 import { LabelsSection } from "./settings/LabelsSection";
@@ -217,7 +217,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'projects' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -293,12 +293,6 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           onClick: () => handleSectionChange('vendors')
         },
         { 
-          icon: FolderKanban, 
-          label: "Projects", 
-          sublabel: `${projects.length} projects`,
-          onClick: () => handleSectionChange('projects')
-        },
-        { 
           icon: Tag, 
           label: "Labels", 
           sublabel: `${projectLabels.length} label${projectLabels.length !== 1 ? 's' : ''}`,
@@ -336,9 +330,6 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   }
   if (activeSection === 'vendors') {
     return <VendorsSection onBack={handleBack} userId={user?.id} />;
-  }
-  if (activeSection === 'projects') {
-    return <ProjectsSection onBack={handleBack} userId={user?.id} />;
   }
   if (activeSection === 'labels') {
     return <LabelsSection onBack={handleBack} userId={user?.id} />;
