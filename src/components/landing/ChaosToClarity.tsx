@@ -1,135 +1,109 @@
 import { motion } from "framer-motion";
-import { ArrowRight, Check, MessageSquareWarning, TrendingDown, Users, Receipt } from "lucide-react";
-
-import homeTab from "@/assets/landing/real/home-tab.png";
-import projectEntries from "@/assets/landing/real/project-entries.png";
-import partners from "@/assets/landing/real/partners.png";
-import gstForm from "@/assets/landing/real/gst-form.png";
+import { Check, X, MessageSquareWarning, TrendingDown, Users, Receipt } from "lucide-react";
 
 const rows = [
   {
-    problemIcon: MessageSquareWarning,
-    problemTitle: "Cash Leaks & WhatsApp Trails",
-    problemDesc: "Vendor payments are scattered across notebooks and chat messages. By reconciliation time, thousands of rupees often disappear unnoticed.",
-    solutionTitle: "Every Rupee Accounted For",
-    solutionDesc: "Track every single rupee across events, vendors, and partners in one centralized app. It even works offline for site visits with spotty internet.",
-    screenshot: homeTab,
+    icon: MessageSquareWarning,
+    topic: "Cash & Payments",
+    problem: "Vendor payments scattered across notebooks and WhatsApp. Thousands slip through by reconciliation time.",
+    solution: "Every rupee tracked across events, vendors, and partners — even offline at the venue.",
   },
   {
-    problemIcon: TrendingDown,
-    problemTitle: "Margin Blindness",
-    problemDesc: "You might quote a client ₹18 lakh only to realize you spent ₹20 lakh once the event is finally over. You learn your actual margin too late to fix it.",
-    solutionTitle: "Real-Time Profitability",
-    solutionDesc: "View your real-time margin, project health status, and budget consumption as transactions are logged. Know exactly where you stand while the event is still live.",
-    screenshot: projectEntries,
+    icon: TrendingDown,
+    topic: "Profit Margins",
+    problem: "Quote ₹18L, spend ₹20L — and only find out after the event. Margin blindness is costly.",
+    solution: "Live margin, project health, and budget burn visible as you log transactions.",
   },
   {
-    problemIcon: Users,
-    problemTitle: "Partner Friction",
-    problemDesc: 'Managing who spent what from which pocket leads to "who owes who" arguments at the end of the month.',
-    solutionTitle: "Automated Partner Splits",
-    solutionDesc: "Maintain separate cash and online balances for each partner. Balances update automatically with one-tap fund transfers.",
-    screenshot: partners,
+    icon: Users,
+    topic: "Partner Accounts",
+    problem: '"Who owes who?" arguments every month from mixed cash and online spends.',
+    solution: "Separate cash & online balances per partner, updated automatically with one-tap transfers.",
   },
   {
-    problemIcon: Receipt,
-    problemTitle: 'The CA "Clean-Up" Tax',
-    problemDesc: "GST receipts are buried in gallery folders. Accountants charge extra just to untangle the mess of messy books during tax season.",
-    solutionTitle: "CA-Ready in One Tap",
-    solutionDesc: 'Tag any entry as GST-applicable and attach receipt photos instantly. Export a "CA-ready ZIP" with organized CSVs and receipt images to slash your accounting fees.',
-    screenshot: gstForm,
+    icon: Receipt,
+    topic: "GST & CA Fees",
+    problem: "Receipts buried in gallery folders. Accountants charge extra just to untangle the books.",
+    solution: 'Tag GST entries, attach receipts instantly, export a "CA-ready ZIP" in one tap.',
   },
 ];
 
+const fadeUp = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
 export const ChaosToClarity = () => (
   <section className="py-20 md:py-24 px-4">
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       {/* Header */}
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.5 }}
-        className="text-center mb-14"
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeUp}
+        className="text-center mb-10"
       >
         <span className="inline-block px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider bg-primary/10 text-primary border border-primary/20 mb-4">
           Before vs. After
         </span>
-        <h2 className="text-3xl md:text-4xl font-bold text-foreground">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
           From Event Chaos to Financial Clarity
         </h2>
-        <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
+        <p className="mt-3 text-sm text-muted-foreground max-w-lg mx-auto">
           This is what shifts when you switch to FinTrack⁺
         </p>
       </motion.div>
 
-      {/* Rows */}
-      <div className="flex flex-col gap-6">
-        {rows.map((row, i) => (
-          <div
-            key={row.problemTitle}
-            className="grid grid-cols-1 md:grid-cols-[1fr_40px_1fr] gap-3 md:gap-0 items-stretch"
-          >
-            {/* Problem card */}
-            <motion.div
-              initial={{ opacity: 0, x: -32 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ type: "spring", stiffness: 90, damping: 18, delay: i * 0.12 }}
-              className="bg-destructive/5 border border-destructive/20 ring-1 ring-destructive/10 backdrop-blur-sm rounded-2xl p-5 flex flex-col justify-center"
-            >
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
-                  <row.problemIcon className="w-4 h-4 text-destructive" />
-                </div>
-                <span className="text-xs font-semibold text-destructive/70 uppercase tracking-wider">
-                  The Old Way
-                </span>
-              </div>
-              <h3 className="font-semibold text-foreground text-base mb-1.5">{row.problemTitle}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{row.problemDesc}</p>
-            </motion.div>
+      {/* Table */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true }}
+        variants={fadeUp}
+        className="border border-border/50 rounded-2xl overflow-hidden bg-card/50 backdrop-blur-sm shadow-[0_0_32px_rgba(25,102,205,0.15)] ring-1 ring-primary/10"
+      >
+        {/* Column headers */}
+        <div className="grid grid-cols-[1fr_1fr_1fr] sm:grid-cols-[160px_1fr_1fr] border-b border-border/50">
+          <div className="px-4 py-3 text-xs font-semibold text-muted-foreground" />
+          <div className="px-4 py-3 text-xs font-semibold text-destructive/80 border-l border-border/50 flex items-center gap-1.5">
+            <X className="w-3.5 h-3.5" /> The Old Way
+          </div>
+          <div className="px-4 py-3 text-xs font-semibold text-primary border-l border-border/50 bg-primary/5 flex items-center gap-1.5">
+            <Check className="w-3.5 h-3.5" /> FinTrack⁺ Way
+          </div>
+        </div>
 
-            {/* Arrow connector (desktop only) */}
-            <div className="hidden md:flex items-center justify-center">
-              <ArrowRight className="w-5 h-5 text-primary/50" />
+        {/* Rows */}
+        {rows.map((row, i) => (
+          <motion.div
+            key={row.topic}
+            initial={{ opacity: 0, x: -10 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.06 }}
+            className="grid grid-cols-[1fr_1fr_1fr] sm:grid-cols-[160px_1fr_1fr] border-b border-border/30 last:border-b-0 items-stretch"
+          >
+            {/* Topic label */}
+            <div className="px-4 py-4 flex items-start gap-2">
+              <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 mt-0.5">
+                <row.icon className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+              <span className="text-xs font-semibold text-foreground leading-snug pt-1 hidden sm:block">{row.topic}</span>
             </div>
 
-            {/* Solution card */}
-            <motion.div
-              initial={{ opacity: 0, x: 32 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-60px" }}
-              transition={{ type: "spring", stiffness: 90, damping: 18, delay: i * 0.12 + 0.06 }}
-              whileHover={{ scale: 1.02, y: -3 }}
-              className="bg-primary/5 border border-primary/20 ring-1 ring-primary/10 backdrop-blur-sm rounded-2xl overflow-hidden shadow-[0_0_24px_rgba(25,102,205,0.12)] flex flex-col"
-            >
-              {/* Screenshot */}
-              <div className="h-36 overflow-hidden bg-muted/40">
-                <img
-                  src={row.screenshot}
-                  alt={row.solutionTitle}
-                  className="w-full h-full object-cover object-top"
-                  loading="lazy"
-                />
-              </div>
-              {/* Content */}
-              <div className="p-5 flex flex-col justify-center flex-1">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center flex-shrink-0">
-                    <Check className="w-4 h-4 text-green-500" />
-                  </div>
-                  <span className="text-xs font-semibold text-green-500/80 uppercase tracking-wider">
-                    FinTrack⁺ Way
-                  </span>
-                </div>
-                <h3 className="font-semibold text-foreground text-base mb-1.5">{row.solutionTitle}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{row.solutionDesc}</p>
-              </div>
-            </motion.div>
-          </div>
+            {/* Problem */}
+            <div className="px-4 py-4 border-l border-border/30 bg-destructive/[0.03]">
+              <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">{row.problem}</p>
+            </div>
+
+            {/* Solution */}
+            <div className="px-4 py-4 border-l border-border/30 bg-primary/[0.04]">
+              <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">{row.solution}</p>
+            </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   </section>
 );
