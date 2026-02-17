@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import appIcon from '@/assets/app-icon.png';
+import saffronLogo from '@/assets/saffron-logo.png';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -102,14 +103,20 @@ export const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         </motion.div>
 
         {/* An App By Saffron Events */}
-        <motion.p
-          className="text-xs text-muted-foreground/60 mt-6 tracking-wider uppercase"
+        <motion.div
+          className="flex items-center gap-2 mt-6 tracking-wider uppercase"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8, duration: 0.6 }}
         >
-          An App By <span className="font-semibold text-muted-foreground/80">Saffron Events</span>
-        </motion.p>
+          <span className="text-sm text-muted-foreground">An App By</span>
+          <img 
+            src={saffronLogo} 
+            alt="Saffron Events" 
+            className="h-5 dark:brightness-0 dark:invert"
+          />
+          <span className="text-sm font-semibold text-muted-foreground">Saffron Events</span>
+        </motion.div>
       </motion.div>
     </motion.div>
   );
