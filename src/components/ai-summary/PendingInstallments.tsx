@@ -61,7 +61,8 @@ export const PendingInstallments = ({ transactions }: PendingInstallmentsProps) 
     return { incomeItems, expenseItems, totalPendingIncome, totalPendingExpense };
   }, [transactions]);
 
-  if (incomeItems.length === 0 && expenseItems.length === 0) return null;
+  // Always show section - display "no pending" message when empty
+  const hasItems = incomeItems.length > 0 || expenseItems.length > 0;
 
   const renderList = (items: PendingItem[], type: 'income' | 'expense') => {
     if (items.length === 0) return null;
@@ -122,8 +123,16 @@ export const PendingInstallments = ({ transactions }: PendingInstallmentsProps) 
         <h3 className="font-semibold">Pending Installments</h3>
       </div>
       <div className="space-y-4">
-        {renderList(incomeItems, 'income')}
-        {renderList(expenseItems, 'expense')}
+        {hasItems ? (
+          <>
+            {renderList(incomeItems, 'income')}
+            {renderList(expenseItems, 'expense')}
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-2">
+            No pending installments right now
+          </p>
+        )}
       </div>
     </motion.div>
   );
