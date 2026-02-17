@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Transaction } from "@/lib/types";
 import { formatCurrency } from "@/lib/constants";
@@ -205,8 +206,8 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
       <div className="flex items-center justify-between mb-2">
         <div>
           <p className="text-sm text-muted-foreground">Cash Flow Trend</p>
-          <p className="text-2xl font-bold text-foreground">
-            {formatCurrency(Math.abs(totalNet))}
+          <p className={cn("text-2xl font-bold", totalNet >= 0 ? "text-success" : "text-destructive")}>
+            {totalNet < 0 ? '-' : ''}{formatCurrency(Math.abs(totalNet))}
           </p>
         </div>
         <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
@@ -221,9 +222,9 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         <motion.p 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-sm text-muted-foreground mb-2"
+          className={cn("text-sm mb-2", selectedPoint.net >= 0 ? "text-success" : "text-destructive")}
         >
-          {selectedPoint.name}: Net {formatCurrency(selectedPoint.net)}
+          {selectedPoint.name}: Net {selectedPoint.net < 0 ? '-' : ''}{formatCurrency(Math.abs(selectedPoint.net))}
         </motion.p>
       )}
       

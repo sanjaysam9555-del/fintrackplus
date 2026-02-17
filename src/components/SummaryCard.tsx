@@ -68,6 +68,22 @@ export const SummaryCard = ({
   const colors = colorMap[type];
   const isPositive = percentChange && percentChange > 0;
   
+  const textColor = type === 'balance'
+    ? (amount >= 0 ? 'text-success' : 'text-destructive')
+    : colors.text;
+  
+  const balanceIconBg = type === 'balance'
+    ? (amount >= 0 ? 'bg-success-light' : 'bg-destructive-light')
+    : colors.icon;
+  
+  const balanceIconColor = type === 'balance'
+    ? (amount >= 0 ? 'text-success' : 'text-destructive')
+    : colors.iconColor;
+  
+  const prefix = type === 'balance'
+    ? (amount < 0 ? '-' : '')
+    : (type === 'expense' ? '-' : '');
+  
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -79,20 +95,19 @@ export const SummaryCard = ({
       )}
     >
       <div className="flex items-center justify-center gap-1.5 mb-1">
-        <div className={cn("w-6 h-6 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center flex-shrink-0", colors.icon)}>
-          <Icon size={14} className={cn(colors.iconColor, "lg:hidden")} />
-          <Icon size={16} className={cn(colors.iconColor, "hidden lg:block")} />
+        <div className={cn("w-6 h-6 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center flex-shrink-0", balanceIconBg)}>
+          <Icon size={14} className={cn(balanceIconColor, "lg:hidden")} />
+          <Icon size={16} className={cn(balanceIconColor, "hidden lg:block")} />
         </div>
         <p className="text-xs lg:text-sm text-muted-foreground font-medium truncate">{title}</p>
       </div>
       
-      {/* Mobile: compact format, Desktop: full format */}
-      <p className={cn("text-sm lg:text-lg font-bold truncate text-center", colors.text)}>
+      <p className={cn("text-sm lg:text-lg font-bold truncate text-center", textColor)}>
         <span className="lg:hidden">
-          <AnimatedNumber value={amount} prefix={type === 'expense' ? '-' : ''} formatter={formatCompactCurrency} />
+          <AnimatedNumber value={amount} prefix={prefix} formatter={formatCompactCurrency} />
         </span>
         <span className="hidden lg:inline">
-          <AnimatedNumber value={amount} prefix={type === 'expense' ? '-' : ''} formatter={formatCurrency} />
+          <AnimatedNumber value={amount} prefix={prefix} formatter={formatCurrency} />
         </span>
       </p>
       
