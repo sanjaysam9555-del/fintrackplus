@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense, useRef, useCallback } from "react";
+import { useState, useEffect, lazy, Suspense, useRef, useCallback, useMemo } from "react";
 import { GlassDock } from "@/components/GlassDock";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { Dashboard } from "@/components/Dashboard";
@@ -10,6 +10,8 @@ import { useSyncEngine } from "@/hooks/useSyncEngine";
 import { useTheme } from "@/hooks/useTheme";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 
 // Lazy load heavy components that aren't needed immediately
 const TransactionList = lazy(() => import("@/components/TransactionList").then(m => ({ default: m.TransactionList })));
@@ -122,6 +124,21 @@ const Index = () => {
   // Apply theme at app level (not just Settings)
   useTheme();
   
+  const isMobile = useIsMobile();
+  
+  // Swipe from right edge to open settings (mobile only)
+  const openSettingsSwipe = useSwipeGesture({
+    onSwipeLeft: () => {
+      setViewMode('settings');
+      setSettingsSection(null);
+    },
+    enabled: isMobile && viewMode !== 'settings' && viewMode !== 'ai' && !isAddSheetOpen && !isEditSheetOpen,
+    requireRightEdge: true,
+    edgeThreshold: 30,
+    swipeThreshold: 80,
+  });
+  
+  
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -178,11 +195,36 @@ const Index = () => {
     }
   };
   
-  const handleBackToHome = () => {
+  const handleBackToHome = useCallback(() => {
     setViewMode('home');
     setActiveTab('home');
     setSettingsSection(null);
-  };
+  }, []);
+  
+  // Swipe right to dismiss settings (mobile only)
+  const dismissSettingsSwipe = useSwipeGesture({
+    onSwipeRight: handleBackToHome,
+    enabled: isMobile && viewMode === 'settings',
+    swipeThreshold: 100,
+  });
+  
+  // Animation variants for settings on mobile
+  const settingsMotionProps = useMemo(() => {
+    if (isMobile && viewMode === 'settings') {
+      return {
+        initial: { x: '100%', opacity: 1 } as const,
+        animate: { x: 0, opacity: 1 } as const,
+        exit: { x: '100%', opacity: 1 } as const,
+        transition: { type: 'spring' as const, damping: 25, stiffness: 300 },
+      };
+    }
+    return {
+      initial: { opacity: 0, y: 8 },
+      animate: { opacity: 1, y: 0 },
+      exit: { opacity: 0, y: -8 },
+      transition: { duration: 0.2, ease: 'easeOut' as const },
+    };
+  }, [isMobile, viewMode]);
   
   const handleTabChange = (tab: TabId) => {
     if (tab === activeTab && viewMode === tab) return;
@@ -282,6 +324,8 @@ const Index = () => {
           ref={scrollContainerRef}
           className="flex-1 h-dvh overflow-y-auto overscroll-contain relative"
           style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorY: 'contain' }}
+          onTouchStart={openSettingsSwipe.onTouchStart}
+          onTouchEnd={openSettingsSwipe.onTouchEnd}
         >
           {/* Page transition overlay */}
           <AnimatePresence>
@@ -291,11 +335,10 @@ const Index = () => {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={viewMode}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              {...settingsMotionProps}
               className="max-w-md mx-auto md:max-w-none md:mx-0 will-change-transform"
+              onTouchStart={viewMode === 'settings' ? dismissSettingsSwipe.onTouchStart : undefined}
+              onTouchEnd={viewMode === 'settings' ? dismissSettingsSwipe.onTouchEnd : undefined}
             >
               {renderContent()}
             </motion.div>
