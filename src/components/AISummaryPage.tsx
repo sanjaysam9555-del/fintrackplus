@@ -9,6 +9,7 @@ import { SmartInsights, generateInsights } from "./ai-summary/SmartInsights";
 import { CategoryBreakdown } from "./ai-summary/CategoryBreakdown";
 import { ProjectHealth } from "./ai-summary/ProjectHealth";
 import { PaymentMethods } from "./ai-summary/PaymentMethods";
+import { PendingInstallments } from "./ai-summary/PendingInstallments";
 
 interface AISummaryPageProps {
   onBack?: () => void;
@@ -258,6 +259,11 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
             cashTotal={paymentSplit.cash} 
             onlineTotal={paymentSplit.online} 
           />
+          
+          {/* Pending Installments - full width */}
+          <div className="md:col-span-2">
+            <PendingInstallments transactions={transactions} />
+          </div>
         </div>
       )}
     </div>
