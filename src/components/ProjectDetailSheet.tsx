@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, Wallet, TrendingUp, TrendingDown, Save, Check } from "lucide-react";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
 import { useProjectDocuments } from "@/hooks/useProjectDocuments";
@@ -146,27 +146,20 @@ export const ProjectDetailSheet = ({
     }
   }, [isOpen]);
   
-  // Debounced save for notes
-  const saveNotesRef = useRef<(newNotes: string) => void>(() => {});
-  saveNotesRef.current = (newNotes: string) => {
+  const [justSaved, setJustSaved] = useState(false);
+  const hasUnsavedNotes = notes !== (project?.notes || "");
+  
+  const handleSaveNotes = useCallback(() => {
     if (!project || !userId) return;
     setIsSavingNotes(true);
-    updateProject(project.id, { notes: newNotes }, userId);
-    setTimeout(() => setIsSavingNotes(false), 500);
-  };
-  
-  // Debounce notes updates
-  useEffect(() => {
-    if (!project) return;
-    
-    const timer = setTimeout(() => {
-      if (notes !== (project.notes || "")) {
-        saveNotesRef.current(notes);
-      }
-    }, 800);
-    
-    return () => clearTimeout(timer);
-  }, [notes, project?.id]);
+    updateProject(project.id, { notes }, userId);
+    setTimeout(() => {
+      setIsSavingNotes(false);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 1500);
+    }, 300);
+    toast.success("Notes saved");
+  }, [project, userId, notes, updateProject]);
   
   if (!project) return null;
 
@@ -299,13 +292,33 @@ export const ProjectDetailSheet = ({
 
             {/* Project Notes */}
             <div>
-              <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                <StickyNote size={14} className="text-muted-foreground" />
-                Project Notes
-                {isSavingNotes && (
-                  <Loader2 size={12} className="animate-spin text-muted-foreground" />
-                )}
-              </h3>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                  <StickyNote size={14} className="text-muted-foreground" />
+                  Project Notes
+                </h3>
+                <button
+                  onClick={handleSaveNotes}
+                  disabled={!hasUnsavedNotes || isSavingNotes}
+                  className={cn(
+                    "flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium transition-all",
+                    justSaved
+                      ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                      : hasUnsavedNotes
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                        : "bg-muted text-muted-foreground opacity-50 cursor-not-allowed"
+                  )}
+                >
+                  {isSavingNotes ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : justSaved ? (
+                    <Check size={12} />
+                  ) : (
+                    <Save size={12} />
+                  )}
+                  {justSaved ? "Saved" : "Save"}
+                </button>
+              </div>
               <Textarea
                 placeholder="Add notes about this project..."
                 value={notes}
