@@ -279,12 +279,12 @@ export const ProjectDetailSheet = ({
                 <p className="text-sm font-bold text-destructive">₹{spent.toLocaleString()}</p>
               </div>
               <div className="bg-card p-3 flex flex-col items-center gap-0.5">
-                <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", (project.clientCost - spent) >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-                  {(project.clientCost - spent) >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
+                <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", (income - spent) >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
+                  {(income - spent) >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
                 </div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-                <p className={cn("text-sm font-bold", (project.clientCost - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                  ₹{(project.clientCost - spent).toLocaleString()}
+                <p className={cn("text-sm font-bold", (income - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                  ₹{(income - spent).toLocaleString()}
                 </p>
               </div>
             </div>
