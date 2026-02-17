@@ -1,62 +1,47 @@
 
 
-# Match Project Card Layout to Portfolio Summary
+# Unify Project Forms and Detail Views to 4-Metric Model
 
-## What Changes
+## Problem
+The project card grids and portfolio summary were updated to show only 4 metrics, but the following were missed:
+- **Add/Edit forms** in both Projects Tab and Settings still have "Internal Cost" and "Expected Margin" input fields
+- **ProjectDetailSheet** financial summary still shows all 6 metrics (Internal Cost + Expected Margin)
+- **Settings project cards** still use the old text-based layout instead of the unified 4-metric model
 
-The individual project cards (lines 636-670) currently use a plain text grid without icons, dividers, or center alignment. The portfolio summary section (lines 338-401) uses a polished layout with:
-- `gap-px bg-border` creating thin divider lines between cells
-- Centered content (`items-center`)
-- Icon badges (colored background circles with icons)
-- Rounded overflow container
+## Changes
 
-The project cards will be updated to match this exact style.
+### 1. `src/components/ProjectOverviewPage.tsx` -- Add Form
+Remove the "Internal Cost" and "Expected Margin" input fields from the inline add project form (lines 210-229). Keep only:
+- Project name
+- Description
+- Client Cost (single full-width input)
+- Color picker and labels
 
-## File: `src/components/ProjectOverviewPage.tsx`
+Remove the "Est. Net Margin" preview since it depended on Internal Cost.
 
-Replace the compact stats grid (lines 636-670) with the same layout pattern used in the portfolio summary:
+### 2. `src/components/ProjectDetailSheet.tsx` -- Financial Summary
+Replace the 3x2 grid (lines 259-291) with a 2x2 grid showing only:
+1. Cost to Client
+2. Income (Actual)
+3. Expenses (Actual)
+4. Net Margin (Client Cost - Expenses)
 
-```
-grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden
-```
+Remove the "Internal Cost" and "Expected Margin" cells.
 
-Each cell will have:
-- A small icon badge (w-6 h-6 rounded-lg with colored background)
-- Centered label text
-- Centered value text with appropriate coloring
+### 3. `src/components/settings/ProjectsSection.tsx` -- Add/Edit Form
+Remove the "Internal Cost" and "Expected Margin" input fields from `renderFormFields` (lines 127-144). Remove the "Est. Net Margin" preview row. Keep only Client Cost as the financial input.
 
-The 6 metrics remain the same:
-1. Client Cost -- Wallet icon, accent bg, foreground text
-2. Internal Cost -- PiggyBank icon, accent bg, foreground text
-3. Income -- ArrowDown icon, green bg, green text
-4. Expenses -- Receipt icon, red bg, red text
-5. Exp. Margin -- Wallet icon, accent bg, foreground text
-6. Net Margin -- TrendingUp/Down icon, dynamic green/red
+### 4. `src/components/settings/ProjectsSection.tsx` -- Project Cards
+Replace the old text-based financial summary (lines 389-430) with the same 2x2 grid with dividers, icon badges, and centered alignment used in the Projects Tab cards:
+- Cost to Client (Wallet icon)
+- Income (green ArrowDown icon)
+- Expenses (red TrendingDown icon)
+- Net Margin (dynamic green/red TrendingUp/Down icon)
 
-The budget progress bar above the grid stays unchanged.
+### Summary of Removed Fields
+- "Internal Cost" input -- removed from all add/edit forms
+- "Expected Margin" input -- removed from all add/edit forms
+- "Est. Net Margin" preview -- removed from forms
+- Internal Cost and Expected Margin display cells -- removed from ProjectDetailSheet
 
-### Technical Detail
-
-Lines 635-670 will be replaced with:
-
-```tsx
-<div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden mt-1">
-  <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-    <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-      <Wallet size={12} className="text-accent-foreground" />
-    </div>
-    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Client Cost</p>
-    <p className="text-xs font-bold text-foreground">...</p>
-  </div>
-  <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-    <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-      <PiggyBank size={12} className="text-accent-foreground" />
-    </div>
-    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
-    <p className="text-xs font-bold text-foreground">...</p>
-  </div>
-  <!-- Income, Expenses, Exp. Margin, Net Margin cells follow same pattern -->
-</div>
-```
-
-Only one file changes: `src/components/ProjectOverviewPage.tsx`.
+The `internalCost` and `expectedMargin` fields remain in the data model and database for backward compatibility but are no longer surfaced in the UI.
