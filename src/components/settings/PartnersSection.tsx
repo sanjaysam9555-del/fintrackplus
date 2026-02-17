@@ -35,8 +35,163 @@ const PARTNER_COLORS = [
 
 type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
 
+// ── Extracted stable components ──────────────────────────────────────
+
+interface AvatarUploadButtonProps {
+  avatarUrl: string | undefined;
+  isUploading: boolean;
+  onTriggerUpload: () => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}
+
+const AvatarUploadButton = ({ avatarUrl, isUploading, onTriggerUpload, fileInputRef, onFileChange }: AvatarUploadButtonProps) => (
+  <div className="flex items-center gap-3">
+    <button
+      type="button"
+      onClick={onTriggerUpload}
+      className="relative w-14 h-14 rounded-full border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors overflow-hidden"
+      disabled={isUploading}
+    >
+      {avatarUrl ? (
+        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
+      ) : (
+        <Camera size={20} className="text-muted-foreground" />
+      )}
+      {isUploading && (
+        <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-full">
+          <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+    </button>
+    <div className="text-xs text-muted-foreground">
+      {avatarUrl ? 'Tap to change' : 'Add photo'}
+    </div>
+    <input
+      ref={fileInputRef}
+      type="file"
+      accept="image/*"
+      className="hidden"
+      onChange={onFileChange}
+    />
+  </div>
+);
+
+interface PartnerFormProps {
+  isEdit?: boolean;
+  name: string;
+  setName: (v: string) => void;
+  color: string;
+  setColor: (v: string) => void;
+  initialCash: string;
+  setInitialCash: (v: string) => void;
+  initialOnline: string;
+  setInitialOnline: (v: string) => void;
+  avatarUrl: string | undefined;
+  isUploading: boolean;
+  onTriggerUpload: () => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSubmit: () => void;
+}
+
+const PartnerForm = ({
+  isEdit = false,
+  name, setName,
+  color, setColor,
+  initialCash, setInitialCash,
+  initialOnline, setInitialOnline,
+  avatarUrl, isUploading,
+  onTriggerUpload, fileInputRef, onFileChange,
+  onSubmit,
+}: PartnerFormProps) => (
+  <div className="space-y-4">
+    <AvatarUploadButton
+      avatarUrl={avatarUrl}
+      isUploading={isUploading}
+      onTriggerUpload={onTriggerUpload}
+      fileInputRef={fileInputRef}
+      onFileChange={onFileChange}
+    />
+
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name</Label>
+      <Input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="e.g., Partner 1"
+        className="mt-1"
+        autoCapitalize="words"
+      />
+    </div>
+    
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Color</Label>
+      <div className="grid grid-cols-5 gap-2 mt-2">
+        {PARTNER_COLORS.map((c) => (
+          <button
+            key={c}
+            onClick={() => setColor(c)}
+            className={cn(
+              "w-10 h-10 rounded-full transition-all",
+              color === c && "ring-2 ring-offset-2 ring-primary"
+            )}
+            style={{ backgroundColor: c }}
+          />
+        ))}
+      </div>
+    </div>
+    
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+        Starting Cash Balance
+      </Label>
+      <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
+        Amount before any recorded transactions
+      </p>
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
+        <Input
+          type="number"
+          value={initialCash}
+          onChange={(e) => setInitialCash(e.target.value)}
+          placeholder="0"
+        />
+      </div>
+    </div>
+    
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+        Starting Online Balance
+      </Label>
+      <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
+        Amount before any recorded transactions
+      </p>
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
+        <Input
+          type="number"
+          value={initialOnline}
+          onChange={(e) => setInitialOnline(e.target.value)}
+          placeholder="0"
+        />
+      </div>
+    </div>
+    
+    <Button 
+      onClick={onSubmit}
+      disabled={!name.trim()}
+      className="w-full"
+    >
+      {isEdit ? 'Update Partner' : 'Add Partner'}
+    </Button>
+  </div>
+);
+
+// ── Main component ───────────────────────────────────────────────────
+
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
-  const { partners, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod } = useFinanceStore();
+  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod } = useFinanceStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
@@ -100,7 +255,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   
   const partnerBalances = useMemo(() => {
     return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
-  }, [getPartnerBalancesForPeriod, dateRange]);
+  }, [getPartnerBalancesForPeriod, dateRange, partners, transactions]);
   
   const resetForm = () => {
     setName("");
@@ -115,9 +270,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     const file = e.target.files?.[0];
     if (!file || !userId) return;
 
-    // Reset file input so re-selecting the same file works
     e.target.value = '';
-
     setIsUploading(true);
     
     const fileExt = file.name.split('.').pop();
@@ -236,114 +389,18 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     ? partnerBalances.find(b => b.partner.id === selectedPartner.id) || null
     : null;
 
-  const AvatarUploadButton = () => (
-    <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={() => fileInputRef.current?.click()}
-        className="relative w-14 h-14 rounded-full border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors overflow-hidden"
-        disabled={isUploading}
-      >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-        ) : (
-          <Camera size={20} className="text-muted-foreground" />
-        )}
-        {isUploading && (
-          <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-full">
-            <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
-      </button>
-      <div className="text-xs text-muted-foreground">
-        {avatarUrl ? 'Tap to change' : 'Add photo'}
-      </div>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleAvatarUpload}
-      />
-    </div>
-  );
-  
-  const PartnerForm = ({ isEdit = false }: { isEdit?: boolean }) => (
-    <div className="space-y-4">
-      <AvatarUploadButton />
+  const triggerUpload = () => fileInputRef.current?.click();
 
-      <div>
-        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name</Label>
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Partner 1"
-          className="mt-1"
-        />
-      </div>
-      
-      <div>
-        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Color</Label>
-        <div className="grid grid-cols-5 gap-2 mt-2">
-          {PARTNER_COLORS.map((c) => (
-            <button
-              key={c}
-              onClick={() => setColor(c)}
-              className={cn(
-                "w-10 h-10 rounded-full transition-all",
-                color === c && "ring-2 ring-offset-2 ring-primary"
-              )}
-              style={{ backgroundColor: c }}
-            />
-          ))}
-        </div>
-      </div>
-      
-      <div>
-        <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-          Starting Cash Balance
-        </Label>
-        <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
-          Amount before any recorded transactions
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
-          <Input
-            type="number"
-            value={initialCash}
-            onChange={(e) => setInitialCash(e.target.value)}
-            placeholder="0"
-          />
-        </div>
-      </div>
-      
-      <div>
-        <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-          Starting Online Balance
-        </Label>
-        <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
-          Amount before any recorded transactions
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
-          <Input
-            type="number"
-            value={initialOnline}
-            onChange={(e) => setInitialOnline(e.target.value)}
-            placeholder="0"
-          />
-        </div>
-      </div>
-      
-      <Button 
-        onClick={isEdit ? handleUpdate : handleAdd}
-        disabled={!name.trim()}
-        className="w-full"
-      >
-        {isEdit ? 'Update Partner' : 'Add Partner'}
-      </Button>
-    </div>
-  );
+  const formProps = {
+    name, setName,
+    color, setColor,
+    initialCash, setInitialCash,
+    initialOnline, setInitialOnline,
+    avatarUrl, isUploading,
+    onTriggerUpload: triggerUpload,
+    fileInputRef,
+    onFileChange: handleAvatarUpload,
+  };
   
   return (
     <div className="min-h-screen pb-24">
@@ -496,7 +553,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
               >
                 {editingPartner === partner.id ? (
                   <div className="space-y-3">
-                    <PartnerForm isEdit />
+                    <PartnerForm {...formProps} isEdit onSubmit={handleUpdate} />
                     <Button variant="outline" onClick={resetForm} className="w-full">
                       Cancel
                     </Button>
@@ -610,7 +667,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             <DialogHeader>
               <DialogTitle>Add Partner</DialogTitle>
             </DialogHeader>
-            <PartnerForm />
+            <PartnerForm {...formProps} onSubmit={handleAdd} />
           </DialogContent>
         </Dialog>
       </div>
