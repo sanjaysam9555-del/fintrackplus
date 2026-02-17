@@ -387,22 +387,16 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                     </div>
 
                     {/* Financial Summary */}
-                    {(project.internalCost > 0 || project.clientCost > 0) && (() => {
+                    {(project.internalCost > 0 || (project.clientCost || 0) > 0) && (() => {
                       const projectIncome = getProjectIncome(project.id);
                       const netMargin = (project.clientCost || 0) - spent;
                       return (
                         <div className="border-t border-border pt-2 space-y-1.5">
                           <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                             <div>
-                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Client Cost</p>
+                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
                               <p className="text-sm font-semibold text-foreground">
                                 ₹{(project.clientCost || 0).toLocaleString()}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Internal Cost</p>
-                              <p className="text-sm font-semibold text-foreground">
-                                ₹{project.internalCost.toLocaleString()}
                               </p>
                             </div>
                             <div>
@@ -424,12 +418,6 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                               </p>
                             </div>
                             <div>
-                              <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Expected Margin</p>
-                              <p className="text-sm font-semibold text-foreground">
-                                ₹{(project.expectedMargin || 0).toLocaleString()}
-                              </p>
-                            </div>
-                            <div>
                               <div className="flex items-center gap-1">
                                 {netMargin >= 0 ? (
                                   <TrendingUp size={11} className="text-green-500" />
@@ -443,17 +431,6 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
                               </p>
                             </div>
                           </div>
-                          {project.internalCost > 0 && (
-                            <div className="h-1 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full rounded-full transition-all"
-                                style={{
-                                  width: `${Math.min(percentage, 100)}%`,
-                                  backgroundColor: percentage > 100 ? 'hsl(var(--destructive))' : project.color,
-                                }}
-                              />
-                            </div>
-                          )}
                         </div>
                       );
                     })()}
