@@ -1,21 +1,54 @@
 
 
-# Fix: Toast Notifications Auto-Dismiss and Close Button
+# Improve Onboarding Flow: Better Transaction Guidance and Setup Suggestion
 
 ## Problem
-Toast notifications (the floating bar at the bottom confirming an entry was recorded) stay on screen far too long and have no close button to dismiss them manually.
-
-## Root Cause
-The app uses two toast systems:
-1. **Sonner** -- used for transaction success messages (`toast.success(...)` with `duration: 3000`). While the duration is set to 3 seconds, the Sonner `Toaster` component doesn't have `closeButton` enabled.
-2. **Radix Toast** (`use-toast.ts`) -- has `TOAST_REMOVE_DELAY` set to `1,000,000ms` (~16 minutes), so dismissed toasts linger in the DOM and may still be visible.
+1. The "Track Your Transactions" step (step 2) only says "Tap the + button" but doesn't explain that the same form lets you toggle between Income and Expense, which is confusing for first-time users.
+2. There's no step suggesting the user set up Projects, Vendors, and Categories first before logging transactions -- this is a key first step for getting the most out of the app.
 
 ## Changes
 
-### 1. `src/components/ui/sonner.tsx` -- Add close button
-Add `closeButton` prop to the Sonner `Toaster` component so every toast gets an X button for manual dismissal.
+### `src/components/OnboardingFlow.tsx`
 
-### 2. `src/hooks/use-toast.ts` -- Reduce remove delay
-Change `TOAST_REMOVE_DELAY` from `1000000` (16+ minutes) to `2000` (2 seconds) so Radix-based toasts auto-dismiss properly.
+**1. Rewrite the "Track Your Transactions" step (step 2) description and add a visual mini-mockup**
 
-Both changes are single-line edits.
+Update the description to clearly explain:
+- Tap the + button at the bottom dock
+- Use the toggle at the top of the form to switch between Expense and Income
+- Add a small inline visual showing the Expense/Income toggle (two styled pill buttons inside the onboarding card) so users know what to look for
+
+**2. Add a new "Set Up First" step after the welcome step (new step 2, pushing others down)**
+
+This step will:
+- Use a `Settings` (or `SlidersHorizontal`) icon
+- Title: "Set Up Your Workspace"
+- Description: "Before you start tracking, head to Settings to add your Projects, Vendors, and Categories. This helps you organize entries from day one."
+- Include three mini icon-label rows (Project, Vendor, Category) inside the card to visually reinforce what to set up
+
+### Updated step order:
+1. Welcome
+2. **Set Up Your Workspace** (NEW)
+3. Track Your Transactions (improved description + toggle visual)
+4. View AI Insights
+5. Organize with Projects
+6. Stay Notified
+7. Choose Your Look (theme)
+8. Install the App
+
+### Visual additions inside the card (no new files needed):
+
+**"Set Up Your Workspace" step** -- a small list of 3 items:
+- FolderKanban icon + "Add Projects (e.g., Wedding, Renovation)"
+- Store icon + "Add Vendors (e.g., suppliers, freelancers)"
+- Grid3X3 icon + "Add Categories (e.g., Travel, Catering)"
+
+**"Track Your Transactions" step** -- a mini toggle mockup:
+- Two rounded pill buttons labeled "Expense" (red) and "Income" (green) rendered inline to show the user what the toggle looks like in the actual form
+
+### Technical approach:
+- Add a `SetupSuggestion` inline component rendered conditionally when `currentStep` matches the setup step index
+- Add a `TransactionTogglePreview` inline component rendered conditionally when `currentStep` matches the transaction step index
+- Update `baseSteps` array to include the new step and updated description
+- Adjust `isThemeStep` index calculation (it's already dynamic via `baseSteps.length`)
+- Import `Store`, `Grid3X3`, `SlidersHorizontal` icons from lucide-react
+
