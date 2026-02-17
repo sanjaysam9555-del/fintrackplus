@@ -1,61 +1,69 @@
 
 
-# Redesign Financial Summary in Project Cards
+# Unify Project Financial Metrics
 
-## Changes to `src/components/settings/ProjectsSection.tsx`
+## Problem
 
-### 1. Reduce section height
-- Tighten the padding on the financial summary section: reduce `pt-3` to `pt-2` and `space-y-2` to `space-y-1.5`
-- Make the progress bar slimmer: `h-1.5` to `h-1`
+The current code uses inconsistent metrics and formulas across three areas:
+- **Portfolio summary**: Shows Cost, Spent, Margin (Client Cost - Internal Cost)
+- **Project cards**: Show Income, Spent, Net (Income - Spent)
+- **Project detail sheet**: Shows Internal Cost, Client Cost, Expenses, Margin (Client Cost - Internal Cost)
 
-### 2. Add colored icons to each metric
-Import `IndianRupee` (or `CircleDollarSign`) and `TrendingUp`/`TrendingDown` from lucide-react for the icons. Each metric gets a small icon next to its label:
+The user wants a consistent 4-metric model everywhere with the correct Net Margin formula.
 
-- **Cost** (currently "Budget"): Blue icon (`text-blue-500`)
-- **Spent**: Red icon (`text-red-500`), number styled white (`text-foreground`) like Cost
-- **Net** (currently "Margin"): Green icon + number when positive, red icon + number when negative
+## New 4-Metric Model
 
-### 3. Rename "Margin" to "Net"
-Change the label text from "Margin" to "Net" in the financial grid.
+| Metric | Label | Source | Color |
+|--------|-------|--------|-------|
+| 1 | Client Cost | `project.clientCost` | Foreground (white/black) |
+| 2 | Internal Cost | `project.internalCost` | Foreground (white/black) |
+| 3 | Expenses | `getProjectSpending(id)` (actual expenses) | Red |
+| 4 | Net Margin | `clientCost - expenses (actual)` | Green if positive, Red if negative |
 
-### 4. Color rules for values
-- Cost number: `text-foreground` (white in dark mode)
-- Spent number: `text-foreground` (white in dark mode, same as Cost) -- currently it turns red when over budget, keep that behavior
-- Net number: `text-green-600 dark:text-green-400` when positive, `text-destructive` when negative
+## Files Changed
 
-### Technical Detail
+### 1. `src/components/ProjectOverviewPage.tsx`
 
-Lines ~380-416 of the file will be updated. The 3-column grid stays, but each cell gets an icon+label row and properly colored values:
+**Portfolio Summary (lines 320-361)**: Replace the 3-column grid (Cost / Spent / Margin) with a 4-column grid:
+- Client Cost (with Wallet icon, blue)
+- Internal Cost (with a suitable icon, foreground)
+- Expenses (with Receipt icon, red)
+- Net Margin = `totalClientCost - totalSpent` (dynamic green/red)
 
-```tsx
-<div className="border-t border-border pt-2 space-y-1.5">
-  <div className="grid grid-cols-3 gap-2">
-    <div>
-      <div className="flex items-center gap-1">
-        <Wallet size={11} className="text-blue-500" />
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Cost</p>
-      </div>
-      <p className="text-sm font-semibold text-foreground">...</p>
-    </div>
-    <div>
-      <div className="flex items-center gap-1">
-        <TrendingDown size={11} className="text-red-500" />
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Spent</p>
-      </div>
-      <p className="text-sm font-semibold text-foreground">...</p>
-    </div>
-    <div>
-      <div className="flex items-center gap-1">
-        <TrendingUp size={11} className={net >= 0 ? 'text-green-500' : 'text-red-500'} />
-        <p className="text-[11px] text-muted-foreground uppercase tracking-wide">Net</p>
-      </div>
-      <p className={`text-sm font-semibold ${net >= 0 ? 'text-green-600 dark:text-green-400' : 'text-destructive'}`}>...</p>
-    </div>
-  </div>
-  <!-- progress bar with h-1 -->
-</div>
-```
+Update the totals calculation to use the new formula for net margin.
 
-Also update the form's computed margin label from "Margin" to "Net" (line ~125 area).
+**Project Cards (lines 591-614)**: Replace the 3-column stats row (Income / Spent / Net) with 4 metrics:
+- Client Cost
+- Internal Cost
+- Expenses (actual spent)
+- Net Margin = `clientCost - spent`
 
-Only one file changes: `src/components/settings/ProjectsSection.tsx`.
+### 2. `src/components/ProjectDetailSheet.tsx`
+
+**Financial Summary grid (lines 259-281)**: Update the 2x2 grid to show:
+- Client Cost (was already there)
+- Internal Cost (was already there)
+- Expenses (keep as is)
+- Net Margin = `clientCost - spent` (currently shows `clientCost - internalCost` as "Margin")
+
+### 3. `src/components/settings/ProjectsSection.tsx`
+
+**Project cards financial section**: Update the 3-column grid (Cost / Spent / Net) to show 4 metrics in a 2x2 grid:
+- Client Cost
+- Internal Cost
+- Expenses (actual spent)
+- Net Margin = `clientCost - spent`
+
+Rename labels to match: "Client Cost", "Internal Cost", "Expenses", "Net Margin".
+
+### 4. Form labels (in both ProjectOverviewPage and ProjectsSection)
+
+Update the "Margin" preview label in the add/edit forms to "Net Margin" and change the formula shown to reflect `Client Cost - Expenses` with a note that this will be calculated from actual expenses once transactions are added.
+
+## Technical Notes
+
+- The `formatCompactCurrency` function is already available for compact number display on mobile
+- No database or type changes needed -- all data fields already exist
+- The portfolio summary on mobile will use a 2x2 grid instead of 4 columns to avoid cramping
+- The project card stats will use a 2x2 grid for readability on mobile
+
