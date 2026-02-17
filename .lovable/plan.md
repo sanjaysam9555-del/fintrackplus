@@ -1,54 +1,60 @@
 
-
-# Improve Onboarding Flow: Better Transaction Guidance and Setup Suggestion
+# Payment Methods Card: Split by Income and Expense
 
 ## Problem
-1. The "Track Your Transactions" step (step 2) only says "Tap the + button" but doesn't explain that the same form lets you toggle between Income and Expense, which is confusing for first-time users.
-2. There's no step suggesting the user set up Projects, Vendors, and Categories first before logging transactions -- this is a key first step for getting the most out of the app.
+The Payment Methods card currently only shows expense data (Cash vs Online) with no indication that it's expense-only. Users can't tell whether the split applies to incoming or outgoing money.
+
+## Solution
+Restructure the card into two clearly labeled sections -- **Outgoing (Expenses)** and **Incoming (Income)** -- each showing its own Cash/Online split with progress bars.
 
 ## Changes
 
-### `src/components/OnboardingFlow.tsx`
+### 1. `src/components/AISummaryPage.tsx` -- Compute income payment split
 
-**1. Rewrite the "Track Your Transactions" step (step 2) description and add a visual mini-mockup**
+Update the `paymentSplit` memo to also calculate income by payment method:
 
-Update the description to clearly explain:
-- Tap the + button at the bottom dock
-- Use the toggle at the top of the form to switch between Expense and Income
-- Add a small inline visual showing the Expense/Income toggle (two styled pill buttons inside the onboarding card) so users know what to look for
+```
+paymentSplit = {
+  expenseCash, expenseOnline,
+  incomeCash, incomeOnline
+}
+```
 
-**2. Add a new "Set Up First" step after the welcome step (new step 2, pushing others down)**
+Update the `PaymentMethods` component usage to pass all four values.
 
-This step will:
-- Use a `Settings` (or `SlidersHorizontal`) icon
-- Title: "Set Up Your Workspace"
-- Description: "Before you start tracking, head to Settings to add your Projects, Vendors, and Categories. This helps you organize entries from day one."
-- Include three mini icon-label rows (Project, Vendor, Category) inside the card to visually reinforce what to set up
+### 2. `src/components/ai-summary/PaymentMethods.tsx` -- Redesign with two sections
 
-### Updated step order:
-1. Welcome
-2. **Set Up Your Workspace** (NEW)
-3. Track Your Transactions (improved description + toggle visual)
-4. View AI Insights
-5. Organize with Projects
-6. Stay Notified
-7. Choose Your Look (theme)
-8. Install the App
+- Update the props interface to accept `expenseCash`, `expenseOnline`, `incomeCash`, `incomeOnline`
+- Extract a reusable `PaymentMethodBar` helper that renders a single Cash/Online row with icon, amount, percentage, and animated progress bar
+- Render two labeled sub-sections inside the card:
+  - **Outgoing** (with a red/destructive accent) showing expense Cash vs Online
+  - **Incoming** (with a green/emerald accent) showing income Cash vs Online
+- Each section only renders if its total is greater than zero
+- A thin separator divides the two sections when both are visible
 
-### Visual additions inside the card (no new files needed):
+### Updated card layout (conceptual):
 
-**"Set Up Your Workspace" step** -- a small list of 3 items:
-- FolderKanban icon + "Add Projects (e.g., Wedding, Renovation)"
-- Store icon + "Add Vendors (e.g., suppliers, freelancers)"
-- Grid3X3 icon + "Add Categories (e.g., Travel, Catering)"
+```text
++-----------------------------+
+| Payment Methods             |
+|-----------------------------|
+| Outgoing                    |
+|  Cash      Rs12K       60%  |
+|  [========----]             |
+|  Online    Rs8K        40%  |
+|  [=====-------]             |
+|-----------------------------|
+| Incoming                    |
+|  Cash      Rs30K       45%  |
+|  [======------]             |
+|  Online    Rs37K       55%  |
+|  [========----]             |
++-----------------------------+
+```
 
-**"Track Your Transactions" step** -- a mini toggle mockup:
-- Two rounded pill buttons labeled "Expense" (red) and "Income" (green) rendered inline to show the user what the toggle looks like in the actual form
+## Technical Details
 
-### Technical approach:
-- Add a `SetupSuggestion` inline component rendered conditionally when `currentStep` matches the setup step index
-- Add a `TransactionTogglePreview` inline component rendered conditionally when `currentStep` matches the transaction step index
-- Update `baseSteps` array to include the new step and updated description
-- Adjust `isThemeStep` index calculation (it's already dynamic via `baseSteps.length`)
-- Import `Store`, `Grid3X3`, `SlidersHorizontal` icons from lucide-react
-
+- No new files or dependencies needed
+- Only two files modified: `AISummaryPage.tsx` (data computation) and `PaymentMethods.tsx` (UI)
+- The `formatAmount` helper already exists and will be reused
+- Animation delays will be staggered across both sections for a smooth entrance
