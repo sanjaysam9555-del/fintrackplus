@@ -1,35 +1,38 @@
 
 
-# Fix: Header Hidden Behind iOS Status Bar
+# Fix: Partner Form Keyboard Issue and Instant Display
 
-## Problem
-On iOS (PWA / home screen), the Dashboard header ("Good Evening, Saffron Events") is stuck behind the system status bar (time, battery, etc.). This happens because `env(safe-area-inset-top)` returns `0` with the current configuration, so the `safe-top` class only applies `1.5rem` (24px) — not enough for iPhones with the Dynamic Island.
+## Problem 1: Keyboard Hides After Each Letter
+The `PartnerForm` and `AvatarUploadButton` components are defined as **inline functions inside the `PartnersSection` component**. Every time a letter is typed into the Name input, `setName()` triggers a re-render of `PartnersSection`, which recreates these inline components from scratch. React sees them as entirely new components, unmounts the old input, and mounts a new one -- causing the keyboard to dismiss.
 
-## Root Cause
-The `<meta name="apple-mobile-web-app-status-bar-style">` is set to `"default"`, which renders content *below* a solid status bar — meaning `env(safe-area-inset-top)` returns `0`. The fallback padding of `1.5rem` is too small.
+**Fix**: Move `PartnerForm` and `AvatarUploadButton` out of the parent component, or use `useCallback`/stable references. The cleanest approach is to extract them as proper standalone components that receive props.
 
-## Solution
-Change the status bar style to `"black-translucent"`. This extends the web content behind the translucent status bar, causing `env(safe-area-inset-top)` to return the correct inset value (~47-59px depending on device). The existing `safe-top` utility already handles this with `max(1.5rem, env(safe-area-inset-top))`.
+## Problem 2: New Partner Not Showing Instantly
+The `partnerBalances` list is computed with `useMemo` that depends on `getPartnerBalancesForPeriod` and `dateRange`. The function `getPartnerBalancesForPeriod` comes from the Zustand store and its reference never changes, even when `partners` data updates. So the memo never recomputes after adding a partner.
 
-## Changes
+**Fix**: Add `partners` (from the store) as a dependency to the `useMemo` so it recomputes when the partners list changes. Also add `transactions` since balance calculations depend on them too.
 
-### 1. `index.html` (line 54)
-Change:
-```html
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+## Technical Changes
+
+### File: `src/components/settings/PartnersSection.tsx`
+
+**Change 1 -- Extract `AvatarUploadButton` and `PartnerForm` as stable components**
+
+Move the `AvatarUploadButton` JSX and `PartnerForm` JSX out of the `PartnersSection` render body. Instead, define them as separate React components (either outside the function or memoized) that accept the needed state/handlers as props. This prevents React from unmounting/remounting the input on every keystroke.
+
+**Change 2 -- Fix `partnerBalances` useMemo dependencies**
+
+```typescript
+// Before (stale):
+const partnerBalances = useMemo(() => {
+  return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
+}, [getPartnerBalancesForPeriod, dateRange]);
+
+// After (reactive):
+const partnerBalances = useMemo(() => {
+  return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
+}, [getPartnerBalancesForPeriod, dateRange, partners, transactions]);
 ```
-To:
-```html
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-```
 
-### 2. `src/index.css` — Update `safe-top` fallback
-Increase the fallback from `1.5rem` to `3.25rem` (52px) for cases where `env()` still isn't supported or returns 0 (e.g., some older Android WebViews):
+Adding `partners` and `transactions` ensures the memo recomputes whenever a partner is added/removed or transactions change.
 
-```css
-.safe-top {
-  padding-top: max(3.25rem, env(safe-area-inset-top));
-}
-```
-
-This is a two-line change. After applying it, re-adding the PWA to the home screen may be required for the meta tag change to take effect.
