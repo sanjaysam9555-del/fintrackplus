@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check, Tag } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, Wallet, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check, Tag, ArrowDown } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
@@ -55,7 +55,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
   const [archiveProject, setArchiveProject] = useState<Project | null>(null);
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] as string[] });
+  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[] });
   const [newLabelName, setNewLabelName] = useState('');
 
   const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1'];
@@ -71,12 +71,13 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       description: formData.description.trim(),
       internalCost: formData.internalCost,
       clientCost: formData.clientCost,
+      expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] });
+    setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] });
     setNewLabelName('');
   };
 
@@ -90,6 +91,8 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
   const totalInternalCost = relevantProjects.reduce((sum, p) => sum + p.internalCost, 0);
   const totalClientCost = relevantProjects.reduce((sum, p) => sum + (p.clientCost || 0), 0);
   const totalSpent = relevantProjects.reduce((sum, p) => sum + getProjectSpending(p.id), 0);
+  const totalIncome = relevantProjects.reduce((sum, p) => sum + getProjectIncome(p.id), 0);
+  const totalExpectedMargin = relevantProjects.reduce((sum, p) => sum + (p.expectedMargin || 0), 0);
 
   // Handle project duplication
   const handleDuplicate = (project: Project) => {
@@ -100,6 +103,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       notes: project.notes,
       internalCost: project.internalCost,
       clientCost: project.clientCost || 0,
+      expectedMargin: project.expectedMargin || 0,
       color: project.color,
     }, userId);
     toast.success(`Project "${project.name}" duplicated`);
@@ -166,7 +170,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             <Search size={18} className="text-muted-foreground" />
           </button>
           <button 
-            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}
+            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}
             className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             title="Add Project"
           >
@@ -217,10 +221,16 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                   onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
                 />
               </div>
+              <Input
+                type="number"
+                placeholder="Expected Margin (₹)"
+                value={formData.expectedMargin || ''}
+                onChange={(e) => setFormData({ ...formData, expectedMargin: Number(e.target.value) || 0 })}
+              />
               {(formData.internalCost > 0 || formData.clientCost > 0) && (
                 <div className="bg-muted/50 rounded-lg px-3 py-2 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Est. Net Margin</span>
-                  <span className={cn("text-sm font-semibold", computedMargin >= 0 ? "text-success" : "text-destructive")}>
+                  <span className={cn("text-sm font-semibold", computedMargin >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
                     ₹{computedMargin.toLocaleString()}
                   </span>
                 </div>
@@ -347,6 +357,16 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               </p>
             </div>
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
+              <div className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center">
+                <ArrowDown size={14} className="text-green-500" />
+              </div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
+              <p className="text-sm font-bold text-green-600 dark:text-green-400">
+                <span className="lg:hidden">₹{formatCompactCurrency(totalIncome, false)}</span>
+                <span className="hidden lg:inline">₹{totalIncome.toLocaleString()}</span>
+              </p>
+            </div>
+            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
               <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center">
                 <Receipt size={14} className="text-destructive" />
               </div>
@@ -357,15 +377,25 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
               </p>
             </div>
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", (totalClientCost - totalSpent) >= 0 ? "bg-success-light" : "bg-destructive/10")}>
+              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
+                <Wallet size={14} className="text-accent-foreground" />
+              </div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Exp. Margin</p>
+              <p className="text-sm font-bold text-foreground">
+                <span className="lg:hidden">₹{formatCompactCurrency(totalExpectedMargin, false)}</span>
+                <span className="hidden lg:inline">₹{totalExpectedMargin.toLocaleString()}</span>
+              </p>
+            </div>
+            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
+              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", (totalClientCost - totalSpent) >= 0 ? "bg-green-500/10" : "bg-destructive/10")}>
                 {(totalClientCost - totalSpent) >= 0 ? (
-                  <TrendingUp size={14} className="text-success" />
+                  <TrendingUp size={14} className="text-green-500" />
                 ) : (
                   <TrendingDown size={14} className="text-destructive" />
                 )}
               </div>
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-              <p className={cn("text-sm font-bold", (totalClientCost - totalSpent) >= 0 ? "text-success" : "text-destructive")}>
+              <p className={cn("text-sm font-bold", (totalClientCost - totalSpent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
                 <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost - totalSpent, false)}</span>
                 <span className="hidden lg:inline">₹{(totalClientCost - totalSpent).toLocaleString()}</span>
               </p>
@@ -602,7 +632,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                         </div>
                       )}
 
-                      {/* Compact Stats Row - 2x2 grid */}
+                      {/* Compact Stats Row - 3x2 grid */}
                       <div className="grid grid-cols-2 gap-x-3 gap-y-1">
                         <div>
                           <p className="text-[10px] text-muted-foreground">Client Cost</p>
@@ -613,18 +643,26 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           <p className="text-xs font-semibold text-foreground">₹{formatCompactCurrency(project.internalCost, false)}</p>
                         </div>
                         <div>
+                          <p className="text-[10px] text-muted-foreground">Income</p>
+                          <p className="text-xs font-semibold text-green-600 dark:text-green-400">₹{formatCompactCurrency(income, false)}</p>
+                        </div>
+                        <div>
                           <p className="text-[10px] text-muted-foreground">Expenses</p>
                           <p className="text-xs font-semibold text-destructive">₹{formatCompactCurrency(spent, false)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground">Exp. Margin</p>
+                          <p className="text-xs font-semibold text-foreground">₹{formatCompactCurrency(project.expectedMargin || 0, false)}</p>
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground">Net Margin</p>
                           <div className="flex items-center gap-0.5">
                             {((project.clientCost || 0) - spent) >= 0 ? (
-                              <TrendingUp size={10} className="text-success" />
+                              <TrendingUp size={10} className="text-green-500" />
                             ) : (
                               <TrendingDown size={10} className="text-destructive" />
                             )}
-                            <p className={cn("text-xs font-semibold", ((project.clientCost || 0) - spent) >= 0 ? "text-success" : "text-destructive")}>
+                            <p className={cn("text-xs font-semibold", ((project.clientCost || 0) - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
                               ₹{formatCompactCurrency(Math.abs((project.clientCost || 0) - spent), false)}
                             </p>
                           </div>

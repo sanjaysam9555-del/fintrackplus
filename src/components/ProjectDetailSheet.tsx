@@ -255,7 +255,7 @@ export const ProjectDetailSheet = ({
             </div>
           ) : (
           <div className="p-3 space-y-4 w-full min-w-0">
-            {/* Financial Summary - 2x2 Grid */}
+            {/* Financial Summary - 3x2 Grid */}
             <div className="grid grid-cols-2 gap-2 w-full">
               <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
                 <p className="text-[10px] text-muted-foreground">Client Cost</p>
@@ -265,6 +265,13 @@ export const ProjectDetailSheet = ({
                 <p className="text-[10px] text-muted-foreground">Internal Cost</p>
                 <p className="text-base font-bold truncate">₹{project.internalCost.toLocaleString()}</p>
               </div>
+              <div className="bg-green-500/10 rounded-lg p-2 overflow-hidden">
+                <p className="text-[10px] text-muted-foreground">Income</p>
+                <div className="flex items-center gap-1 min-w-0">
+                  <ArrowDown size={12} className="text-green-500 shrink-0" />
+                  <p className="text-base font-bold text-green-600 dark:text-green-400 truncate">₹{income.toLocaleString()}</p>
+                </div>
+              </div>
               <div className="bg-red-500/10 rounded-lg p-2 overflow-hidden">
                 <p className="text-[10px] text-muted-foreground">Expenses</p>
                 <div className="flex items-center gap-1 min-w-0">
@@ -272,9 +279,13 @@ export const ProjectDetailSheet = ({
                   <p className="text-base font-bold text-red-500 truncate">₹{spent.toLocaleString()}</p>
                 </div>
               </div>
+              <div className="bg-muted/50 rounded-lg p-2 overflow-hidden">
+                <p className="text-[10px] text-muted-foreground">Expected Margin</p>
+                <p className="text-base font-bold truncate">₹{(project.expectedMargin || 0).toLocaleString()}</p>
+              </div>
               <div className={cn("rounded-lg p-2 overflow-hidden", (project.clientCost - spent) >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
                 <p className="text-[10px] text-muted-foreground">Net Margin</p>
-                <p className={cn("text-base font-bold truncate", (project.clientCost - spent) >= 0 ? "text-green-500" : "text-red-500")}>
+                <p className={cn("text-base font-bold truncate", (project.clientCost - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-500")}>
                   ₹{(project.clientCost - spent).toLocaleString()}
                 </p>
               </div>
