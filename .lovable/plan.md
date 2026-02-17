@@ -1,38 +1,41 @@
 
 
-# Fix: Partner Form Keyboard Issue and Instant Display
+# Fix: Negative Balance Display in Red
 
-## Problem 1: Keyboard Hides After Each Letter
-The `PartnerForm` and `AvatarUploadButton` components are defined as **inline functions inside the `PartnersSection` component**. Every time a letter is typed into the Name input, `setName()` triggers a re-render of `PartnersSection`, which recreates these inline components from scratch. React sees them as entirely new components, unmounts the old input, and mounts a new one -- causing the keyboard to dismiss.
+## Problem
+1. The Balance summary card on the Home Tab always shows in the default text color, even when the balance is negative (expenses exceed income). It should show green for positive and red for negative.
+2. The Cash Flow Trend card always displays the absolute value of the net amount in the default color, without indicating whether it's positive or negative.
 
-**Fix**: Move `PartnerForm` and `AvatarUploadButton` out of the parent component, or use `useCallback`/stable references. The cleanest approach is to extract them as proper standalone components that receive props.
+## Changes
 
-## Problem 2: New Partner Not Showing Instantly
-The `partnerBalances` list is computed with `useMemo` that depends on `getPartnerBalancesForPeriod` and `dateRange`. The function `getPartnerBalancesForPeriod` comes from the Zustand store and its reference never changes, even when `partners` data updates. So the memo never recomputes after adding a partner.
+### 1. `src/components/SummaryCard.tsx`
+- Make the balance card's text color dynamic based on the `amount` value
+- When `type === 'balance'` and `amount < 0`, use `text-destructive` (red); when `amount >= 0`, use `text-success` (green)
+- Add a minus sign prefix for negative balance values
+- Update the `AnimatedNumber` usage so that for the balance type, it shows `-` when negative and no prefix when positive
 
-**Fix**: Add `partners` (from the store) as a dependency to the `useMemo` so it recomputes when the partners list changes. Also add `transactions` since balance calculations depend on them too.
+### 2. `src/components/CashFlowChart.tsx`
+- Make the total net amount text color dynamic: green when positive, red when negative
+- Show a `-` prefix when `totalNet` is negative
+- Update the selected point display similarly
 
-## Technical Changes
+## Technical Details
 
-### File: `src/components/settings/PartnersSection.tsx`
+**SummaryCard.tsx changes:**
+- In the component body, determine the balance text color dynamically:
+  ```typescript
+  const textColor = type === 'balance'
+    ? (amount >= 0 ? 'text-success' : 'text-destructive')
+    : colors.text;
+  ```
+- For the balance prefix, use: `type === 'balance' && amount < 0 ? '-' : (type === 'expense' ? '-' : '')`
+- Also update the icon background color for balance to reflect positive/negative
 
-**Change 1 -- Extract `AvatarUploadButton` and `PartnerForm` as stable components**
-
-Move the `AvatarUploadButton` JSX and `PartnerForm` JSX out of the `PartnersSection` render body. Instead, define them as separate React components (either outside the function or memoized) that accept the needed state/handlers as props. This prevents React from unmounting/remounting the input on every keystroke.
-
-**Change 2 -- Fix `partnerBalances` useMemo dependencies**
-
-```typescript
-// Before (stale):
-const partnerBalances = useMemo(() => {
-  return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
-}, [getPartnerBalancesForPeriod, dateRange]);
-
-// After (reactive):
-const partnerBalances = useMemo(() => {
-  return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
-}, [getPartnerBalancesForPeriod, dateRange, partners, transactions]);
-```
-
-Adding `partners` and `transactions` ensures the memo recomputes whenever a partner is added/removed or transactions change.
-
+**CashFlowChart.tsx changes:**
+- Change the total net display to use conditional coloring:
+  ```typescript
+  <p className={cn("text-2xl font-bold", totalNet >= 0 ? "text-success" : "text-destructive")}>
+    {totalNet < 0 ? '-' : ''}₹{formatCurrency(Math.abs(totalNet))}
+  </p>
+  ```
+- Same for `selectedPoint.net` display
