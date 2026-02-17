@@ -467,11 +467,10 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                 const spent = getProjectSpending(project.id);
                 const income = getProjectIncome(project.id);
                 const net = income - spent;
-                const remaining = project.internalCost - spent;
-                const healthStatus: HealthStatus = spent <= project.internalCost ? 'healthy' : spent <= project.internalCost * 1.2 ? 'at-risk' : 'critical';
-                const budgetPercent = project.internalCost > 0 ? Math.min((spent / project.internalCost) * 100, 100) : 0;
+                const budgetPercent = income > 0 ? Math.min((spent / income) * 100, 100) : 0;
+                const healthStatus: HealthStatus = budgetPercent < 80 ? 'healthy' : budgetPercent < 100 ? 'at-risk' : 'critical';
                 const transactionCount = getProjectTransactions(project.id).length;
-                const isOverBudget = spent > project.internalCost && project.internalCost > 0;
+                const isOverBudget = income > 0 && spent > income;
 
                 return (
                   <motion.div
@@ -714,17 +713,17 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                         className="w-full px-3 pb-2.5 pt-2 text-left hover:bg-accent/30 transition-colors"
                       >
                         {/* Budget Progress with inline stats */}
-                        {project.internalCost > 0 && (
+                        {income > 0 && (
                           <div className="mb-2">
                             <div className="flex justify-between items-center mb-1">
                               <span className="text-[10px] text-muted-foreground">
-                                ₹{formatCompactCurrency(spent, false)} / ₹{formatCompactCurrency(project.internalCost, false)}
+                                ₹{formatCompactCurrency(spent, false)} / ₹{formatCompactCurrency(income, false)}
                               </span>
                               <span className={cn(
                                 "text-[10px] font-medium",
-                                isOverBudget ? "text-destructive" : "text-muted-foreground"
+                                budgetPercent >= 80 ? "text-destructive" : budgetPercent >= 60 ? "text-amber-500" : "text-muted-foreground"
                               )}>
-                                {isOverBudget ? 'Over budget!' : `${Math.round(budgetPercent)}%`}
+                                {isOverBudget ? 'Over income!' : `${Math.round(budgetPercent)}%`}
                               </span>
                             </div>
                             <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -734,7 +733,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                                 transition={{ duration: 0.5, ease: "easeOut" }}
                                 className="h-full rounded-full"
                                 style={{
-                                  backgroundColor: isOverBudget ? 'hsl(var(--destructive))' : project.color,
+                                  backgroundColor: budgetPercent >= 80 ? 'hsl(var(--destructive))' : budgetPercent >= 60 ? 'hsl(38, 92%, 50%)' : project.color,
                                 }}
                               />
                             </div>
