@@ -114,6 +114,14 @@ const Index = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+  const handleEditSheetChange = useCallback((open: boolean) => {
+    setIsEditSheetOpen(open);
+    if (!open) {
+      requestAnimationFrame(() => {
+        scrollContainerRef.current?.scrollTo({ top: 0 });
+      });
+    }
+  }, []);
   const { syncStatus } = useFinanceStore();
   const { user } = useAuth();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -173,7 +181,18 @@ const Index = () => {
     }
   }, [syncStatus]);
   
+  const resetScrollPosition = useCallback(() => {
+    // iOS PWA: reset scroll after sheets close to prevent safe-area spacing drift
+    requestAnimationFrame(() => {
+      scrollContainerRef.current?.scrollTo({ top: 0 });
+    });
+  }, []);
+
   const handleOpenAddSheet = () => setIsAddSheetOpen(true);
+  const handleCloseAddSheet = useCallback(() => {
+    setIsAddSheetOpen(false);
+    resetScrollPosition();
+  }, [resetScrollPosition]);
   const handleOpenSearch = useCallback(() => setIsSearchOpen(true), []);
   
   const navigatedFromHome = useRef(false);
@@ -260,25 +279,25 @@ const Index = () => {
             pendingCount={pendingCount}
             userId={user?.id}
             onSearchClick={handleOpenSearch}
-            onEditSheetChange={setIsEditSheetOpen}
+            onEditSheetChange={handleEditSheetChange}
           />
         );
       case 'expenses':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="expense" userId={user?.id} onEditSheetChange={setIsEditSheetOpen} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
+            <TransactionList type="expense" userId={user?.id} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
           </Suspense>
         );
       case 'income':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="income" userId={user?.id} onEditSheetChange={setIsEditSheetOpen} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
+            <TransactionList type="income" userId={user?.id} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
           </Suspense>
         );
       case 'projects':
         return (
           <Suspense fallback={<ContentSkeleton />}>
-            <ProjectOverviewPage userId={user?.id} onEditSheetChange={setIsEditSheetOpen} onSearchClick={handleOpenSearch} />
+            <ProjectOverviewPage userId={user?.id} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} />
           </Suspense>
         );
       case 'ai':
@@ -367,7 +386,7 @@ const Index = () => {
         <Suspense fallback={null}>
           <AddTransactionSheet
             isOpen={isAddSheetOpen}
-            onClose={() => setIsAddSheetOpen(false)}
+            onClose={handleCloseAddSheet}
             userId={user?.id}
           />
         </Suspense>
