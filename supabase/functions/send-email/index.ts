@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const LOGO_URL = "https://ilgoprsvztbqocbshtoe.supabase.co/storage/v1/object/public/avatars/fintrack-logo.png";
+const LOGO_URL = "https://bright-balance-beam.lovable.app/app-icon-192.png";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,7 +63,7 @@ function getEmailContent(actionType: string, name: string, actionUrl: string) {
         <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06);">
           <!-- Header -->
           <tr>
-            <td style="padding:32px 32px 24px;text-align:center;background:linear-gradient(135deg,#f97316,#ea580c);">
+            <td style="padding:32px 32px 24px;text-align:center;background:linear-gradient(135deg,#1665B8,#114E91);">
               <img src="${LOGO_URL}" alt="FinTrack+" width="56" height="56" style="border-radius:12px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;" />
               <h1 style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.3px;">FinTrack+</h1>
             </td>
@@ -77,7 +77,7 @@ function getEmailContent(actionType: string, name: string, actionUrl: string) {
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td align="center">
-                    <a href="${actionUrl}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#f97316,#ea580c);color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:10px;letter-spacing:0.2px;">
+                    <a href="${actionUrl}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#1665B8,#114E91);color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:10px;letter-spacing:0.2px;">
                       ${config.buttonText}
                     </a>
                   </td>
@@ -91,7 +91,7 @@ function getEmailContent(actionType: string, name: string, actionUrl: string) {
             <td style="padding:20px 32px;text-align:center;border-top:1px solid #f4f4f5;">
               <p style="margin:0;font-size:12px;color:#a1a1aa;">An app by <strong>Saffron Events</strong></p>
               <p style="margin:4px 0 0;font-size:12px;color:#a1a1aa;">
-                <a href="https://fintrackplus.com" style="color:#f97316;text-decoration:none;">fintrackplus.com</a>
+                <a href="https://fintrackplus.com" style="color:#1665B8;text-decoration:none;">fintrackplus.com</a>
               </p>
             </td>
           </tr>
