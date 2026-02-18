@@ -1,6 +1,7 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
+const HOOK_SECRET = Deno.env.get("SEND_EMAIL_HOOK_SECRET")!;
 const LOGO_URL = "https://ilgoprsvztbqocbshtoe.supabase.co/storage/v1/object/public/avatars/fintrack-logo.png";
 
 const corsHeaders = {
@@ -126,25 +127,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const payload: EmailHookPayload = await req.json();
-    const { user, email_data } = payload;
+    // Verify the webhook signature
+    const payload = await req.text();
+    const headers = Object.fromEntries(req.headers);
+    const wh = new Webhook(HOOK_SECRET.replace("v1,whsec_", ""));
+    
+    const { user, email_data } = wh.verify(payload, headers) as EmailHookPayload;
 
-    const name = user.user_metadata?.name || "there";
+    const name = user?.user_metadata?.name || "there";
     const email = user.email;
     const actionType = email_data.email_action_type;
 
     // Build the confirmation URL
-    let actionUrl: string;
-    if (actionType === "recovery") {
-      // For password reset, use token_hash with type=recovery
-      actionUrl = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=recovery&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
-    } else if (actionType === "signup") {
-      actionUrl = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=signup&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
-    } else if (actionType === "email_change") {
-      actionUrl = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=email_change&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
-    } else {
-      actionUrl = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=${actionType}&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
-    }
+    const actionUrl = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=${actionType}&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
 
     const { subject, html } = getEmailContent(actionType, name, actionUrl);
 
