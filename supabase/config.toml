@@ -8,3 +8,11 @@ additional_redirect_urls = [
   "https://fintrackplus.com/application/reset-password",
   "https://app.fintrackplus.com/reset-password"
 ]
+
+[auth.hook.send_email]
+enabled = true
+uri = "https://ilgoprsvztbqocbshtoe.supabase.co/functions/v1/send-email"
+secrets = "env(SEND_EMAIL_HOOK_SECRET)"
+
+[functions.send-email]
+verify_jwt = false
