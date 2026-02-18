@@ -71,10 +71,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: getAuthRedirectUrl('/reset-password'),
-    });
-    return { error };
+    try {
+      const redirectTo = getAuthRedirectUrl('/reset-password');
+      const { data, error: invokeError } = await supabase.functions.invoke('send-email', {
+        body: { email, type: 'recovery', redirectTo },
+      });
+      if (invokeError) {
+        return { error: new Error(invokeError.message || 'Failed to send reset email') };
+      }
+      if (data?.error) {
+        return { error: new Error(data.error) };
+      }
+      return { error: null };
+    } catch (err: any) {
+      return { error: new Error(err.message || 'Failed to send reset email') };
+    }
   };
 
   const updatePassword = async (newPassword: string) => {
