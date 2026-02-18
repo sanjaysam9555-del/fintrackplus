@@ -84,11 +84,14 @@ const ForgotPasswordScreen = ({ onBack }: { onBack: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log('[PasswordReset] Triggering reset for:', email);
     const { error } = await resetPassword(email);
     setIsLoading(false);
     if (error) {
+      console.error('[PasswordReset] Error:', error);
       toast.error(error.message);
     } else {
+      console.log('[PasswordReset] Request succeeded for:', email);
       setSent(true);
     }
   };
@@ -107,6 +110,9 @@ const ForgotPasswordScreen = ({ onBack }: { onBack: () => void }) => {
           <h2 className="text-xl font-bold text-foreground mb-2">Email Sent</h2>
           <p className="text-sm text-muted-foreground">
             If an account exists for <span className="font-semibold text-foreground">{email}</span>, you'll receive a password reset link.
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Don't forget to check your spam/junk folder.
           </p>
         </div>
         <button

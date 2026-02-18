@@ -1,1 +1,10 @@
 project_id = "ilgoprsvztbqocbshtoe"
+
+[auth]
+site_url = "https://bright-balance-beam.lovable.app"
+additional_redirect_urls = [
+  "https://bright-balance-beam.lovable.app/reset-password",
+  "https://id-preview--79a3e63b-a41d-4b9c-bf1d-9935381d7325.lovable.app/reset-password",
+  "https://fintrackplus.com/application/reset-password",
+  "https://app.fintrackplus.com/reset-password"
+]
