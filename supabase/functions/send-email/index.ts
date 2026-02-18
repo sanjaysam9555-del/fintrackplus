@@ -1,4 +1,8 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const LOGO_URL = "https://ilgoprsvztbqocbshtoe.supabase.co/storage/v1/object/public/avatars/fintrack-logo.png";
 
 const corsHeaders = {
@@ -6,24 +10,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
 };
-
-interface EmailHookPayload {
-  user: {
-    email: string;
-    user_metadata?: {
-      name?: string;
-    };
-  };
-  email_data: {
-    token: string;
-    token_hash: string;
-    redirect_to: string;
-    email_action_type: string;
-    site_url: string;
-    token_new?: string;
-    token_hash_new?: string;
-  };
-}
 
 function getEmailContent(actionType: string, name: string, actionUrl: string) {
   const configs: Record<string, { subject: string; heading: string; body: string; buttonText: string }> = {
@@ -124,16 +110,52 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { user, email_data } = await req.json() as EmailHookPayload;
+    const { email, type, redirectTo } = await req.json();
 
-    const name = user?.user_metadata?.name || "there";
-    const email = user.email;
-    const actionType = email_data.email_action_type;
+    if (!email || !type) {
+      return new Response(
+        JSON.stringify({ error: "Missing email or type" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
-    // Build the confirmation URL
-    const actionUrl = `${email_data.site_url}/auth/v1/verify?token=${email_data.token_hash}&type=${actionType}&redirect_to=${encodeURIComponent(email_data.redirect_to)}`;
+    // Create admin client to generate secure link
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
 
-    const { subject, html } = getEmailContent(actionType, name, actionUrl);
+    // Look up user to get their name
+    const { data: userData } = await supabaseAdmin.auth.admin.listUsers();
+    const foundUser = userData?.users?.find((u) => u.email === email);
+    const name = foundUser?.user_metadata?.name || "there";
+
+    // Generate secure action link
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: type === "recovery" ? "recovery" : "magiclink",
+      email,
+      options: {
+        redirectTo: redirectTo || "https://bright-balance-beam.lovable.app/reset-password",
+      },
+    });
+
+    if (linkError || !linkData) {
+      console.error("generateLink error:", linkError);
+      return new Response(
+        JSON.stringify({ error: linkError?.message || "Failed to generate link" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const actionUrl = linkData.properties?.action_link;
+    if (!actionUrl) {
+      console.error("No action_link in response:", linkData);
+      return new Response(
+        JSON.stringify({ error: "No action link generated" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { subject, html } = getEmailContent(type, name, actionUrl);
 
     // Send via Resend
     const resendRes = await fetch("https://api.resend.com/emails", {
@@ -160,7 +182,7 @@ Deno.serve(async (req) => {
     }
 
     const resendData = await resendRes.json();
-    console.log("Email sent successfully:", resendData.id);
+    console.log("Branded email sent successfully:", resendData.id);
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
