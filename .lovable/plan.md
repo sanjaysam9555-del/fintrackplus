@@ -1,35 +1,34 @@
 
-# Fix: Branded Password Reset Emails
+
+# Fix: Brand Colors and Logo in Password Reset Email
 
 ## Problem
-The `[auth.hook.send_email]` config in `config.toml` is ignored by Lovable Cloud -- it uses its own internal email proxy. So your branded Edge Function never gets called, and users receive the default unbranded email.
+Two issues with the current email template:
 
-## Solution
-Call the `send-email` Edge Function **directly from your app** instead of relying on the auth hook. The function will use the Admin API to generate a secure password reset link, then send the branded email via Resend.
+1. **Wrong colors**: The email uses orange (`#f97316`) for the header gradient and button, but your app's primary brand color is **Denim Blue** (`hsl(214, 78%, 40%)` -- approximately `#1665B8`).
+2. **Missing logo**: The logo URL points to a storage bucket file (`avatars/fintrack-logo.png`) that doesn't exist, so the image appears broken in the email.
 
-This means the default `supabase.auth.resetPasswordForEmail()` is no longer used for password reset -- your Edge Function handles everything.
-
-## Changes
+## Fix
 
 ### 1. Update `supabase/functions/send-email/index.ts`
-- Accept a direct request: `{ email, type: "recovery", redirectTo: "..." }`
-- Use `SUPABASE_SERVICE_ROLE_KEY` (already available) to create a Supabase Admin client
-- Call `supabase.auth.admin.generateLink({ type: "recovery", email })` to get a secure reset link
-- Send the branded email with that link via Resend
-- Keep the existing email template and branding intact
 
-### 2. Update `src/hooks/useAuth.tsx`
-- Change `resetPassword()` to call the Edge Function directly instead of `supabase.auth.resetPasswordForEmail()`
-- Use `supabase.functions.invoke('send-email', { body: { email, type: 'recovery', redirectTo } })`
+**Logo**: Replace the broken storage URL with the publicly accessible app icon from your published site:
+```
+https://bright-balance-beam.lovable.app/app-icon-192.png
+```
 
-### 3. Clean up `supabase/config.toml`
-- Remove the `[auth.hook.send_email]` section since it doesn't work on Lovable Cloud
+**Colors**: Replace all orange references with Denim Blue brand colors:
+- Header gradient: `#f97316` / `#ea580c` (orange) --> `#1665B8` / `#114E91` (denim blue)
+- Button gradient: same change
+- Footer link color: `#f97316` --> `#1665B8`
 
-## What stays the same
-- The branded email template (logo, gradient header, Saffron Events footer) -- already built
-- The password reset page at `/reset-password` -- already works
-- The Resend API key -- already configured
-- The user experience on the Auth page -- identical flow
+No other files need to change -- only the email HTML template inside the edge function.
 
-## Technical Detail
-The `SUPABASE_SERVICE_ROLE_KEY` secret is already available in Edge Functions. The `admin.generateLink()` API returns a proper action link that, when clicked, logs the user in with a recovery session -- exactly like the default flow, but with your branded email.
+### Technical Details
+
+The color mapping:
+- `#1665B8` -- primary denim blue (matches `hsl(214, 78%, 40%)`)
+- `#114E91` -- darker shade for gradient depth
+- These match the `--primary` CSS variable used throughout the app
+
+After updating, the function will be redeployed so the next password reset email will arrive with the correct blue branding and a visible logo.
