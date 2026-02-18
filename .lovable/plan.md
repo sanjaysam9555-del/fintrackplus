@@ -1,34 +1,28 @@
 
 
-# Fix: Brand Colors and Logo in Password Reset Email
+# Fix: Top Spacing Increases After Closing Transaction Forms (iOS PWA)
 
 ## Problem
-Two issues with the current email template:
+On iPhone PWA, the spacing between the notch and the "Good Evening" text is perfect on initial load. But after opening and closing the Add Transaction or Edit Transaction form, the top spacing grows larger than it should be.
 
-1. **Wrong colors**: The email uses orange (`#f97316`) for the header gradient and button, but your app's primary brand color is **Denim Blue** (`hsl(214, 78%, 40%)` -- approximately `#1665B8`).
-2. **Missing logo**: The logo URL points to a storage bucket file (`avatars/fintrack-logo.png`) that doesn't exist, so the image appears broken in the email.
+This happens because:
+- When the bottom sheet opens and the keyboard appears, iOS adjusts the visual viewport
+- When the sheet closes, the main scroll container's scroll position doesn't reset properly, leaving the content shifted down
+- The `safe-top` padding stacks with an incorrect scroll offset, creating extra visible space
 
-## Fix
+## Solution
+Reset the scroll position of the main content container when transaction sheets close. This ensures the Dashboard header snaps back to its correct position after any sheet interaction.
 
-### 1. Update `supabase/functions/send-email/index.ts`
+## Changes
 
-**Logo**: Replace the broken storage URL with the publicly accessible app icon from your published site:
-```
-https://bright-balance-beam.lovable.app/app-icon-192.png
-```
+### 1. `src/pages/Index.tsx`
+- In the `onClose` callback for `AddTransactionSheet`, scroll the main content container back to the top
+- In the `onClose` callback for the edit sheet state change, do the same
+- Add a small helper that resets `scrollContainerRef.current.scrollTop = 0` when sheets close
 
-**Colors**: Replace all orange references with Denim Blue brand colors:
-- Header gradient: `#f97316` / `#ea580c` (orange) --> `#1665B8` / `#114E91` (denim blue)
-- Button gradient: same change
-- Footer link color: `#f97316` --> `#1665B8`
+### 2. `src/components/AddTransactionSheet.tsx`
+- No changes needed to the sheet itself -- the fix is in the parent that manages scroll
 
-No other files need to change -- only the email HTML template inside the edge function.
+### Technical Detail
+The `scrollContainerRef` in `Index.tsx` (line 119) already exists and is attached to the main scrollable div (line 332). The fix simply calls `scrollContainerRef.current?.scrollTo({ top: 0 })` when sheets close, which is a minimal and reliable fix for the iOS viewport shift issue.
 
-### Technical Details
-
-The color mapping:
-- `#1665B8` -- primary denim blue (matches `hsl(214, 78%, 40%)`)
-- `#114E91` -- darker shade for gradient depth
-- These match the `--primary` CSS variable used throughout the app
-
-After updating, the function will be redeployed so the next password reset email will arrive with the correct blue branding and a visible logo.
