@@ -1,37 +1,80 @@
 
 
-# Fix: Password Reset Emails Not Being Sent
+# Branded Auth Emails via Resend
 
-## Root Cause
+## Overview
+Create a backend function that intercepts all authentication emails (password reset, email verification, magic links) and sends them through Resend with FinTrack+ branding -- your logo, app name, and sent from your own domain.
 
-The `resetPasswordForEmail` call includes a `redirectTo` URL, but the authentication system requires redirect URLs to be explicitly whitelisted. Currently, none of the app's URLs (preview, published, or custom domain) are configured as allowed redirect URLs, so the reset email is silently not sent.
+## What Changes
 
-Additionally, the client-side code doesn't surface errors clearly when the API call fails -- if the call returns an error, the toast shows it, but if the call "succeeds" without actually sending an email (due to redirect URL restrictions), the user sees the "Email Sent" confirmation screen with no email arriving.
+### 1. Store the Resend API Key
+Your API key will be securely stored as a backend secret (`RESEND_API_KEY`) so the email function can use it.
 
-## Changes
+### 2. Create the Email Sending Function
+A new backend function (`send-email`) will handle all auth-related emails. When the authentication system needs to send an email (password reset, signup verification, etc.), it will call this function instead of the default email provider.
 
-### 1. Configure Allowed Redirect URLs
+The function will:
+- Receive the email event (reset, signup, invite, etc.)
+- Build a professionally branded HTML email with:
+  - FinTrack+ logo (from your app icon)
+  - "FinTrack+" brand name in the header
+  - Clean, modern email template with your brand colors
+  - Proper footer with "Saffron Events" attribution
+- Send it via Resend from `no-reply@fintrackplus.com`
 
-Use the Lovable Cloud auth configuration tool to add the following redirect URLs to the allowed list:
+### 3. Configure the Auth Email Hook
+Update the backend configuration so the authentication system routes all emails through your new function instead of the default sender.
 
-- `https://bright-balance-beam.lovable.app/reset-password` (published domain)
-- `https://id-preview--79a3e63b-a41d-4b9c-bf1d-9935381d7325.lovable.app/reset-password` (preview domain)
-- `https://fintrackplus.com/application/reset-password` (custom domain, landing)
-- `https://app.fintrackplus.com/reset-password` (custom domain, app subdomain)
+## Email Template Design
 
-Also set the Site URL to the published domain so the auth system has a proper base URL.
+```text
++----------------------------------+
+|        [FinTrack+ Logo]          |
+|          FinTrack+               |
+|----------------------------------|
+|                                  |
+|   Hi [Name],                     |
+|                                  |
+|   [Context message based on      |
+|    email type]                   |
+|                                  |
+|   [ Click Here to Reset ]        |
+|                                  |
+|   If you didn't request this,    |
+|   you can safely ignore it.      |
+|                                  |
+|----------------------------------|
+|   An app by Saffron Events       |
+|   fintrackplus.com               |
++----------------------------------+
+```
 
-### 2. Improve Error Handling in `src/pages/Auth.tsx`
+Supported email types:
+- **Password Reset** -- "Reset Your Password"
+- **Email Verification (Signup)** -- "Verify Your Email"
+- **Magic Link** -- "Your Login Link"
+- **Email Change** -- "Confirm Email Change"
+- **Reauthentication** -- "Confirm Your Identity"
 
-In the `ForgotPasswordScreen` component, add a console log when the reset is triggered so we can trace issues in the future. Also add a small note below the success screen telling users to check their spam folder, to cover cases where the email lands in spam.
-
-### 3. Verify the Fix
-
-After configuring the redirect URLs, test the password reset flow end-to-end by triggering a reset from the preview domain and confirming the email arrives.
+## Sender Details
+- **From**: `FinTrack+ <no-reply@fintrackplus.com>`
+- **Reply-to**: none (no-reply address)
 
 ## Technical Details
 
-- Only one file needs code changes: `src/pages/Auth.tsx` (minor improvement to the forgot password UX)
-- The main fix is a backend configuration change to whitelist redirect URLs
-- No new dependencies or files required
+### Files created
+- `supabase/functions/send-email/index.ts` -- Edge function that receives auth webhook events, builds branded HTML, and sends via Resend API
+
+### Files modified
+- `supabase/config.toml` -- Add `[auth.hook.send_email]` configuration pointing to the new function, with `verify_jwt = false` for the function
+
+### Secrets added
+- `RESEND_API_KEY` -- Your Resend API key for sending emails
+
+### How it works
+1. User triggers a password reset (or signup, etc.)
+2. The auth system fires a webhook to the `send-email` function
+3. The function validates the webhook, builds a branded HTML email
+4. Resend sends the email from `no-reply@fintrackplus.com`
+5. User receives a professionally branded email with the correct action link
 
