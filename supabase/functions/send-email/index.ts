@@ -1,7 +1,4 @@
-import { Webhook } from "https://esm.sh/standardwebhooks@1.0.0";
-
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")!;
-const HOOK_SECRET = Deno.env.get("SEND_EMAIL_HOOK_SECRET")!;
 const LOGO_URL = "https://ilgoprsvztbqocbshtoe.supabase.co/storage/v1/object/public/avatars/fintrack-logo.png";
 
 const corsHeaders = {
@@ -127,12 +124,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Verify the webhook signature
-    const payload = await req.text();
-    const headers = Object.fromEntries(req.headers);
-    const wh = new Webhook(HOOK_SECRET.replace("v1,whsec_", ""));
-    
-    const { user, email_data } = wh.verify(payload, headers) as EmailHookPayload;
+    const { user, email_data } = await req.json() as EmailHookPayload;
 
     const name = user?.user_metadata?.name || "there";
     const email = user.email;
