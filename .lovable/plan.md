@@ -1,60 +1,37 @@
 
-# Payment Methods Card: Split by Income and Expense
 
-## Problem
-The Payment Methods card currently only shows expense data (Cash vs Online) with no indication that it's expense-only. Users can't tell whether the split applies to incoming or outgoing money.
+# Fix: Password Reset Emails Not Being Sent
 
-## Solution
-Restructure the card into two clearly labeled sections -- **Outgoing (Expenses)** and **Incoming (Income)** -- each showing its own Cash/Online split with progress bars.
+## Root Cause
+
+The `resetPasswordForEmail` call includes a `redirectTo` URL, but the authentication system requires redirect URLs to be explicitly whitelisted. Currently, none of the app's URLs (preview, published, or custom domain) are configured as allowed redirect URLs, so the reset email is silently not sent.
+
+Additionally, the client-side code doesn't surface errors clearly when the API call fails -- if the call returns an error, the toast shows it, but if the call "succeeds" without actually sending an email (due to redirect URL restrictions), the user sees the "Email Sent" confirmation screen with no email arriving.
 
 ## Changes
 
-### 1. `src/components/AISummaryPage.tsx` -- Compute income payment split
+### 1. Configure Allowed Redirect URLs
 
-Update the `paymentSplit` memo to also calculate income by payment method:
+Use the Lovable Cloud auth configuration tool to add the following redirect URLs to the allowed list:
 
-```
-paymentSplit = {
-  expenseCash, expenseOnline,
-  incomeCash, incomeOnline
-}
-```
+- `https://bright-balance-beam.lovable.app/reset-password` (published domain)
+- `https://id-preview--79a3e63b-a41d-4b9c-bf1d-9935381d7325.lovable.app/reset-password` (preview domain)
+- `https://fintrackplus.com/application/reset-password` (custom domain, landing)
+- `https://app.fintrackplus.com/reset-password` (custom domain, app subdomain)
 
-Update the `PaymentMethods` component usage to pass all four values.
+Also set the Site URL to the published domain so the auth system has a proper base URL.
 
-### 2. `src/components/ai-summary/PaymentMethods.tsx` -- Redesign with two sections
+### 2. Improve Error Handling in `src/pages/Auth.tsx`
 
-- Update the props interface to accept `expenseCash`, `expenseOnline`, `incomeCash`, `incomeOnline`
-- Extract a reusable `PaymentMethodBar` helper that renders a single Cash/Online row with icon, amount, percentage, and animated progress bar
-- Render two labeled sub-sections inside the card:
-  - **Outgoing** (with a red/destructive accent) showing expense Cash vs Online
-  - **Incoming** (with a green/emerald accent) showing income Cash vs Online
-- Each section only renders if its total is greater than zero
-- A thin separator divides the two sections when both are visible
+In the `ForgotPasswordScreen` component, add a console log when the reset is triggered so we can trace issues in the future. Also add a small note below the success screen telling users to check their spam folder, to cover cases where the email lands in spam.
 
-### Updated card layout (conceptual):
+### 3. Verify the Fix
 
-```text
-+-----------------------------+
-| Payment Methods             |
-|-----------------------------|
-| Outgoing                    |
-|  Cash      Rs12K       60%  |
-|  [========----]             |
-|  Online    Rs8K        40%  |
-|  [=====-------]             |
-|-----------------------------|
-| Incoming                    |
-|  Cash      Rs30K       45%  |
-|  [======------]             |
-|  Online    Rs37K       55%  |
-|  [========----]             |
-+-----------------------------+
-```
+After configuring the redirect URLs, test the password reset flow end-to-end by triggering a reset from the preview domain and confirming the email arrives.
 
 ## Technical Details
 
-- No new files or dependencies needed
-- Only two files modified: `AISummaryPage.tsx` (data computation) and `PaymentMethods.tsx` (UI)
-- The `formatAmount` helper already exists and will be reused
-- Animation delays will be staggered across both sections for a smooth entrance
+- Only one file needs code changes: `src/pages/Auth.tsx` (minor improvement to the forgot password UX)
+- The main fix is a backend configuration change to whitelist redirect URLs
+- No new dependencies or files required
+
