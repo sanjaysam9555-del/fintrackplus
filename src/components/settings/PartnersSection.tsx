@@ -34,7 +34,8 @@ const PARTNER_COLORS = [
   '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
 ];
 
-type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
+import { TimeFrameSelector, computeDateRange, getTimeFilterLabel } from "@/components/TimeFrameSelector";
+import type { TimeFilter } from "@/components/TimeFrameSelector";
 
 // ── Extracted stable components ──────────────────────────────────────
 
@@ -259,10 +260,10 @@ const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldi
 // ── Main component ───────────────────────────────────────────────────
 
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
-  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod } = useFinanceStore();
+  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter } = useFinanceStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   
@@ -281,45 +282,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const dateRange = useMemo(() => {
-    const today = new Date();
-    const start = new Date();
-    
-    switch (timeFilter) {
-      case 'fy': {
-        const currentMonth = today.getMonth();
-        const currentYear = today.getFullYear();
-        const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-        return {
-          start: `${fyStartYear}-04-01`,
-          end: `${fyStartYear + 1}-03-31`,
-        };
-      }
-      case 'week':
-        start.setDate(today.getDate() - 7);
-        break;
-      case 'month':
-        start.setMonth(today.getMonth() - 1);
-        break;
-      case 'year':
-        start.setFullYear(today.getFullYear() - 1);
-        break;
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          return {
-            start: format(customStartDate, 'yyyy-MM-dd'),
-            end: format(customEndDate, 'yyyy-MM-dd'),
-          };
-        }
-        start.setMonth(today.getMonth() - 1);
-        break;
-      default:
-        start.setMonth(today.getMonth() - 1);
-    }
-    
-    return {
-      start: format(start, 'yyyy-MM-dd'),
-      end: format(today, 'yyyy-MM-dd'),
-    };
+    return computeDateRange(timeFilter, customStartDate, customEndDate);
   }, [timeFilter, customStartDate, customEndDate]);
   
   const partnerBalances = useMemo(() => {
@@ -455,22 +418,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setIsDetailOpen(true);
   };
   
-  const getFilterLabel = () => {
-    if (timeFilter === 'fy') {
-      const today = new Date();
-      const currentMonth = today.getMonth();
-      const currentYear = today.getFullYear();
-      const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-      return `FY ${fyStartYear}-${String(fyStartYear + 1).slice(-2)}`;
-    }
-    if (timeFilter === 'week') return 'This Week';
-    if (timeFilter === 'month') return 'This Month';
-    if (timeFilter === 'year') return 'This Year';
-    if (timeFilter === 'custom' && customStartDate && customEndDate) {
-      return `${format(customStartDate, 'MMM dd')} - ${format(customEndDate, 'MMM dd')}`;
-    }
-    return 'Custom';
-  };
+  const filterLabel = useMemo(() => {
+    return getTimeFilterLabel(timeFilter, customStartDate, customEndDate);
+  }, [timeFilter, customStartDate, customEndDate]);
   
   const selectedBalanceData = selectedPartner 
     ? partnerBalances.find(b => b.partner.id === selectedPartner.id) || null
@@ -562,86 +512,20 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       )}
       
       <div className="px-4 mb-4">
-        <div className="flex p-1 bg-muted rounded-xl">
-          {(['fy', 'week', 'month', 'year', 'custom'] as TimeFilter[]).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setTimeFilter(filter)}
-              className={cn(
-                "flex-1 py-2 rounded-lg font-medium transition-colors capitalize text-sm",
-                timeFilter === filter 
-                  ? "bg-card shadow-sm" 
-                  : "text-muted-foreground"
-              )}
-            >
-              {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : filter === 'year' ? 'Year' : 'Custom'}
-            </button>
-          ))}
-        </div>
-        
-        {/* Custom Date Range Picker */}
-        {timeFilter === 'custom' && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-3 flex gap-2"
-          >
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "flex-1 justify-start text-left font-normal",
-                    !customStartDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {customStartDate ? format(customStartDate, "MMM dd, yyyy") : "Start date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card z-[60]" align="start">
-                <Calendar
-                  mode="single"
-                  selected={customStartDate}
-                  onSelect={setCustomStartDate}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "flex-1 justify-start text-left font-normal",
-                    !customEndDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {customEndDate ? format(customEndDate, "MMM dd, yyyy") : "End date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card z-[60]" align="end">
-                <Calendar
-                  mode="single"
-                  selected={customEndDate}
-                  onSelect={setCustomEndDate}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </motion.div>
-        )}
+        <TimeFrameSelector
+          timeFilter={timeFilter}
+          onTimeFilterChange={setTimeFilter}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomStartDateChange={setCustomStartDate}
+          onCustomEndDateChange={setCustomEndDate}
+        />
       </div>
       
       {/* Period Label */}
       <div className="px-4 mb-4">
         <p className="text-sm text-muted-foreground">
-          Showing balances for: <span className="font-medium text-foreground">{getFilterLabel()}</span>
+          Showing balances for: <span className="font-medium text-foreground">{filterLabel}</span>
         </p>
       </div>
       
@@ -818,7 +702,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           partner={selectedPartner}
           balanceData={selectedBalanceData}
           dateRange={dateRange}
-          periodLabel={getFilterLabel()}
+          periodLabel={filterLabel}
           userId={userId}
         />
       )}

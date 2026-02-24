@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { TrendingUp } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
 
-type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
+type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'all' | 'custom';
 
 interface CashFlowChartProps {
   transactions: Transaction[];

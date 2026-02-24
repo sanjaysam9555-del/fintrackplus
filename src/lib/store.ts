@@ -49,6 +49,10 @@ interface FinanceStore extends FinanceState {
   userProfile: UserProfile;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
   
+  // Default time filter preference
+  defaultTimeFilter: 'week' | 'month' | 'year' | 'fy' | 'all';
+  setDefaultTimeFilter: (filter: 'week' | 'month' | 'year' | 'fy' | 'all') => void;
+  
   // Notifications
   notifications: Notification[];
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
@@ -127,6 +131,8 @@ export const useFinanceStore = create<FinanceStore>()(
       projectLabels: [],
       userProfile: { name: 'User' },
       notifications: [],
+      defaultTimeFilter: 'fy',
+      setDefaultTimeFilter: (filter) => set({ defaultTimeFilter: filter }),
       syncStatus: 'idle',
       lastSyncedAt: null,
       pendingCount: 0,
