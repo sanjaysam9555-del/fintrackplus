@@ -5,6 +5,7 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { InstallmentDueReminder } from "./InstallmentDueReminder";
+import { PartnerBalanceCard } from "./PartnerBalanceCard";
 
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, ScrollText, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search, ArrowUpDown } from "lucide-react";
@@ -30,7 +31,7 @@ interface DashboardProps {
 type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
 
 export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange }: DashboardProps) => {
-  const { transactions, categories, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
+  const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
@@ -121,6 +122,12 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
     : 0;
   
   const netBalance = currentIncome - currentExpense;
+  
+  const totalHoldings = useMemo(() => {
+    if (partners.length === 0) return 0;
+    const initialBalances = partners.reduce((sum, p) => sum + (p.initialCashBalance || 0) + (p.initialOnlineBalance || 0), 0);
+    return netBalance + initialBalances;
+  }, [partners, netBalance]);
   
   // Filter transactions based on selected date range
   const filteredTransactions = useMemo(() => {
@@ -678,7 +685,29 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             type="balance"
           />
         </motion.div>
+        
+        {/* Total Holdings Card - only when partners exist */}
+        {partners.length > 0 && (
+          <motion.div
+            initial={false}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-3 lg:mt-4"
+          >
+            <SummaryCard
+              title="Total Holdings"
+              amount={totalHoldings}
+              type="holdings"
+            />
+          </motion.div>
+        )}
       </div>
+      
+      {/* Partner Balance Breakdown */}
+      {partners.length > 0 && (
+        <div className="px-4 lg:px-0 mb-6">
+          <PartnerBalanceCard dateRange={dateRange} />
+        </div>
+      )}
       
       {/* Cash Flow Chart */}
       <div className="px-4 lg:px-0 mb-6">
