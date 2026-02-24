@@ -5,16 +5,16 @@ import { formatDate as formatDateLabel, formatCurrency } from "@/lib/constants";
 import { TransactionItem } from "./TransactionItem";
 import { TransactionSkeleton } from "./ui/skeleton-loader";
 import { UpcomingRecurringBanner } from "./UpcomingRecurringBanner";
-import { Search, CalendarIcon, ArrowUpDown, Settings } from "lucide-react";
+import { Search, ArrowUpDown, Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "./ui/input";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
 import { format, differenceInDays, parseISO } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Button } from "@/components/ui/button";
+import { TimeFrameSelector, computeDateRange, getTimeFilterLabel } from "./TimeFrameSelector";
+import type { TimeFilter } from "./TimeFrameSelector";
+
 interface TransactionListProps {
   type: TransactionType;
   userId?: string;
@@ -23,11 +23,9 @@ interface TransactionListProps {
   onNavigate?: (section: string) => void;
 }
 
-type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
-
 export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick, onNavigate }: TransactionListProps) => {
-  const { transactions, categories, getTotalIncome, getTotalExpense } = useFinanceStore();
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
+  const { transactions, categories, getTotalIncome, getTotalExpense, defaultTimeFilter } = useFinanceStore();
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -38,49 +36,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
   const filteredCategories = categories.filter(c => c.type === type);
   
   const dateRange = useMemo(() => {
-    const today = new Date();
-    const start = new Date();
-    
-    switch (timeFilter) {
-      case 'fy': {
-        // Financial Year: April 1st to March 31st
-        const currentMonth = today.getMonth(); // 0-11
-        const currentYear = today.getFullYear();
-        // If Jan-Mar (0-2), FY started previous year; Apr-Dec (3-11), FY started this year
-        const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-        return {
-          start: `${fyStartYear}-04-01`,
-          end: `${fyStartYear + 1}-03-31`,
-        };
-      }
-      case 'week':
-        start.setDate(today.getDate() - 7);
-        break;
-      case 'month':
-        start.setMonth(today.getMonth() - 1);
-        break;
-      case 'year':
-        start.setFullYear(today.getFullYear() - 1);
-        break;
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          return {
-            start: format(customStartDate, 'yyyy-MM-dd'),
-            end: format(customEndDate, 'yyyy-MM-dd'),
-          };
-        }
-        start.setMonth(today.getMonth() - 1);
-        break;
-      default:
-        start.setMonth(today.getMonth() - 1);
-    }
-    
-    // Use LOCAL date strings (not UTC via toISOString) to match our stored transaction.date format.
-    // Using toISOString() causes off-by-one-day bugs for users in non-UTC timezones.
-    return {
-      start: format(start, 'yyyy-MM-dd'),
-      end: format(today, 'yyyy-MM-dd'),
-    };
+    return computeDateRange(timeFilter, customStartDate, customEndDate);
   }, [timeFilter, customStartDate, customEndDate]);
   
   const filteredTransactions = useMemo(() => {
@@ -310,80 +266,14 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
       
       {/* Time Filter Tabs */}
       <div className="px-4 mb-4">
-        <div className="flex p-1 bg-muted rounded-xl">
-          {(['fy', 'week', 'month', 'year', 'custom'] as TimeFilter[]).map((filter) => (
-            <button
-              key={filter}
-              onClick={() => setTimeFilter(filter)}
-              className={cn(
-                "flex-1 py-2 rounded-lg font-medium transition-colors capitalize text-sm",
-                timeFilter === filter 
-                  ? "bg-card shadow-sm" 
-                  : "text-muted-foreground"
-              )}
-            >
-              {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : filter === 'year' ? 'Year' : 'Custom'}
-            </button>
-          ))}
-        </div>
-        
-        {/* Custom Date Range Picker */}
-        {timeFilter === 'custom' && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-3 flex gap-2"
-          >
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "flex-1 justify-start text-left font-normal",
-                    !customStartDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {customStartDate ? format(customStartDate, "MMM dd, yyyy") : "Start date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card z-[60]" align="start">
-                <Calendar
-                  mode="single"
-                  selected={customStartDate}
-                  onSelect={setCustomStartDate}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-            
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "flex-1 justify-start text-left font-normal",
-                    !customEndDate && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {customEndDate ? format(customEndDate, "MMM dd, yyyy") : "End date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-card z-[60]" align="end">
-                <Calendar
-                  mode="single"
-                  selected={customEndDate}
-                  onSelect={setCustomEndDate}
-                  initialFocus
-                  className="p-3 pointer-events-auto"
-                />
-              </PopoverContent>
-            </Popover>
-          </motion.div>
-        )}
+        <TimeFrameSelector
+          timeFilter={timeFilter}
+          onTimeFilterChange={setTimeFilter}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomStartDateChange={setCustomStartDate}
+          onCustomEndDateChange={setCustomEndDate}
+        />
       </div>
       
       {/* Summary Card with Chart */}
@@ -394,19 +284,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
           className="bg-card rounded-2xl p-4 shadow-card"
         >
           <p className="text-sm text-muted-foreground">
-            Total {type === 'income' ? 'Income' : 'Expenses'} ({
-              timeFilter === 'fy' ? (() => {
-                const today = new Date();
-                const currentMonth = today.getMonth();
-                const currentYear = today.getFullYear();
-                const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-                return `FY ${fyStartYear}-${String(fyStartYear + 1).slice(-2)}`;
-              })() :
-              timeFilter === 'week' ? 'This Week' : 
-              timeFilter === 'month' ? 'This Month' : 
-              timeFilter === 'year' ? 'This Year' : 
-              customStartDate && customEndDate ? `${format(customStartDate, 'MMM dd')} - ${format(customEndDate, 'MMM dd')}` : 'Custom'
-            })
+            Total {type === 'income' ? 'Income' : 'Expenses'} ({getTimeFilterLabel(timeFilter, customStartDate, customEndDate)})
           </p>
           <p className={cn(
             "text-3xl font-bold mt-1",

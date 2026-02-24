@@ -5,13 +5,14 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { InstallmentDueReminder } from "./InstallmentDueReminder";
+import { CompactTimeFrameSelector, getTimeFilterLabel, computeDateRange } from "./TimeFrameSelector";
+import type { TimeFilter } from "./TimeFrameSelector";
 
 
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, ScrollText, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search, ArrowUpDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -28,11 +29,11 @@ interface DashboardProps {
   onEditSheetChange?: (isOpen: boolean) => void;
 }
 
-type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'custom';
+// TimeFilter type now imported from TimeFrameSelector
 
 export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange }: DashboardProps) => {
-  const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt } = useFinanceStore();
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>('fy');
+  const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt, defaultTimeFilter } = useFinanceStore();
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   // IMPORTANT: Both mobile + desktop header sections are mounted (one is CSS-hidden).
@@ -50,48 +51,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   const today = new Date();
   
   const dateRange = useMemo(() => {
-    const todayDate = new Date();
-    const start = new Date();
-    
-    switch (timeFilter) {
-      case 'fy': {
-        // Financial Year: April 1st to March 31st
-        const currentMonth = todayDate.getMonth(); // 0-11
-        const currentYear = todayDate.getFullYear();
-        // If Jan-Mar (0-2), FY started previous year; Apr-Dec (3-11), FY started this year
-        const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-        return {
-          start: `${fyStartYear}-04-01`,
-          end: `${fyStartYear + 1}-03-31`,
-        };
-      }
-      case 'week':
-        start.setDate(todayDate.getDate() - 7);
-        break;
-      case 'month':
-        start.setDate(1);
-        break;
-      case 'year':
-        start.setMonth(0, 1);
-        break;
-      case 'custom':
-        if (customStartDate && customEndDate) {
-          return {
-            start: format(customStartDate, 'yyyy-MM-dd'),
-            end: format(customEndDate, 'yyyy-MM-dd'),
-          };
-        }
-        start.setDate(1);
-        break;
-      default:
-        start.setDate(1);
-    }
-    
-    // Use LOCAL date strings (not UTC) to match stored transaction.date format
-    return {
-      start: format(start, 'yyyy-MM-dd'),
-      end: format(todayDate, 'yyyy-MM-dd'),
-    };
+    return computeDateRange(timeFilter, customStartDate, customEndDate);
   }, [timeFilter, customStartDate, customEndDate]);
   
   // Previous period for comparison
@@ -169,25 +129,9 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
     return "Good Evening";
   }, []);
   
-  const getTimeFilterLabel = () => {
-    switch (timeFilter) {
-      case 'fy': {
-        const currentMonth = today.getMonth();
-        const currentYear = today.getFullYear();
-        const fyStartYear = currentMonth < 3 ? currentYear - 1 : currentYear;
-        return `FY ${fyStartYear}-${String(fyStartYear + 1).slice(-2)}`;
-      }
-      case 'week': return 'This Week';
-      case 'month': return format(today, 'MMMM yyyy');
-      case 'year': return format(today, 'yyyy');
-      case 'custom': 
-        if (customStartDate && customEndDate) {
-          return `${format(customStartDate, 'MMM dd')} - ${format(customEndDate, 'MMM dd')}`;
-        }
-        return 'Custom';
-      default: return format(today, 'MMMM yyyy');
-    }
-  };
+  const timeFilterLabel = useMemo(() => {
+    return getTimeFilterLabel(timeFilter, customStartDate, customEndDate);
+  }, [timeFilter, customStartDate, customEndDate]);
   
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -258,97 +202,16 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                     )} />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56 p-3 bg-card z-[60] pointer-events-auto" align="end" sideOffset={8}>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Time Frame</p>
-                    
-                    {/* Quick Filters */}
-                    <div className="flex gap-1">
-                      {(['fy', 'week', 'month', 'year'] as TimeFilter[]).map((filter) => (
-                        <button
-                          key={filter}
-                          onClick={() => {
-                            setTimeFilter(filter);
-                            setShowCustomCalendar(null);
-                            closeDatePicker();
-                          }}
-                          className={cn(
-                            "flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors",
-                            timeFilter === filter && timeFilter !== 'custom'
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                          )}
-                        >
-                          {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : 'Year'}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <div className="border-t border-border pt-2 mt-2">
-                      <p className="text-[10px] text-muted-foreground mb-1.5">Custom</p>
-                      <div className="flex gap-1.5">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              className={cn(
-                                "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
-                                customStartDate ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground"
-                              )}
-                            >
-                              {customStartDate ? format(customStartDate, "MMM dd") : "From"}
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-card z-[70] pointer-events-auto" align="start" side="bottom">
-                            <Calendar
-                              mode="single"
-                              selected={customStartDate}
-                              onSelect={(date) => {
-                                setCustomStartDate(date);
-                                if (date) setTimeFilter('custom');
-                              }}
-                              className="p-2 pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <span className="text-xs text-muted-foreground self-center">–</span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              className={cn(
-                                "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
-                                customEndDate ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground"
-                              )}
-                            >
-                              {customEndDate ? format(customEndDate, "MMM dd") : "To"}
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-card z-[70] pointer-events-auto" align="end" side="bottom">
-                            <Calendar
-                              mode="single"
-                              selected={customEndDate}
-                              onSelect={(date) => {
-                                setCustomEndDate(date);
-                                if (date && customStartDate) {
-                                  setTimeFilter('custom');
-                                  closeDatePicker();
-                                }
-                              }}
-                              disabled={(date) => customStartDate ? date < customStartDate : false}
-                              className="p-2 pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      {timeFilter === 'custom' && customStartDate && customEndDate && (
-                        <button
-                          onClick={closeDatePicker}
-                          className="w-full mt-2 px-2 py-1.5 bg-primary text-primary-foreground text-xs rounded-md font-medium"
-                        >
-                          Apply
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                <PopoverContent className="w-64 p-3 bg-card z-[60] pointer-events-auto" align="end" sideOffset={8}>
+                  <CompactTimeFrameSelector
+                    timeFilter={timeFilter}
+                    onTimeFilterChange={setTimeFilter}
+                    customStartDate={customStartDate}
+                    customEndDate={customEndDate}
+                    onCustomStartDateChange={setCustomStartDate}
+                    onCustomEndDateChange={setCustomEndDate}
+                    onClose={() => setShowDatePickerMobile(false)}
+                  />
                 </PopoverContent>
               </Popover>
               {onSearchClick && (
@@ -388,7 +251,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
               aria-label="Choose time frame"
             >
               <CalendarDays size={12} />
-              {getTimeFilterLabel()}
+              {timeFilterLabel}
             </button>
             
             {/* Sync Status Chip */}
@@ -489,97 +352,16 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                     )} />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-56 p-3 bg-card z-[60] pointer-events-auto" align="end" sideOffset={8}>
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground mb-2">Time Frame</p>
-                    
-                    {/* Quick Filters */}
-                    <div className="flex gap-1">
-                      {(['fy', 'week', 'month', 'year'] as TimeFilter[]).map((filter) => (
-                        <button
-                          key={filter}
-                          onClick={() => {
-                            setTimeFilter(filter);
-                            setShowCustomCalendar(null);
-                            closeDatePicker();
-                          }}
-                          className={cn(
-                            "flex-1 px-2 py-1.5 rounded-md text-xs font-medium transition-colors",
-                            timeFilter === filter && timeFilter !== 'custom'
-                              ? "bg-primary text-primary-foreground" 
-                              : "bg-muted text-muted-foreground hover:bg-muted/80"
-                          )}
-                        >
-                          {filter === 'fy' ? 'FY' : filter === 'week' ? 'Week' : filter === 'month' ? 'Month' : 'Year'}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <div className="border-t border-border pt-2 mt-2">
-                      <p className="text-[10px] text-muted-foreground mb-1.5">Custom</p>
-                      <div className="flex gap-1.5">
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              className={cn(
-                                "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
-                                customStartDate ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground"
-                              )}
-                            >
-                              {customStartDate ? format(customStartDate, "MMM dd") : "From"}
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-card z-[70]" align="start" side="bottom">
-                            <Calendar
-                              mode="single"
-                              selected={customStartDate}
-                              onSelect={(date) => {
-                                setCustomStartDate(date);
-                                if (date) setTimeFilter('custom');
-                              }}
-                              className="p-2 pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <span className="text-xs text-muted-foreground self-center">–</span>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <button
-                              className={cn(
-                                "flex-1 px-2 py-1.5 text-xs rounded-md border text-center",
-                                customEndDate ? "border-primary bg-accent text-accent-foreground" : "border-border text-muted-foreground"
-                              )}
-                            >
-                              {customEndDate ? format(customEndDate, "MMM dd") : "To"}
-                            </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0 bg-card z-[70]" align="end" side="bottom">
-                            <Calendar
-                              mode="single"
-                              selected={customEndDate}
-                              onSelect={(date) => {
-                                setCustomEndDate(date);
-                                if (date && customStartDate) {
-                                  setTimeFilter('custom');
-                                  closeDatePicker();
-                                }
-                              }}
-                              disabled={(date) => customStartDate ? date < customStartDate : false}
-                              className="p-2 pointer-events-auto"
-                            />
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                      {timeFilter === 'custom' && customStartDate && customEndDate && (
-                        <button
-                          onClick={closeDatePicker}
-                          className="w-full mt-2 px-2 py-1.5 bg-primary text-primary-foreground text-xs rounded-md font-medium"
-                        >
-                          Apply
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                <PopoverContent className="w-64 p-3 bg-card z-[60] pointer-events-auto" align="end" sideOffset={8}>
+                  <CompactTimeFrameSelector
+                    timeFilter={timeFilter}
+                    onTimeFilterChange={setTimeFilter}
+                    customStartDate={customStartDate}
+                    customEndDate={customEndDate}
+                    onCustomStartDateChange={setCustomStartDate}
+                    onCustomEndDateChange={setCustomEndDate}
+                    onClose={() => setShowDatePickerDesktop(false)}
+                  />
                 </PopoverContent>
               </Popover>
               {onSearchClick && (
@@ -614,7 +396,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           >
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-accent text-accent-foreground text-sm font-medium rounded-full">
               <CalendarDays size={14} />
-              {getTimeFilterLabel()}
+              {timeFilterLabel}
             </span>
             
             {/* Sync Status Chip */}
@@ -668,8 +450,8 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           initial={false}
           animate={{ opacity: 1, y: 0 }}
           className={cn(
-            "grid gap-3 lg:gap-4",
-            partners.length > 0 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-3"
+            "grid gap-2 lg:gap-4",
+            partners.length > 0 ? "grid-cols-4" : "grid-cols-3"
           )}
         >
           <SummaryCard
