@@ -102,12 +102,12 @@ export const SummaryCard = ({
         className
       )}
     >
-      <div className="flex items-center justify-center gap-1.5 mb-1">
-        <div className={cn("w-6 h-6 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center flex-shrink-0", balanceIconBg)}>
-          <Icon size={14} className={cn(balanceIconColor, "lg:hidden")} />
+      <div className="flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1.5 mb-0.5 lg:mb-1">
+        <div className={cn("w-5 h-5 lg:w-8 lg:h-8 rounded-lg flex items-center justify-center flex-shrink-0", balanceIconBg)}>
+          <Icon size={12} className={cn(balanceIconColor, "lg:hidden")} />
           <Icon size={16} className={cn(balanceIconColor, "hidden lg:block")} />
         </div>
-        <p className="text-xs lg:text-sm text-muted-foreground font-medium truncate">{title}</p>
+        <p className="text-[10px] lg:text-sm text-muted-foreground font-medium leading-tight">{title}</p>
       </div>
       
       <p className={cn("text-sm lg:text-lg font-bold truncate text-center", textColor)}>

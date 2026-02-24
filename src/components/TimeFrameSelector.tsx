@@ -136,9 +136,9 @@ export const TimeFrameSelector = ({
             key={option.value}
             onClick={() => onTimeFilterChange(option.value)}
             className={cn(
-              "flex-1 py-2 rounded-lg font-medium transition-colors text-sm",
+              "flex-1 py-2 rounded-lg font-medium transition-colors text-xs lg:text-sm",
               timeFilter === option.value
-                ? "bg-card shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground"
             )}
           >
