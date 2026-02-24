@@ -28,12 +28,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
   const [selectedPoint, setSelectedPoint] = useState<ChartDataPoint | null>(null);
   
   const chartData = useMemo(() => {
-    // Parse as local dates to match stored transaction.date format
-    const startDate = parseISO(dateRange.start);
-    const endDate = parseISO(dateRange.end);
     const today = new Date();
-    const daysDiff = differenceInDays(endDate, startDate);
-    
     const dataPoints: ChartDataPoint[] = [];
     
     // Helper to calculate income/expense for a date range
@@ -47,7 +42,67 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         expense: rangeTxns.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
       };
     };
-    
+
+    // For "All Time", detect actual transaction boundaries
+    if (timeFilter === 'all') {
+      if (transactions.length === 0) return [];
+      
+      const txDates = transactions.map(t => parseISO(t.date).getTime());
+      const earliestDate = new Date(Math.min(...txDates));
+      const latestDate = new Date(Math.min(Math.max(...txDates), today.getTime()));
+      const realDaysDiff = differenceInDays(latestDate, earliestDate);
+
+      if (realDaysDiff <= 14) {
+        // Daily
+        for (let i = 0; i <= realDaysDiff; i++) {
+          const day = new Date(earliestDate);
+          day.setDate(earliestDate.getDate() + i);
+          const dayStr = format(day, 'yyyy-MM-dd');
+          const dayTxns = transactions.filter(t => t.date === dayStr);
+          dataPoints.push({
+            name: format(day, 'EEE'),
+            income: dayTxns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
+            expense: dayTxns.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0),
+            net: 0, date: dayStr,
+          });
+        }
+      } else if (realDaysDiff <= 60) {
+        // Weekly
+        const numWeeks = Math.ceil(realDaysDiff / 7);
+        for (let i = 0; i < numWeeks; i++) {
+          const wStart = new Date(earliestDate);
+          wStart.setDate(earliestDate.getDate() + i * 7);
+          const wEnd = new Date(wStart);
+          wEnd.setDate(wStart.getDate() + 6);
+          const clamped = wEnd > latestDate ? latestDate : wEnd;
+          const { income, expense } = calcForRange(wStart, clamped);
+          dataPoints.push({ name: `W${i + 1}`, income, expense, net: 0, date: format(wStart, 'yyyy-MM-dd') });
+        }
+      } else {
+        // Monthly
+        const useYear = realDaysDiff > 730;
+        let current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+        while (current <= latestDate) {
+          const mStart = new Date(current.getFullYear(), current.getMonth(), 1);
+          const mEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+          const { income, expense } = calcForRange(mStart, mEnd);
+          dataPoints.push({
+            name: useYear ? format(mStart, "MMM ''yy") : format(mStart, 'MMM'),
+            income, expense, net: 0, date: format(mStart, 'yyyy-MM-dd'),
+          });
+          current.setMonth(current.getMonth() + 1);
+        }
+      }
+
+      dataPoints.forEach(p => p.net = p.income - p.expense);
+      return dataPoints;
+    }
+
+    // Parse as local dates to match stored transaction.date format
+    const startDate = parseISO(dateRange.start);
+    const endDate = parseISO(dateRange.end);
+    const daysDiff = differenceInDays(endDate, startDate);
+
     if (timeFilter === 'fy') {
       // Financial Year: Generate months from start to min(endDate, today)
       const actualEnd = endDate > today ? today : endDate;
