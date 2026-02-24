@@ -189,6 +189,73 @@ const PartnerForm = ({
   </div>
 );
 
+// ── Total Holdings Card (static, all-time) ──────────────────────────
+
+interface TotalHoldingsCardProps {
+  partners: Partner[];
+  getPartnerBalancesForPeriod: (start: string, end: string) => any[];
+}
+
+const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldingsCardProps) => {
+  const allTimeBalances = useMemo(() => {
+    return getPartnerBalancesForPeriod('2000-01-01', '2099-12-31');
+  }, [getPartnerBalancesForPeriod, partners]);
+
+  const totalCash = allTimeBalances.reduce((sum: number, pb: any) => sum + pb.closingCashBalance, 0);
+  const totalOnline = allTimeBalances.reduce((sum: number, pb: any) => sum + pb.closingOnlineBalance, 0);
+  const totalHoldings = totalCash + totalOnline;
+
+  return (
+    <div className="px-4 mb-4">
+      <div className="bg-card rounded-2xl shadow-card border border-border p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Banknote size={20} className="text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm">Total Holdings</h3>
+            <p className="text-xs text-muted-foreground">All-time • All partners</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className={cn(
+              "text-lg font-bold",
+              totalHoldings >= 0 ? "text-success" : "text-destructive"
+            )}>
+              {totalHoldings < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(totalHoldings).toLocaleString()}
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-muted/50 rounded-xl p-3">
+            <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+              <Banknote size={12} />
+              <span className="text-[10px] uppercase tracking-wide">Cash</span>
+            </div>
+            <p className={cn(
+              "text-base font-bold",
+              totalCash >= 0 ? "text-foreground" : "text-destructive"
+            )}>
+              {totalCash < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(totalCash).toLocaleString()}
+            </p>
+          </div>
+          <div className="bg-muted/50 rounded-xl p-3">
+            <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+              <CreditCard size={12} />
+              <span className="text-[10px] uppercase tracking-wide">Online</span>
+            </div>
+            <p className={cn(
+              "text-base font-bold",
+              totalOnline >= 0 ? "text-foreground" : "text-destructive"
+            )}>
+              {totalOnline < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(totalOnline).toLocaleString()}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ── Main component ───────────────────────────────────────────────────
 
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
@@ -436,6 +503,11 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         </p>
       </div>
       
+      {/* All-time Total Holdings Summary */}
+      {partners.length > 0 && (
+        <TotalHoldingsCard partners={partners} getPartnerBalancesForPeriod={getPartnerBalancesForPeriod} />
+      )}
+
       {/* Explanatory Info Box */}
       <div className="px-4 mb-4">
         <div className="bg-muted/50 rounded-xl p-3 border border-border/50">

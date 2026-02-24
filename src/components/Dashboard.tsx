@@ -5,7 +5,7 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { InstallmentDueReminder } from "./InstallmentDueReminder";
-import { PartnerBalanceCard } from "./PartnerBalanceCard";
+
 
 import { motion, useMotionValue, useTransform, useAnimation } from "framer-motion";
 import { CalendarDays, Grid3X3, Store, ScrollText, FileBarChart, Settings, Sparkles, RefreshCw, Cloud, CloudOff, Loader2, WifiOff, Search, ArrowUpDown } from "lucide-react";
@@ -662,12 +662,15 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         <InstallmentDueReminder userId={userId} />
       </div>
 
-      {/* Summary Cards - 3 Column Grid */}
+      {/* Summary Cards */}
       <div className="px-4 lg:px-0 mb-6">
         <motion.div
           initial={false}
           animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-3 gap-3 lg:gap-4"
+          className={cn(
+            "grid gap-3 lg:gap-4",
+            partners.length > 0 ? "grid-cols-2 lg:grid-cols-4" : "grid-cols-3"
+          )}
         >
           <SummaryCard
             title="Income"
@@ -684,30 +687,15 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
             amount={netBalance}
             type="balance"
           />
-        </motion.div>
-        
-        {/* Total Holdings Card - only when partners exist */}
-        {partners.length > 0 && (
-          <motion.div
-            initial={false}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-3 lg:mt-4"
-          >
+          {partners.length > 0 && (
             <SummaryCard
-              title="Total Holdings"
+              title="Holdings"
               amount={totalHoldings}
               type="holdings"
             />
-          </motion.div>
-        )}
+          )}
+        </motion.div>
       </div>
-      
-      {/* Partner Balance Breakdown */}
-      {partners.length > 0 && (
-        <div className="px-4 lg:px-0 mb-6">
-          <PartnerBalanceCard dateRange={dateRange} />
-        </div>
-      )}
       
       {/* Cash Flow Chart */}
       <div className="px-4 lg:px-0 mb-6">
