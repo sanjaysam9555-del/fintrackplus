@@ -1221,11 +1221,21 @@ export const useFinanceStore = create<FinanceStore>()(
           { field: 'Online Balance', from: `₹${partner.initialOnlineBalance.toLocaleString()}`, to: 'Deleted' },
         ] : [];
         
+        // Find all transactions assigned to this partner so we can unassign them
+        const affectedTransactionIds = get().transactions
+          .filter(t => t.partnerId === id)
+          .map(t => t.id);
+        
         set((state) => ({
-          partners: state.partners.filter((p) => p.id !== id)
+          partners: state.partners.filter((p) => p.id !== id),
+          // Unassign transactions from deleted partner
+          transactions: state.transactions.map(t => 
+            t.partnerId === id ? { ...t, partnerId: undefined } : t
+          ),
         }));
         
         if (userId) {
+          // Queue partner deletion
           addToSyncQueue({
             type: 'delete',
             entity: 'partner',
@@ -1233,6 +1243,18 @@ export const useFinanceStore = create<FinanceStore>()(
             data: {},
             userId,
           });
+          
+          // Queue transaction unassignments
+          affectedTransactionIds.forEach(txnId => {
+            addToSyncQueue({
+              type: 'update',
+              entity: 'transaction',
+              entityId: txnId,
+              data: { partner_id: null },
+              userId,
+            });
+          });
+          
           get().updatePendingCount();
           
           if (navigator.onLine) {
@@ -1244,7 +1266,7 @@ export const useFinanceStore = create<FinanceStore>()(
           get().addNotification({
             type: 'delete',
             title: 'Partner Deleted',
-            message: partner.name,
+            message: `${partner.name} — ${affectedTransactionIds.length} transaction${affectedTransactionIds.length !== 1 ? 's' : ''} unassigned`,
             details,
             entityType: 'partner',
             entityId: id,

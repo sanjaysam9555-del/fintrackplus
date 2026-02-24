@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { PartnerDetailSheet } from "./PartnerDetailSheet";
 import { PartnerTransferSheet } from "@/components/PartnerTransferSheet";
+import { UnassignedTransactionsSheet } from "./UnassignedTransactionsSheet";
 import { Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -201,6 +202,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
+  const [showUnassignedSheet, setShowUnassignedSheet] = useState(false);
   
   // Form state
   const [name, setName] = useState("");
@@ -256,6 +258,24 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const partnerBalances = useMemo(() => {
     return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
   }, [getPartnerBalancesForPeriod, dateRange, partners, transactions]);
+
+  // Compute unassigned/orphaned transactions
+  const unassignedStats = useMemo(() => {
+    const partnerIds = new Set(partners.map(p => p.id));
+    const unassigned = transactions
+      .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
+      .filter(t => !t.partnerId || !partnerIds.has(t.partnerId));
+    
+    let cashNet = 0;
+    let onlineNet = 0;
+    unassigned.forEach(t => {
+      const sign = t.type === 'income' ? 1 : -1;
+      if (t.paymentMethod === 'cash') cashNet += sign * t.amount;
+      else onlineNet += sign * t.amount;
+    });
+    
+    return { count: unassigned.length, cashNet, onlineNet };
+  }, [transactions, partners, dateRange]);
   
   const resetForm = () => {
     setName("");
@@ -422,8 +442,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           <div className="flex items-start gap-2">
             <Info size={16} className="text-muted-foreground mt-0.5 flex-shrink-0" />
             <div className="text-xs text-muted-foreground space-y-1">
-              <p className="font-medium text-foreground">How balances work:</p>
-              <p>• <span className="text-foreground">Opening</span> = Initial balance + transactions before period</p>
+               <p className="font-medium text-foreground">How balances work:</p>
+               <p>• Balances are based on <span className="text-foreground font-medium">assigned entries only</span></p>
               <p>• <span className="text-success">+ Income</span> received during period</p>
               <p>• <span className="text-destructive">− Expenses</span> made during period</p>
               <p>• <span className="text-foreground">Closing</span> = Current holdings</p>
@@ -432,7 +452,43 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         </div>
       </div>
       
-      {/* Time Filter Tabs */}
+      {/* Unassigned Entries Warning Card */}
+      {unassignedStats.count > 0 && (
+        <div className="px-4 mb-4">
+          <button
+            onClick={() => setShowUnassignedSheet(true)}
+            className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-left hover:bg-amber-500/15 transition-colors"
+          >
+            <div className="flex items-start gap-2">
+              <AlertTriangle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-foreground">
+                  {unassignedStats.count} unassigned entr{unassignedStats.count === 1 ? 'y' : 'ies'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Excluded from partner balances until assigned.
+                </p>
+                <div className="flex items-center gap-4 mt-1.5 text-xs">
+                  <span className="flex items-center gap-1">
+                    <Banknote size={12} className="text-muted-foreground" />
+                    <span className={unassignedStats.cashNet >= 0 ? "text-success" : "text-destructive"}>
+                      {unassignedStats.cashNet >= 0 ? '+' : ''}{CURRENCY_SYMBOL}{Math.abs(unassignedStats.cashNet).toLocaleString()}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <CreditCard size={12} className="text-muted-foreground" />
+                    <span className={unassignedStats.onlineNet >= 0 ? "text-success" : "text-destructive"}>
+                      {unassignedStats.onlineNet >= 0 ? '+' : ''}{CURRENCY_SYMBOL}{Math.abs(unassignedStats.onlineNet).toLocaleString()}
+                    </span>
+                  </span>
+                </div>
+                <p className="text-xs text-primary mt-1.5 font-medium">Tap to review & assign →</p>
+              </div>
+            </div>
+          </button>
+        </div>
+      )}
+      
       <div className="px-4 mb-4">
         <div className="flex p-1 bg-muted rounded-xl">
           {(['fy', 'week', 'month', 'year', 'custom'] as TimeFilter[]).map((filter) => (
@@ -694,6 +750,15 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           userId={userId}
         />
       )}
+      
+      {/* Unassigned Transactions Sheet */}
+      <UnassignedTransactionsSheet
+        isOpen={showUnassignedSheet}
+        onClose={() => setShowUnassignedSheet(false)}
+        startDate={dateRange.start}
+        endDate={dateRange.end}
+        userId={userId}
+      />
     </div>
   );
 };
