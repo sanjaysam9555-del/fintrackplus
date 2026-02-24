@@ -92,6 +92,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
         if (uncategorizedFilter === 'no-category') return !t.categoryId;
         if (uncategorizedFilter === 'no-project') return !t.projectId;
         if (uncategorizedFilter === 'no-vendor') return !t.vendor || t.vendor === 'Unknown' || t.vendor === '';
+        if (uncategorizedFilter === 'no-partner') return !t.partnerId;
         return true;
       });
   }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter]);
@@ -515,6 +516,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
             { key: 'no-category', label: 'Uncategorized' },
             { key: 'no-project', label: 'No Project' },
             { key: 'no-vendor', label: 'No Vendor' },
+            { key: 'no-partner', label: 'No Partner' },
           ].map((filter) => (
             <button
               key={filter.key}
