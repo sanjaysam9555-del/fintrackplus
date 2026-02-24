@@ -1,40 +1,34 @@
 
 
-# Add "Total Holdings" Card on Home Tab
-
-## What This Solves
-The Home tab "Balance" card currently shows **net profit** (Income - Expense = 14,45,428), but partner balances show **total holdings** (Initial Balances + Income - Expense = 18,45,428). The 4,00,000 gap is Swati's initial online balance. Adding a "Total Holdings" card makes both numbers visible so you can reconcile at a glance.
+# Restructure Holdings Display
 
 ## Changes
 
-### 1. Update Summary Cards layout (`src/components/Dashboard.tsx`)
-- Compute `totalHoldings` = `netBalance` + sum of all partner initial balances (cash + online)
-- Add a 4th summary card "Holdings" below the existing 3-card row (or as a separate prominent card)
-- Only show this card when partners exist (to avoid clutter for users without partners)
-- The card will use the existing `PartnerBalanceCard` component below the holdings card to show the per-partner breakdown
+### 1. Dashboard Home Tab (`src/components/Dashboard.tsx`)
+- Change the summary cards grid from `grid-cols-3` to `grid-cols-4` (on mobile, may use `grid-cols-2` with 2 rows for readability)
+- Move the "Total Holdings" card INTO the same row as Income, Expense, Balance
+- Remove the separate `PartnerBalanceCard` component from the Dashboard entirely
+- Remove the `PartnerBalanceCard` import
 
-### 2. Add the PartnerBalanceCard to the Dashboard
-- Import and render `PartnerBalanceCard` after the summary cards section
-- Pass the current `dateRange` prop so it stays in sync with the selected time filter
-- This already shows per-partner cash/online breakdown and is collapsible
+### 2. Partners Page - Add Total Holdings Summary (`src/components/settings/PartnersSection.tsx`)
+- Add a "Total Holdings" summary card at the top of the partners page (above the date filter)
+- This card shows:
+  - **Total Holdings** = sum of all partner closing balances (cash + online combined)
+  - **Total Cash** = sum of all partner closing cash balances
+  - **Total Online** = sum of all partner closing online balances
+- This total is **unchanged by date selection** -- it always uses the full range (all-time) so it reflects actual current holdings
+- The rest of the partner cards below continue to change with the date filter as they do today
 
-### 3. Update SummaryCard to support a "holdings" type (`src/components/SummaryCard.tsx`)
-- Add a `holdings` entry to the icon and color maps (using a wallet/vault icon)
-- This keeps the card visually consistent with the other three
+### Technical Details
 
-## Layout
-```text
-[ Income ]  [ Expense ]  [ Balance ]
-        [ Total Holdings: 18,45,428 ]
-        (only when partners exist)
+**Dashboard.tsx changes:**
+- Change grid from `grid-cols-3` to `grid-cols-2 lg:grid-cols-4` so on mobile it wraps to 2x2 and on desktop all 4 are in one row
+- Remove the separate Holdings card block and the PartnerBalanceCard block
+- Keep `totalHoldings` calculation, just render it in the same grid
 
-[ Partner Balance Card - collapsible ]
-  Sanjay: Cash / Online
-  Swati:  Cash / Online
-```
+**PartnersSection.tsx changes:**
+- Compute an "all-time" `totalHoldings` using a very wide date range (e.g., 2000-01-01 to 2099-12-31) to capture all transactions plus initial balances
+- Add a summary card above the date filter showing Total Holdings, Total Cash, Total Online
+- This card is static and does not respond to the date filter
+- The existing per-partner cards and date filter remain unchanged
 
-## Technical Details
-- `totalHoldings = netBalance + partners.reduce((sum, p) => sum + p.initialCashBalance + p.initialOnlineBalance, 0)`
-- The PartnerBalanceCard already accepts `dateRange` and handles all the per-partner math
-- No database or schema changes needed
-- No new files needed
