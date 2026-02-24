@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { formatCurrency, formatCompactCurrency } from "@/lib/constants";
-import { ArrowDownLeft, ArrowUpRight, Wallet } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Wallet, Landmark } from "lucide-react";
 import { motion, useSpring, useMotionValue, useTransform } from "framer-motion";
 import { useEffect, useRef } from "react";
 
@@ -9,7 +9,7 @@ let hasAnimated = false;
 interface SummaryCardProps {
   title: string;
   amount: number;
-  type: 'income' | 'expense' | 'balance';
+  type: 'income' | 'expense' | 'balance' | 'holdings';
   percentChange?: number;
   className?: string;
 }
@@ -18,6 +18,7 @@ const iconMap = {
   income: ArrowDownLeft,
   expense: ArrowUpRight,
   balance: Wallet,
+  holdings: Landmark,
 };
 
 const colorMap = {
@@ -32,6 +33,11 @@ const colorMap = {
     text: "text-destructive",
   },
   balance: {
+    icon: "bg-primary-light",
+    iconColor: "text-primary",
+    text: "text-foreground",
+  },
+  holdings: {
     icon: "bg-primary-light",
     iconColor: "text-primary",
     text: "text-foreground",
@@ -68,19 +74,21 @@ export const SummaryCard = ({
   const colors = colorMap[type];
   const isPositive = percentChange && percentChange > 0;
   
-  const textColor = type === 'balance'
+  const isBalanceType = type === 'balance' || type === 'holdings';
+  
+  const textColor = isBalanceType
     ? (amount >= 0 ? 'text-success' : 'text-destructive')
     : colors.text;
   
-  const balanceIconBg = type === 'balance'
+  const balanceIconBg = isBalanceType
     ? (amount >= 0 ? 'bg-success-light' : 'bg-destructive-light')
     : colors.icon;
   
-  const balanceIconColor = type === 'balance'
+  const balanceIconColor = isBalanceType
     ? (amount >= 0 ? 'text-success' : 'text-destructive')
     : colors.iconColor;
   
-  const prefix = type === 'balance'
+  const prefix = isBalanceType
     ? (amount < 0 ? '-' : '')
     : (type === 'expense' ? '-' : '');
   
