@@ -309,7 +309,7 @@ const Index = () => {
       case 'settings':
         return (
           <Suspense fallback={<SettingsSkeleton />}>
-            <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={handleBackToHome} onBackToHome={navigatedFromHome.current ? handleBackToHome : undefined} />
+            <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={handleBackToHome} onBackToHome={navigatedFromHome.current ? handleBackToHome : undefined} onRefresh={refreshData} isRefreshing={false} isOnline={isOnline} pendingCount={pendingCount} />
           </Suspense>
         );
       default:

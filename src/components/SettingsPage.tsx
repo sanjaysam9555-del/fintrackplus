@@ -17,7 +17,12 @@ import {
   Monitor,
   Smartphone,
   Users,
-  Download
+  Download,
+  RefreshCw,
+  Cloud,
+  CloudOff,
+  Loader2,
+  WifiOff
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -224,10 +229,14 @@ interface SettingsPageProps {
   onSectionChange?: (section: SettingsSection) => void;
   onBack?: () => void;
   onBackToHome?: () => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+  isOnline?: boolean;
+  pendingCount?: number;
 }
 
-export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, onBackToHome }: SettingsPageProps) => {
-  const { categories, projects, userProfile, partners, projectLabels, defaultTimeFilter, setDefaultTimeFilter } = useFinanceStore();
+export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, onBackToHome, onRefresh, isRefreshing, isOnline = true, pendingCount = 0 }: SettingsPageProps) => {
+  const { categories, projects, userProfile, partners, projectLabels, defaultTimeFilter, setDefaultTimeFilter, syncStatus, lastSyncedAt } = useFinanceStore();
   const { signOut, user } = useAuth();
   const { mode, setTheme, isDark, isOled } = useTheme();
   const navigate = useNavigate();
@@ -492,6 +501,60 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                 </button>
               );
             })}
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Sync */}
+      <div className="px-4 mb-6">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+          Sync
+        </p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+          className="bg-card rounded-2xl p-4 shadow-card border border-border"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center",
+                !isOnline ? "bg-amber-500/10" : syncStatus === 'error' ? "bg-destructive/10" : "bg-success/10"
+              )}>
+                {!isOnline ? (
+                  <WifiOff size={20} className="text-amber-500" />
+                ) : syncStatus === 'syncing' || isRefreshing ? (
+                  <Loader2 size={20} className="text-primary animate-spin" />
+                ) : syncStatus === 'error' ? (
+                  <CloudOff size={20} className="text-destructive" />
+                ) : (
+                  <Cloud size={20} className="text-success" />
+                )}
+              </div>
+              <div>
+                <p className="font-medium text-sm">
+                  {!isOnline ? 'Offline' : syncStatus === 'syncing' || isRefreshing ? 'Syncing...' : syncStatus === 'error' ? 'Sync Error' : 'Synced'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {pendingCount > 0 ? `${pendingCount} pending changes` : 
+                   lastSyncedAt ? `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}` : 
+                   'Up to date'}
+                </p>
+              </div>
+            </div>
+            {onRefresh && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRefresh}
+                disabled={isRefreshing || !isOnline}
+                className="gap-1.5"
+              >
+                <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} />
+                Sync
+              </Button>
+            )}
           </div>
         </motion.div>
       </div>
