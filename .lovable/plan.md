@@ -1,34 +1,69 @@
 
 
-# Restructure Holdings Display
+# Dashboard & Time Frame UI Improvements
 
-## Changes
+## Changes Overview
 
-### 1. Dashboard Home Tab (`src/components/Dashboard.tsx`)
-- Change the summary cards grid from `grid-cols-3` to `grid-cols-4` (on mobile, may use `grid-cols-2` with 2 rows for readability)
-- Move the "Total Holdings" card INTO the same row as Income, Expense, Balance
-- Remove the separate `PartnerBalanceCard` component from the Dashboard entirely
-- Remove the `PartnerBalanceCard` import
+### 1. Remove Calendar Icon and Sync/Refresh Button from Home Tab Header
+- **Dashboard.tsx**: Remove the `CalendarDays` icon button and its associated `Popover` (with `CompactTimeFrameSelector`) from both mobile and desktop header action bars
+- Remove the `RefreshCw` (sync/refresh) button from both mobile and desktop headers
+- Keep the time filter badge row (clicking it will still open the popover) -- actually, since the unified time frame selector will be visible directly, remove the badge row too
 
-### 2. Partners Page - Add Total Holdings Summary (`src/components/settings/PartnersSection.tsx`)
-- Add a "Total Holdings" summary card at the top of the partners page (above the date filter)
-- This card shows:
-  - **Total Holdings** = sum of all partner closing balances (cash + online combined)
-  - **Total Cash** = sum of all partner closing cash balances
-  - **Total Online** = sum of all partner closing online balances
-- This total is **unchanged by date selection** -- it always uses the full range (all-time) so it reflects actual current holdings
-- The rest of the partner cards below continue to change with the date filter as they do today
+### 2. Add Sync Button to Settings Page
+- **SettingsPage.tsx**: Add a "Sync Now" button/row in the settings menu (in a new "Sync" section or alongside existing items), wired to the same `onRefresh` callback
+- This requires passing `onRefresh`, `isRefreshing`, `isOnline`, `pendingCount`, and `syncStatus` props to SettingsPage (or accessing them from the store)
 
-### Technical Details
+### 3. Restructure SummaryCard for 3-Row Mobile Layout
+- **SummaryCard.tsx**: Change the mobile layout from 2 rows (icon+title | amount) to 3 rows:
+  - Row 1: Icon (centered)
+  - Row 2: Title text (centered)
+  - Row 3: Amount (centered)
+- This keeps the single-row grid (`grid-cols-4`) but prevents text truncation by stacking content vertically
+- Desktop layout remains as-is with side-by-side icon+title
 
-**Dashboard.tsx changes:**
-- Change grid from `grid-cols-3` to `grid-cols-2 lg:grid-cols-4` so on mobile it wraps to 2x2 and on desktop all 4 are in one row
-- Remove the separate Holdings card block and the PartnerBalanceCard block
-- Keep `totalHoldings` calculation, just render it in the same grid
+### 4. Add Unified TimeFrameSelector Directly on Home Tab
+- **Dashboard.tsx**: Render the `TimeFrameSelector` component (the tab-bar version, not the compact popover) directly below the header and above the summary cards
+- Remove the popover-based date picker entirely since the selector is now always visible
 
-**PartnersSection.tsx changes:**
-- Compute an "all-time" `totalHoldings` using a very wide date range (e.g., 2000-01-01 to 2099-12-31) to capture all transactions plus initial balances
-- Add a summary card above the date filter showing Total Holdings, Total Cash, Total Online
-- This card is static and does not respond to the date filter
-- The existing per-partner cards and date filter remain unchanged
+### 5. Remove the FY Badge/Label from Home Tab Header
+- **Dashboard.tsx**: Remove the `timeFilterLabel` badge/chip row (lines ~242-293 mobile, ~391-438 desktop) that currently shows "FY 2025-26" etc. The TimeFrameSelector tabs replace this
+
+### 6. Style the TimeFrameSelector
+- **TimeFrameSelector.tsx**: 
+  - Reduce text size on mobile from `text-sm` to `text-xs` for the tab options to create more spacing
+  - Change the selected tab highlight from `bg-card` (white/dark grey) to `bg-primary text-primary-foreground` (blue) so it stands out in both light and dark mode
+  - Apply the same blue highlight treatment to the `CompactTimeFrameSelector` (used in other tabs like Income/Expense)
+
+## Technical Details
+
+### Dashboard.tsx
+- Remove: `CalendarDays` import usage in header buttons, `RefreshCw` button, `showDatePickerMobile`/`showDatePickerDesktop` state + Popovers, the time filter badge `motion.div` rows
+- Add: `import { TimeFrameSelector }` and render it between header and summary cards
+- The `TimeFrameSelector` already handles custom date picking with auto-close calendars
+
+### SummaryCard.tsx  
+- Change the inner layout from horizontal (icon + title side by side) to vertical on mobile:
+```
+// Current: flex-row with icon + title
+<div className="flex items-center justify-center gap-1.5 mb-1">
+
+// New: flex-col on mobile, flex-row on desktop
+<div className="flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-1.5 mb-1">
+```
+
+### TimeFrameSelector.tsx
+- Selected tab: change from `bg-card shadow-sm` to `bg-primary text-primary-foreground shadow-sm`
+- Unselected: keep `text-muted-foreground`
+- Mobile text: `text-xs` instead of `text-sm`
+
+### SettingsPage.tsx
+- Add sync status display and manual sync button near the profile card or as a separate section
+- Pull `syncStatus`, `lastSyncedAt` from store; receive `onRefresh` via props or wire from Index.tsx
+
+### Files Modified
+- `src/components/Dashboard.tsx` -- remove header icons, add inline TimeFrameSelector, remove FY badge
+- `src/components/SummaryCard.tsx` -- 3-row mobile layout
+- `src/components/TimeFrameSelector.tsx` -- blue highlight, smaller text on mobile
+- `src/components/SettingsPage.tsx` -- add sync button
+- `src/pages/Index.tsx` -- pass sync-related props to SettingsPage (if not already available via store)
 
