@@ -1,0 +1,1 @@
+ALTER TABLE public.projects ADD COLUMN event_date date DEFAULT NULL, ADD COLUMN start_date date DEFAULT NULL;

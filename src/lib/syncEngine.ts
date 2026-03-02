@@ -382,6 +382,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
             return [];
           })(),
           color: p.color,
+          eventDate: (p as unknown as { event_date?: string }).event_date || undefined,
+          startDate: (p as unknown as { start_date?: string }).start_date || undefined,
           createdAt: p.created_at.split('T')[0]
         })),
         transactions: cloudTransactions.map(t => ({

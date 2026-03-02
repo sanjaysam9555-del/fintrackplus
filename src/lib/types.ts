@@ -28,6 +28,8 @@ export interface Project {
   color: string;
   archived?: boolean;
   labelIds?: string[];
+  eventDate?: string;
+  startDate?: string;
   createdAt: string;
 }
 

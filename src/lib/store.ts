@@ -806,6 +806,8 @@ export const useFinanceStore = create<FinanceStore>()(
               expected_margin: project.expectedMargin || 0,
               color: project.color,
               label_ids: project.labelIds || [],
+              event_date: project.eventDate || null,
+              start_date: project.startDate || null,
             },
             userId: uid,
           });
@@ -887,6 +889,8 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
           if (updates.color) dbUpdates.color = updates.color;
           if (updates.labelIds !== undefined) dbUpdates.label_ids = updates.labelIds;
+          if (updates.eventDate !== undefined) dbUpdates.event_date = updates.eventDate || null;
+          if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate || null;
           
           addToSyncQueue({
             type: 'update',

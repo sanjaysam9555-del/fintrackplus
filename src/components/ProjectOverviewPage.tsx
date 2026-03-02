@@ -185,6 +185,25 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
     }
   };
 
+  // If a project is selected, render the full-page detail view
+  if (selectedProject) {
+    return (
+      <div className="relative min-h-screen">
+        <ProjectDetailSheet
+          project={selectedProject}
+          isOpen={true}
+          onClose={() => setSelectedProject(null)}
+          spent={getProjectSpending(selectedProject.id)}
+          income={getProjectIncome(selectedProject.id)}
+          transactions={getProjectTransactions(selectedProject.id)}
+          vendorBreakdown={getVendorBreakdown(selectedProject.id)}
+          userId={userId}
+          onEditSheetChange={onEditSheetChange}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background pb-40 md:pb-8 md:px-6 md:max-w-6xl">
       {/* Enhanced Header */}
@@ -787,18 +806,6 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
         )}
       </div>
 
-      {/* Project Detail Sheet */}
-      <ProjectDetailSheet
-        project={selectedProject}
-        isOpen={!!selectedProject}
-        onClose={() => setSelectedProject(null)}
-        spent={selectedProject ? getProjectSpending(selectedProject.id) : 0}
-        income={selectedProject ? getProjectIncome(selectedProject.id) : 0}
-        transactions={selectedProject ? getProjectTransactions(selectedProject.id) : []}
-        vendorBreakdown={selectedProject ? getVendorBreakdown(selectedProject.id) : []}
-        userId={userId}
-        onEditSheetChange={onEditSheetChange}
-      />
 
       {/* Archive Confirmation Dialog */}
       <DeleteConfirmDialog
