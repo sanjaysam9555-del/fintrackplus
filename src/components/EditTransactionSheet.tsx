@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users } from "lucide-react";
+import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,6 +47,8 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [showVendors, setShowVendors] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [vendorSearch, setVendorSearch] = useState("");
+  const [categorySearch, setCategorySearch] = useState("");
+  const [projectSearch, setProjectSearch] = useState("");
   const [receiptUrl, setReceiptUrl] = useState<string | undefined>(transaction.receiptUrl);
   const [isGst, setIsGst] = useState(transaction.isGst || false);
 
@@ -233,7 +235,10 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                 {/* Category Dropdown */}
                 <div>
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">Category *</Label>
-                  <Popover open={showCategories} onOpenChange={setShowCategories}>
+                  <Popover open={showCategories} onOpenChange={(open) => {
+                    setShowCategories(open);
+                    if (!open) setCategorySearch("");
+                  }}>
                     <PopoverTrigger asChild>
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                         {selectedCategory ? (
@@ -253,11 +258,21 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-72 p-2 bg-card z-[90]" align="start">
-                      <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y">
+                      <div className="relative mb-2">
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          value={categorySearch}
+                          onChange={(e) => setCategorySearch(e.target.value)}
+                          placeholder="Search categories..."
+                          className="pl-8 h-8 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto overscroll-contain touch-pan-y">
                         <div className="space-y-1">
-                          {filteredCategories.length > 0 ? (
+                          {filteredCategories.filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase())).length > 0 ? (
                             <>
-                              {filteredCategories.map((cat) => (
+                              {filteredCategories.filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase())).map((cat) => (
                                 <button
                                   key={cat.id}
                                   onClick={() => {
@@ -373,7 +388,17 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-72 p-2 bg-card z-[90]" align="start">
-                      <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y">
+                      <div className="relative mb-2">
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          value={vendorSearch}
+                          onChange={(e) => setVendorSearch(e.target.value)}
+                          placeholder="Search vendors..."
+                          className="pl-8 h-8 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto overscroll-contain touch-pan-y">
                         <div className="space-y-1">
                           {allVendors.length > 0 ? (
                             <>
@@ -474,7 +499,10 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                   <Label className="text-xs text-muted-foreground uppercase tracking-wide">
                     Project <span className="text-muted-foreground/60">(optional)</span>
                   </Label>
-                  <Popover open={showProjects} onOpenChange={setShowProjects}>
+                  <Popover open={showProjects} onOpenChange={(open) => {
+                    setShowProjects(open);
+                    if (!open) setProjectSearch("");
+                  }}>
                     <PopoverTrigger asChild>
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                         {selectedProject ? (
@@ -492,7 +520,17 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-72 p-2 bg-card z-[90]" align="start">
-                      <div className="max-h-64 overflow-y-auto overscroll-contain touch-pan-y">
+                      <div className="relative mb-2">
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                          value={projectSearch}
+                          onChange={(e) => setProjectSearch(e.target.value)}
+                          placeholder="Search projects..."
+                          className="pl-8 h-8 text-sm"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-52 overflow-y-auto overscroll-contain touch-pan-y">
                         <div className="space-y-1">
                           <button
                             onClick={() => {
@@ -506,9 +544,9 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                           >
                             No Project
                           </button>
-                          {projects.filter(p => !p.archived).length > 0 ? (
+                          {projects.filter(p => !p.archived).filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
                             <>
-                              {projects.filter(p => !p.archived).map((proj) => (
+                              {projects.filter(p => !p.archived).filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
                                 <button
                                   key={proj.id}
                                   onClick={() => {
