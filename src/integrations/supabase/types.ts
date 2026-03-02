@@ -212,12 +212,14 @@ export type Database = {
           color: string
           created_at: string
           description: string | null
+          event_date: string | null
           expected_margin: number
           id: string
           label_ids: Json
           margin: number
           name: string
           notes: string | null
+          start_date: string | null
           user_id: string
         }
         Insert: {
@@ -226,12 +228,14 @@ export type Database = {
           color?: string
           created_at?: string
           description?: string | null
+          event_date?: string | null
           expected_margin?: number
           id?: string
           label_ids?: Json
           margin?: number
           name: string
           notes?: string | null
+          start_date?: string | null
           user_id: string
         }
         Update: {
@@ -240,12 +244,14 @@ export type Database = {
           color?: string
           created_at?: string
           description?: string | null
+          event_date?: string | null
           expected_margin?: number
           id?: string
           label_ids?: Json
           margin?: number
           name?: string
           notes?: string | null
+          start_date?: string | null
           user_id?: string
         }
         Relationships: []

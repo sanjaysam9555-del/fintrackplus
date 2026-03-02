@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { X, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, Wallet, TrendingUp, TrendingDown, Save, Check } from "lucide-react";
+import { ArrowLeft, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, Wallet, TrendingUp, TrendingDown, Save, Check, Calendar, Tag, X } from "lucide-react";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
 import { useProjectDocuments } from "@/hooks/useProjectDocuments";
@@ -8,12 +8,6 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/constants";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-} from "@/components/ui/drawer";
 import { Textarea } from "@/components/ui/textarea";
 import { TransactionItem } from "./TransactionItem";
 import {
@@ -52,7 +46,7 @@ export const ProjectDetailSheet = ({
   userId,
   onEditSheetChange,
 }: ProjectDetailSheetProps) => {
-  const { getCategoryById, updateProject, transactions: allTransactions } = useFinanceStore();
+  const { getCategoryById, updateProject, transactions: allTransactions, projectLabels } = useFinanceStore();
   const [isChildEditing, setIsChildEditing] = useState(false);
   
   const handleChildEditSheetChange = useCallback((open: boolean) => {
@@ -64,7 +58,8 @@ export const ProjectDetailSheet = ({
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
   const [isSearching, setIsSearching] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [docsOpen, setDocsOpen] = useState(false);
+  const [incomeOpen, setIncomeOpen] = useState(false);
+  const [expenseOpen, setExpenseOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { documents, isLoading: docsLoading, isUploading, uploadDocument, deleteDocument } = useProjectDocuments(project?.id, userId);
   
@@ -74,7 +69,7 @@ export const ProjectDetailSheet = ({
     return allTransactions.filter(t => t.projectId === project.id);
   }, [allTransactions, project?.id]);
   
-  // Sort and separate transactions - memoize for use in hooks
+  // Sort and separate transactions
   const { sortedTransactions, incomeTransactions, expenseTransactions } = useMemo(() => {
     const sorted = [...projectTransactions].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -85,20 +80,19 @@ export const ProjectDetailSheet = ({
       expenseTransactions: sorted.filter(t => t.type === 'expense'),
     };
   }, [projectTransactions]);
+
+  const totalIncome = useMemo(() => incomeTransactions.reduce((s, t) => s + t.amount, 0), [incomeTransactions]);
+  const totalExpense = useMemo(() => expenseTransactions.reduce((s, t) => s + t.amount, 0), [expenseTransactions]);
   
   const toggleVendor = useCallback((vendor: string) => {
     setExpandedVendors(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(vendor)) {
-        newSet.delete(vendor);
-      } else {
-        newSet.add(vendor);
-      }
+      if (newSet.has(vendor)) newSet.delete(vendor);
+      else newSet.add(vendor);
       return newSet;
     });
   }, []);
   
-  // Get transactions for a specific vendor
   const getVendorTransactions = useCallback((vendorName: string) => {
     return expenseTransactions.filter(t => t.vendor === vendorName)
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -121,16 +115,15 @@ export const ProjectDetailSheet = ({
     });
   }, [searchQuery, sortedTransactions, getCategoryById]);
   
-  // Clear search when drawer closes
   useEffect(() => {
     if (!isOpen) {
       setSearchQuery("");
       setIsSearching(false);
+      setIncomeOpen(false);
+      setExpenseOpen(false);
     }
   }, [isOpen]);
   
-  // Sync notes state with project
-  // Only set notes from project on initial open or project ID change
   const prevProjectId = useRef<string | null>(null);
   useEffect(() => {
     if (project && project.id !== prevProjectId.current) {
@@ -139,7 +132,6 @@ export const ProjectDetailSheet = ({
     }
   }, [project]);
 
-  // Reset when sheet closes
   useEffect(() => {
     if (!isOpen) {
       prevProjectId.current = null;
@@ -161,101 +153,155 @@ export const ProjectDetailSheet = ({
     toast.success("Notes saved");
   }, [project, userId, notes, updateProject]);
   
-  if (!project) return null;
+  if (!project || !isOpen) return null;
 
   const net = income - spent;
-  const actualMargin = project.internalCost - spent;
-  const expectedMargin = project.clientCost > 0 ? project.clientCost - project.internalCost : 0;
-  const isHealthy = actualMargin >= 0;
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getDocIcon = (fileType: string, fileName: string) => {
+    if (fileType.startsWith('image/')) return Image;
+    if (fileType.includes('spreadsheet') || fileType.includes('excel') || fileName.endsWith('.csv')) return FileSpreadsheet;
+    if (fileType.includes('pdf')) return FileText;
+    return File;
+  };
 
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => { if (!open && !isChildEditing) onClose(); }} shouldScaleBackground={false} modal={false}>
-      <DrawerContent className={cn("max-h-[85vh]", isChildEditing && "hidden")} overlayClassName={cn(isChildEditing && "hidden")}>
-        <DrawerHeader className="border-b border-border pb-4 shrink-0">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: `${project.color}20` }}
-            >
-              <FolderKanban size={22} style={{ color: project.color }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <DrawerTitle className="text-left truncate">{project.name}</DrawerTitle>
-              {project.description && (
-                <p className="text-sm text-muted-foreground mt-0.5 truncate">{project.description}</p>
-              )}
-            </div>
-            <button
-              onClick={() => setIsSearching(!isSearching)}
-              className={cn(
-                "p-2 rounded-full hover:bg-muted transition-colors shrink-0",
-                isSearching && "bg-muted"
-              )}
-            >
-              <Search size={18} className="text-muted-foreground" />
-            </button>
-            <button
-              onClick={onClose}
-              className="p-2 rounded-full hover:bg-muted transition-colors shrink-0"
-            >
-              <X size={20} />
-            </button>
+    <div className="absolute inset-0 z-20 bg-background flex flex-col">
+      {/* Sticky Header */}
+      <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 border-b border-border px-4 py-3 safe-top">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={onClose}
+            className="p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
+          >
+            <ArrowLeft size={20} />
+          </button>
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+            style={{ backgroundColor: `${project.color}20` }}
+          >
+            <FolderKanban size={18} style={{ color: project.color }} />
           </div>
-          
-          {/* Inline search bar when active */}
-          {isSearching && (
-            <div className="mt-3 flex items-center gap-2 bg-muted rounded-xl px-3 py-2">
-              <Search size={16} className="text-muted-foreground shrink-0" />
-              <input
-                autoFocus
-                placeholder="Search in this project..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="shrink-0">
-                  <X size={16} className="text-muted-foreground" />
-                </button>
-              )}
-            </div>
-          )}
-        </DrawerHeader>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold truncate">{project.name}</h1>
+            {project.description && (
+              <p className="text-xs text-muted-foreground truncate">{project.description}</p>
+            )}
+          </div>
+          <button
+            onClick={() => setIsSearching(!isSearching)}
+            className={cn(
+              "p-2 rounded-full hover:bg-muted transition-colors shrink-0",
+              isSearching && "bg-muted"
+            )}
+          >
+            <Search size={18} className="text-muted-foreground" />
+          </button>
+        </div>
 
-        <div 
-          className="flex-1 min-h-0 overflow-y-auto w-full"
-          data-vaul-no-drag
-          style={{ WebkitOverflowScrolling: 'touch' }}
-        >
-          {searchQuery.trim() ? (
-            /* Search Results View */
-            <div className="p-3 space-y-2 w-full min-w-0">
-              <p className="text-xs text-muted-foreground mb-2">
-                {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} in this project
-              </p>
-              {searchResults.length > 0 ? (
-                <div className="space-y-1.5">
-                  {searchResults.map((transaction) => (
-                    <TransactionItem
-                      key={transaction.id}
-                      transaction={transaction}
-                      category={getCategoryById(transaction.categoryId)}
-                      userId={userId}
-                      onEditSheetChange={handleChildEditSheetChange}
-                      compact
-                    />
-                  ))}
+        {isSearching && (
+          <div className="mt-3 flex items-center gap-2 bg-muted rounded-xl px-3 py-2">
+            <Search size={16} className="text-muted-foreground shrink-0" />
+            <input
+              autoFocus
+              placeholder="Search in this project..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="shrink-0">
+                <X size={16} className="text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {searchQuery.trim() ? (
+          <div className="p-4 space-y-2">
+            <p className="text-xs text-muted-foreground mb-2">
+              {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} in this project
+            </p>
+            {searchResults.length > 0 ? (
+              <div className="space-y-1.5">
+                {searchResults.map((transaction) => (
+                  <TransactionItem
+                    key={transaction.id}
+                    transaction={transaction}
+                    category={getCategoryById(transaction.categoryId)}
+                    userId={userId}
+                    onEditSheetChange={handleChildEditSheetChange}
+                    compact
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Search size={32} className="mx-auto mb-2 opacity-50" />
+                <p className="font-medium">No matching transactions</p>
+                <p className="text-sm mt-1">Try a different search term</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-4 space-y-4 pb-40">
+            {/* Project Info Card */}
+            <div className="bg-card rounded-xl border border-border p-3 space-y-2.5">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Event Date</p>
+                    <p className="text-sm font-medium">
+                      {project.eventDate ? format(new Date(project.eventDate), 'MMM d, yyyy') : 'Not set'}
+                    </p>
+                  </div>
                 </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <Search size={32} className="mx-auto mb-2 opacity-50" />
-                  <p className="font-medium">No matching transactions</p>
-                  <p className="text-sm mt-1">Try a different search term</p>
+                <div className="flex items-center gap-2">
+                  <Calendar size={14} className="text-muted-foreground shrink-0" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Start Date</p>
+                    <p className="text-sm font-medium">
+                      {project.startDate ? format(new Date(project.startDate), 'MMM d, yyyy') : 'Not set'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar size={14} className="text-muted-foreground shrink-0" />
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Created</p>
+                  <p className="text-sm font-medium">{format(new Date(project.createdAt), 'MMM d, yyyy')}</p>
+                </div>
+              </div>
+              {Array.isArray(project.labelIds) && project.labelIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {project.labelIds.map(lid => {
+                    const label = projectLabels.find(l => l.id === lid);
+                    if (!label) return null;
+                    return (
+                      <span
+                        key={lid}
+                        className="text-[10px] px-2 py-0.5 rounded-full text-white font-medium flex items-center gap-1"
+                        style={{ backgroundColor: label.color }}
+                      >
+                        <Tag size={8} />
+                        #{label.name}
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          ) : (
-          <div className="p-3 space-y-4 w-full min-w-0">
+
             {/* Financial Summary - 2x2 Grid */}
             <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden w-full">
               <div className="bg-card p-3 flex flex-col items-center gap-0.5">
@@ -280,12 +326,12 @@ export const ProjectDetailSheet = ({
                 <p className="text-sm font-bold text-destructive">₹{spent.toLocaleString()}</p>
               </div>
               <div className="bg-card p-3 flex flex-col items-center gap-0.5">
-                <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", (income - spent) >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-                  {(income - spent) >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
+                <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
+                  {net >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
                 </div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-                <p className={cn("text-sm font-bold", (income - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                  ₹{(income - spent).toLocaleString()}
+                <p className={cn("text-sm font-bold", net >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                  ₹{net.toLocaleString()}
                 </p>
               </div>
             </div>
@@ -327,48 +373,161 @@ export const ProjectDetailSheet = ({
               />
             </div>
 
-            {/* Income Entries */}
-            {incomeTransactions.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                  <ArrowDown size={14} className="text-green-500" />
-                  Income Entries ({incomeTransactions.length})
+            {/* Documents Section (above income) */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold flex items-center gap-1.5">
+                  <FileText size={14} className="text-muted-foreground" />
+                  Documents {documents.length > 0 && `(${documents.length})`}
                 </h3>
-                <div className="space-y-1.5 w-full overflow-hidden">
-                  {incomeTransactions.map((transaction) => (
-                    <TransactionItem
-                      key={transaction.id}
-                      transaction={transaction}
-                      category={getCategoryById(transaction.categoryId)}
-                      userId={userId}
-                      onEditSheetChange={handleChildEditSheetChange}
-                      compact
-                    />
-                  ))}
-                </div>
               </div>
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.txt,.csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 20 * 1024 * 1024) {
+                        toast.error("File too large. Max 20MB.");
+                        return;
+                      }
+                      uploadDocument(file);
+                    }
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-muted-foreground/20 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
+                >
+                  {isUploading ? (
+                    <><Loader2 size={14} className="animate-spin" /> Uploading...</>
+                  ) : (
+                    <><Upload size={14} /> Upload Document</>
+                  )}
+                </button>
+
+                {docsLoading ? (
+                  <div className="flex justify-center py-4">
+                    <Loader2 size={20} className="animate-spin text-muted-foreground" />
+                  </div>
+                ) : documents.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-2">No documents yet</p>
+                ) : (
+                  documents.map(doc => {
+                    const isImage = doc.fileType.startsWith('image/');
+                    const DocIcon = getDocIcon(doc.fileType, doc.fileName);
+
+                    return (
+                      <div key={doc.id} className="flex items-center gap-2.5 bg-muted/50 rounded-lg p-2.5">
+                        {isImage ? (
+                          <img
+                            src={doc.fileUrl}
+                            alt={doc.fileName}
+                            className="w-12 h-12 rounded-lg object-cover shrink-0"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).style.display = 'none';
+                              (e.currentTarget.nextElementSibling as HTMLElement)?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={cn("w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0", isImage && "hidden")}>
+                          <DocIcon size={20} className="text-primary" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{doc.fileName}</p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {formatSize(doc.fileSize)} · {new Date(doc.uploadedAt).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <a
+                          href={doc.fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 hover:bg-muted rounded-lg shrink-0"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink size={14} className="text-muted-foreground" />
+                        </a>
+                        <button
+                          onClick={() => deleteDocument(doc.id)}
+                          className="p-1.5 hover:bg-destructive/10 rounded-lg shrink-0"
+                        >
+                          <Trash2 size={14} className="text-destructive" />
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Income Entries - Collapsed by default */}
+            {incomeTransactions.length > 0 && (
+              <Collapsible open={incomeOpen} onOpenChange={setIncomeOpen}>
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                    <div className="flex items-center gap-1.5">
+                      <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", incomeOpen && "rotate-180")} />
+                      <ArrowDown size={14} className="text-green-500" />
+                      <span className="text-sm font-semibold">Income Entries ({incomeTransactions.length})</span>
+                    </div>
+                    <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                      {formatCurrency(totalIncome)}
+                    </span>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-1.5 mt-2">
+                    {incomeTransactions.map((transaction) => (
+                      <TransactionItem
+                        key={transaction.id}
+                        transaction={transaction}
+                        category={getCategoryById(transaction.categoryId)}
+                        userId={userId}
+                        onEditSheetChange={handleChildEditSheetChange}
+                        compact
+                      />
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
 
-            {/* Expense Entries */}
+            {/* Expense Entries - Collapsed by default */}
             {expenseTransactions.length > 0 && (
-              <div>
-                <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
-                  <ArrowUp size={14} className="text-red-500" />
-                  Expense Entries ({expenseTransactions.length})
-                </h3>
-                <div className="space-y-1.5 w-full overflow-hidden">
-                  {expenseTransactions.map((transaction) => (
-                    <TransactionItem
-                      key={transaction.id}
-                      transaction={transaction}
-                      category={getCategoryById(transaction.categoryId)}
-                      userId={userId}
-                      onEditSheetChange={handleChildEditSheetChange}
-                      compact
-                    />
-                  ))}
-                </div>
-              </div>
+              <Collapsible open={expenseOpen} onOpenChange={setExpenseOpen}>
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                    <div className="flex items-center gap-1.5">
+                      <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", expenseOpen && "rotate-180")} />
+                      <ArrowUp size={14} className="text-red-500" />
+                      <span className="text-sm font-semibold">Expense Entries ({expenseTransactions.length})</span>
+                    </div>
+                    <span className="text-sm font-bold text-destructive">
+                      {formatCurrency(totalExpense)}
+                    </span>
+                  </button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-1.5 mt-2">
+                    {expenseTransactions.map((transaction) => (
+                      <TransactionItem
+                        key={transaction.id}
+                        transaction={transaction}
+                        category={getCategoryById(transaction.categoryId)}
+                        userId={userId}
+                        onEditSheetChange={handleChildEditSheetChange}
+                        compact
+                      />
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             )}
 
             {/* Vendor Breakdown */}
@@ -436,103 +595,6 @@ export const ProjectDetailSheet = ({
               </div>
             )}
 
-            {/* Documents Section */}
-            <Collapsible open={docsOpen} onOpenChange={setDocsOpen}>
-              <CollapsibleTrigger asChild>
-                <button className="w-full flex items-center justify-between py-2">
-                  <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                    <FileText size={14} className="text-muted-foreground" />
-                    Documents {documents.length > 0 && `(${documents.length})`}
-                  </h3>
-                  <ChevronDown size={14} className={`text-muted-foreground transition-transform duration-200 ${docsOpen ? 'rotate-180' : ''}`} />
-                </button>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <div className="space-y-2 pb-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.webp,.txt,.csv"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        if (file.size > 20 * 1024 * 1024) {
-                          toast.error("File too large. Max 20MB.");
-                          return;
-                        }
-                        uploadDocument(file);
-                      }
-                      e.target.value = '';
-                    }}
-                  />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 border-2 border-dashed border-muted-foreground/20 rounded-lg text-sm text-muted-foreground hover:bg-muted/50 transition-colors disabled:opacity-50"
-                  >
-                    {isUploading ? (
-                      <><Loader2 size={14} className="animate-spin" /> Uploading...</>
-                    ) : (
-                      <><Upload size={14} /> Upload Document</>
-                    )}
-                  </button>
-
-                  {docsLoading ? (
-                    <div className="flex justify-center py-4">
-                      <Loader2 size={20} className="animate-spin text-muted-foreground" />
-                    </div>
-                  ) : documents.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-2">No documents yet</p>
-                  ) : (
-                    documents.map(doc => {
-                      const getDocIcon = () => {
-                        if (doc.fileType.startsWith('image/')) return Image;
-                        if (doc.fileType.includes('spreadsheet') || doc.fileType.includes('excel') || doc.fileName.endsWith('.csv')) return FileSpreadsheet;
-                        if (doc.fileType.includes('pdf')) return FileText;
-                        return File;
-                      };
-                      const DocIcon = getDocIcon();
-                      const formatSize = (bytes: number) => {
-                        if (bytes < 1024) return `${bytes} B`;
-                        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-                        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-                      };
-
-                      return (
-                        <div key={doc.id} className="flex items-center gap-2.5 bg-muted/50 rounded-lg p-2.5">
-                          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                            <DocIcon size={16} className="text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{doc.fileName}</p>
-                            <p className="text-[10px] text-muted-foreground">
-                              {formatSize(doc.fileSize)} · {new Date(doc.uploadedAt).toLocaleDateString()}
-                            </p>
-                          </div>
-                          <a
-                            href={doc.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1.5 hover:bg-muted rounded-lg shrink-0"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <ExternalLink size={14} className="text-muted-foreground" />
-                          </a>
-                          <button
-                            onClick={() => deleteDocument(doc.id)}
-                            className="p-1.5 hover:bg-destructive/10 rounded-lg shrink-0"
-                          >
-                            <Trash2 size={14} className="text-destructive" />
-                          </button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
             {sortedTransactions.length === 0 && (
               <div className="text-center py-8 text-muted-foreground">
                 <Receipt size={40} className="mx-auto mb-2 opacity-50" />
@@ -540,9 +602,8 @@ export const ProjectDetailSheet = ({
               </div>
             )}
           </div>
-          )}
-        </div>
-      </DrawerContent>
-    </Drawer>
+        )}
+      </div>
+    </div>
   );
 };
