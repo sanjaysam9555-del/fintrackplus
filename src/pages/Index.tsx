@@ -116,11 +116,6 @@ const Index = () => {
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const handleEditSheetChange = useCallback((open: boolean) => {
     setIsEditSheetOpen(open);
-    if (!open) {
-      requestAnimationFrame(() => {
-        scrollContainerRef.current?.scrollTo({ top: 0 });
-      });
-    }
   }, []);
   const { syncStatus } = useFinanceStore();
   const { user } = useAuth();
