@@ -1,76 +1,36 @@
 
 
-# AI-Powered Deep Insights for AI Summary Page
-
-## Overview
-Add a new "Deep Insights" section to the AI Summary page that uses Lovable AI (via an edge function) to analyze the user's financial data and generate rich, contextual insights like liquidity analysis, profitability patterns, vendor concentration, partner specialization, seasonality risks, and GST compliance observations.
-
-## Architecture
-
-```text
-AISummaryPage
-  └─ [Generate Insights] button / auto-trigger
-       └─ Calls edge function: supabase/functions/ai-insights/index.ts
-            └─ Receives summarized financial data (NOT raw transactions)
-            └─ Calls Lovable AI Gateway (gemini-3-flash-preview)
-            └─ Returns structured insights via tool calling
-       └─ Renders in new DeepInsights component below SmartInsights
-```
+# Deep Insights: Move to Bottom, Auto-Generate, and Redesign Cards
 
 ## Changes
 
-### 1. New Edge Function: `supabase/functions/ai-insights/index.ts`
-- Accepts a JSON payload of **pre-aggregated** financial summaries (totals, partner splits, vendor breakdowns, project margins, monthly trends, payment method splits, GST stats)
-- Sends to Lovable AI Gateway with a detailed system prompt instructing it to generate 3-7 insights from the 7 categories (liquidity, profitability scaling, vendor concentration, partner specialization, dead money, GST compliance, seasonality)
-- Uses **tool calling** to extract structured output: array of `{ title, category, severity, body, actionable_tip }`
-- Returns JSON array of insights
-- Handles 429/402 errors properly
+### 1. `src/components/AISummaryPage.tsx`
+- **Move Deep Insights** to after Pending Installments (the very bottom of the page)
+- **Auto-generate on mount**: Call `generateDeepInsights()` automatically via `useEffect` when `hasData` is true and insights are empty, instead of requiring a manual button press
+- **Cache with 2-week TTL**: Store insights + timestamp in `localStorage`. On mount, load cached insights if less than 14 days old; otherwise auto-regenerate. The Refresh button still allows manual regeneration.
 
-### 2. New Component: `src/components/ai-summary/DeepInsights.tsx`
-- Displays AI-generated insights in expandable accordion cards
-- Each card shows: category badge, title, severity indicator, body text, and actionable tip
-- Loading state with skeleton animation while AI generates
-- "Regenerate" button to refresh insights
-- Error state with retry option
+### 2. `src/components/ai-summary/DeepInsights.tsx`
+- **Remove the "Generate" empty state button** — insights will always auto-load
+- **Redesign InsightCard** for better readability:
+  - Severity-colored left border strip on each card (blue/amber/red) instead of small icon
+  - Category badge + severity label shown together in header
+  - Title rendered larger and bolder
+  - Body text always visible (no accordion collapse) — the insight content is the whole point
+  - Actionable tip styled as a distinct callout box with background tint and lightbulb icon (keep existing but make more prominent with slightly larger text)
+  - Add subtle spacing between cards
+- **Keep**: Loading skeletons, error state with retry, Refresh button in header
 
-### 3. Update: `src/components/AISummaryPage.tsx`
-- Add data aggregation logic to prepare the summary payload:
-  - Cash vs online balances per partner
-  - Per-project margins (income vs expense)
-  - Top vendor spending percentages
-  - Monthly income/expense trend (for seasonality)
-  - GST transaction percentage
-  - Partner-level income/expense/payment-method breakdowns
-- Add state for `deepInsights`, `isGenerating`, `error`
-- Call the edge function on mount (or via button) when sufficient data exists
-- Render `<DeepInsights>` below the existing `<SmartInsights>` section
-
-### 4. Update: `supabase/config.toml`
-- Add `[functions.ai-insights]` with `verify_jwt = true` (requires authenticated user)
-
-## Data Payload Shape (sent to edge function)
-```typescript
-{
-  fyIncome, fyExpense, netBalance,
-  cashBalance, onlineBalance,           // aggregated across partners
-  partnerBreakdowns: [{ name, cashIncome, cashExpense, onlineIncome, onlineExpense }],
-  projectMargins: [{ name, clientCost, income, expense, marginPercent }],
-  topVendors: [{ name, totalSpend, percentOfTotal }],
-  monthlyTrend: [{ month, income, expense }],
-  gstTransactionPercent,
-  categoryBreakdown: [{ name, amount, percent }],
-  paymentMethodSplit: { expenseCash, expenseOnline, incomeCash, incomeOnline }
-}
+### 3. Layout order (bottom of page)
+```
+... existing sections ...
+Pending Installments
+Deep Insights        ← moved here (last section)
 ```
 
-This keeps raw transaction data off the wire and gives the AI model a clean summary to reason about.
+## Files Modified
 
-## Files Modified/Created
-
-| File | Action |
+| File | Change |
 |------|--------|
-| `supabase/functions/ai-insights/index.ts` | Create — edge function with AI gateway call |
-| `src/components/ai-summary/DeepInsights.tsx` | Create — accordion-style AI insight cards |
-| `src/components/AISummaryPage.tsx` | Update — aggregate data, call edge function, render DeepInsights |
-| `supabase/config.toml` | Update — add ai-insights function config |
+| `src/components/AISummaryPage.tsx` | Move DeepInsights to bottom, add useEffect auto-generate with localStorage cache (14-day TTL) |
+| `src/components/ai-summary/DeepInsights.tsx` | Remove manual generate button, redesign cards: colored left border, always-expanded body, larger title, prominent actionable tip |
 
