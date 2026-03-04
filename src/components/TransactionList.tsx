@@ -119,6 +119,63 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
     
     const dataPoints: { name: string; value: number }[] = [];
     
+    if (timeFilter === 'all') {
+      if (filteredTransactions.length === 0) return [];
+      
+      const txDates = filteredTransactions.map(t => parseISO(t.date).getTime());
+      const earliestDate = new Date(Math.min(...txDates));
+      const latestDate = new Date(Math.min(Math.max(...txDates), today.getTime()));
+      const realDaysDiff = differenceInDays(latestDate, earliestDate);
+      
+      if (realDaysDiff <= 14) {
+        for (let i = 0; i <= realDaysDiff; i++) {
+          const day = new Date(earliestDate);
+          day.setDate(earliestDate.getDate() + i);
+          const dayStr = format(day, 'yyyy-MM-dd');
+          const dayTxns = filteredTransactions.filter(t => t.date === dayStr);
+          dataPoints.push({
+            name: format(day, 'EEE'),
+            value: dayTxns.reduce((sum, t) => sum + t.amount, 0),
+          });
+        }
+      } else if (realDaysDiff <= 60) {
+        const numWeeks = Math.ceil(realDaysDiff / 7);
+        for (let i = 0; i < numWeeks; i++) {
+          const weekStart = new Date(earliestDate);
+          weekStart.setDate(earliestDate.getDate() + (i * 7));
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          const clampedEnd = weekEnd > latestDate ? latestDate : weekEnd;
+          
+          const weekTxns = filteredTransactions.filter(t => {
+            const d = parseISO(t.date);
+            return d >= weekStart && d <= clampedEnd;
+          });
+          dataPoints.push({
+            name: `W${i + 1}`,
+            value: weekTxns.reduce((sum, t) => sum + t.amount, 0),
+          });
+        }
+      } else {
+        const useYearSuffix = realDaysDiff > 730;
+        let current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+        while (current <= latestDate) {
+          const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
+          const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+          const monthTxns = filteredTransactions.filter(t => {
+            const d = parseISO(t.date);
+            return d >= monthStart && d <= monthEnd;
+          });
+          dataPoints.push({
+            name: format(monthStart, useYearSuffix ? "MMM ''yy" : 'MMM'),
+            value: monthTxns.reduce((sum, t) => sum + t.amount, 0),
+          });
+          current.setMonth(current.getMonth() + 1);
+        }
+      }
+      return dataPoints;
+    }
+    
     if (timeFilter === 'fy') {
       // Financial Year: Generate months from start to min(endDate, today)
       const actualEnd = endDate > today ? today : endDate;
