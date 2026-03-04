@@ -1,30 +1,48 @@
 
 
-# Fix Duplicate Warning Visibility in Transaction Form
+# Fix "All Time" Chart in Income/Expense Tabs
 
 ## Problem
-The duplicate warning renders at the **top** of the form inside a `ScrollArea`. When a user fills in all fields and clicks "Add", the warning appears above the viewport — the user sees nothing happen with no indication why.
+The `TransactionList.tsx` chart has no dedicated logic for `timeFilter === 'all'`. It falls into the `year` branch using the hardcoded date range of 2000-01-01 to 2099-12-31, generating hundreds of empty month data points instead of reflecting only the user's actual transaction history.
+
+The `CashFlowChart.tsx` (Dashboard) already has correct "All Time" logic that detects actual transaction boundaries — this same approach needs to be applied to `TransactionList.tsx`.
 
 ## Solution
-Replace the inline `DuplicateWarning` at the top of the form with a **toast-style alert dialog** that appears as a modal overlay, visible regardless of scroll position. This ensures the user always sees the warning.
+Add an `'all'` case to the `chartData` computation in `TransactionList.tsx`, mirroring the logic from `CashFlowChart.tsx`:
 
-## Changes
+### File: `src/components/TransactionList.tsx` (lines ~113-240)
 
-### File: `src/components/AddTransactionSheet.tsx`
+Insert a new block **before** the existing `if (timeFilter === 'fy')` check:
 
-1. **Remove** the `<DuplicateWarning>` component render from inside the `ScrollArea` (lines ~280-286)
-2. **Remove** the `DuplicateWarning` import
-3. **Replace** with an `AlertDialog` that opens when `showDuplicateWarning` is true:
-   - Shows "Potential Duplicate Detected" title
-   - Lists matching transactions with amount, date, and match reasons
-   - Two buttons: "Cancel" (dismisses) and "Add Anyway" (proceeds)
-   - Rendered **outside** the ScrollArea so it's always visible as a modal overlay
+```tsx
+if (timeFilter === 'all') {
+  if (filteredTransactions.length === 0) return [];
+  
+  const txDates = filteredTransactions.map(t => parseISO(t.date).getTime());
+  const earliestDate = new Date(Math.min(...txDates));
+  const latestDate = new Date(Math.min(Math.max(...txDates), today.getTime()));
+  const realDaysDiff = differenceInDays(latestDate, earliestDate);
 
-The existing state (`showDuplicateWarning`, `duplicates`) and handlers (`handleDismissDuplicate`, `handleProceedAnyway`) remain unchanged — only the UI presentation changes from an inline banner to a modal dialog.
+  if (realDaysDiff <= 14) {
+    // Daily granularity
+    for (let i = 0; i <= realDaysDiff; i++) { ... }
+  } else if (realDaysDiff <= 60) {
+    // Weekly granularity
+    for (let i = 0; i < numWeeks; i++) { ... }
+  } else {
+    // Monthly granularity (with 'MMM' or "MMM 'yy" for >2 years)
+    let current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+    while (current <= latestDate) { ... }
+  }
+  return dataPoints;
+}
+```
 
-### Files Modified
+This detects the earliest and latest transaction dates, calculates the real span, and dynamically picks daily/weekly/monthly X-axis granularity — showing only the months/weeks/days that have actual data.
+
+## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/AddTransactionSheet.tsx` | Replace inline DuplicateWarning with AlertDialog overlay |
+| `src/components/TransactionList.tsx` | Add `timeFilter === 'all'` block to `chartData` with dynamic boundary detection |
 
