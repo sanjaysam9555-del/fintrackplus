@@ -1,39 +1,52 @@
 
 
-# Fix Missing Icon on "Not Specified" Default Categories
+# Pre-select "Not Specified" & Pin It to Top in Dropdowns
 
 ## Problem
-When "Not Specified" categories already exist in the cloud database (possibly with empty or null `icon`/`color` fields), the store skips creating them since it only checks `some(c => c.name === 'Not Specified')`. The existing entries may have missing icon/color values, causing invisible or missing icons on the Categories settings page.
+When adding a transaction, the category field starts empty (no pre-selection), and "Not Specified" entries don't appear at the top of category/vendor dropdowns.
 
-## Solution
-After the existence check in `src/lib/store.ts`, also **patch** any existing "Not Specified" entries that have missing `icon` or `color` values.
+## Changes
 
-### File: `src/lib/store.ts` (lines ~214-228)
+### File: `src/components/AddTransactionSheet.tsx`
 
-After the current "ensure exists" blocks, add patching logic:
+**1. Pre-select "Not Specified" category on form open/type change**
+
+Add an `useEffect` that sets `categoryId` to the "Not Specified" category's ID when the form opens or the transaction type changes (and no category is already selected):
 
 ```typescript
-// Patch existing "Not Specified" entries with missing icon/color
-mergedCategories.forEach((c, i) => {
-  if (c.name === 'Not Specified') {
-    if (!c.icon) mergedCategories[i] = { ...c, icon: 'other' };
-    if (!c.color) mergedCategories[i] = { ...mergedCategories[i], color: '#6B7280' };
+useEffect(() => {
+  if (!categoryId) {
+    const notSpecifiedCat = filteredCategories.find(c => c.name === 'Not Specified');
+    if (notSpecifiedCat) setCategoryId(notSpecifiedCat.id);
   }
-});
-
-mergedVendors.forEach((v, i) => {
-  if (v.name === 'Not Specified') {
-    if (!v.icon) mergedVendors[i] = { ...v, icon: 'Store' };
-    if (!v.color) mergedVendors[i] = { ...mergedVendors[i], color: '#6B7280' };
-  }
-});
+}, [type, filteredCategories]);
 ```
 
-This ensures that even if the cloud data has "Not Specified" entries with blank icon/color fields, they get patched with sensible defaults before rendering.
+Also update the reset logic (line 156) to set `categoryId` to empty string (it already does — the useEffect will re-fill it on next open).
+
+**2. Sort "Not Specified" to top in category dropdown (line ~396)**
+
+Before rendering filtered categories, sort so "Not Specified" comes first:
+
+```typescript
+filteredCategories
+  .filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+  .sort((a, b) => (a.name === 'Not Specified' ? -1 : b.name === 'Not Specified' ? 1 : 0))
+```
+
+**3. Sort "Not Specified" to top in vendor dropdown (line ~588)**
+
+Same sorting for vendors:
+
+```typescript
+allVendors
+  .filter(v => !vendorSearch || v.name.toLowerCase().includes(vendorSearch.toLowerCase()))
+  .sort((a, b) => (a.name === 'Not Specified' ? -1 : b.name === 'Not Specified' ? 1 : 0))
+```
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/lib/store.ts` | Patch missing icon/color on existing "Not Specified" vendor and category entries |
+| `src/components/AddTransactionSheet.tsx` | Pre-select "Not Specified" category; sort "Not Specified" to top in both category and vendor dropdowns |
 
