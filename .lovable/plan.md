@@ -1,39 +1,29 @@
 
 
-# Add Vendor & Category to Expanded Transaction Card
+# Fix "Add More" Buttons in Transaction Form
 
 ## Problem
-The expanded transaction card shows Date, Payment, Partner, Project, and Notes — but omits **Vendor** and **Category**, even when they exist on the entry.
+The "To add more categories/vendors/projects, go to Settings" buttons in the Add Transaction form use `navigate(appPath('/?tab=settings'))` which doesn't actually deep-link to the correct settings section. The Index page uses internal state (`handleNavigate`) for section routing, not URL query params.
+
+## Solution
+Pass an `onNavigate` callback from Index into AddTransactionSheet, and use it instead of `navigate()` to go directly to the correct settings section.
 
 ## Changes
 
-### File: `src/components/TransactionItem.tsx`
+### 1. `src/components/AddTransactionSheet.tsx`
+- Add `onNavigate?: (section: string) => void` to the props interface
+- Replace all 6 instances of `navigate(appPath('/?tab=settings'))` with `onNavigate?.('categories')`, `onNavigate?.('vendors')`, or `onNavigate?.('labels')` (projects are managed under labels) respectively
+- Each button already calls `onClose()` before navigating, which is correct
 
-In the expanded details grid (around line 185-220), add two new rows:
+### 2. `src/pages/Index.tsx`
+- Pass `onNavigate={handleNavigate}` to the `<AddTransactionSheet>` component (line ~382)
 
-1. **Category** — Show if `category` exists and has a name:
-```tsx
-{category?.name && (
-  <div className="flex items-center gap-2 col-span-2">
-    <span className="text-muted-foreground">Category:</span>
-    <span className="font-medium">{category.name}</span>
-  </div>
-)}
-```
+This reuses the existing `handleNavigate` function which already handles setting `settingsSection` and switching `viewMode` to `'settings'`.
 
-2. **Vendor** — Show if `transaction.vendor` exists and differs from the title (to avoid redundancy since vendor is often shown as the title):
-```tsx
-{transaction.vendor && transaction.vendor !== transaction.title && (
-  <div className="flex items-center gap-2 col-span-2">
-    <span className="text-muted-foreground">Vendor:</span>
-    <span className="font-medium">{transaction.vendor}</span>
-  </div>
-)}
-```
-
-Place these after the Payment row and before the Partner row in the existing grid.
+## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/TransactionItem.tsx` | Add conditional Vendor and Category rows to expanded details |
+| `src/components/AddTransactionSheet.tsx` | Add `onNavigate` prop; replace `navigate()` calls with section-specific `onNavigate()` |
+| `src/pages/Index.tsx` | Pass `onNavigate={handleNavigate}` to AddTransactionSheet |
 
