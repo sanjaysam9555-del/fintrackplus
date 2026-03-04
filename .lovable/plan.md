@@ -1,35 +1,39 @@
 
 
-# Add Icon Fix & "Default" Badge to Not Specified Entries
+# Fix Missing Icon on "Not Specified" Default Categories
 
 ## Problem
-1. The "Not Specified" vendor/category entries in Settings are missing their icons (the icon ID may not resolve correctly depending on the render path).
-2. There is no visual indicator that these entries are system defaults.
+When "Not Specified" categories already exist in the cloud database (possibly with empty or null `icon`/`color` fields), the store skips creating them since it only checks `some(c => c.name === 'Not Specified')`. The existing entries may have missing icon/color values, causing invisible or missing icons on the Categories settings page.
 
-## Changes
+## Solution
+After the existence check in `src/lib/store.ts`, also **patch** any existing "Not Specified" entries that have missing `icon` or `color` values.
 
-### 1. `src/components/settings/CategoriesSection.tsx`
-- Add a "Default" badge next to the name for categories where `cat.name === 'Not Specified'`
-- Import `Badge` from `@/components/ui/badge`
-- After the category name `<p>` tag, add:
-  ```tsx
-  {cat.name === 'Not Specified' && (
-    <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground rounded">Default</span>
-  )}
-  ```
-- Ensure the icon for "Not Specified" categories renders correctly (icon is `'other'` → maps to `MoreHorizontal`, which should work — verify no issue)
+### File: `src/lib/store.ts` (lines ~214-228)
 
-### 2. `src/components/settings/VendorsSection.tsx`
-- Add the same "Default" badge next to the vendor name for `vendor.name === 'Not Specified'`
-- Ensure the icon renders (icon is `'Store'` — check the `renderIcon` function resolves it)
+After the current "ensure exists" blocks, add patching logic:
 
-### 3. `src/lib/store.ts`
-- Update the default "Not Specified" category icon from `'other'` to something more meaningful like `'Ban'` or keep `'other'` but ensure the color `#6B7280` (gray) renders properly with the icon component
+```typescript
+// Patch existing "Not Specified" entries with missing icon/color
+mergedCategories.forEach((c, i) => {
+  if (c.name === 'Not Specified') {
+    if (!c.icon) mergedCategories[i] = { ...c, icon: 'other' };
+    if (!c.color) mergedCategories[i] = { ...mergedCategories[i], color: '#6B7280' };
+  }
+});
+
+mergedVendors.forEach((v, i) => {
+  if (v.name === 'Not Specified') {
+    if (!v.icon) mergedVendors[i] = { ...v, icon: 'Store' };
+    if (!v.color) mergedVendors[i] = { ...mergedVendors[i], color: '#6B7280' };
+  }
+});
+```
+
+This ensures that even if the cloud data has "Not Specified" entries with blank icon/color fields, they get patched with sensible defaults before rendering.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/settings/CategoriesSection.tsx` | Add "Default" tag badge next to "Not Specified" name |
-| `src/components/settings/VendorsSection.tsx` | Add "Default" tag badge next to "Not Specified" name |
+| `src/lib/store.ts` | Patch missing icon/color on existing "Not Specified" vendor and category entries |
 
