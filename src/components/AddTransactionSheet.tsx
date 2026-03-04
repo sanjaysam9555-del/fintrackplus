@@ -16,7 +16,18 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNavigate } from "react-router-dom";
 import { useDuplicateDetection } from "@/hooks/useDuplicateDetection";
-import { DuplicateWarning } from "./DuplicateWarning";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { AlertTriangle } from "lucide-react";
+import { formatCurrency, formatDate } from "@/lib/constants";
 import { toast } from "sonner";
 import { ReceiptUpload } from "./ReceiptUpload";
 import { GstToggle } from "./GstToggle";
@@ -277,14 +288,6 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
             
             <ScrollArea className="h-[calc(85vh-100px)]">
               <div className="p-4 space-y-4 pb-8">
-                {/* Duplicate Warning */}
-                {showDuplicateWarning && (
-                  <DuplicateWarning
-                    duplicates={duplicates}
-                    onDismiss={handleDismissDuplicate}
-                    onProceed={handleProceedAnyway}
-                  />
-                )}
                 
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">
@@ -1073,6 +1076,51 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
           </motion.div>
         </>
       )}
+
+      {/* Duplicate Warning Modal */}
+      <AlertDialog open={showDuplicateWarning} onOpenChange={(open) => !open && handleDismissDuplicate()}>
+        <AlertDialogContent className="max-w-sm rounded-2xl">
+          <AlertDialogHeader>
+            <div className="w-12 h-12 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-2">
+              <AlertTriangle className="text-warning" size={24} />
+            </div>
+            <AlertDialogTitle className="text-center">Potential Duplicate Detected</AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              This looks similar to existing transactions:
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {duplicates.map((dup) => (
+              <div key={dup.transaction.id} className="bg-muted rounded-lg p-3 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium truncate">
+                    {dup.transaction.title || dup.transaction.vendor}
+                  </span>
+                  <span className="text-xs text-muted-foreground shrink-0 ml-2">
+                    {dup.similarity}% match
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {formatCurrency(dup.transaction.amount)} • {formatDate(dup.transaction.date)}
+                </div>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {dup.reasons.map((reason, i) => (
+                    <span key={i} className="px-1.5 py-0.5 bg-warning/10 text-warning text-[10px] rounded">
+                      {reason}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <AlertDialogFooter className="flex-row gap-2 sm:justify-center">
+            <AlertDialogCancel className="flex-1 mt-0">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleProceedAnyway} className="flex-1">
+              Add Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AnimatePresence>
   );
 };
