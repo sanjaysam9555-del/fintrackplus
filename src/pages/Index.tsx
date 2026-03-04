@@ -383,6 +383,7 @@ const Index = () => {
             isOpen={isAddSheetOpen}
             onClose={handleCloseAddSheet}
             userId={user?.id}
+            onNavigate={handleNavigate}
           />
         </Suspense>
       )}
