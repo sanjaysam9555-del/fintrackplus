@@ -1,52 +1,39 @@
 
 
-# Pre-select "Not Specified" & Pin It to Top in Dropdowns
+# Add Vendor & Category to Expanded Transaction Card
 
 ## Problem
-When adding a transaction, the category field starts empty (no pre-selection), and "Not Specified" entries don't appear at the top of category/vendor dropdowns.
+The expanded transaction card shows Date, Payment, Partner, Project, and Notes — but omits **Vendor** and **Category**, even when they exist on the entry.
 
 ## Changes
 
-### File: `src/components/AddTransactionSheet.tsx`
+### File: `src/components/TransactionItem.tsx`
 
-**1. Pre-select "Not Specified" category on form open/type change**
+In the expanded details grid (around line 185-220), add two new rows:
 
-Add an `useEffect` that sets `categoryId` to the "Not Specified" category's ID when the form opens or the transaction type changes (and no category is already selected):
-
-```typescript
-useEffect(() => {
-  if (!categoryId) {
-    const notSpecifiedCat = filteredCategories.find(c => c.name === 'Not Specified');
-    if (notSpecifiedCat) setCategoryId(notSpecifiedCat.id);
-  }
-}, [type, filteredCategories]);
+1. **Category** — Show if `category` exists and has a name:
+```tsx
+{category?.name && (
+  <div className="flex items-center gap-2 col-span-2">
+    <span className="text-muted-foreground">Category:</span>
+    <span className="font-medium">{category.name}</span>
+  </div>
+)}
 ```
 
-Also update the reset logic (line 156) to set `categoryId` to empty string (it already does — the useEffect will re-fill it on next open).
-
-**2. Sort "Not Specified" to top in category dropdown (line ~396)**
-
-Before rendering filtered categories, sort so "Not Specified" comes first:
-
-```typescript
-filteredCategories
-  .filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase()))
-  .sort((a, b) => (a.name === 'Not Specified' ? -1 : b.name === 'Not Specified' ? 1 : 0))
+2. **Vendor** — Show if `transaction.vendor` exists and differs from the title (to avoid redundancy since vendor is often shown as the title):
+```tsx
+{transaction.vendor && transaction.vendor !== transaction.title && (
+  <div className="flex items-center gap-2 col-span-2">
+    <span className="text-muted-foreground">Vendor:</span>
+    <span className="font-medium">{transaction.vendor}</span>
+  </div>
+)}
 ```
 
-**3. Sort "Not Specified" to top in vendor dropdown (line ~588)**
-
-Same sorting for vendors:
-
-```typescript
-allVendors
-  .filter(v => !vendorSearch || v.name.toLowerCase().includes(vendorSearch.toLowerCase()))
-  .sort((a, b) => (a.name === 'Not Specified' ? -1 : b.name === 'Not Specified' ? 1 : 0))
-```
-
-## Files Modified
+Place these after the Payment row and before the Partner row in the existing grid.
 
 | File | Change |
 |------|--------|
-| `src/components/AddTransactionSheet.tsx` | Pre-select "Not Specified" category; sort "Not Specified" to top in both category and vendor dropdowns |
+| `src/components/TransactionItem.tsx` | Add conditional Vendor and Category rows to expanded details |
 
