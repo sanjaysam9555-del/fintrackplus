@@ -1,68 +1,62 @@
 
 
-# Project Detail Page Enhancements
+# Fix: Default "Not Specified" Vendor & Category
 
-## Overview
-Three changes to the project detail page: (1) make vendor payments collapsible like income/expense, (2) add an edit button to set dates from the detail page, and (3) add in-app document preview.
+## Problem
+1. The "No Vendor" filter checks for `!t.vendor || t.vendor === 'Unknown' || t.vendor === ''` but misses `t.vendor === 'Not Specified'` -- so transactions saved with the default "Not Specified" vendor don't appear under this filter.
+2. There's no explicit "Not Specified" option in the vendor/category dropdowns -- if the user doesn't select one, vendor defaults to `'Not Specified'` string and category defaults to empty string `""`.
+3. "Not Specified" appears as a regular vendor in the Vendors settings page and can be deleted.
+
+## Solution
+Create system-level "Not Specified" entries for both Vendor and Category that are:
+- Always present as the default selection in Add/Edit transaction forms
+- Visible in Settings pages but **non-deletable**
+- Properly matched by the "No Vendor" / "Uncategorized" filters
 
 ## Changes
 
-### 1. Vendor Payments -- Match Income/Expense Collapsible Style
+### 1. Fix the "No Vendor" filter (`src/components/TransactionList.tsx`)
 
-**File: `src/components/ProjectDetailSheet.tsx`**
+Update line 50 to also match `'Not Specified'`:
+```typescript
+if (uncategorizedFilter === 'no-vendor') return !t.vendor || t.vendor === 'Unknown' || t.vendor === '' || t.vendor === 'Not Specified';
+```
 
-The current vendor payments section (lines 533-595) uses a heading "Vendor Payments" followed by individually expandable vendor rows. This will be changed to wrap the entire section in a single top-level `Collapsible` (collapsed by default), matching the income/expense pattern:
+Similarly for "no-category", match transactions where `categoryId` is empty string or the ID of the "Not Specified" category.
 
-- Add `vendorsOpen` state (default `false`)
-- Replace the current `<h3>Vendor Payments</h3>` heading with a collapsible trigger button styled identically to income/expense triggers
-- Trigger shows: `Store` icon + "Vendor Payments ({vendorBreakdown.length})" on the left, total vendor spend on the right
-- The individual vendor rows inside remain expandable as they are now
-- Total vendor amount: `vendorBreakdown.reduce((s, v) => s + v.amount, 0)`
+### 2. Add default "Not Specified" vendor and category on user creation / data load (`src/lib/store.ts`)
 
-### 2. Edit Project from Detail Page (with Date Fields)
+Add a helper that ensures a "Not Specified" vendor and a "Not Specified" category (type: both income and expense, or one for each) exist when data is loaded. If they don't exist, auto-create them. Mark them with a convention (e.g., name exactly `"Not Specified"`) so they can be identified.
 
-**File: `src/components/ProjectDetailSheet.tsx`**
+### 3. Make "Not Specified" non-deletable in Settings
 
-Add a `Pencil` (edit) icon button in the sticky header next to the search button. Tapping it opens an inline edit form (or a sheet) within the detail page that includes:
+**`src/components/settings/VendorsSection.tsx`**: Hide the delete button when `vendor.name === 'Not Specified'`.
 
-- Project name, description, color picker
-- **Event Date** -- date input field
-- **Start Date** -- date input field
-- Cost to Client, labels
-- Save / Cancel buttons
+**`src/components/settings/CategoriesSection.tsx`**: Hide the delete button when `category.name === 'Not Specified'`.
 
-Implementation:
-- Add `isEditing` state and `editForm` state (pre-populated from `project`)
-- The edit form replaces the Project Info Card area when active
-- Date inputs use native `<input type="date">` for cross-platform compatibility
-- On save, call `updateProject(project.id, { ...editForm }, userId)` and close the edit mode
-- The `selectedProject` in `ProjectOverviewPage` needs to be refreshed after update -- this already works since the store is reactive via Zustand
+### 4. Default selection in transaction forms
 
-### 3. In-App Document Preview
+**`src/components/AddTransactionSheet.tsx`**:
+- Set vendor initial state to `'Not Specified'` instead of `''`
+- Add a "Not Specified" option at the top of the vendor dropdown
+- For category, either default to the "Not Specified" category ID or add it as a selectable option at the top of the category dropdown
 
-**File: `src/components/ProjectDetailSheet.tsx`**
+**`src/components/EditTransactionSheet.tsx`**: Same treatment -- ensure "Not Specified" appears as an option.
 
-Currently, clicking the external link icon opens documents in a new tab. Add an in-app preview overlay:
+### 5. Pagination fix (from prior plan)
 
-- Add `previewDoc` state (`ProjectDocument | null`)
-- When tapping a document row (or a new "eye" icon), set `previewDoc` to that document
-- Render a full-screen overlay (`fixed inset-0 z-50 bg-background`) with:
-  - Header: back button + file name
-  - For **images**: render `<img src={doc.fileUrl} className="max-w-full max-h-full object-contain" />`
-  - For **PDFs**: render `<iframe src={doc.fileUrl} className="w-full h-full" />`
-  - For **other files**: show a message "Preview not available" with a link to open externally
-- Tapping the back button or overlay background closes the preview
+Also fix the 1000-row query limit in `src/hooks/useCloudSync.ts` and `src/lib/syncEngine.ts` by implementing paginated fetching for transactions.
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/ProjectDetailSheet.tsx` | Wrap vendor payments in collapsible; add edit mode with date inputs; add document preview overlay |
-
-## Technical Notes
-
-- No database changes needed -- `event_date` and `start_date` columns and store mapping already exist
-- The edit form reuses the existing `updateProject` store action which already handles `eventDate` and `startDate`
-- Document preview works with signed URLs already stored in `doc.fileUrl`
-- PDF preview via iframe works on most modern browsers; falls back to external link on unsupported browsers
+| `src/components/TransactionList.tsx` | Update no-vendor and no-category filter to include "Not Specified" |
+| `src/lib/store.ts` | Auto-create "Not Specified" vendor and category if missing on data load |
+| `src/components/settings/VendorsSection.tsx` | Prevent deletion of "Not Specified" vendor |
+| `src/components/settings/CategoriesSection.tsx` | Prevent deletion of "Not Specified" category |
+| `src/components/AddTransactionSheet.tsx` | Default vendor to "Not Specified"; add it to dropdown |
+| `src/components/EditTransactionSheet.tsx` | Same as above |
+| `src/hooks/useCloudSync.ts` | Paginated transaction fetching |
+| `src/lib/syncEngine.ts` | Paginated transaction fetching |
 
