@@ -434,7 +434,12 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
                         {renderIcon(vendor.icon || 'Store', vendor.color || 'hsl(var(--success))')}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate">{vendor.name}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium truncate">{vendor.name}</p>
+                          {vendor.name === 'Not Specified' && (
+                            <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground rounded shrink-0">Default</span>
+                          )}
+                        </div>
                         {stats && (
                           <p className="text-xs text-muted-foreground mt-0.5">
                             {stats.count} transaction{stats.count !== 1 ? 's' : ''} &middot; {formatAmount(stats.total)}
