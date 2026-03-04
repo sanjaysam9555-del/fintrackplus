@@ -45,7 +45,10 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
       .filter(t => !selectedCategory || t.categoryId === selectedCategory)
       .filter(t => {
-        if (uncategorizedFilter === 'no-category') return !t.categoryId || t.categoryId === '';
+        if (uncategorizedFilter === 'no-category') {
+          const notSpecifiedCat = categories.find(c => c.name === 'Not Specified' && c.type === type);
+          return !t.categoryId || t.categoryId === '' || (notSpecifiedCat && t.categoryId === notSpecifiedCat.id);
+        }
         if (uncategorizedFilter === 'no-project') return !t.projectId;
         if (uncategorizedFilter === 'no-vendor') return !t.vendor || t.vendor === 'Unknown' || t.vendor === '' || t.vendor === 'Not Specified';
         if (uncategorizedFilter === 'no-partner') return !t.partnerId;
@@ -375,7 +378,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
           >
             All
           </button>
-          {filteredCategories.slice(0, 6).map((cat) => (
+          {filteredCategories.filter(c => c.name !== 'Not Specified').slice(0, 6).map((cat) => (
             <button
               key={cat.id}
               onClick={() => { setSelectedCategory(selectedCategory === cat.id ? null : cat.id); setUncategorizedFilter(null); }}
