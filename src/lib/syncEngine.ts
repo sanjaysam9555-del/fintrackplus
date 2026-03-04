@@ -313,12 +313,33 @@ export interface CloudData {
 
 export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudData | null; error: string | null }> => {
   try {
+    // Paginated fetch for transactions (may exceed 1000 rows)
+    const fetchAllTransactions = async (userId: string) => {
+      const allData: Record<string, unknown>[] = [];
+      let offset = 0;
+      const batchSize = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', userId)
+          .order('date', { ascending: false })
+          .range(offset, offset + batchSize - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData.push(...(data as unknown as Record<string, unknown>[]));
+        if (data.length < batchSize) break;
+        offset += batchSize;
+      }
+      return allData;
+    };
+
     const [
       profileResult,
       categoriesResult,
       vendorsResult,
       projectsResult,
-      transactionsResult,
+      cloudTransactions,
       partnersResult,
       projectLabelsResult
     ] = await Promise.all([
@@ -326,7 +347,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       supabase.from('categories').select('*').eq('user_id', userId),
       supabase.from('vendors').select('*').eq('user_id', userId),
       supabase.from('projects').select('*').eq('user_id', userId),
-      supabase.from('transactions').select('*').eq('user_id', userId).order('date', { ascending: false }),
+      fetchAllTransactions(userId),
       supabase.from('partners').select('*').eq('user_id', userId),
       supabase.from('project_labels').select('*').eq('user_id', userId)
     ]);
@@ -336,7 +357,6 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       categoriesResult.error ||
       vendorsResult.error ||
       projectsResult.error ||
-      transactionsResult.error ||
       partnersResult.error ||
       projectLabelsResult.error;
 
@@ -348,7 +368,6 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
     const cloudCategories = categoriesResult.data || [];
     const cloudVendors = vendorsResult.data || [];
     const cloudProjects = projectsResult.data || [];
-    const cloudTransactions = transactionsResult.data || [];
     const cloudPartners = partnersResult.data || [];
     const cloudProjectLabels = projectLabelsResult.data || [];
     return {
@@ -386,18 +405,18 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           startDate: (p as unknown as { start_date?: string }).start_date || undefined,
           createdAt: p.created_at.split('T')[0]
         })),
-        transactions: cloudTransactions.map(t => ({
-          id: t.id,
+        transactions: (cloudTransactions as any[]).map(t => ({
+          id: t.id as string,
           type: t.type as 'income' | 'expense',
           amount: Number(t.amount),
-          title: (t as unknown as { title?: string }).title || undefined,
-          vendor: t.vendor,
+          title: t.title || undefined,
+          vendor: t.vendor as string,
           categoryId: t.category_id || '',
           projectId: t.project_id || undefined,
-          partnerId: (t as unknown as { partner_id?: string }).partner_id || undefined,
+          partnerId: t.partner_id || undefined,
           paymentMethod: t.payment_method as 'cash' | 'online',
-          date: t.date,
-          time: t.time,
+          date: t.date as string,
+          time: t.time as string,
           notes: t.notes || undefined,
           isRecurring: t.is_recurring || false,
           recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined,
