@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import {
   Brain,
-  RefreshCw,
   Lightbulb,
   Droplets,
   TrendingUp,
@@ -36,7 +35,6 @@ interface DeepInsightsProps {
   insights: DeepInsight[];
   isLoading: boolean;
   error: string | null;
-  onRegenerate: () => void;
   hasData: boolean;
 }
 
@@ -127,7 +125,6 @@ export function DeepInsights({
   insights,
   isLoading,
   error,
-  onRegenerate,
   hasData,
 }: DeepInsightsProps) {
   if (!hasData) return null;
@@ -135,24 +132,10 @@ export function DeepInsights({
   return (
     <div className="space-y-4">
       {/* Section header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Brain size={18} className="text-primary" />
-          <h2 className="font-semibold text-base">Deep Insights</h2>
-          <Badge variant="secondary" className="text-[10px]">AI</Badge>
-        </div>
-        {(insights.length > 0 || isLoading) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onRegenerate}
-            disabled={isLoading}
-            className="h-7 text-xs gap-1"
-          >
-            <RefreshCw size={12} className={isLoading ? "animate-spin" : ""} />
-            Refresh
-          </Button>
-        )}
+      <div className="flex items-center gap-2">
+        <Brain size={18} className="text-primary" />
+        <h2 className="font-semibold text-base">Deep Insights</h2>
+        <Badge variant="secondary" className="text-[10px]">AI</Badge>
       </div>
 
       {/* Loading skeleton */}
@@ -184,11 +167,9 @@ export function DeepInsights({
 
       {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-center space-y-3">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-center space-y-2">
           <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" onClick={onRegenerate} className="text-xs">
-            Try Again
-          </Button>
+          <p className="text-xs text-muted-foreground">Insights will retry on your next visit.</p>
         </div>
       )}
 
