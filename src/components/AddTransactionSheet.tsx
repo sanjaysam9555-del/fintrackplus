@@ -38,7 +38,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [type, setType] = useState<TransactionType>(defaultType);
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
-  const [vendor, setVendor] = useState("");
+  const [vendor, setVendor] = useState("Not Specified");
   const [categoryId, setCategoryId] = useState("");
   const [projectId, setProjectId] = useState("");
   const [partnerId, setPartnerId] = useState("");
@@ -152,7 +152,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     
     setAmount("");
     setTitle("");
-    setVendor("");
+    setVendor("Not Specified");
     setCategoryId("");
     setProjectId("");
     setPartnerId("");

@@ -304,12 +304,16 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
                   </div>
                 </button>
                 <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={(e) => { e.stopPropagation(); startEdit(cat); }} className="p-2 hover:bg-muted rounded-lg">
-                    <Pencil size={16} className="text-muted-foreground" />
-                  </button>
-                  <button onClick={(e) => { e.stopPropagation(); setDeleteId(cat.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
-                    <Trash2 size={16} className="text-destructive" />
-                  </button>
+                  {cat.name !== 'Not Specified' && (
+                    <button onClick={(e) => { e.stopPropagation(); startEdit(cat); }} className="p-2 hover:bg-muted rounded-lg">
+                      <Pencil size={16} className="text-muted-foreground" />
+                    </button>
+                  )}
+                  {cat.name !== 'Not Specified' && (
+                    <button onClick={(e) => { e.stopPropagation(); setDeleteId(cat.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
+                      <Trash2 size={16} className="text-destructive" />
+                    </button>
+                  )}
                   <ChevronRight size={16} className="text-muted-foreground" />
                 </div>
               </div>

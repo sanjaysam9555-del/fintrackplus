@@ -33,13 +33,34 @@ export const useCloudSync = () => {
     setSyncStatus('syncing');
 
     try {
+      // Paginated fetch for transactions
+      const fetchAllTransactions = async (userId: string) => {
+        const allData: any[] = [];
+        let offset = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabase
+            .from('transactions')
+            .select('*')
+            .eq('user_id', userId)
+            .order('date', { ascending: false })
+            .range(offset, offset + batchSize - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          allData.push(...data);
+          if (data.length < batchSize) break;
+          offset += batchSize;
+        }
+        return allData;
+      };
+
       // Fetch ALL data in parallel for faster sync
       const [
         profileResult,
         categoriesResult,
         vendorsResult,
         projectsResult,
-        transactionsResult,
+        transactionsData,
         partnersResult,
         projectLabelsResult
       ] = await Promise.all([
@@ -47,7 +68,7 @@ export const useCloudSync = () => {
         supabase.from('categories').select('*').eq('user_id', user.id),
         supabase.from('vendors').select('*').eq('user_id', user.id),
         supabase.from('projects').select('*').eq('user_id', user.id),
-        supabase.from('transactions').select('*').eq('user_id', user.id).order('date', { ascending: false }),
+        fetchAllTransactions(user.id),
         supabase.from('partners').select('*').eq('user_id', user.id),
         supabase.from('project_labels').select('*').eq('user_id', user.id)
       ]);
@@ -57,7 +78,6 @@ export const useCloudSync = () => {
         categoriesResult.error ||
         vendorsResult.error ||
         projectsResult.error ||
-        transactionsResult.error ||
         partnersResult.error ||
         projectLabelsResult.error;
 
@@ -69,7 +89,7 @@ export const useCloudSync = () => {
       const cloudCategories = categoriesResult.data;
       const cloudVendors = vendorsResult.data;
       const cloudProjects = projectsResult.data;
-      const cloudTransactions = transactionsResult.data;
+      const cloudTransactions = transactionsData;
       const cloudPartners = partnersResult.data;
       const cloudProjectLabels = projectLabelsResult.data;
       // Check if onboarding should be shown

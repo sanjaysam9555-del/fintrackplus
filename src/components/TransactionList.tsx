@@ -45,9 +45,9 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
       .filter(t => !selectedCategory || t.categoryId === selectedCategory)
       .filter(t => {
-        if (uncategorizedFilter === 'no-category') return !t.categoryId;
+        if (uncategorizedFilter === 'no-category') return !t.categoryId || t.categoryId === '';
         if (uncategorizedFilter === 'no-project') return !t.projectId;
-        if (uncategorizedFilter === 'no-vendor') return !t.vendor || t.vendor === 'Unknown' || t.vendor === '';
+        if (uncategorizedFilter === 'no-vendor') return !t.vendor || t.vendor === 'Unknown' || t.vendor === '' || t.vendor === 'Not Specified';
         if (uncategorizedFilter === 'no-partner') return !t.partnerId;
         return true;
       });

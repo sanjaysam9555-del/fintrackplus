@@ -208,10 +208,29 @@ export const useFinanceStore = create<FinanceStore>()(
         return merged;
       };
       
+      const mergedVendors = mergeData(data.vendors, currentState.vendors, 'vendor');
+      const mergedCategories = mergeData(data.categories, currentState.categories, 'category');
+      
+      // Ensure "Not Specified" vendor exists
+      const hasNotSpecifiedVendor = mergedVendors.some(v => v.name === 'Not Specified');
+      if (!hasNotSpecifiedVendor) {
+        mergedVendors.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'Store', color: '#6B7280' });
+      }
+      
+      // Ensure "Not Specified" category exists for both types
+      const hasNotSpecifiedExpense = mergedCategories.some(c => c.name === 'Not Specified' && c.type === 'expense');
+      if (!hasNotSpecifiedExpense) {
+        mergedCategories.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' });
+      }
+      const hasNotSpecifiedIncome = mergedCategories.some(c => c.name === 'Not Specified' && c.type === 'income');
+      if (!hasNotSpecifiedIncome) {
+        mergedCategories.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' });
+      }
+      
       set({
         transactions: mergeData(data.transactions, currentState.transactions, 'transaction'),
-        categories: mergeData(data.categories, currentState.categories, 'category'),
-        vendors: mergeData(data.vendors, currentState.vendors, 'vendor'),
+        categories: mergedCategories,
+        vendors: mergedVendors,
         projects: mergeData(data.projects, currentState.projects, 'project'),
         partners: mergeData(data.partners, currentState.partners, 'partner'),
         projectLabels: mergeData(data.projectLabels, currentState.projectLabels, 'project_label'),
