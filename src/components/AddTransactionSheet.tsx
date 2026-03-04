@@ -66,6 +66,14 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
+
+  // Pre-select "Not Specified" category when form opens or type changes
+  useEffect(() => {
+    if (!categoryId) {
+      const notSpecifiedCat = filteredCategories.find(c => c.name === 'Not Specified');
+      if (notSpecifiedCat) setCategoryId(notSpecifiedCat.id);
+    }
+  }, [type, filteredCategories]);
   const selectedProject = projects.find(p => p.id === projectId);
   const selectedPartner = partners.find(p => p.id === partnerId);
   
@@ -393,7 +401,10 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         <div className="space-y-1">
                           {filteredCategories.filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase())).length > 0 ? (
                             <>
-                              {filteredCategories.filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase())).map((cat) => (
+                              {filteredCategories
+                                .filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase()))
+                                .sort((a, b) => (a.name === 'Not Specified' ? -1 : b.name === 'Not Specified' ? 1 : 0))
+                                .map((cat) => (
                                 <button
                                   key={cat.id}
                                   onClick={() => {
@@ -587,6 +598,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <>
                               {allVendors
                                 .filter(v => !vendorSearch || v.name.toLowerCase().includes(vendorSearch.toLowerCase()))
+                                .sort((a, b) => (a.name === 'Not Specified' ? -1 : b.name === 'Not Specified' ? 1 : 0))
                                 .map((v) => (
                                   <button
                                     key={v.name}
