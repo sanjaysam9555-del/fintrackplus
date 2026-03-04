@@ -226,6 +226,21 @@ export const useFinanceStore = create<FinanceStore>()(
       if (!hasNotSpecifiedIncome) {
         mergedCategories.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' });
       }
+
+      // Patch existing "Not Specified" entries with missing icon/color
+      mergedCategories.forEach((c, i) => {
+        if (c.name === 'Not Specified') {
+          if (!c.icon) mergedCategories[i] = { ...c, icon: 'other' };
+          if (!c.color) mergedCategories[i] = { ...mergedCategories[i], color: '#6B7280' };
+        }
+      });
+
+      mergedVendors.forEach((v, i) => {
+        if (v.name === 'Not Specified') {
+          if (!v.icon) mergedVendors[i] = { ...v, icon: 'Store' };
+          if (!v.color) mergedVendors[i] = { ...mergedVendors[i], color: '#6B7280' };
+        }
+      });
       
       set({
         transactions: mergeData(data.transactions, currentState.transactions, 'transaction'),
