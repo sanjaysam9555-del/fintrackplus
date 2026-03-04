@@ -1,29 +1,30 @@
 
 
-# Fix "Add More" Buttons in Transaction Form
+# Fix Duplicate Warning Visibility in Transaction Form
 
 ## Problem
-The "To add more categories/vendors/projects, go to Settings" buttons in the Add Transaction form use `navigate(appPath('/?tab=settings'))` which doesn't actually deep-link to the correct settings section. The Index page uses internal state (`handleNavigate`) for section routing, not URL query params.
+The duplicate warning renders at the **top** of the form inside a `ScrollArea`. When a user fills in all fields and clicks "Add", the warning appears above the viewport — the user sees nothing happen with no indication why.
 
 ## Solution
-Pass an `onNavigate` callback from Index into AddTransactionSheet, and use it instead of `navigate()` to go directly to the correct settings section.
+Replace the inline `DuplicateWarning` at the top of the form with a **toast-style alert dialog** that appears as a modal overlay, visible regardless of scroll position. This ensures the user always sees the warning.
 
 ## Changes
 
-### 1. `src/components/AddTransactionSheet.tsx`
-- Add `onNavigate?: (section: string) => void` to the props interface
-- Replace all 6 instances of `navigate(appPath('/?tab=settings'))` with `onNavigate?.('categories')`, `onNavigate?.('vendors')`, or `onNavigate?.('labels')` (projects are managed under labels) respectively
-- Each button already calls `onClose()` before navigating, which is correct
+### File: `src/components/AddTransactionSheet.tsx`
 
-### 2. `src/pages/Index.tsx`
-- Pass `onNavigate={handleNavigate}` to the `<AddTransactionSheet>` component (line ~382)
+1. **Remove** the `<DuplicateWarning>` component render from inside the `ScrollArea` (lines ~280-286)
+2. **Remove** the `DuplicateWarning` import
+3. **Replace** with an `AlertDialog` that opens when `showDuplicateWarning` is true:
+   - Shows "Potential Duplicate Detected" title
+   - Lists matching transactions with amount, date, and match reasons
+   - Two buttons: "Cancel" (dismisses) and "Add Anyway" (proceeds)
+   - Rendered **outside** the ScrollArea so it's always visible as a modal overlay
 
-This reuses the existing `handleNavigate` function which already handles setting `settingsSection` and switching `viewMode` to `'settings'`.
+The existing state (`showDuplicateWarning`, `duplicates`) and handlers (`handleDismissDuplicate`, `handleProceedAnyway`) remain unchanged — only the UI presentation changes from an inline banner to a modal dialog.
 
-## Files Modified
+### Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/AddTransactionSheet.tsx` | Add `onNavigate` prop; replace `navigate()` calls with section-specific `onNavigate()` |
-| `src/pages/Index.tsx` | Pass `onNavigate={handleNavigate}` to AddTransactionSheet |
+| `src/components/AddTransactionSheet.tsx` | Replace inline DuplicateWarning with AlertDialog overlay |
 
