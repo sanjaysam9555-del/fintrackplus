@@ -1,34 +1,35 @@
 
 
-# Merge "Not Specified" into Existing Filters
+# Add Icon Fix & "Default" Badge to Not Specified Entries
 
 ## Problem
-The "Not Specified" category chip currently appears among the regular category chips (before the divider). The user wants it removed from there and instead have the existing "No Vendor" and "Uncategorized" filters automatically include "Not Specified" entries.
+1. The "Not Specified" vendor/category entries in Settings are missing their icons (the icon ID may not resolve correctly depending on the render path).
+2. There is no visual indicator that these entries are system defaults.
 
 ## Changes
 
-### File: `src/components/TransactionList.tsx`
+### 1. `src/components/settings/CategoriesSection.tsx`
+- Add a "Default" badge next to the name for categories where `cat.name === 'Not Specified'`
+- Import `Badge` from `@/components/ui/badge`
+- After the category name `<p>` tag, add:
+  ```tsx
+  {cat.name === 'Not Specified' && (
+    <span className="ml-1.5 px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground rounded">Default</span>
+  )}
+  ```
+- Ensure the icon for "Not Specified" categories renders correctly (icon is `'other'` → maps to `MoreHorizontal`, which should work — verify no issue)
 
-**1. Remove "Not Specified" from the category chips (lines 378-391)**
-Filter out any category named "Not Specified" from the `filteredCategories` list rendered before the divider:
-```typescript
-filteredCategories.filter(c => c.name !== 'Not Specified').slice(0, 6)
-```
+### 2. `src/components/settings/VendorsSection.tsx`
+- Add the same "Default" badge next to the vendor name for `vendor.name === 'Not Specified'`
+- Ensure the icon renders (icon is `'Store'` — check the `renderIcon` function resolves it)
 
-**2. Update filter logic (lines 47-53)**
-The "no-vendor" filter already includes `'Not Specified'` (done in prior change). Update "no-category" to also match transactions whose `categoryId` points to a "Not Specified" category:
-```typescript
-if (uncategorizedFilter === 'no-category') {
-  const notSpecifiedCat = categories.find(c => c.name === 'Not Specified' && c.type === type);
-  return !t.categoryId || t.categoryId === '' || (notSpecifiedCat && t.categoryId === notSpecifiedCat.id);
-}
-```
-
-That's it -- two small edits in one file. The "No Vendor" and "Uncategorized" preset filters will now capture all "Not Specified" entries, and the "Not Specified" chip won't clutter the category row.
+### 3. `src/lib/store.ts`
+- Update the default "Not Specified" category icon from `'other'` to something more meaningful like `'Ban'` or keep `'other'` but ensure the color `#6B7280` (gray) renders properly with the icon component
 
 ## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/TransactionList.tsx` | Hide "Not Specified" from category chips; merge into no-category filter logic |
+| `src/components/settings/CategoriesSection.tsx` | Add "Default" tag badge next to "Not Specified" name |
+| `src/components/settings/VendorsSection.tsx` | Add "Default" tag badge next to "Not Specified" name |
 
