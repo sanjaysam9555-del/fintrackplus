@@ -258,6 +258,18 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                           )}
                         </span>
                       </div>
+                      {category?.name && (
+                        <div className="flex items-center gap-2 col-span-2">
+                          <span className="text-muted-foreground">Category:</span>
+                          <span className="font-medium">{category.name}</span>
+                        </div>
+                      )}
+                      {transaction.vendor && transaction.vendor !== transaction.title && (
+                        <div className="flex items-center gap-2 col-span-2">
+                          <span className="text-muted-foreground">Vendor:</span>
+                          <span className="font-medium">{transaction.vendor}</span>
+                        </div>
+                      )}
                       {partner && (
                         <div className="flex items-center gap-2 col-span-2">
                           <span className="text-muted-foreground">Handled by:</span>
