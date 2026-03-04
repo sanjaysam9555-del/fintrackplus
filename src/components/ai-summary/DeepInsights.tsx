@@ -1,11 +1,7 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
 import {
   Brain,
   RefreshCw,
-  AlertTriangle,
-  Info,
-  AlertCircle,
   Lightbulb,
   Droplets,
   TrendingUp,
@@ -14,7 +10,6 @@ import {
   Skull,
   Receipt,
   CalendarClock,
-  ChevronDown,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -41,90 +36,89 @@ interface DeepInsightsProps {
   insights: DeepInsight[];
   isLoading: boolean;
   error: string | null;
-  onGenerate: () => void;
   onRegenerate: () => void;
   hasData: boolean;
 }
 
 const categoryConfig: Record<
   DeepInsight["category"],
-  { label: string; icon: React.ElementType; color: string }
+  { label: string; icon: React.ElementType }
 > = {
-  liquidity: { label: "Liquidity", icon: Droplets, color: "text-blue-500" },
-  profitability: { label: "Profitability", icon: TrendingUp, color: "text-emerald-500" },
-  vendor_concentration: { label: "Vendors", icon: Users, color: "text-orange-500" },
-  partner_specialization: { label: "Partners", icon: UserCheck, color: "text-violet-500" },
-  dead_money: { label: "Dead Money", icon: Skull, color: "text-red-500" },
-  gst_compliance: { label: "GST", icon: Receipt, color: "text-amber-500" },
-  seasonality: { label: "Seasonality", icon: CalendarClock, color: "text-cyan-500" },
+  liquidity: { label: "Liquidity", icon: Droplets },
+  profitability: { label: "Profitability", icon: TrendingUp },
+  vendor_concentration: { label: "Vendors", icon: Users },
+  partner_specialization: { label: "Partners", icon: UserCheck },
+  dead_money: { label: "Dead Money", icon: Skull },
+  gst_compliance: { label: "GST", icon: Receipt },
+  seasonality: { label: "Seasonality", icon: CalendarClock },
 };
 
 const severityConfig: Record<
   DeepInsight["severity"],
-  { icon: React.ElementType; color: string; bg: string }
+  { label: string; borderColor: string; badgeClass: string }
 > = {
-  info: { icon: Info, color: "text-blue-500", bg: "bg-blue-500/10" },
-  warning: { icon: AlertTriangle, color: "text-amber-500", bg: "bg-amber-500/10" },
-  critical: { icon: AlertCircle, color: "text-red-500", bg: "bg-red-500/10" },
+  info: {
+    label: "Info",
+    borderColor: "border-l-blue-500",
+    badgeClass: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  },
+  warning: {
+    label: "Warning",
+    borderColor: "border-l-amber-500",
+    badgeClass: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  },
+  critical: {
+    label: "Critical",
+    borderColor: "border-l-red-500",
+    badgeClass: "bg-red-500/10 text-red-600 dark:text-red-400",
+  },
 };
 
 function InsightCard({ insight, index }: { insight: DeepInsight; index: number }) {
-  const [expanded, setExpanded] = useState(false);
   const cat = categoryConfig[insight.category];
   const sev = severityConfig[insight.severity];
   const CatIcon = cat.icon;
-  const SevIcon = sev.icon;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08 }}
-      className="rounded-xl border bg-card overflow-hidden"
-    >
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full text-left p-4 flex items-start gap-3"
-      >
-        <div className={cn("mt-0.5 p-1.5 rounded-lg shrink-0", sev.bg)}>
-          <SevIcon size={16} className={sev.color} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
-              <CatIcon size={10} className={cat.color} />
-              {cat.label}
-            </Badge>
-          </div>
-          <h3 className="font-semibold text-sm leading-snug">{insight.title}</h3>
-        </div>
-        <ChevronDown
-          size={16}
-          className={cn(
-            "shrink-0 mt-1 text-muted-foreground transition-transform duration-200",
-            expanded && "rotate-180"
-          )}
-        />
-      </button>
-
-      {expanded && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: "auto", opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          className="px-4 pb-4"
-        >
-          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
-            {insight.body}
-          </p>
-          <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
-            <Lightbulb size={14} className="text-primary shrink-0 mt-0.5" />
-            <p className="text-xs font-medium text-primary">
-              {insight.actionable_tip}
-            </p>
-          </div>
-        </motion.div>
+      transition={{ delay: index * 0.06, duration: 0.4 }}
+      className={cn(
+        "rounded-xl border border-l-4 bg-card overflow-hidden",
+        sev.borderColor
       )}
+    >
+      <div className="p-4 sm:p-5 space-y-3">
+        {/* Header: category + severity */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="secondary" className="text-[11px] px-2 py-0.5 gap-1 font-medium">
+            <CatIcon size={11} />
+            {cat.label}
+          </Badge>
+          <span className={cn("text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full", sev.badgeClass)}>
+            {sev.label}
+          </span>
+        </div>
+
+        {/* Title */}
+        <h3 className="font-bold text-[15px] sm:text-base leading-snug text-foreground">
+          {insight.title}
+        </h3>
+
+        {/* Body — always visible */}
+        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+          {insight.body}
+        </p>
+
+        {/* Actionable tip callout */}
+        <div className="flex items-start gap-2.5 p-3.5 rounded-lg bg-primary/5 border border-primary/10">
+          <Lightbulb size={15} className="text-primary shrink-0 mt-0.5" />
+          <p className="text-[13px] font-medium text-primary leading-relaxed">
+            {insight.actionable_tip}
+          </p>
+        </div>
+      </div>
     </motion.div>
   );
 }
@@ -133,21 +127,21 @@ export function DeepInsights({
   insights,
   isLoading,
   error,
-  onGenerate,
   onRegenerate,
   hasData,
 }: DeepInsightsProps) {
   if (!hasData) return null;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
+      {/* Section header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Brain size={18} className="text-primary" />
           <h2 className="font-semibold text-base">Deep Insights</h2>
           <Badge variant="secondary" className="text-[10px]">AI</Badge>
         </div>
-        {insights.length > 0 && (
+        {(insights.length > 0 || isLoading) && (
           <Button
             variant="ghost"
             size="sm"
@@ -161,51 +155,46 @@ export function DeepInsights({
         )}
       </div>
 
-      {isLoading && (
-        <div className="space-y-3">
+      {/* Loading skeleton */}
+      {isLoading && insights.length === 0 && (
+        <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border bg-card p-4 space-y-2">
+            <div key={i} className="rounded-xl border border-l-4 border-l-muted bg-card p-5 space-y-3">
               <div className="flex items-center gap-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+                <Skeleton className="h-4 w-12 rounded-full" />
               </div>
+              <Skeleton className="h-5 w-3/4" />
               <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-3 w-3/4" />
+              <Skeleton className="h-3 w-full" />
+              <Skeleton className="h-3 w-2/3" />
+              <div className="rounded-lg bg-muted/30 p-3">
+                <Skeleton className="h-3 w-5/6" />
+              </div>
             </div>
           ))}
-          <p className="text-xs text-muted-foreground text-center">
-            Analyzing your financial data…
-          </p>
+          <div className="flex items-center justify-center gap-2 py-2">
+            <Sparkles size={14} className="text-primary animate-pulse" />
+            <p className="text-xs text-muted-foreground">
+              Analyzing your financial patterns…
+            </p>
+          </div>
         </div>
       )}
 
+      {/* Error state */}
       {error && !isLoading && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-center space-y-2">
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-center space-y-3">
           <p className="text-sm text-destructive">{error}</p>
-          <Button variant="outline" size="sm" onClick={onGenerate} className="text-xs">
+          <Button variant="outline" size="sm" onClick={onRegenerate} className="text-xs">
             Try Again
           </Button>
         </div>
       )}
 
-      {!isLoading && !error && insights.length === 0 && (
-        <motion.button
-          whileTap={{ scale: 0.98 }}
-          onClick={onGenerate}
-          className="w-full rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 p-6 flex flex-col items-center gap-2 hover:border-primary/50 transition-colors"
-        >
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Sparkles size={20} className="text-primary" />
-          </div>
-          <p className="font-medium text-sm">Generate Deep Insights</p>
-          <p className="text-xs text-muted-foreground">
-            AI will analyze your financial patterns
-          </p>
-        </motion.button>
-      )}
-
+      {/* Insight cards — always expanded */}
       {!isLoading && insights.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {insights.map((insight, i) => (
             <InsightCard key={`${insight.category}-${i}`} insight={insight} index={i} />
           ))}
