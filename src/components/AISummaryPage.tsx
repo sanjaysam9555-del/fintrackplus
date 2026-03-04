@@ -418,7 +418,6 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
               insights={deepInsights}
               isLoading={isGeneratingDeep}
               error={deepError}
-              onRegenerate={generateDeepInsights}
               hasData={hasData}
             />
           </div>
