@@ -294,7 +294,12 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
                     );
                   })()}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{cat.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="font-medium truncate">{cat.name}</p>
+                      {cat.name === 'Not Specified' && (
+                        <span className="ml-0.5 px-1.5 py-0.5 text-[10px] font-medium bg-muted text-muted-foreground rounded shrink-0">Default</span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       <span className="capitalize">{cat.type}</span>
                       {categoryTransactionCounts[cat.id]?.count > 0 && (
