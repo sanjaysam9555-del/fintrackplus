@@ -1,48 +1,76 @@
 
 
-# Fix "All Time" Chart in Income/Expense Tabs
+# AI-Powered Deep Insights for AI Summary Page
 
-## Problem
-The `TransactionList.tsx` chart has no dedicated logic for `timeFilter === 'all'`. It falls into the `year` branch using the hardcoded date range of 2000-01-01 to 2099-12-31, generating hundreds of empty month data points instead of reflecting only the user's actual transaction history.
+## Overview
+Add a new "Deep Insights" section to the AI Summary page that uses Lovable AI (via an edge function) to analyze the user's financial data and generate rich, contextual insights like liquidity analysis, profitability patterns, vendor concentration, partner specialization, seasonality risks, and GST compliance observations.
 
-The `CashFlowChart.tsx` (Dashboard) already has correct "All Time" logic that detects actual transaction boundaries — this same approach needs to be applied to `TransactionList.tsx`.
+## Architecture
 
-## Solution
-Add an `'all'` case to the `chartData` computation in `TransactionList.tsx`, mirroring the logic from `CashFlowChart.tsx`:
+```text
+AISummaryPage
+  └─ [Generate Insights] button / auto-trigger
+       └─ Calls edge function: supabase/functions/ai-insights/index.ts
+            └─ Receives summarized financial data (NOT raw transactions)
+            └─ Calls Lovable AI Gateway (gemini-3-flash-preview)
+            └─ Returns structured insights via tool calling
+       └─ Renders in new DeepInsights component below SmartInsights
+```
 
-### File: `src/components/TransactionList.tsx` (lines ~113-240)
+## Changes
 
-Insert a new block **before** the existing `if (timeFilter === 'fy')` check:
+### 1. New Edge Function: `supabase/functions/ai-insights/index.ts`
+- Accepts a JSON payload of **pre-aggregated** financial summaries (totals, partner splits, vendor breakdowns, project margins, monthly trends, payment method splits, GST stats)
+- Sends to Lovable AI Gateway with a detailed system prompt instructing it to generate 3-7 insights from the 7 categories (liquidity, profitability scaling, vendor concentration, partner specialization, dead money, GST compliance, seasonality)
+- Uses **tool calling** to extract structured output: array of `{ title, category, severity, body, actionable_tip }`
+- Returns JSON array of insights
+- Handles 429/402 errors properly
 
-```tsx
-if (timeFilter === 'all') {
-  if (filteredTransactions.length === 0) return [];
-  
-  const txDates = filteredTransactions.map(t => parseISO(t.date).getTime());
-  const earliestDate = new Date(Math.min(...txDates));
-  const latestDate = new Date(Math.min(Math.max(...txDates), today.getTime()));
-  const realDaysDiff = differenceInDays(latestDate, earliestDate);
+### 2. New Component: `src/components/ai-summary/DeepInsights.tsx`
+- Displays AI-generated insights in expandable accordion cards
+- Each card shows: category badge, title, severity indicator, body text, and actionable tip
+- Loading state with skeleton animation while AI generates
+- "Regenerate" button to refresh insights
+- Error state with retry option
 
-  if (realDaysDiff <= 14) {
-    // Daily granularity
-    for (let i = 0; i <= realDaysDiff; i++) { ... }
-  } else if (realDaysDiff <= 60) {
-    // Weekly granularity
-    for (let i = 0; i < numWeeks; i++) { ... }
-  } else {
-    // Monthly granularity (with 'MMM' or "MMM 'yy" for >2 years)
-    let current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
-    while (current <= latestDate) { ... }
-  }
-  return dataPoints;
+### 3. Update: `src/components/AISummaryPage.tsx`
+- Add data aggregation logic to prepare the summary payload:
+  - Cash vs online balances per partner
+  - Per-project margins (income vs expense)
+  - Top vendor spending percentages
+  - Monthly income/expense trend (for seasonality)
+  - GST transaction percentage
+  - Partner-level income/expense/payment-method breakdowns
+- Add state for `deepInsights`, `isGenerating`, `error`
+- Call the edge function on mount (or via button) when sufficient data exists
+- Render `<DeepInsights>` below the existing `<SmartInsights>` section
+
+### 4. Update: `supabase/config.toml`
+- Add `[functions.ai-insights]` with `verify_jwt = true` (requires authenticated user)
+
+## Data Payload Shape (sent to edge function)
+```typescript
+{
+  fyIncome, fyExpense, netBalance,
+  cashBalance, onlineBalance,           // aggregated across partners
+  partnerBreakdowns: [{ name, cashIncome, cashExpense, onlineIncome, onlineExpense }],
+  projectMargins: [{ name, clientCost, income, expense, marginPercent }],
+  topVendors: [{ name, totalSpend, percentOfTotal }],
+  monthlyTrend: [{ month, income, expense }],
+  gstTransactionPercent,
+  categoryBreakdown: [{ name, amount, percent }],
+  paymentMethodSplit: { expenseCash, expenseOnline, incomeCash, incomeOnline }
 }
 ```
 
-This detects the earliest and latest transaction dates, calculates the real span, and dynamically picks daily/weekly/monthly X-axis granularity — showing only the months/weeks/days that have actual data.
+This keeps raw transaction data off the wire and gives the AI model a clean summary to reason about.
 
-## Files Modified
+## Files Modified/Created
 
-| File | Change |
+| File | Action |
 |------|--------|
-| `src/components/TransactionList.tsx` | Add `timeFilter === 'all'` block to `chartData` with dynamic boundary detection |
+| `supabase/functions/ai-insights/index.ts` | Create — edge function with AI gateway call |
+| `src/components/ai-summary/DeepInsights.tsx` | Create — accordion-style AI insight cards |
+| `src/components/AISummaryPage.tsx` | Update — aggregate data, call edge function, render DeepInsights |
+| `supabase/config.toml` | Update — add ai-insights function config |
 
