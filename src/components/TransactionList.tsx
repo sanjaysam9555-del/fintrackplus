@@ -394,7 +394,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
           ))}
           <div className="w-px self-stretch my-1 bg-foreground/30 flex-shrink-0" />
           {[
-            { key: 'no-category', label: 'Uncategorized' },
+            { key: 'no-category', label: 'No Category' },
             { key: 'no-project', label: 'No Project' },
             { key: 'no-vendor', label: 'No Vendor' },
             { key: 'no-partner', label: 'No Partner' },
