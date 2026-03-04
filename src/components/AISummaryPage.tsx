@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
@@ -10,6 +10,9 @@ import { CategoryBreakdown } from "./ai-summary/CategoryBreakdown";
 import { ProjectHealth } from "./ai-summary/ProjectHealth";
 import { PaymentMethods } from "./ai-summary/PaymentMethods";
 import { PendingInstallments } from "./ai-summary/PendingInstallments";
+import { DeepInsights, type DeepInsight } from "./ai-summary/DeepInsights";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface AISummaryPageProps {
   onBack?: () => void;
@@ -20,15 +23,22 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
     transactions, 
     categories, 
     projects, 
+    partners,
     getTotalIncome, 
     getTotalExpense,
     getCategoryById,
     getProjectSpending,
-    getProjectIncome
+    getProjectIncome,
+    getPartnerBalances,
   } = useFinanceStore();
   
   const fyRange = useFYRange();
   const monthRanges = useMonthRanges();
+  
+  // Deep Insights state
+  const [deepInsights, setDeepInsights] = useState<DeepInsight[]>([]);
+  const [isGeneratingDeep, setIsGeneratingDeep] = useState(false);
+  const [deepError, setDeepError] = useState<string | null>(null);
   
   // FY totals
   const fyIncome = useMemo(() => getTotalIncome(fyRange.start, fyRange.end), [fyRange, getTotalIncome]);
@@ -195,6 +205,112 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
   
   const hasData = transactions.length > 0;
 
+  // Build AI payload
+  const buildAIPayload = useCallback(() => {
+    const fyTxns = transactions.filter(t => t.date >= fyRange.start && t.date <= fyRange.end);
+    const netBalance = fyIncome - fyExpense;
+
+    // Partner breakdowns
+    const partnerBalances = getPartnerBalances();
+    const partnerBreakdowns = partnerBalances.map(pb => ({
+      name: pb.partner.name,
+      cashIncome: pb.cashIncome,
+      cashExpense: pb.cashExpense,
+      onlineIncome: pb.onlineIncome,
+      onlineExpense: pb.onlineExpense,
+      cashBalance: pb.cashBalance,
+      onlineBalance: pb.onlineBalance,
+    }));
+
+    const cashBalance = partnerBalances.reduce((s, pb) => s + pb.cashBalance, 0);
+    const onlineBalance = partnerBalances.reduce((s, pb) => s + pb.onlineBalance, 0);
+
+    // Project margins
+    const projectMargins = projects.map(p => {
+      const income = getProjectIncome(p.id);
+      const expense = getProjectSpending(p.id);
+      const margin = income > 0 ? ((income - expense) / income) * 100 : 0;
+      return {
+        name: p.name,
+        clientCost: p.clientCost,
+        income,
+        expense,
+        marginPercent: Math.round(margin),
+      };
+    }).filter(p => p.income > 0 || p.expense > 0);
+
+    // Top vendors
+    const vendorTotals: Record<string, number> = {};
+    fyTxns.filter(t => t.type === 'expense').forEach(t => {
+      vendorTotals[t.vendor] = (vendorTotals[t.vendor] || 0) + t.amount;
+    });
+    const topVendors = Object.entries(vendorTotals)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([name, totalSpend]) => ({
+        name,
+        totalSpend,
+        percentOfTotal: fyExpense > 0 ? Math.round((totalSpend / fyExpense) * 100) : 0,
+      }));
+
+    // Monthly trend (last 6 months)
+    const monthlyTrend = trendData.map(d => ({
+      month: d.label,
+      income: d.income,
+      expense: d.expense,
+    }));
+
+    // GST %
+    const gstCount = fyTxns.filter(t => t.isGst).length;
+    const gstTransactionPercent = fyTxns.length > 0 ? Math.round((gstCount / fyTxns.length) * 100) : 0;
+
+    // Category breakdown for AI
+    const aiCategoryBreakdown = categoryData.map(c => ({
+      name: c.name,
+      amount: c.value,
+      percent: Math.round(c.percent),
+    }));
+
+    return {
+      fyIncome,
+      fyExpense,
+      netBalance,
+      cashBalance,
+      onlineBalance,
+      partnerBreakdowns,
+      projectMargins,
+      topVendors,
+      monthlyTrend,
+      gstTransactionPercent,
+      categoryBreakdown: aiCategoryBreakdown,
+      paymentMethodSplit: paymentSplit,
+    };
+  }, [transactions, fyRange, fyIncome, fyExpense, projects, getProjectIncome, getProjectSpending, getPartnerBalances, trendData, categoryData, paymentSplit]);
+
+  const generateDeepInsights = useCallback(async () => {
+    setIsGeneratingDeep(true);
+    setDeepError(null);
+    try {
+      const payload = buildAIPayload();
+      const { data, error } = await supabase.functions.invoke('ai-insights', {
+        body: payload,
+      });
+      if (error) throw error;
+      if (Array.isArray(data)) {
+        setDeepInsights(data);
+      } else {
+        throw new Error('Unexpected response format');
+      }
+    } catch (err: any) {
+      console.error('Deep insights error:', err);
+      const message = err?.message || 'Failed to generate insights';
+      setDeepError(message);
+      toast.error(message);
+    } finally {
+      setIsGeneratingDeep(false);
+    }
+  }, [buildAIPayload]);
+
   return (
     <div className="min-h-screen pb-40 md:pb-8 md:px-6 md:max-w-6xl">
       {/* Header */}
@@ -248,6 +364,18 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
           {/* Smart Insights - full width */}
           <div className="md:col-span-2">
             <SmartInsights insights={insights} />
+          </div>
+          
+          {/* Deep Insights - full width */}
+          <div className="md:col-span-2">
+            <DeepInsights
+              insights={deepInsights}
+              isLoading={isGeneratingDeep}
+              error={deepError}
+              onGenerate={generateDeepInsights}
+              onRegenerate={generateDeepInsights}
+              hasData={hasData}
+            />
           </div>
           
           {/* Project Health + Payment Methods side by side */}
