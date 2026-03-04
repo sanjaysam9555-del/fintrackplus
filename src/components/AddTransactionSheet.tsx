@@ -28,9 +28,10 @@ interface AddTransactionSheetProps {
   onClose: () => void;
   defaultType?: TransactionType;
   userId?: string;
+  onNavigate?: (section: string) => void;
 }
 
-export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId }: AddTransactionSheetProps) => {
+export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId, onNavigate }: AddTransactionSheetProps) => {
   const navigate = useNavigate();
   const { categories, projects, transactions, vendors, partners, addTransaction } = useFinanceStore();
   const { checkForDuplicates } = useDuplicateDetection();
@@ -427,9 +428,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 onClick={() => {
                                   setShowCategories(false);
                                   onClose();
-                                  navigate(appPath('/?tab=settings'));
-                                }}
-                                className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
+                                   onNavigate?.('categories');
+                                 }}
+                                 className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
                               >
                                 <Settings size={12} />
                                 To add more categories, go to Settings
@@ -440,9 +441,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               onClick={() => {
                                 setShowCategories(false);
                                 onClose();
-                                navigate(appPath('/?tab=settings'));
-                              }}
-                              className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                                 onNavigate?.('categories');
+                               }}
+                               className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
                             >
                               No categories added yet.<br />
                               <span className="text-xs text-primary flex items-center justify-center gap-1 mt-1">
@@ -628,9 +629,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 onClick={() => {
                                   setShowVendors(false);
                                   onClose();
-                                  navigate(appPath('/?tab=settings'));
-                                }}
-                                className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
+                                   onNavigate?.('vendors');
+                                 }}
+                                 className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
                               >
                                 <Settings size={12} />
                                 To add more vendors, go to Settings
@@ -641,9 +642,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               onClick={() => {
                                 setShowVendors(false);
                                 onClose();
-                                navigate(appPath('/?tab=settings'));
-                              }}
-                              className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                                 onNavigate?.('vendors');
+                               }}
+                               className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
                             >
                               No vendors added yet.<br />
                               <span className="text-xs text-primary flex items-center justify-center gap-1 mt-1">
@@ -858,9 +859,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 onClick={() => {
                                   setShowProjects(false);
                                   onClose();
-                                  navigate(appPath('/?tab=settings'));
-                                }}
-                                className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
+                                   onNavigate?.('labels');
+                                 }}
+                                 className="w-full px-3 py-2 text-xs text-primary hover:text-primary/80 text-center border-t border-border mt-2 pt-2 flex items-center justify-center gap-1 transition-colors"
                               >
                                 <Settings size={12} />
                                 To add more projects, go to Settings
@@ -871,9 +872,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               onClick={() => {
                                 setShowProjects(false);
                                 onClose();
-                                navigate(appPath('/?tab=settings'));
-                              }}
-                              className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
+                                 onNavigate?.('labels');
+                               }}
+                               className="w-full px-3 py-4 text-center text-sm text-muted-foreground hover:text-primary transition-colors"
                             >
                               No projects added yet.<br />
                               <span className="text-xs text-primary flex items-center justify-center gap-1 mt-1">
