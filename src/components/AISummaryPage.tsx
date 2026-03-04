@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
@@ -13,6 +13,14 @@ import { PendingInstallments } from "./ai-summary/PendingInstallments";
 import { DeepInsights, type DeepInsight } from "./ai-summary/DeepInsights";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+
+const DEEP_INSIGHTS_CACHE_KEY = 'saffron_deep_insights_cache';
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+interface CachedInsights {
+  insights: DeepInsight[];
+  timestamp: number;
+}
 
 interface AISummaryPageProps {
   onBack?: () => void;
@@ -35,8 +43,19 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
   const fyRange = useFYRange();
   const monthRanges = useMonthRanges();
   
-  // Deep Insights state
-  const [deepInsights, setDeepInsights] = useState<DeepInsight[]>([]);
+  // Deep Insights state — initialize from cache
+  const [deepInsights, setDeepInsights] = useState<DeepInsight[]>(() => {
+    try {
+      const raw = localStorage.getItem(DEEP_INSIGHTS_CACHE_KEY);
+      if (raw) {
+        const cached: CachedInsights = JSON.parse(raw);
+        if (Date.now() - cached.timestamp < TWO_WEEKS_MS) {
+          return cached.insights;
+        }
+      }
+    } catch {}
+    return [];
+  });
   const [isGeneratingDeep, setIsGeneratingDeep] = useState(false);
   const [deepError, setDeepError] = useState<string | null>(null);
   
@@ -210,7 +229,6 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
     const fyTxns = transactions.filter(t => t.date >= fyRange.start && t.date <= fyRange.end);
     const netBalance = fyIncome - fyExpense;
 
-    // Partner breakdowns
     const partnerBalances = getPartnerBalances();
     const partnerBreakdowns = partnerBalances.map(pb => ({
       name: pb.partner.name,
@@ -225,7 +243,6 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
     const cashBalance = partnerBalances.reduce((s, pb) => s + pb.cashBalance, 0);
     const onlineBalance = partnerBalances.reduce((s, pb) => s + pb.onlineBalance, 0);
 
-    // Project margins
     const projectMargins = projects.map(p => {
       const income = getProjectIncome(p.id);
       const expense = getProjectSpending(p.id);
@@ -239,7 +256,6 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
       };
     }).filter(p => p.income > 0 || p.expense > 0);
 
-    // Top vendors
     const vendorTotals: Record<string, number> = {};
     fyTxns.filter(t => t.type === 'expense').forEach(t => {
       vendorTotals[t.vendor] = (vendorTotals[t.vendor] || 0) + t.amount;
@@ -253,18 +269,15 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
         percentOfTotal: fyExpense > 0 ? Math.round((totalSpend / fyExpense) * 100) : 0,
       }));
 
-    // Monthly trend (last 6 months)
     const monthlyTrend = trendData.map(d => ({
       month: d.label,
       income: d.income,
       expense: d.expense,
     }));
 
-    // GST %
     const gstCount = fyTxns.filter(t => t.isGst).length;
     const gstTransactionPercent = fyTxns.length > 0 ? Math.round((gstCount / fyTxns.length) * 100) : 0;
 
-    // Category breakdown for AI
     const aiCategoryBreakdown = categoryData.map(c => ({
       name: c.name,
       amount: c.value,
@@ -298,6 +311,9 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
       if (error) throw error;
       if (Array.isArray(data)) {
         setDeepInsights(data);
+        // Cache with timestamp
+        const cached: CachedInsights = { insights: data, timestamp: Date.now() };
+        localStorage.setItem(DEEP_INSIGHTS_CACHE_KEY, JSON.stringify(cached));
       } else {
         throw new Error('Unexpected response format');
       }
@@ -310,6 +326,22 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
       setIsGeneratingDeep(false);
     }
   }, [buildAIPayload]);
+
+  // Auto-generate on mount if no cached insights or cache expired
+  useEffect(() => {
+    if (!hasData) return;
+    try {
+      const raw = localStorage.getItem(DEEP_INSIGHTS_CACHE_KEY);
+      if (raw) {
+        const cached: CachedInsights = JSON.parse(raw);
+        if (Date.now() - cached.timestamp < TWO_WEEKS_MS) {
+          return; // Cache is fresh
+        }
+      }
+    } catch {}
+    // No valid cache — auto-generate
+    generateDeepInsights();
+  }, [hasData]); // intentionally exclude generateDeepInsights to run only on mount
 
   return (
     <div className="min-h-screen pb-40 md:pb-8 md:px-6 md:max-w-6xl">
@@ -366,18 +398,6 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
             <SmartInsights insights={insights} />
           </div>
           
-          {/* Deep Insights - full width */}
-          <div className="md:col-span-2">
-            <DeepInsights
-              insights={deepInsights}
-              isLoading={isGeneratingDeep}
-              error={deepError}
-              onGenerate={generateDeepInsights}
-              onRegenerate={generateDeepInsights}
-              hasData={hasData}
-            />
-          </div>
-          
           {/* Project Health + Payment Methods side by side */}
           <ProjectHealth projects={projectsWithSpending} />
           <PaymentMethods 
@@ -390,6 +410,17 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
           {/* Pending Installments - full width */}
           <div className="md:col-span-2">
             <PendingInstallments transactions={transactions} />
+          </div>
+
+          {/* Deep Insights - full width, at the very bottom */}
+          <div className="md:col-span-2">
+            <DeepInsights
+              insights={deepInsights}
+              isLoading={isGeneratingDeep}
+              error={deepError}
+              onRegenerate={generateDeepInsights}
+              hasData={hasData}
+            />
           </div>
         </div>
       )}
