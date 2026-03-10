@@ -391,6 +391,95 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
+      addPartnerTransfer: async (params, userId) => {
+        const expenseId = uuidv4();
+        const incomeId = uuidv4();
+        const now = new Date().toISOString();
+        
+        const expenseTxn: Transaction = {
+          id: expenseId,
+          type: 'expense',
+          amount: params.amount,
+          title: `Transfer to ${params.toPartnerName}`,
+          vendor: 'Partner Transfer',
+          categoryId: params.expenseCategoryId,
+          partnerId: params.fromPartnerId,
+          paymentMethod: params.paymentMethod,
+          date: params.date,
+          time: params.time,
+          notes: params.notes || `Transfer to ${params.toPartnerName}`,
+          linkedTransactionId: incomeId,
+          createdAt: now,
+        };
+        
+        const incomeTxn: Transaction = {
+          id: incomeId,
+          type: 'income',
+          amount: params.amount,
+          title: `Transfer from ${params.fromPartnerName}`,
+          vendor: 'Partner Transfer',
+          categoryId: params.incomeCategoryId,
+          partnerId: params.toPartnerId,
+          paymentMethod: params.paymentMethod,
+          date: params.date,
+          time: params.time,
+          notes: params.notes || `Transfer from ${params.fromPartnerName}`,
+          linkedTransactionId: expenseId,
+          createdAt: now,
+        };
+        
+        // 1. Insert both into local state atomically
+        set((state) => ({
+          transactions: [incomeTxn, expenseTxn, ...state.transactions]
+        }));
+        
+        // Resolve userId
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+        
+        if (uid) {
+          const buildDbData = (txn: Transaction) => ({
+            type: txn.type,
+            amount: txn.amount,
+            title: txn.title || null,
+            vendor: txn.vendor,
+            category_id: txn.categoryId || null,
+            project_id: txn.projectId || null,
+            partner_id: txn.partnerId || null,
+            payment_method: txn.paymentMethod,
+            date: txn.date,
+            time: txn.time,
+            notes: txn.notes || null,
+            is_recurring: false,
+            recurring_frequency: null,
+            receipt_url: null,
+            is_gst: false,
+            is_part_payment: false,
+            total_expected_amount: null,
+            linked_transaction_id: txn.linkedTransactionId || null,
+            planned_installments: '[]',
+          });
+          
+          // 2. Queue both sync ops back-to-back
+          addToSyncQueue({ type: 'insert', entity: 'transaction', entityId: expenseId, data: buildDbData(expenseTxn), userId: uid });
+          addToSyncQueue({ type: 'insert', entity: 'transaction', entityId: incomeId, data: buildDbData(incomeTxn), userId: uid });
+          get().updatePendingCount();
+          
+          // 3. Single sync trigger
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+        
+        // Notifications
+        get().addNotification({
+          type: 'transaction',
+          title: 'Partner Transfer',
+          message: `₹${params.amount.toLocaleString()} from ${params.fromPartnerName} to ${params.toPartnerName}`,
+          entityType: 'transaction',
+          entityId: expenseId,
+        });
+      },
+      
       updateTransaction: async (id, updates, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
         const { categories, projects, partners } = get();
