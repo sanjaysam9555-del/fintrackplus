@@ -23,7 +23,7 @@ interface PartnerTransferSheetProps {
 }
 
 export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransferSheetProps) => {
-  const { partners, categories, addTransaction } = useFinanceStore();
+  const { partners, categories, addPartnerTransfer } = useFinanceStore();
   
   const [fromPartnerId, setFromPartnerId] = useState("");
   const [toPartnerId, setToPartnerId] = useState("");
