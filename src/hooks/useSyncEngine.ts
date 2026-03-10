@@ -46,7 +46,7 @@ const ensureDefaultTaxonomy = async (userId: string) => {
 
     if (!hasExpense) {
       promises.push(
-        supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' })
+        supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' }).select()
       );
     }
     if (!hasIncome) {
