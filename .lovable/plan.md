@@ -1,33 +1,25 @@
 
 
-# Redesign Deep Insights to Match Smart Insights Style
+# Fix Toast Close Button Visibility in Dark/OLED Mode
 
 ## Problem
-Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
+The Sonner toast close button (X icon) renders as white on a white circular background in dark/OLED mode, making it invisible. In light mode it's fine (black on white).
 
-## Approach
-Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
+## Cause
+Sonner's `closeButton` inherits default styling where both the button background and the icon color end up being the same in dark mode. The toast itself uses `bg-background` and `text-foreground`, but the close button's internal SVG icon doesn't pick up `text-foreground`.
 
-## Changes — `src/components/ai-summary/DeepInsights.tsx`
+## Fix — `src/components/ui/sonner.tsx`
 
-**InsightCard redesign** to mirror SmartInsights pattern:
-- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
-- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
-- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
-- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
-- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
-- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
+Add a `closeButton` class name to the `toastOptions.classNames` object that forces the close button to use proper contrast colors:
 
-**Severity → style mapping** (same as SmartInsights):
-- `info` → emerald/green gradient border
-- `warning` → amber gradient border  
-- `critical` → red gradient border
+```typescript
+closeButton: "group-[.toast]:text-foreground group-[.toast]:bg-muted group-[.toast]:border-border group-[.toast]:hover:bg-accent",
+```
 
-**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
+This ensures:
+- The X icon uses `text-foreground` (light text in dark mode, dark text in light mode)
+- The circular background uses `bg-muted` (subtle contrast against the toast background)
+- Border matches the theme
 
-## Files Modified
-
-| File | Change |
-|------|--------|
-| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
+Single file change: `src/components/ui/sonner.tsx`
 
