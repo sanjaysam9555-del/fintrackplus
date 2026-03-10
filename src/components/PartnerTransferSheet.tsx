@@ -58,7 +58,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
     const formattedDate = format(date, 'yyyy-MM-dd');
     const currentTime = format(new Date(), 'HH:mm:ss');
     
-    // Create expense from source partner
+    // Pre-generate IDs for cross-linking
+    const expenseId = uuidv4();
+    const incomeId = uuidv4();
+    
+    // Create expense from source partner (linked to income)
     await addTransaction({
       type: 'expense',
       amount: transferAmount,
@@ -70,9 +74,10 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
       date: formattedDate,
       time: currentTime,
       notes: notes || `Transfer to ${toPartner?.name}`,
-    }, userId);
+      linkedTransactionId: incomeId,
+    }, userId, expenseId);
     
-    // Create income for destination partner
+    // Create income for destination partner (linked to expense)
     await addTransaction({
       type: 'income',
       amount: transferAmount,
@@ -84,7 +89,8 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
       date: formattedDate,
       time: currentTime,
       notes: notes || `Transfer from ${fromPartner?.name}`,
-    }, userId);
+      linkedTransactionId: expenseId,
+    }, userId, incomeId);
     
     toast.success('Transfer Complete', {
       description: `${CURRENCY_SYMBOL}${transferAmount.toLocaleString()} from ${fromPartner?.name} to ${toPartner?.name}`,
