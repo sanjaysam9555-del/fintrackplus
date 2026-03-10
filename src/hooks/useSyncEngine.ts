@@ -33,30 +33,24 @@ const ensureDefaultTaxonomy = async (userId: string) => {
       supabase.from('categories').select('id, name, type').eq('user_id', userId).eq('name', 'Not Specified'),
     ]);
 
-    const promises: Promise<any>[] = [];
+    const inserts: (() => PromiseLike<unknown>)[] = [];
 
     if (!vendors || vendors.length === 0) {
-      promises.push(
-        supabase.from('vendors').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'Store', color: '#6B7280' }).select()
-      );
+      inserts.push(() => supabase.from('vendors').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'Store', color: '#6B7280' }));
     }
 
     const hasExpense = cats?.some(c => c.type === 'expense');
     const hasIncome = cats?.some(c => c.type === 'income');
 
     if (!hasExpense) {
-      promises.push(
-        supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' }).select()
-      );
+      inserts.push(() => supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' }));
     }
     if (!hasIncome) {
-      promises.push(
-        supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' }).select()
-      );
+      inserts.push(() => supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' }));
     }
 
-    if (promises.length > 0) {
-      await Promise.all(promises);
+    if (inserts.length > 0) {
+      for (const fn of inserts) await fn();
       console.log('[SyncEngine] Created missing default taxonomy entries');
     }
   } catch (err) {
