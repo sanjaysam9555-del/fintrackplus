@@ -308,7 +308,7 @@ export const useFinanceStore = create<FinanceStore>()(
           amount: transaction.amount,
           title: transaction.title || null,
           vendor: transaction.vendor,
-          category_id: transaction.categoryId || null,
+          category_id: (transaction.categoryId && get().categories.some(c => c.id === transaction.categoryId)) ? transaction.categoryId : null,
           project_id: transaction.projectId || null,
           partner_id: transaction.partnerId || null,
           payment_method: transaction.paymentMethod,

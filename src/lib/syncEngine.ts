@@ -285,8 +285,20 @@ const processQueueInternal = async (): Promise<{ synced: number; failed: number;
       if (operation.retryCount >= MAX_RETRIES) {
         processedIds.add(operation.id); // drop it
         const isTransfer = operation.data?.vendor === 'Partner Transfer';
-        console.error(`[SyncEngine] Dropping operation after ${MAX_RETRIES} retries:`, 
-          isTransfer ? `[TRANSFER] entity=${operation.entityId}` : operation.entityId, error);
+        console.error(`[SyncEngine] PERMANENTLY DROPPING operation after ${MAX_RETRIES} retries:`, {
+          opId: operation.id,
+          entity: operation.entity,
+          entityId: operation.entityId,
+          isTransfer,
+          lastError: error,
+          data: isTransfer ? operation.data : undefined,
+        });
+        // Surface permanent failure to user for transfers
+        if (isTransfer && typeof window !== 'undefined') {
+          import('sonner').then(({ toast }) => {
+            toast.error('A partner transfer failed to sync after multiple retries. Please try again.');
+          });
+        }
       } else {
         const nextDelay = getBackoffDelay(operation.retryCount);
         retriedOps.set(operation.id, {

@@ -54,7 +54,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   };
   
   const handleSubmit = async () => {
-    if (!amount || !fromPartnerId || !toPartnerId || !expenseCategory || !incomeCategory) return;
+    if (!amount || !fromPartnerId || !toPartnerId) return;
+    if (!expenseCategory || !incomeCategory) {
+      toast.error('Missing default categories. Please wait for sync to complete.');
+      return;
+    }
     
     const transferAmount = parseFloat(amount);
     const formattedDate = format(date, 'yyyy-MM-dd');
