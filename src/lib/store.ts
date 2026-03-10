@@ -224,21 +224,9 @@ export const useFinanceStore = create<FinanceStore>()(
       const mergedVendors = mergeData(data.vendors, currentState.vendors, 'vendor');
       const mergedCategories = mergeData(data.categories, currentState.categories, 'category');
       
-      // Ensure "Not Specified" vendor exists
-      const hasNotSpecifiedVendor = mergedVendors.some(v => v.name === 'Not Specified');
-      if (!hasNotSpecifiedVendor) {
-        mergedVendors.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'Store', color: '#6B7280' });
-      }
-      
-      // Ensure "Not Specified" category exists for both types
-      const hasNotSpecifiedExpense = mergedCategories.some(c => c.name === 'Not Specified' && c.type === 'expense');
-      if (!hasNotSpecifiedExpense) {
-        mergedCategories.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' });
-      }
-      const hasNotSpecifiedIncome = mergedCategories.some(c => c.name === 'Not Specified' && c.type === 'income');
-      if (!hasNotSpecifiedIncome) {
-        mergedCategories.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' });
-      }
+      // NOTE: Do NOT inject fake "Not Specified" entries with uuidv4() here.
+      // Those local-only IDs cause FK violations when used in transactions.
+      // Instead, ensureDefaultTaxonomy() in useSyncEngine creates real backend records.
 
       // Patch existing "Not Specified" entries with missing icon/color
       mergedCategories.forEach((c, i) => {
@@ -320,7 +308,7 @@ export const useFinanceStore = create<FinanceStore>()(
           amount: transaction.amount,
           title: transaction.title || null,
           vendor: transaction.vendor,
-          category_id: transaction.categoryId || null,
+          category_id: (transaction.categoryId && get().categories.some(c => c.id === transaction.categoryId)) ? transaction.categoryId : null,
           project_id: transaction.projectId || null,
           partner_id: transaction.partnerId || null,
           payment_method: transaction.paymentMethod,
@@ -437,12 +425,17 @@ export const useFinanceStore = create<FinanceStore>()(
         const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
         
         if (uid) {
-          const buildDbData = (txn: Transaction) => ({
+          const buildDbData = (txn: Transaction) => {
+            // Guard: only send category_id if it exists in current store
+            const validCategoryId = txn.categoryId && get().categories.some(c => c.id === txn.categoryId)
+              ? txn.categoryId
+              : null;
+            return {
             type: txn.type,
             amount: txn.amount,
             title: txn.title || null,
             vendor: txn.vendor,
-            category_id: txn.categoryId || null,
+            category_id: validCategoryId,
             project_id: txn.projectId || null,
             partner_id: txn.partnerId || null,
             payment_method: txn.paymentMethod,
@@ -457,7 +450,7 @@ export const useFinanceStore = create<FinanceStore>()(
             total_expected_amount: null,
             linked_transaction_id: txn.linkedTransactionId || null,
             planned_installments: '[]',
-          });
+          };};
           
           // 2. Queue both sync ops back-to-back
           addToSyncQueue({ type: 'insert', entity: 'transaction', entityId: expenseId, data: buildDbData(expenseTxn), userId: uid });

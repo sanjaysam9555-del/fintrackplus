@@ -1,72 +1,33 @@
 
-Goal: ship a durable fix so partner transfers never “appear then disappear” again.
 
-What I found (root causes)
-1) Circular FK write failure:
-- `transactions.linked_transaction_id` has a self-referencing FK.
-- Partner transfer currently inserts two rows where each points to the other (`expense -> income`, `income -> expense`).
-- Because sync writes rows one-by-one, the first insert fails FK validation, then retries, then gets dropped.
+# Redesign Deep Insights to Match Smart Insights Style
 
-2) Invalid default category IDs:
-- `setCloudData` currently creates local “Not Specified” categories with `uuidv4()` when missing in cloud.
-- `PartnerTransferSheet` auto-picks first expense/income category, which often becomes these local-only IDs.
-- Insert then fails `transactions_category_id_fkey` because those category IDs don’t exist in backend.
+## Problem
+Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
 
-Why it “shows then disappears”
-- Transfer is added optimistically to local state.
-- Sync keeps failing in background; after retry exhaustion, queue removes failed ops.
-- Next cloud refresh overwrites local optimistic rows, so transfer vanishes and balances revert.
+## Approach
+Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
 
-Implementation plan
+## Changes — `src/components/ai-summary/DeepInsights.tsx`
 
-1) Remove the schema blocker for circular transfer linking
-- Add migration to drop FK constraint on `transactions.linked_transaction_id`:
-  - `ALTER TABLE public.transactions DROP CONSTRAINT IF EXISTS transactions_linked_transaction_id_fkey;`
-- Keep column and index for fast linking/querying.
-- No RLS policy changes needed.
+**InsightCard redesign** to mirror SmartInsights pattern:
+- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
+- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
+- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
+- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
+- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
+- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
 
-2) Stop generating fake local category IDs
-- In `src/lib/store.ts` (`setCloudData`):
-  - Remove `uuidv4()` injection for missing “Not Specified” categories/vendors.
-  - Only patch icon/color for entries that already exist.
-- This prevents local-only IDs from ever being used in writes.
+**Severity → style mapping** (same as SmartInsights):
+- `info` → emerald/green gradient border
+- `warning` → amber gradient border  
+- `critical` → red gradient border
 
-3) Ensure real default records exist in backend
-- In `src/hooks/useSyncEngine.ts`:
-  - Add `ensureDefaultTaxonomy(user.id)` before/early in first sync:
-    - Ensure `Not Specified` vendor exists.
-    - Ensure `Not Specified` category exists for both `income` and `expense`.
-  - Then refresh cloud data.
-- Add one-time data backfill for existing users so current accounts get these defaults too.
+**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
 
-4) Harden transfer category selection + write guards
-- In `src/components/PartnerTransferSheet.tsx`:
-  - Pick real persisted categories only:
-    - Prefer “Not Specified” (if present in store from cloud),
-    - else fallback to first available real category by type.
-  - If either income/expense category is missing, block submit with clear toast.
-- In `src/lib/store.ts` (`addTransaction` and `addPartnerTransfer`):
-  - Guard `categoryId` before queueing DB payload.
-  - If category is missing/invalid in current store, send `category_id: null` instead of invalid UUID.
+## Files Modified
 
-5) Improve failure observability for this path
-- In `src/lib/syncEngine.ts`:
-  - For transfer ops that fail repeatedly, log structured error with operation id + DB message.
-  - Surface one user-facing toast when transfer sync is permanently dropped (so failures aren’t silent).
+| File | Change |
+|------|--------|
+| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
 
-Technical details (concise)
-- Files to update:
-  - `supabase/migrations/*` (drop linked FK)
-  - `src/lib/store.ts` (remove fake defaults + category guards)
-  - `src/hooks/useSyncEngine.ts` (default taxonomy bootstrap)
-  - `src/components/PartnerTransferSheet.tsx` (safe category resolution + submit blocking)
-  - `src/lib/syncEngine.ts` (better permanent-failure signaling)
-- Data access/security:
-  - Existing RLS policies already enforce per-user access; no policy edits required.
-
-Validation plan
-1) Create 5–10 partner transfers in a row.
-2) Wait >60s (healing + retries window), confirm none disappear.
-3) Hard refresh and relogin, confirm both sides persist and balances remain correct.
-4) Delete one transfer side, confirm linked side deletion + Undo restores both.
-5) Verify normal Add Transaction with default “Not Specified” also persists.

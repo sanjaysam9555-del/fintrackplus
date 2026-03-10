@@ -23,6 +23,40 @@ import {
 } from '@/lib/syncEngine';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
+
+// Ensure "Not Specified" vendor + categories exist in backend for this user
+const ensureDefaultTaxonomy = async (userId: string) => {
+  try {
+    const [{ data: vendors }, { data: cats }] = await Promise.all([
+      supabase.from('vendors').select('id, name').eq('user_id', userId).eq('name', 'Not Specified'),
+      supabase.from('categories').select('id, name, type').eq('user_id', userId).eq('name', 'Not Specified'),
+    ]);
+
+    const inserts: (() => PromiseLike<unknown>)[] = [];
+
+    if (!vendors || vendors.length === 0) {
+      inserts.push(() => supabase.from('vendors').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'Store', color: '#6B7280' }));
+    }
+
+    const hasExpense = cats?.some(c => c.type === 'expense');
+    const hasIncome = cats?.some(c => c.type === 'income');
+
+    if (!hasExpense) {
+      inserts.push(() => supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' }));
+    }
+    if (!hasIncome) {
+      inserts.push(() => supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' }));
+    }
+
+    if (inserts.length > 0) {
+      for (const fn of inserts) await fn();
+      console.log('[SyncEngine] Created missing default taxonomy entries');
+    }
+  } catch (err) {
+    console.error('[SyncEngine] ensureDefaultTaxonomy failed:', err);
+  }
+};
 
 export const useSyncEngine = () => {
   const { user } = useAuth();
@@ -215,8 +249,12 @@ export const useSyncEngine = () => {
 
     isMounted.current = true;
 
-    // Initial sync
-    fullSync({ showToast: false });
+    // Ensure default taxonomy exists in backend before first sync
+    const initSync = async () => {
+      await ensureDefaultTaxonomy(user.id);
+      await fullSync({ showToast: false });
+    };
+    initSync();
 
     // 1. Realtime subscriptions
     realtimeRef.current = createRealtimeSubscription(user.id, () => {

@@ -38,9 +38,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   const fromPartner = partners.find(p => p.id === fromPartnerId);
   const toPartner = partners.find(p => p.id === toPartnerId);
   
-  // Find misc expense/income categories for transfers
-  const expenseCategory = categories.find(c => c.type === 'expense') || categories[0];
-  const incomeCategory = categories.find(c => c.type === 'income') || categories[0];
+  // Find real persisted categories for transfers - prefer "Not Specified"
+  const expenseCategory = categories.find(c => c.name === 'Not Specified' && c.type === 'expense') 
+    || categories.find(c => c.type === 'expense');
+  const incomeCategory = categories.find(c => c.name === 'Not Specified' && c.type === 'income') 
+    || categories.find(c => c.type === 'income');
   
   const resetForm = () => {
     setFromPartnerId("");
@@ -52,7 +54,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   };
   
   const handleSubmit = async () => {
-    if (!amount || !fromPartnerId || !toPartnerId || !expenseCategory || !incomeCategory) return;
+    if (!amount || !fromPartnerId || !toPartnerId) return;
+    if (!expenseCategory || !incomeCategory) {
+      toast.error('Missing default categories. Please wait for sync to complete.');
+      return;
+    }
     
     const transferAmount = parseFloat(amount);
     const formattedDate = format(date, 'yyyy-MM-dd');
