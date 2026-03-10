@@ -563,6 +563,18 @@ export const useFinanceStore = create<FinanceStore>()(
             data: {},
             userId,
           });
+          
+          // Also queue linked transfer for cloud deletion
+          if (linkedTransaction) {
+            addToSyncQueue({
+              type: 'delete',
+              entity: 'transaction',
+              entityId: linkedTransaction.id,
+              data: {},
+              userId,
+            });
+          }
+          
           get().updatePendingCount();
           
           if (navigator.onLine) {

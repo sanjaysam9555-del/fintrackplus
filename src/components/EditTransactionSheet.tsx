@@ -96,9 +96,19 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     return allVendors.find(v => v.name.toLowerCase() === vendor.toLowerCase());
   }, [allVendors, vendor]);
   
+  const isPartnerTransfer = transaction.vendor === 'Partner Transfer';
+
   const handleSubmit = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!amount || !categoryId) return;
+    
+    if (isPartnerTransfer) {
+      toast.error('Transfer entries cannot be edited', {
+        description: 'Please delete and re-create the transfer instead.',
+        duration: 4000,
+      });
+      return;
+    }
     
     await updateTransaction(transaction.id, {
       type,
