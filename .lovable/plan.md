@@ -1,70 +1,33 @@
 
-Goal: deliver a durable fix so partner transfers never “appear then disappear” and balances don’t temporarily jump back.
 
-What is still happening
-- The previous fix serialized concurrent `processSyncQueue()` calls, but it did not prevent queue overwrite from stale snapshots.
-- In `src/lib/syncEngine.ts`, `processQueueInternal()` still:
-  1) reads queue once,
-  2) does async network work,
-  3) writes back `updatedQueue`.
-- If new operations are added while step (2) is running, step (3) can overwrite and delete them.
-- This exactly matches your symptom: transfer entries show locally, then vanish after background sync/heal/realtime refresh.
+# Redesign Deep Insights to Match Smart Insights Style
 
-Implementation plan (solid fix)
+## Problem
+Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
 
-1) Make queue processing “merge-safe” (no stale overwrite)
-File: `src/lib/syncEngine.ts`
+## Approach
+Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
 
-- Replace end-of-pass blind write (`saveSyncQueue(updatedQueue)`) with ID-based reconciliation against the latest queue:
-  - Keep a snapshot of operations being processed (by operation `id`).
-  - After processing, reload current queue from storage.
-  - For each processed op:
-    - success / dropped-after-max-retries: remove only that op ID from current queue.
-    - failed with retry: update that same op ID only if it still exists (don’t resurrect stale ops).
-  - Save reconciled queue.
-- Result: newly-added operations during processing are preserved.
-- Also harden mutex loop:
-  - current code does max 1 extra pass;
-  - change to loop while `_pendingReprocess` is set, so bursts are fully drained.
+## Changes — `src/components/ai-summary/DeepInsights.tsx`
 
-2) Make partner transfer creation atomic at store level
-Files: `src/lib/store.ts`, `src/components/PartnerTransferSheet.tsx`
+**InsightCard redesign** to mirror SmartInsights pattern:
+- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
+- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
+- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
+- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
+- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
+- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
 
-- Add a dedicated store action (e.g. `addPartnerTransfer`) that:
-  - creates both transaction IDs up front,
-  - inserts both entries into local state in one `set(...)`,
-  - queues both sync operations back-to-back,
-  - triggers exactly one immediate `processSyncQueue()` call.
-- Update `PartnerTransferSheet` to call this single action instead of two separate `addTransaction` calls.
-- Result: no intermediate “half transfer” state and less chance of timing gaps.
+**Severity → style mapping** (same as SmartInsights):
+- `info` → emerald/green gradient border
+- `warning` → amber gradient border  
+- `critical` → red gradient border
 
-3) Add defensive sync visibility for failures
-File: `src/lib/syncEngine.ts` (small additions)
+**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
 
-- Keep retry metadata as now, but add structured logs for failed transfer ops (`vendor: Partner Transfer`, op id, retry count, last error).
-- Do not silently mask persistent failures; surface them for debugging and user feedback paths.
+## Files Modified
 
-Why this is stronger than current
-- Current fix prevents two processors from running simultaneously.
-- New fix also prevents processor-vs-writer clobbering (the real remaining hole).
-- Combined with atomic transfer enqueueing, this removes the disappearing-transfer class reliably.
+| File | Change |
+|------|--------|
+| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
 
-Technical details (exact code hotspots)
-- `src/lib/syncEngine.ts`
-  - `processQueueInternal()` queue commit logic (main bug location)
-  - `processSyncQueue()` reprocess loop improvement
-- `src/lib/store.ts`
-  - add `addPartnerTransfer(...)` action near transaction actions
-- `src/components/PartnerTransferSheet.tsx`
-  - replace dual `addTransaction(...)` flow with single store action call
-
-Validation plan
-1) Create 5–10 partner transfers in a row (mixed cash/online).
-2) Wait >60s (healing interval + retries window), confirm no entries disappear.
-3) Navigate away/back + hard refresh; confirm both sides persist.
-4) Verify partner balances remain correct before/after refresh.
-5) Delete one transfer side and confirm linked side cascade still works; Undo restores both.
-6) Optional stress: create transfer while background sync is active; verify stability.
-
-No backend schema changes required
-- This is a client sync correctness fix only (no table/RLS migration needed).
