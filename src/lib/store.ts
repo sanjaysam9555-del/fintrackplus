@@ -61,6 +61,19 @@ interface FinanceStore extends FinanceState {
   
   // Transaction actions
   addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string, preGeneratedId?: string, skipImmediateSync?: boolean) => void;
+  addPartnerTransfer: (params: {
+    fromPartnerId: string;
+    toPartnerId: string;
+    amount: number;
+    paymentMethod: PaymentMethod;
+    date: string;
+    time: string;
+    notes?: string;
+    expenseCategoryId: string;
+    incomeCategoryId: string;
+    fromPartnerName: string;
+    toPartnerName: string;
+  }, userId?: string) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
   confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; partnerId?: string }) => void;
