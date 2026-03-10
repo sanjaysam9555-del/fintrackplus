@@ -165,14 +165,20 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className="text-xl font-bold">Edit Transaction</h2>
               <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleSubmit}
-                  disabled={!amount || !categoryId}
-                  size="sm"
-                  className="gradient-primary text-primary-foreground"
-                >
-                  Save Changes
-                </Button>
+                {isPartnerTransfer ? (
+                  <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs">
+                    Transfer (read-only)
+                  </Badge>
+                ) : (
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={!amount || !categoryId}
+                    size="sm"
+                    className="gradient-primary text-primary-foreground"
+                  >
+                    Save Changes
+                  </Button>
+                )}
                 <button 
                   onClick={(e) => {
                     e.stopPropagation();
