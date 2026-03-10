@@ -58,39 +58,19 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
     const formattedDate = format(date, 'yyyy-MM-dd');
     const currentTime = format(new Date(), 'HH:mm:ss');
     
-    // Pre-generate IDs for cross-linking
-    const expenseId = uuidv4();
-    const incomeId = uuidv4();
-    
-    // Create expense from source partner (linked to income) — skip immediate sync to batch with income
-    await addTransaction({
-      type: 'expense',
+    await addPartnerTransfer({
+      fromPartnerId,
+      toPartnerId,
       amount: transferAmount,
-      title: `Transfer to ${toPartner?.name}`,
-      vendor: 'Partner Transfer',
-      categoryId: expenseCategory.id,
-      partnerId: fromPartnerId,
       paymentMethod,
       date: formattedDate,
       time: currentTime,
-      notes: notes || `Transfer to ${toPartner?.name}`,
-      linkedTransactionId: incomeId,
-    }, userId, expenseId, true);
-    
-    // Create income for destination partner (linked to expense) — this triggers sync for both
-    await addTransaction({
-      type: 'income',
-      amount: transferAmount,
-      title: `Transfer from ${fromPartner?.name}`,
-      vendor: 'Partner Transfer',
-      categoryId: incomeCategory.id,
-      partnerId: toPartnerId,
-      paymentMethod,
-      date: formattedDate,
-      time: currentTime,
-      notes: notes || `Transfer from ${fromPartner?.name}`,
-      linkedTransactionId: expenseId,
-    }, userId, incomeId);
+      notes: notes || undefined,
+      expenseCategoryId: expenseCategory.id,
+      incomeCategoryId: incomeCategory.id,
+      fromPartnerName: fromPartner?.name || '',
+      toPartnerName: toPartner?.name || '',
+    }, userId);
     
     toast.success('Transfer Complete', {
       description: `${CURRENCY_SYMBOL}${transferAmount.toLocaleString()} from ${fromPartner?.name} to ${toPartner?.name}`,
