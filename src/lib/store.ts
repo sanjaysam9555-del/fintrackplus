@@ -521,6 +521,12 @@ export const useFinanceStore = create<FinanceStore>()(
         const transaction = get().transactions.find(t => t.id === id);
         const { categories, projects, partners } = get();
         
+        // Cascade delete for linked partner transfers
+        let linkedTransaction: typeof transaction | undefined;
+        if (transaction?.vendor === 'Partner Transfer' && transaction.linkedTransactionId) {
+          linkedTransaction = get().transactions.find(t => t.id === transaction.linkedTransactionId);
+        }
+        
         // Helper to get readable names
         const getCategoryName = (catId?: string) => 
           categories.find(c => c.id === catId)?.name || 'None';
@@ -540,9 +546,12 @@ export const useFinanceStore = create<FinanceStore>()(
           { field: 'Payment', from: transaction.paymentMethod === 'cash' ? 'Cash' : 'Online', to: 'Deleted' },
         ] : [];
         
-        // 1. Remove from local state immediately (optimistic)
+        // 1. Remove from local state immediately (optimistic) — include linked transfer
+        const idsToDelete = new Set([id]);
+        if (linkedTransaction) idsToDelete.add(linkedTransaction.id);
+        
         set((state) => ({
-          transactions: state.transactions.filter((t) => t.id !== id)
+          transactions: state.transactions.filter((t) => !idsToDelete.has(t.id))
         }));
         
         // 2. Queue for sync
