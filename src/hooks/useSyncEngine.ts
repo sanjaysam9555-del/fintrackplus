@@ -215,8 +215,12 @@ export const useSyncEngine = () => {
 
     isMounted.current = true;
 
-    // Initial sync
-    fullSync({ showToast: false });
+    // Ensure default taxonomy exists in backend before first sync
+    const initSync = async () => {
+      await ensureDefaultTaxonomy(user.id);
+      await fullSync({ showToast: false });
+    };
+    initSync();
 
     // 1. Realtime subscriptions
     realtimeRef.current = createRealtimeSubscription(user.id, () => {
