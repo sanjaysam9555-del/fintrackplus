@@ -14,7 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { v4 as uuidv4 } from "uuid";
+
 
 interface PartnerTransferSheetProps {
   isOpen: boolean;
