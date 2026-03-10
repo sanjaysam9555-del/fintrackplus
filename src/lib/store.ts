@@ -224,21 +224,9 @@ export const useFinanceStore = create<FinanceStore>()(
       const mergedVendors = mergeData(data.vendors, currentState.vendors, 'vendor');
       const mergedCategories = mergeData(data.categories, currentState.categories, 'category');
       
-      // Ensure "Not Specified" vendor exists
-      const hasNotSpecifiedVendor = mergedVendors.some(v => v.name === 'Not Specified');
-      if (!hasNotSpecifiedVendor) {
-        mergedVendors.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'Store', color: '#6B7280' });
-      }
-      
-      // Ensure "Not Specified" category exists for both types
-      const hasNotSpecifiedExpense = mergedCategories.some(c => c.name === 'Not Specified' && c.type === 'expense');
-      if (!hasNotSpecifiedExpense) {
-        mergedCategories.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' });
-      }
-      const hasNotSpecifiedIncome = mergedCategories.some(c => c.name === 'Not Specified' && c.type === 'income');
-      if (!hasNotSpecifiedIncome) {
-        mergedCategories.unshift({ id: uuidv4(), name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' });
-      }
+      // NOTE: Do NOT inject fake "Not Specified" entries with uuidv4() here.
+      // Those local-only IDs cause FK violations when used in transactions.
+      // Instead, ensureDefaultTaxonomy() in useSyncEngine creates real backend records.
 
       // Patch existing "Not Specified" entries with missing icon/color
       mergedCategories.forEach((c, i) => {
