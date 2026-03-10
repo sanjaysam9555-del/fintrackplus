@@ -299,7 +299,7 @@ export const useFinanceStore = create<FinanceStore>()(
       })),
       
       // Transaction actions - Optimistic local-first with background sync
-      addTransaction: async (transaction, userId, preGeneratedId) => {
+      addTransaction: async (transaction, userId, preGeneratedId, skipImmediateSync) => {
         const id = preGeneratedId || uuidv4();
         
         const transactionData = {
