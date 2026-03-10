@@ -318,20 +318,26 @@ export const processSyncQueue = async (): Promise<{ synced: number; failed: numb
   }
   
   _isProcessingQueue = true;
+  let totalSynced = 0;
+  let totalFailed = 0;
+  let remaining = 0;
+  
   try {
     const result = await processQueueInternal();
+    totalSynced += result.synced;
+    totalFailed += result.failed;
+    remaining = result.remaining;
     
-    if (_pendingReprocess) {
+    // Drain loop: keep processing while new ops were added during our pass
+    while (_pendingReprocess) {
       _pendingReprocess = false;
-      const secondPass = await processQueueInternal();
-      return {
-        synced: result.synced + secondPass.synced,
-        failed: result.failed + secondPass.failed,
-        remaining: secondPass.remaining,
-      };
+      const pass = await processQueueInternal();
+      totalSynced += pass.synced;
+      totalFailed += pass.failed;
+      remaining = pass.remaining;
     }
     
-    return result;
+    return { synced: totalSynced, failed: totalFailed, remaining };
   } finally {
     _isProcessingQueue = false;
   }
