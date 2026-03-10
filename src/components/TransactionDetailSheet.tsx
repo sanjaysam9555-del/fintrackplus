@@ -39,14 +39,27 @@ export const TransactionDetailSheet = ({
 
   const handleDelete = () => {
     const deletedTransaction = { ...transaction };
+    // Capture linked transfer before deletion
+    const allTransactions = useFinanceStore.getState().transactions;
+    const linkedTxn = (deletedTransaction.vendor === 'Partner Transfer' && deletedTransaction.linkedTransactionId)
+      ? allTransactions.find(t => t.id === deletedTransaction.linkedTransactionId)
+      : undefined;
+    const deletedLinked = linkedTxn ? { ...linkedTxn } : undefined;
+    
     deleteTransaction(transaction.id, userId);
     onClose();
-    toast(`${deletedTransaction.title || deletedTransaction.vendor} deleted`, {
+    
+    const isTransfer = deletedTransaction.vendor === 'Partner Transfer' && deletedLinked;
+    
+    toast(`${deletedTransaction.title || deletedTransaction.vendor} deleted${isTransfer ? ' (both sides)' : ''}`, {
       duration: 5000,
       action: {
         label: 'Undo',
         onClick: () => {
-          addTransaction({ ...deletedTransaction }, userId);
+          addTransaction({ ...deletedTransaction }, userId, deletedTransaction.id);
+          if (deletedLinked) {
+            addTransaction({ ...deletedLinked }, userId, deletedLinked.id);
+          }
           toast.success('Transaction restored');
         },
       },

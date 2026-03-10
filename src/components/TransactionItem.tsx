@@ -48,9 +48,18 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
   
   const confirmDelete = useCallback(() => {
     const deletedTransaction = { ...transaction };
+    // Capture linked transfer before deletion
+    const { transactions } = useFinanceStore.getState();
+    const linkedTxn = (deletedTransaction.vendor === 'Partner Transfer' && deletedTransaction.linkedTransactionId)
+      ? transactions.find(t => t.id === deletedTransaction.linkedTransactionId)
+      : undefined;
+    const deletedLinked = linkedTxn ? { ...linkedTxn } : undefined;
+    
     deleteTransaction(transaction.id, userId);
     
-    toast(`${deletedTransaction.title || deletedTransaction.vendor} deleted`, {
+    const isTransfer = deletedTransaction.vendor === 'Partner Transfer' && deletedLinked;
+    
+    toast(`${deletedTransaction.title || deletedTransaction.vendor} deleted${isTransfer ? ' (both sides)' : ''}`, {
       duration: 5000,
       action: {
         label: 'Undo',
@@ -75,7 +84,26 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
             totalExpectedAmount: deletedTransaction.totalExpectedAmount,
             linkedTransactionId: deletedTransaction.linkedTransactionId,
             plannedInstallments: deletedTransaction.plannedInstallments,
-          }, userId);
+          }, userId, deletedTransaction.id);
+          
+          // Restore linked transfer counterpart
+          if (deletedLinked) {
+            addTransaction({
+              type: deletedLinked.type,
+              amount: deletedLinked.amount,
+              title: deletedLinked.title,
+              vendor: deletedLinked.vendor,
+              categoryId: deletedLinked.categoryId,
+              projectId: deletedLinked.projectId,
+              partnerId: deletedLinked.partnerId,
+              paymentMethod: deletedLinked.paymentMethod,
+              date: deletedLinked.date,
+              time: deletedLinked.time,
+              notes: deletedLinked.notes,
+              linkedTransactionId: deletedLinked.linkedTransactionId,
+            }, userId, deletedLinked.id);
+          }
+          
           toast.success('Transaction restored');
         },
       },

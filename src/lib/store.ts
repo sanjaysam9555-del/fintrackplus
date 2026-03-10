@@ -60,7 +60,7 @@ interface FinanceStore extends FinanceState {
   markAllNotificationsRead: () => void;
   
   // Transaction actions
-  addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string, preGeneratedId?: string) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
   confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; partnerId?: string }) => void;
@@ -299,8 +299,8 @@ export const useFinanceStore = create<FinanceStore>()(
       })),
       
       // Transaction actions - Optimistic local-first with background sync
-      addTransaction: async (transaction, userId) => {
-        const id = uuidv4();
+      addTransaction: async (transaction, userId, preGeneratedId) => {
+        const id = preGeneratedId || uuidv4();
         
         const transactionData = {
           type: transaction.type,
@@ -521,6 +521,12 @@ export const useFinanceStore = create<FinanceStore>()(
         const transaction = get().transactions.find(t => t.id === id);
         const { categories, projects, partners } = get();
         
+        // Cascade delete for linked partner transfers
+        let linkedTransaction: typeof transaction | undefined;
+        if (transaction?.vendor === 'Partner Transfer' && transaction.linkedTransactionId) {
+          linkedTransaction = get().transactions.find(t => t.id === transaction.linkedTransactionId);
+        }
+        
         // Helper to get readable names
         const getCategoryName = (catId?: string) => 
           categories.find(c => c.id === catId)?.name || 'None';
@@ -540,9 +546,12 @@ export const useFinanceStore = create<FinanceStore>()(
           { field: 'Payment', from: transaction.paymentMethod === 'cash' ? 'Cash' : 'Online', to: 'Deleted' },
         ] : [];
         
-        // 1. Remove from local state immediately (optimistic)
+        // 1. Remove from local state immediately (optimistic) — include linked transfer
+        const idsToDelete = new Set([id]);
+        if (linkedTransaction) idsToDelete.add(linkedTransaction.id);
+        
         set((state) => ({
-          transactions: state.transactions.filter((t) => t.id !== id)
+          transactions: state.transactions.filter((t) => !idsToDelete.has(t.id))
         }));
         
         // 2. Queue for sync
@@ -554,6 +563,18 @@ export const useFinanceStore = create<FinanceStore>()(
             data: {},
             userId,
           });
+          
+          // Also queue linked transfer for cloud deletion
+          if (linkedTransaction) {
+            addToSyncQueue({
+              type: 'delete',
+              entity: 'transaction',
+              entityId: linkedTransaction.id,
+              data: {},
+              userId,
+            });
+          }
+          
           get().updatePendingCount();
           
           if (navigator.onLine) {
