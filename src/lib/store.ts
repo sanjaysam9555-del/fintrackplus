@@ -60,7 +60,7 @@ interface FinanceStore extends FinanceState {
   markAllNotificationsRead: () => void;
   
   // Transaction actions
-  addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string, preGeneratedId?: string) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string, preGeneratedId?: string, skipImmediateSync?: boolean) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
   confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; partnerId?: string }) => void;
