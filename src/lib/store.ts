@@ -450,7 +450,7 @@ export const useFinanceStore = create<FinanceStore>()(
             total_expected_amount: null,
             linked_transaction_id: txn.linkedTransactionId || null,
             planned_installments: '[]',
-          });
+          };};
           
           // 2. Queue both sync ops back-to-back
           addToSyncQueue({ type: 'insert', entity: 'transaction', entityId: expenseId, data: buildDbData(expenseTxn), userId: uid });
