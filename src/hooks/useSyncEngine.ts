@@ -37,7 +37,7 @@ const ensureDefaultTaxonomy = async (userId: string) => {
 
     if (!vendors || vendors.length === 0) {
       promises.push(
-        supabase.from('vendors').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'Store', color: '#6B7280' })
+        supabase.from('vendors').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'Store', color: '#6B7280' }).select()
       );
     }
 
