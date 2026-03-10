@@ -60,7 +60,7 @@ interface FinanceStore extends FinanceState {
   markAllNotificationsRead: () => void;
   
   // Transaction actions
-  addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string, preGeneratedId?: string) => void;
+  addTransaction: (transaction: Omit<Transaction, 'id'>, userId?: string, preGeneratedId?: string, skipImmediateSync?: boolean) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
   confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; partnerId?: string }) => void;
@@ -299,7 +299,7 @@ export const useFinanceStore = create<FinanceStore>()(
       })),
       
       // Transaction actions - Optimistic local-first with background sync
-      addTransaction: async (transaction, userId, preGeneratedId) => {
+      addTransaction: async (transaction, userId, preGeneratedId, skipImmediateSync) => {
         const id = preGeneratedId || uuidv4();
         
         const transactionData = {
@@ -345,8 +345,8 @@ export const useFinanceStore = create<FinanceStore>()(
           });
           get().updatePendingCount();
           
-          // 3. Try to sync immediately if online (silently)
-          if (navigator.onLine) {
+          // 3. Try to sync immediately if online (silently), unless caller wants to batch
+          if (navigator.onLine && !skipImmediateSync) {
             processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
           }
         }

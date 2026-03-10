@@ -62,7 +62,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
     const expenseId = uuidv4();
     const incomeId = uuidv4();
     
-    // Create expense from source partner (linked to income)
+    // Create expense from source partner (linked to income) — skip immediate sync to batch with income
     await addTransaction({
       type: 'expense',
       amount: transferAmount,
@@ -75,9 +75,9 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
       time: currentTime,
       notes: notes || `Transfer to ${toPartner?.name}`,
       linkedTransactionId: incomeId,
-    }, userId, expenseId);
+    }, userId, expenseId, true);
     
-    // Create income for destination partner (linked to expense)
+    // Create income for destination partner (linked to expense) — this triggers sync for both
     await addTransaction({
       type: 'income',
       amount: transferAmount,
