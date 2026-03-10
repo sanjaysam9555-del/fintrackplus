@@ -1,35 +1,33 @@
 
 
-# Fix Mobile Keyboard Auto-Opening in Dropdown Selectors
+# Redesign Deep Insights to Match Smart Insights Style
 
 ## Problem
-When Category, Vendor, or Project dropdowns are tapped on mobile, the search input inside each `PopoverContent` has `autoFocus`, which immediately triggers the mobile keyboard. This is disruptive — users just want to browse and pick from the list. The keyboard should only appear when the user explicitly taps the search input.
+Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
 
-## Changes
+## Approach
+Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
 
-### 1. Remove `autoFocus` from search inputs (both forms)
+## Changes — `src/components/ai-summary/DeepInsights.tsx`
 
-**`src/components/AddTransactionSheet.tsx`** — Remove `autoFocus` from 3 search inputs:
-- Category search (line 401)
-- Vendor search (line 596)
-- Project search (line 813)
+**InsightCard redesign** to mirror SmartInsights pattern:
+- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
+- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
+- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
+- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
+- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
+- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
 
-**`src/components/EditTransactionSheet.tsx`** — Remove `autoFocus` from 3 search inputs:
-- Category search (line 285)
-- Vendor search (line 415)
-- Project search (line 547)
+**Severity → style mapping** (same as SmartInsights):
+- `info` → emerald/green gradient border
+- `warning` → amber gradient border  
+- `critical` → red gradient border
 
-### 2. Improve PopoverContent mobile layout
+**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
 
-Update all 6 `PopoverContent` instances to use mobile-friendly sizing:
-- Add responsive width: `w-[calc(100vw-2rem)] sm:w-72` so the dropdown fills the screen on mobile
-- Increase `max-h` of the scrollable list area from `max-h-52` to `max-h-[40vh]` so the list adapts when the keyboard IS open (user taps search voluntarily)
-- Ensure the popover positions well by adding `sideOffset={8}`
-
-This is a straightforward fix — 6 `autoFocus` removals and minor responsive width/height tweaks across 2 files.
+## Files Modified
 
 | File | Change |
 |------|--------|
-| `src/components/AddTransactionSheet.tsx` | Remove 3x `autoFocus`, responsive popover sizing |
-| `src/components/EditTransactionSheet.tsx` | Remove 3x `autoFocus`, responsive popover sizing |
+| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
 
