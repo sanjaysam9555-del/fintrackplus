@@ -345,8 +345,8 @@ export const useFinanceStore = create<FinanceStore>()(
           });
           get().updatePendingCount();
           
-          // 3. Try to sync immediately if online (silently)
-          if (navigator.onLine) {
+          // 3. Try to sync immediately if online (silently), unless caller wants to batch
+          if (navigator.onLine && !skipImmediateSync) {
             processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
           }
         }

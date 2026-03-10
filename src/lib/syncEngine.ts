@@ -297,6 +297,33 @@ export const processSyncQueue = async (): Promise<{ synced: number; failed: numb
   return { synced, failed, remaining: updatedQueue.length };
 };
 
+export const processSyncQueue = async (): Promise<{ synced: number; failed: number; remaining: number }> => {
+  if (_isProcessingQueue) {
+    _pendingReprocess = true;
+    return { synced: 0, failed: 0, remaining: getQueueSize() };
+  }
+  
+  _isProcessingQueue = true;
+  try {
+    const result = await processQueueInternal();
+    
+    // If another call came in while processing, run again to catch newly queued items
+    if (_pendingReprocess) {
+      _pendingReprocess = false;
+      const secondPass = await processQueueInternal();
+      return {
+        synced: result.synced + secondPass.synced,
+        failed: result.failed + secondPass.failed,
+        remaining: secondPass.remaining,
+      };
+    }
+    
+    return result;
+  } finally {
+    _isProcessingQueue = false;
+  }
+};
+
 // ============ Cloud Data Fetching ============
 
 import { Partner, ProjectLabel as ProjectLabelType } from './types';
