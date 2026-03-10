@@ -243,7 +243,11 @@ export const processOperation = async (operation: SyncOperation): Promise<{ succ
   }
 };
 
-export const processSyncQueue = async (): Promise<{ synced: number; failed: number; remaining: number }> => {
+// Mutex to prevent concurrent queue processing
+let _isProcessingQueue = false;
+let _pendingReprocess = false;
+
+const processQueueInternal = async (): Promise<{ synced: number; failed: number; remaining: number }> => {
   const queue = loadSyncQueue();
   
   if (queue.length === 0) {
@@ -270,17 +274,13 @@ export const processSyncQueue = async (): Promise<{ synced: number; failed: numb
     
     if (success) {
       synced++;
-      // Track recently synced items to prevent race condition with cloud refresh
       addToRecentlySynced(operation.entity, operation.entityId);
-      // Don't add to updatedQueue (removes from queue)
     } else {
       failed++;
       
       if (operation.retryCount >= MAX_RETRIES) {
-        // Max retries reached, drop operation but log it
         console.error(`[SyncEngine] Dropping operation after ${MAX_RETRIES} retries:`, operation, error);
       } else {
-        // Schedule retry with exponential backoff
         const nextDelay = getBackoffDelay(operation.retryCount);
         updatedQueue.push({
           ...operation,
@@ -307,7 +307,6 @@ export const processSyncQueue = async (): Promise<{ synced: number; failed: numb
   try {
     const result = await processQueueInternal();
     
-    // If another call came in while processing, run again to catch newly queued items
     if (_pendingReprocess) {
       _pendingReprocess = false;
       const secondPass = await processQueueInternal();
