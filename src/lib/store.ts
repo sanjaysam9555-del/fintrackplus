@@ -425,12 +425,17 @@ export const useFinanceStore = create<FinanceStore>()(
         const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
         
         if (uid) {
-          const buildDbData = (txn: Transaction) => ({
+          const buildDbData = (txn: Transaction) => {
+            // Guard: only send category_id if it exists in current store
+            const validCategoryId = txn.categoryId && get().categories.some(c => c.id === txn.categoryId)
+              ? txn.categoryId
+              : null;
+            return {
             type: txn.type,
             amount: txn.amount,
             title: txn.title || null,
             vendor: txn.vendor,
-            category_id: txn.categoryId || null,
+            category_id: validCategoryId,
             project_id: txn.projectId || null,
             partner_id: txn.partnerId || null,
             payment_method: txn.paymentMethod,
