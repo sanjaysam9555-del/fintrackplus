@@ -23,6 +23,46 @@ import {
 } from '@/lib/syncEngine';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { v4 as uuidv4 } from 'uuid';
+
+// Ensure "Not Specified" vendor + categories exist in backend for this user
+const ensureDefaultTaxonomy = async (userId: string) => {
+  try {
+    const [{ data: vendors }, { data: cats }] = await Promise.all([
+      supabase.from('vendors').select('id, name').eq('user_id', userId).eq('name', 'Not Specified'),
+      supabase.from('categories').select('id, name, type').eq('user_id', userId).eq('name', 'Not Specified'),
+    ]);
+
+    const promises: Promise<any>[] = [];
+
+    if (!vendors || vendors.length === 0) {
+      promises.push(
+        supabase.from('vendors').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'Store', color: '#6B7280' })
+      );
+    }
+
+    const hasExpense = cats?.some(c => c.type === 'expense');
+    const hasIncome = cats?.some(c => c.type === 'income');
+
+    if (!hasExpense) {
+      promises.push(
+        supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' })
+      );
+    }
+    if (!hasIncome) {
+      promises.push(
+        supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' })
+      );
+    }
+
+    if (promises.length > 0) {
+      await Promise.all(promises);
+      console.log('[SyncEngine] Created missing default taxonomy entries');
+    }
+  } catch (err) {
+    console.error('[SyncEngine] ensureDefaultTaxonomy failed:', err);
+  }
+};
 
 export const useSyncEngine = () => {
   const { user } = useAuth();
