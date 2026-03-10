@@ -248,41 +248,48 @@ let _isProcessingQueue = false;
 let _pendingReprocess = false;
 
 const processQueueInternal = async (): Promise<{ synced: number; failed: number; remaining: number }> => {
-  const queue = loadSyncQueue();
+  // Take a snapshot of the queue at the start
+  const snapshotQueue = loadSyncQueue();
   
-  if (queue.length === 0) {
+  if (snapshotQueue.length === 0) {
     return { synced: 0, failed: 0, remaining: 0 };
   }
   
   // Sort by timestamp to process in order
-  const sortedQueue = [...queue].sort(
+  const sortedQueue = [...snapshotQueue].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
   
   let synced = 0;
   let failed = 0;
-  const updatedQueue: SyncOperation[] = [];
+  
+  // Track what happened to each operation we processed
+  const processedIds = new Set<string>(); // successfully synced or permanently dropped
+  const retriedOps = new Map<string, SyncOperation>(); // failed but will retry
   
   for (const operation of sortedQueue) {
     // Skip if not ready for retry
     if (operation.nextRetryAt && new Date(operation.nextRetryAt) > new Date()) {
-      updatedQueue.push(operation);
-      continue;
+      continue; // leave it in queue as-is
     }
     
     const { success, error } = await processOperation(operation);
     
     if (success) {
       synced++;
+      processedIds.add(operation.id);
       addToRecentlySynced(operation.entity, operation.entityId);
     } else {
       failed++;
       
       if (operation.retryCount >= MAX_RETRIES) {
-        console.error(`[SyncEngine] Dropping operation after ${MAX_RETRIES} retries:`, operation, error);
+        processedIds.add(operation.id); // drop it
+        const isTransfer = operation.data?.vendor === 'Partner Transfer';
+        console.error(`[SyncEngine] Dropping operation after ${MAX_RETRIES} retries:`, 
+          isTransfer ? `[TRANSFER] entity=${operation.entityId}` : operation.entityId, error);
       } else {
         const nextDelay = getBackoffDelay(operation.retryCount);
-        updatedQueue.push({
+        retriedOps.set(operation.id, {
           ...operation,
           retryCount: operation.retryCount + 1,
           lastError: error,
@@ -292,9 +299,16 @@ const processQueueInternal = async (): Promise<{ synced: number; failed: number;
     }
   }
   
-  saveSyncQueue(updatedQueue);
+  // === MERGE-SAFE RECONCILIATION ===
+  // Re-read the current queue (may have new ops added during our async processing)
+  const currentQueue = loadSyncQueue();
+  const reconciledQueue = currentQueue
+    .filter(op => !processedIds.has(op.id)) // remove successfully processed / dropped
+    .map(op => retriedOps.has(op.id) ? retriedOps.get(op.id)! : op); // update retry metadata
   
-  return { synced, failed, remaining: updatedQueue.length };
+  saveSyncQueue(reconciledQueue);
+  
+  return { synced, failed, remaining: reconciledQueue.length };
 };
 
 export const processSyncQueue = async (): Promise<{ synced: number; failed: number; remaining: number }> => {
