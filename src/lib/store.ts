@@ -1534,6 +1534,12 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'delete',
             title: 'Label Deleted',
             message: `#${label.name}`,
+            details: [
+              { field: 'Name', from: label.name, to: 'Deleted' },
+              { field: 'Color', from: label.color, to: 'Deleted' },
+            ],
+            entityType: 'label',
+            entityId: id,
           });
         }
         
