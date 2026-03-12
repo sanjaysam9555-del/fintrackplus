@@ -26,6 +26,7 @@ export const LabelsSection = ({ onBack, userId }: LabelsSectionProps) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [selectedColor, setSelectedColor] = useState(LABEL_COLORS[0]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Projects grouped by label
   const projectsByLabel = useMemo(() => {
