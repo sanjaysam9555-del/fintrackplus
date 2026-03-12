@@ -129,6 +129,11 @@ export const ReportsSection = ({ onBack }: ReportsSectionProps) => {
       type: 'export',
       title: 'CSV Exported',
       message: `${filteredTransactions.length} transactions exported`,
+      details: [
+        { field: 'Period', from: '', to: `${format(dateRange.start, 'MMM dd, yyyy')} – ${format(dateRange.end, 'MMM dd, yyyy')}` },
+        { field: 'Transactions', from: '', to: `${filteredTransactions.length}` },
+        { field: 'Format', from: '', to: 'CSV' },
+      ],
     });
     toast.success('CSV exported successfully!');
   };
