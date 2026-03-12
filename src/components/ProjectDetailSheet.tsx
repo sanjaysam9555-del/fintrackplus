@@ -444,7 +444,31 @@ export const ProjectDetailSheet = ({
               </div>
             </div>
 
-            {/* Project Notes */}
+            {/* View Mode Toggle - Desktop only */}
+            {!isMobile && (
+              <div className="flex items-center justify-end gap-1">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors",
+                    viewMode === 'list' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                  )}
+                  title="List view"
+                >
+                  <List size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('columns')}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-colors",
+                    viewMode === 'columns' ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                  )}
+                  title="Column view"
+                >
+                  <Columns3 size={16} />
+                </button>
+              </div>
+            )}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold flex items-center gap-1.5">
