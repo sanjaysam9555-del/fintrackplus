@@ -1471,11 +1471,18 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       updateProjectLabel: async (id, updates, userId) => {
+        const oldLabel = get().projectLabels.find(l => l.id === id);
         set((state) => ({
           projectLabels: state.projectLabels.map((l) => 
             l.id === id ? { ...l, ...updates } : l
           )
         }));
+
+        get().addNotification({
+          type: 'edit',
+          title: 'Label Updated',
+          message: `#${updates.name || oldLabel?.name || 'Label'}`,
+        });
         
         if (userId) {
           const dbUpdates: Record<string, unknown> = {};
