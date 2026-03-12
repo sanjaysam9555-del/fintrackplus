@@ -267,6 +267,7 @@ export const useFinanceStore = create<FinanceStore>()(
       
       // User Profile
       updateUserProfile: async (profile) => {
+        const previousProfile = get().userProfile;
         set((state) => ({
           userProfile: { ...state.userProfile, ...profile }
         }));
@@ -283,11 +284,24 @@ export const useFinanceStore = create<FinanceStore>()(
             .eq('user_id', user.id);
         }
         
-        get().addNotification({
-          type: 'profile',
-          title: 'Profile Updated',
-          message: 'Your profile has been updated successfully',
-        });
+        // Log distinct notifications based on what changed
+        if (profile.name !== undefined && profile.name !== previousProfile.name) {
+          get().addNotification({
+            type: 'profile',
+            title: 'Name Changed',
+            message: `Display name updated`,
+            details: [
+              { field: 'Name', from: previousProfile.name || 'Not set', to: profile.name },
+            ],
+          });
+        }
+        if (profile.avatar !== undefined && profile.avatar !== previousProfile.avatar) {
+          get().addNotification({
+            type: 'profile',
+            title: 'Profile Photo Changed',
+            message: 'Your display picture has been updated',
+          });
+        }
       },
       
       // Notifications
@@ -476,11 +490,18 @@ export const useFinanceStore = create<FinanceStore>()(
         
         // Notifications
         get().addNotification({
-          type: 'transaction',
+          type: 'partner',
           title: 'Partner Transfer',
-          message: `₹${params.amount.toLocaleString()} from ${params.fromPartnerName} to ${params.toPartnerName}`,
+          message: `₹${params.amount.toLocaleString()} transferred between partners`,
           entityType: 'transaction',
           entityId: expenseId,
+          details: [
+            { field: 'Amount', from: '', to: `₹${params.amount.toLocaleString()}` },
+            { field: 'From', from: '', to: params.fromPartnerName },
+            { field: 'To', from: '', to: params.toPartnerName },
+            { field: 'Payment Mode', from: '', to: params.paymentMethod === 'cash' ? 'Cash' : 'Online' },
+            { field: 'Date', from: '', to: params.date },
+          ],
         });
       },
       

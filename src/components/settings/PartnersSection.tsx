@@ -260,7 +260,7 @@ const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldi
 // ── Main component ───────────────────────────────────────────────────
 
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
-  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter } = useFinanceStore();
+  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter, addNotification } = useFinanceStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
@@ -346,8 +346,21 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         .from('partner-avatars')
         .getPublicUrl(filePath);
 
-      setAvatarUrl(`${publicUrl}?t=${Date.now()}`);
+      const newUrl = `${publicUrl}?t=${Date.now()}`;
+      setAvatarUrl(newUrl);
       toast.success('Photo uploaded');
+      
+      // Log partner photo change if editing an existing partner
+      if (editingPartner) {
+        const partnerObj = partners.find(p => p.id === editingPartner);
+        if (partnerObj) {
+          addNotification({
+            type: 'partner',
+            title: 'Partner Photo Updated',
+            message: `Profile photo changed for ${partnerObj.name}`,
+          });
+        }
+      }
     };
 
     try {
