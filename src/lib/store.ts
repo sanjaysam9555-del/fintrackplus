@@ -145,7 +145,18 @@ export const useFinanceStore = create<FinanceStore>()(
       userProfile: { name: 'User' },
       notifications: [],
       defaultTimeFilter: 'fy',
-      setDefaultTimeFilter: (filter) => set({ defaultTimeFilter: filter }),
+      setDefaultTimeFilter: (filter) => {
+        const oldFilter = get().defaultTimeFilter;
+        set({ defaultTimeFilter: filter });
+        if (oldFilter !== filter) {
+          get().addNotification({
+            type: 'settings' as any,
+            title: 'Time Filter Changed',
+            message: `Default time frame changed`,
+            details: [{ field: 'Time Frame', from: oldFilter.toUpperCase(), to: filter.toUpperCase() }],
+          });
+        }
+      },
       syncStatus: 'idle',
       lastSyncedAt: null,
       pendingCount: 0,
