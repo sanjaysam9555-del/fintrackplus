@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons, ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import type { Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
