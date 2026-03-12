@@ -1443,6 +1443,12 @@ export const useFinanceStore = create<FinanceStore>()(
           projectLabels: [...state.projectLabels, { ...label, id, createdAt }]
         }));
 
+        get().addNotification({
+          type: 'label',
+          title: 'Label Added',
+          message: `#${label.name}`,
+        });
+
         const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
          
         if (uid) {
