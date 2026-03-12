@@ -618,12 +618,6 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           value={formData.description}
                           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                         />
-                        <Input
-                          type="number"
-                          placeholder="Cost Given to Client (₹)"
-                          value={formData.clientCost || ''}
-                          onChange={(e) => setFormData({ ...formData, clientCost: Number(e.target.value) || 0 })}
-                        />
                         <div>
                           <p className="text-xs text-muted-foreground mb-2">Color</p>
                           <div className="flex gap-2">
