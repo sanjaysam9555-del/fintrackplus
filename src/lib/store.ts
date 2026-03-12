@@ -1447,6 +1447,12 @@ export const useFinanceStore = create<FinanceStore>()(
           type: 'label',
           title: 'Label Added',
           message: `#${label.name}`,
+          details: [
+            { field: 'Name', from: 'New', to: label.name },
+            { field: 'Color', from: 'New', to: label.color },
+          ],
+          entityType: 'label',
+          entityId: id,
         });
 
         const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
