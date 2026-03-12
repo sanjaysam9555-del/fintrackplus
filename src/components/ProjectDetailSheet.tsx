@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, TrendingUp, TrendingDown, Save, Check, Calendar, Tag, X, Pencil, Eye } from "lucide-react";
+import { ArrowLeft, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, TrendingUp, TrendingDown, Save, Check, Calendar, Tag, X, Pencil, Eye, Columns3, List } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ProjectDocument } from "@/hooks/useProjectDocuments";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
