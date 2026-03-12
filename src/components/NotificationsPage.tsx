@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban } from "lucide-react";
+import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban, Users, Tag } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
