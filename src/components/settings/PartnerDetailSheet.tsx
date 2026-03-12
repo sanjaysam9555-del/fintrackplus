@@ -5,10 +5,10 @@ import { Partner, Transaction } from "@/lib/types";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { TransactionItem } from "@/components/TransactionItem";
-import { Banknote, CreditCard, TrendingUp, TrendingDown, X } from "lucide-react";
+import { Banknote, CreditCard, TrendingUp, TrendingDown, X, List, Columns3, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PartnerPeriodBalance {
   partner: Partner;
