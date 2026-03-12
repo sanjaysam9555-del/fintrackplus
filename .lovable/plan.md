@@ -1,33 +1,49 @@
 
 
-# Redesign Deep Insights to Match Smart Insights Style
+## Add Label Selection to Project Edit Form (Detail Sheet)
 
-## Problem
-Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
+### Problem
+The Project Detail Sheet's edit form collects `labelIds` in state but never renders UI to select/remove labels. Users can't edit labels from the detail view.
 
-## Approach
-Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
+### Changes
 
-## Changes — `src/components/ai-summary/DeepInsights.tsx`
+**`src/components/ProjectDetailSheet.tsx`**
 
-**InsightCard redesign** to mirror SmartInsights pattern:
-- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
-- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
-- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
-- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
-- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
-- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
+Add a label selector section to the edit form (after the color picker, around line 360):
+- Show all available `projectLabels` as toggleable chips (same pattern used in `ProjectOverviewPage.tsx` add/edit forms)
+- Clicking a chip toggles it in `editForm.labelIds`
+- Selected chips show filled style with the label color; unselected show outline style
+- This reuses the exact same toggle pattern already in `ProjectOverviewPage.tsx` lines 280-300
 
-**Severity → style mapping** (same as SmartInsights):
-- `info` → emerald/green gradient border
-- `warning` → amber gradient border  
-- `critical` → red gradient border
+### What it looks like
+```tsx
+{/* Labels - inside edit form, after color picker */}
+<div>
+  <Label className="text-xs">Labels</Label>
+  <div className="flex flex-wrap gap-1.5 mt-1">
+    {projectLabels.map((label) => {
+      const isSelected = editForm.labelIds.includes(label.id);
+      return (
+        <button key={label.id}
+          onClick={() => setEditForm(f => ({
+            ...f,
+            labelIds: isSelected
+              ? f.labelIds.filter(id => id !== label.id)
+              : [...(f.labelIds || []), label.id],
+          }))}
+          className={`chip styles...`}
+          style={{ backgroundColor: isSelected ? label.color : 'transparent' }}
+        >
+          #{label.name}
+        </button>
+      );
+    })}
+  </div>
+</div>
+```
 
-**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
-
-## Files Modified
-
-| File | Change |
-|------|--------|
-| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
+### Files to change
+| File | What |
+|------|------|
+| `src/components/ProjectDetailSheet.tsx` | Add label chip selector to edit form |
 
