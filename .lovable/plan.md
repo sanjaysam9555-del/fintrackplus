@@ -1,33 +1,31 @@
 
 
-# Redesign Deep Insights to Match Smart Insights Style
+## Simplify Project Financials to 3 Auto-Calculated Metrics
 
-## Problem
-Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
+### What the user wants
+Projects should only show **Income**, **Expense**, and **Balance/Margin** (all auto-calculated from transactions). Remove:
+- "Cost to Client" field from add/edit forms and display cards
+- Any manual entry options for project financials
 
-## Approach
-Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
+### Changes
 
-## Changes — `src/components/ai-summary/DeepInsights.tsx`
+**1. `src/components/ProjectOverviewPage.tsx`**
+- **Portfolio Summary**: Change from 2x2 grid to 3-column grid showing only Income, Expenses, Net Margin. Remove "Cost to Client" cell.
+- **Add Project Form** (lines 264-268): Remove the "Cost Given to Client" input field.
+- **Edit Form** (lines 637-642): Remove the "Cost Given to Client" input field.
+- **Project Cards** (lines 762-798): Change from 2x2 grid to 3-column grid — Income, Expenses, Net Margin only.
+- Remove `totalClientCost` calculation and related imports (`Wallet`).
 
-**InsightCard redesign** to mirror SmartInsights pattern:
-- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
-- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
-- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
-- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
-- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
-- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
+**2. `src/components/ProjectDetailSheet.tsx`**
+- **Edit Form** (lines 344-353): Remove "Cost to Client" input.
+- **Financial Summary** (lines 427-458): Change from 2x2 grid to 3-column grid — Income, Expenses, Net Margin only. Remove "Cost to Client" cell.
 
-**Severity → style mapping** (same as SmartInsights):
-- `info` → emerald/green gradient border
-- `warning` → amber gradient border  
-- `critical` → red gradient border
+**3. `src/components/ai-summary/ProjectHealth.tsx`**
+- Already uses spent/income which are auto-calculated — no changes needed.
 
-**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
-
-## Files Modified
-
-| File | Change |
-|------|--------|
-| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
+### Files to change
+| File | What |
+|------|------|
+| `src/components/ProjectOverviewPage.tsx` | Remove Cost to Client from summary, add form, edit form, and project cards; switch to 3-col grids |
+| `src/components/ProjectDetailSheet.tsx` | Remove Cost to Client from edit form and financial summary; switch to 3-col grid |
 
