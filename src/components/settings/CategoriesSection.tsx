@@ -147,6 +147,19 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
       </div>
 
       <div className="p-4 space-y-3">
+        {/* Search */}
+        {categories.length > 5 && (
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search categories..."
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+        )}
+
         {/* Add Form */}
         <AnimatePresence>
           {showAddForm && (
