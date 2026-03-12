@@ -360,18 +360,8 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
           <div className="px-4 pt-3 pb-1.5">
             <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{showArchived ? 'Archived' : 'Active'} Portfolio</p>
           </div>
-          {/* Stats Row - 2x2 grid */}
-          <div className="grid grid-cols-2 gap-px bg-border mx-3 mb-3 rounded-xl overflow-hidden">
-            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center">
-                <Wallet size={14} className="text-accent-foreground" />
-              </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
-              <p className="text-sm font-bold text-foreground">
-                <span className="lg:hidden">₹{formatCompactCurrency(totalClientCost, false)}</span>
-                <span className="hidden lg:inline">₹{totalClientCost.toLocaleString()}</span>
-              </p>
-            </div>
+          {/* Stats Row - 3-column grid */}
+          <div className="grid grid-cols-3 gap-px bg-border mx-3 mb-3 rounded-xl overflow-hidden">
             <div className="bg-card p-2.5 flex flex-col items-center gap-1">
               <div className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center">
                 <ArrowDown size={14} className="text-green-500" />
