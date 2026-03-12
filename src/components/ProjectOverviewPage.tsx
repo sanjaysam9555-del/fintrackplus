@@ -737,15 +737,8 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                           </div>
                         )}
 
-                        {/* Compact Stats Row - 2x2 grid with dividers */}
-                        <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden mt-1">
-                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                            <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-                              <Wallet size={12} className="text-accent-foreground" />
-                            </div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
-                            <p className="text-xs font-bold text-foreground">₹{formatCompactCurrency(project.clientCost || 0, false)}</p>
-                          </div>
+                        {/* Compact Stats Row - 3-column grid */}
+                        <div className="grid grid-cols-3 gap-px bg-border rounded-xl overflow-hidden mt-1">
                           <div className="bg-card p-2 flex flex-col items-center gap-0.5">
                             <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
                               <ArrowDown size={12} className="text-green-500" />
