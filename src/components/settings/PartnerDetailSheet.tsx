@@ -73,9 +73,14 @@ export const PartnerDetailSheet = ({
     [partnerTransactions]
   );
 
-  const expenseTransactions = useMemo(() => 
-    partnerTransactions.filter(t => t.type === 'expense'),
-    [partnerTransactions]
+  const incomeTotal = useMemo(() => 
+    incomeTransactions.reduce((sum, t) => sum + t.amount, 0),
+    [incomeTransactions]
+  );
+
+  const expenseTotal = useMemo(() => 
+    expenseTransactions.reduce((sum, t) => sum + t.amount, 0),
+    [expenseTransactions]
   );
 
   if (!partner || !balanceData) return null;
