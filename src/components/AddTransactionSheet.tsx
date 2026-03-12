@@ -390,14 +390,14 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         <ChevronDown size={16} className="text-muted-foreground shrink-0" />
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[calc(100vw-2rem)] sm:w-72 p-2 bg-card z-[70]" align="start" sideOffset={8}>
+                    <PopoverContent className="w-[calc(100vw-2rem)] sm:w-72 p-2 bg-card z-[70]" align="start" sideOffset={8} onOpenAutoFocus={(e) => e.preventDefault()}>
                       <div className="relative mb-2">
                         <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
                         <Input
                           value={categorySearch}
                           onChange={(e) => setCategorySearch(e.target.value)}
                           placeholder="Search categories..."
-                          className="pl-8 h-8 text-sm"
+                          className="pl-8 h-8 text-base"
                         />
                       </div>
                       <div className="max-h-[40vh] overflow-y-auto overscroll-contain touch-pan-y">
