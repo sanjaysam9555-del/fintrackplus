@@ -71,7 +71,8 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
     );
   }
 
-  const filteredCategories = filterType === 'all' ? categories : categories.filter(c => c.type === filterType);
+  const filteredCategories = (filterType === 'all' ? categories : categories.filter(c => c.type === filterType))
+    .filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleAdd = () => {
     if (!formData.name.trim()) {
