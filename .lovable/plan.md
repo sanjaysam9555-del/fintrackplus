@@ -1,17 +1,33 @@
 
 
-## Fix: PDF Report Unreadable in Dark/OLED Mode
+# Redesign Deep Insights to Match Smart Insights Style
 
-**Problem**: The PDF report is rendered inside an `<iframe>` with `srcDoc`. The iframe inherits no explicit background — in dark/OLED mode the iframe's body background defaults to the browser's dark canvas, making the light-gray alternating rows (`#f9fafb`) and dark text (`#1f2937`) appear as dark-on-dark.
+## Problem
+Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
 
-**Root cause**: The PDF HTML template hardcodes text color (`#1f2937`) but never sets `background: white` on the `<body>` or `<html>` element. Browsers in dark mode may apply a dark default background to iframes.
+## Approach
+Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
 
-**Fix** (single file change):
+## Changes — `src/components/ai-summary/DeepInsights.tsx`
 
-**`src/components/settings/ReportsSection.tsx`** — In the PDF HTML template's `<style>` block, add explicit white backgrounds:
+**InsightCard redesign** to mirror SmartInsights pattern:
+- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
+- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
+- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
+- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
+- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
+- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
 
-- `html, body` → add `background: #ffffff;`  
-- This ensures the report always renders with a light background regardless of the app's theme, since it's a printable financial document.
+**Severity → style mapping** (same as SmartInsights):
+- `info` → emerald/green gradient border
+- `warning` → amber gradient border  
+- `critical` → red gradient border
 
-That's it — one line addition. The text color (`#1f2937`), alternating row color (`#f9fafb`), meta background (`#f9fafb`), and stat boxes are all light-theme colors already. They just need the base background anchored to white.
+**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
 
