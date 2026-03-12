@@ -358,6 +358,37 @@ export const ProjectDetailSheet = ({
                     </div>
                   </div>
                 </div>
+                {projectLabels.length > 0 && (
+                  <div>
+                    <Label className="text-xs">Labels</Label>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {projectLabels.map((label) => {
+                        const isSelected = (editForm.labelIds || []).includes(label.id);
+                        return (
+                          <button
+                            key={label.id}
+                            type="button"
+                            onClick={() => setEditForm(f => ({
+                              ...f,
+                              labelIds: isSelected
+                                ? (f.labelIds || []).filter((id: string) => id !== label.id)
+                                : [...(f.labelIds || []), label.id],
+                            }))}
+                            className={cn(
+                              "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+                              isSelected
+                                ? "text-white border-transparent"
+                                : "bg-transparent border-border text-muted-foreground hover:bg-muted"
+                            )}
+                            style={isSelected ? { backgroundColor: label.color, borderColor: label.color } : {}}
+                          >
+                            #{label.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-2 pt-1">
                   <Button size="sm" onClick={handleSaveEdit} className="flex-1">
                     <Check size={14} /> Save
