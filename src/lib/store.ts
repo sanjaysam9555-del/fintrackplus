@@ -1505,6 +1505,7 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       deleteProjectLabel: async (id, userId) => {
+        const label = get().projectLabels.find(l => l.id === id);
         // Also remove this label from any projects that reference it
         set((state) => ({
           projectLabels: state.projectLabels.filter((l) => l.id !== id),
@@ -1514,6 +1515,14 @@ export const useFinanceStore = create<FinanceStore>()(
               : p
           )
         }));
+
+        if (label) {
+          get().addNotification({
+            type: 'delete',
+            title: 'Label Deleted',
+            message: `#${label.name}`,
+          });
+        }
         
         if (userId) {
           addToSyncQueue({
