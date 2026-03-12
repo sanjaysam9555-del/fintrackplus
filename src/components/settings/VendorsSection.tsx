@@ -48,6 +48,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   const [detailVendorName, setDetailVendorName] = useState<string | null>(null);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Combine stored vendors with transaction vendors, ensuring all are editable
   const allVendors = useMemo(() => {
