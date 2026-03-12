@@ -145,7 +145,18 @@ export const useFinanceStore = create<FinanceStore>()(
       userProfile: { name: 'User' },
       notifications: [],
       defaultTimeFilter: 'fy',
-      setDefaultTimeFilter: (filter) => set({ defaultTimeFilter: filter }),
+      setDefaultTimeFilter: (filter) => {
+        const oldFilter = get().defaultTimeFilter;
+        set({ defaultTimeFilter: filter });
+        if (oldFilter !== filter) {
+          get().addNotification({
+            type: 'settings' as any,
+            title: 'Time Filter Changed',
+            message: `Default time frame changed`,
+            details: [{ field: 'Time Frame', from: oldFilter.toUpperCase(), to: filter.toUpperCase() }],
+          });
+        }
+      },
       syncStatus: 'idle',
       lastSyncedAt: null,
       pendingCount: 0,
@@ -1447,6 +1458,12 @@ export const useFinanceStore = create<FinanceStore>()(
           type: 'label',
           title: 'Label Added',
           message: `#${label.name}`,
+          details: [
+            { field: 'Name', from: 'New', to: label.name },
+            { field: 'Color', from: 'New', to: label.color },
+          ],
+          entityType: 'label',
+          entityId: id,
         });
 
         const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
@@ -1478,10 +1495,17 @@ export const useFinanceStore = create<FinanceStore>()(
           )
         }));
 
+        const labelChanges: { field: string; from: string; to: string }[] = [];
+        if (updates.name && updates.name !== oldLabel?.name) labelChanges.push({ field: 'Name', from: oldLabel?.name || '', to: updates.name });
+        if (updates.color && updates.color !== oldLabel?.color) labelChanges.push({ field: 'Color', from: oldLabel?.color || '', to: updates.color });
+        
         get().addNotification({
           type: 'edit',
           title: 'Label Updated',
           message: `#${updates.name || oldLabel?.name || 'Label'}`,
+          details: labelChanges.length > 0 ? labelChanges : undefined,
+          entityType: 'label',
+          entityId: id,
         });
         
         if (userId) {
@@ -1521,6 +1545,12 @@ export const useFinanceStore = create<FinanceStore>()(
             type: 'delete',
             title: 'Label Deleted',
             message: `#${label.name}`,
+            details: [
+              { field: 'Name', from: label.name, to: 'Deleted' },
+              { field: 'Color', from: label.color, to: 'Deleted' },
+            ],
+            entityType: 'label',
+            entityId: id,
           });
         }
         

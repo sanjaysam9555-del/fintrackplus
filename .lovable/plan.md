@@ -1,44 +1,33 @@
 
 
-## Fix: Activity Logs Not Showing All Actions With Full Details
+# Redesign Deep Insights to Match Smart Insights Style
 
-### Problem
-The activity log (Notifications page) has two issues:
-1. **Details not rendered**: Every notification already stores `details` (before/after changes) but the UI only shows a truncated `message` line — the rich change data is invisible.
-2. **Label notifications are bare-bones**: Missing `details`, `entityType`, and `entityId` unlike every other entity type.
-3. **Some actions not logged**: Theme changes, default time filter changes, and data clearing have no notifications.
+## Problem
+Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
 
-### Changes
+## Approach
+Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
 
-**1. Render before/after details in NotificationsPage** (`src/components/NotificationsPage.tsx`)
-- Below each notification's message, render the `details` array when present:
-  - For adds (field `from === 'New'`): show a compact "New entry" card with field values
-  - For edits: show a "Before → After" grid for each changed field
-  - For deletes (field `to === 'Deleted'`): show original values with strikethrough styling
-- Expandable by default (first 3 items), with "Show more" if >3 fields
+## Changes — `src/components/ai-summary/DeepInsights.tsx`
 
-**2. Render details in NotificationPanel** (`src/components/NotificationPanel.tsx`)
-- Same detail rendering but more compact (single-line per field) since the panel is narrower
+**InsightCard redesign** to mirror SmartInsights pattern:
+- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
+- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
+- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
+- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
+- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
+- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
 
-**3. Enrich label notifications** (`src/lib/store.ts`)
-- `addProjectLabel`: add `details` with Name and Color fields, plus `entityType`/`entityId`
-- `updateProjectLabel`: build change diff like other entities (name, color changes)
-- `deleteProjectLabel`: add details capturing original name and color
+**Severity → style mapping** (same as SmartInsights):
+- `info` → emerald/green gradient border
+- `warning` → amber gradient border  
+- `critical` → red gradient border
 
-**4. Add missing action logs** (`src/lib/store.ts`, `src/components/SettingsPage.tsx`)
-- Theme change: log when user switches light/dark/OLED
-- Default time filter change: log when filter preference changes
-- In `src/lib/store.ts` `setDefaultTimeFilter`: add notification
+**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
 
-**5. Add filter tabs to logs page** (`src/components/NotificationsPage.tsx`)
-- Horizontal scrollable filter chips: All, Entries, Categories, Vendors, Projects, Partners, Labels, Exports
-- Filter notifications by `type` or `entityType`
+## Files Modified
 
-### Files to change
-| File | What |
-|------|------|
-| `src/components/NotificationsPage.tsx` | Render `details` array, add filter tabs |
-| `src/components/NotificationPanel.tsx` | Render `details` in compact form |
-| `src/lib/store.ts` | Enrich label notifications with details; add theme/filter change logs |
-| `src/components/SettingsPage.tsx` | Fire notification on theme change |
+| File | Change |
+|------|--------|
+| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
 

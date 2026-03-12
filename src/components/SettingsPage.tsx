@@ -576,7 +576,18 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
               return (
                 <button
                   key={option.value}
-                  onClick={() => setTheme(option.value)}
+                  onClick={() => {
+                    const oldMode = mode;
+                    setTheme(option.value);
+                    if (oldMode !== option.value) {
+                      useFinanceStore.getState().addNotification({
+                        type: 'settings',
+                        title: 'Theme Changed',
+                        message: `Appearance changed to ${option.label}`,
+                        details: [{ field: 'Theme', from: oldMode.charAt(0).toUpperCase() + oldMode.slice(1), to: option.label }],
+                      });
+                    }
+                  }}
                   className={cn(
                     "flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
                     isActive 
