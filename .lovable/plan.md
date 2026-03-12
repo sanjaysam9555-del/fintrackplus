@@ -1,36 +1,33 @@
 
 
-## Fix: Mobile Dropdown Keyboard & Zoom Issues
+# Redesign Deep Insights to Match Smart Insights Style
 
-### Problems identified
-1. **Auto-focus on search inputs**: The `<Input>` elements inside Category, Vendor, and Project popover dropdowns don't have `autoFocus` explicitly, but on mobile browsers, the first focusable input inside a newly-opened popover gets auto-focused by Radix, triggering the keyboard immediately.
-2. **Zoom on focus**: The viewport meta tag lacks `maximum-scale=1` — iOS Safari auto-zooms into inputs with `font-size < 16px` (current search inputs use `text-sm` = 14px).
-3. **Layout overlap**: When the keyboard does open (after tapping search), the popover content doesn't adapt its max-height, causing overlap with the keyboard.
+## Problem
+Deep Insights cards are over-designed with too many visual layers (gradient header strips, nested callout boxes, category labels, severity dots). Smart Insights is cleaner because each card is a single flat container with icon + title + description — easy to scan.
 
-### Changes
+## Approach
+Adopt the same card pattern as Smart Insights: a single `rounded-xl border` container with a severity-based gradient background, an icon on the left, title + body on the right. The actionable tip becomes a second line of text (slightly differentiated) rather than a separate nested box.
 
-**1. Prevent auto-focus on search inputs inside popovers (mobile only)**
-Files: `src/components/AddTransactionSheet.tsx`, `src/components/EditTransactionSheet.tsx`
+## Changes — `src/components/ai-summary/DeepInsights.tsx`
 
-- Add `autoFocus={false}` and `readOnly` initially on mobile to all search `<Input>` elements inside Category, Vendor, and Project popovers.
-- Better approach: wrap each search input so it only becomes focusable on explicit tap. Use a click handler to manually `.focus()` instead of letting Radix auto-focus it.
-- Simplest fix: add `onOpenAutoFocus={(e) => e.preventDefault()}` to each `<PopoverContent>` on mobile — this is the Radix-native way to prevent auto-focus.
+**InsightCard redesign** to mirror SmartInsights pattern:
+- Single flat card: `p-4 rounded-xl border backdrop-blur-sm` with severity-based gradient background (matching SmartInsights' `getInsightStyles` approach — green for info, amber for warning, red for critical)
+- Left: `w-9 h-9 rounded-lg` icon using the category icon (Droplets, TrendingUp, etc.) with matching tinted background
+- Right top: Title in `font-medium text-sm` with severity color + category badge as a small pill beside it
+- Right middle: Body text in `text-xs text-muted-foreground leading-relaxed`
+- Right bottom: Actionable tip prefixed with a "💡" or Lightbulb inline icon, in `text-xs font-medium` with slight primary tint — no nested box, just a single line/paragraph
+- Remove: gradient header strip, nested "What to do" callout box, severity dot+label in top-right corner
 
-**2. Prevent zoom on input focus (iOS)**
-File: `index.html`
+**Severity → style mapping** (same as SmartInsights):
+- `info` → emerald/green gradient border
+- `warning` → amber gradient border  
+- `critical` → red gradient border
 
-- Change viewport meta to: `width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover`
+**Keep unchanged**: Section header (Brain icon + "Deep Insights" + AI badge), loading skeleton, error state, animation staggering.
 
-**3. Adjust popover layout when keyboard is open**
-Files: `src/components/AddTransactionSheet.tsx`, `src/components/EditTransactionSheet.tsx`
+## Files Modified
 
-- Use the `visualViewport` API to detect when the keyboard is open and dynamically reduce the dropdown's `max-height` so items remain visible and scrollable above the keyboard.
-- Simpler approach: reduce `max-h-[40vh]` on the item list to a smaller value that accounts for keyboard, or use CSS `max-height: calc(var(--visual-vh, 40vh))` with a small hook that sets `--visual-vh` based on `window.visualViewport.height`.
-
-### Implementation summary
 | File | Change |
 |------|--------|
-| `index.html` | Add `maximum-scale=1.0, user-scalable=no` to viewport |
-| `src/components/AddTransactionSheet.tsx` | Add `onOpenAutoFocus={e => e.preventDefault()}` to Category/Vendor/Project `PopoverContent`; reduce dropdown max-height for keyboard |
-| `src/components/EditTransactionSheet.tsx` | Same popover auto-focus prevention and max-height adjustments |
+| `src/components/ai-summary/DeepInsights.tsx` | Flatten InsightCard to match SmartInsights card style |
 
