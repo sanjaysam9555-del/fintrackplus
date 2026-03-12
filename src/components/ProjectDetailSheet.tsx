@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, Wallet, TrendingUp, TrendingDown, Save, Check, Calendar, Tag, X, Pencil, Eye } from "lucide-react";
+import { ArrowLeft, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, TrendingUp, TrendingDown, Save, Check, Calendar, Tag, X, Pencil, Eye } from "lucide-react";
 import { ProjectDocument } from "@/hooks/useProjectDocuments";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -343,15 +343,6 @@ export const ProjectDetailSheet = ({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Cost to Client</Label>
-                    <Input
-                      type="number"
-                      value={editForm.clientCost || 0}
-                      onChange={(e) => setEditForm(f => ({ ...f, clientCost: Number(e.target.value) }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
                     <Label className="text-xs">Color</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
@@ -423,15 +414,8 @@ export const ProjectDetailSheet = ({
               </div>
             )}
 
-            {/* Financial Summary - 2x2 Grid */}
-            <div className="grid grid-cols-2 gap-px bg-border rounded-xl overflow-hidden w-full">
-              <div className="bg-card p-3 flex flex-col items-center gap-0.5">
-                <div className="w-6 h-6 rounded-lg bg-accent flex items-center justify-center">
-                  <Wallet size={12} className="text-accent-foreground" />
-                </div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Cost to Client</p>
-                <p className="text-sm font-bold text-foreground">₹{project.clientCost.toLocaleString()}</p>
-              </div>
+            {/* Financial Summary - 3-column Grid */}
+            <div className="grid grid-cols-3 gap-px bg-border rounded-xl overflow-hidden w-full">
               <div className="bg-card p-3 flex flex-col items-center gap-0.5">
                 <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
                   <ArrowDown size={12} className="text-green-500" />
@@ -440,8 +424,8 @@ export const ProjectDetailSheet = ({
                 <p className="text-sm font-bold text-green-600 dark:text-green-400">₹{income.toLocaleString()}</p>
               </div>
               <div className="bg-card p-3 flex flex-col items-center gap-0.5">
-                <div className="w-6 h-6 rounded-lg bg-red-500/10 flex items-center justify-center">
-                  <ArrowUp size={12} className="text-red-500" />
+                <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center">
+                  <ArrowUp size={12} className="text-destructive" />
                 </div>
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
                 <p className="text-sm font-bold text-destructive">₹{spent.toLocaleString()}</p>
