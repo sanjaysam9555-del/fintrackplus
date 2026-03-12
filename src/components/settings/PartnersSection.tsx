@@ -346,8 +346,21 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         .from('partner-avatars')
         .getPublicUrl(filePath);
 
-      setAvatarUrl(`${publicUrl}?t=${Date.now()}`);
+      const newUrl = `${publicUrl}?t=${Date.now()}`;
+      setAvatarUrl(newUrl);
       toast.success('Photo uploaded');
+      
+      // Log partner photo change if editing an existing partner
+      if (editingPartner) {
+        const partnerObj = partners.find(p => p.id === editingPartner);
+        if (partnerObj) {
+          addNotification({
+            type: 'partner',
+            title: 'Partner Photo Updated',
+            message: `Profile photo changed for ${partnerObj.name}`,
+          });
+        }
+      }
     };
 
     try {

@@ -490,11 +490,18 @@ export const useFinanceStore = create<FinanceStore>()(
         
         // Notifications
         get().addNotification({
-          type: 'transaction',
+          type: 'partner',
           title: 'Partner Transfer',
-          message: `₹${params.amount.toLocaleString()} from ${params.fromPartnerName} to ${params.toPartnerName}`,
+          message: `₹${params.amount.toLocaleString()} transferred between partners`,
           entityType: 'transaction',
           entityId: expenseId,
+          details: [
+            { field: 'Amount', from: '', to: `₹${params.amount.toLocaleString()}` },
+            { field: 'From', from: '', to: params.fromPartnerName },
+            { field: 'To', from: '', to: params.toPartnerName },
+            { field: 'Payment Mode', from: '', to: params.paymentMethod === 'cash' ? 'Cash' : 'Online' },
+            { field: 'Date', from: '', to: params.date },
+          ],
         });
       },
       
