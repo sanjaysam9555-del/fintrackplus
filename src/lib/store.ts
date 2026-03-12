@@ -1443,6 +1443,12 @@ export const useFinanceStore = create<FinanceStore>()(
           projectLabels: [...state.projectLabels, { ...label, id, createdAt }]
         }));
 
+        get().addNotification({
+          type: 'label',
+          title: 'Label Added',
+          message: `#${label.name}`,
+        });
+
         const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
          
         if (uid) {
@@ -1465,11 +1471,18 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       updateProjectLabel: async (id, updates, userId) => {
+        const oldLabel = get().projectLabels.find(l => l.id === id);
         set((state) => ({
           projectLabels: state.projectLabels.map((l) => 
             l.id === id ? { ...l, ...updates } : l
           )
         }));
+
+        get().addNotification({
+          type: 'edit',
+          title: 'Label Updated',
+          message: `#${updates.name || oldLabel?.name || 'Label'}`,
+        });
         
         if (userId) {
           const dbUpdates: Record<string, unknown> = {};
@@ -1492,6 +1505,7 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       deleteProjectLabel: async (id, userId) => {
+        const label = get().projectLabels.find(l => l.id === id);
         // Also remove this label from any projects that reference it
         set((state) => ({
           projectLabels: state.projectLabels.filter((l) => l.id !== id),
@@ -1501,6 +1515,14 @@ export const useFinanceStore = create<FinanceStore>()(
               : p
           )
         }));
+
+        if (label) {
+          get().addNotification({
+            type: 'delete',
+            title: 'Label Deleted',
+            message: `#${label.name}`,
+          });
+        }
         
         if (userId) {
           addToSyncQueue({

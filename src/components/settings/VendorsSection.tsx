@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, icons, ChevronDown, ChevronUp, Search } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import type { Transaction } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -48,6 +48,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   const [detailVendorName, setDetailVendorName] = useState<string | null>(null);
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Combine stored vendors with transaction vendors, ensuring all are editable
   const allVendors = useMemo(() => {
@@ -381,6 +382,19 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
       </div>
 
       <div className="p-4 space-y-3">
+        {/* Search */}
+        {allVendors.length > 5 && (
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search vendors..."
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+        )}
+
         {/* Add Form */}
         <AnimatePresence>
           {showAddForm && (
@@ -408,7 +422,9 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
           </div>
         ) : (
           <>
-          {allVendors.map((vendor) => {
+          {allVendors
+            .filter(v => !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map((vendor) => {
             const stats = vendorStats[vendor.name];
             const isExpanded = expandedId === vendor.id;
             return (

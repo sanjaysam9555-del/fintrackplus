@@ -116,7 +116,7 @@ export interface NotificationChange {
 
 export interface Notification {
   id: string;
-  type: 'transaction' | 'export' | 'profile' | 'category' | 'vendor' | 'project' | 'delete' | 'edit' | 'partner';
+  type: 'transaction' | 'export' | 'profile' | 'category' | 'vendor' | 'project' | 'delete' | 'edit' | 'partner' | 'label';
   title: string;
   message: string;
   timestamp: string;

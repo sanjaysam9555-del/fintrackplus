@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban } from "lucide-react";
+import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban, Users, Tag } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,10 @@ export const NotificationsPage = () => {
         return Store;
       case 'project':
         return FolderKanban;
+      case 'partner':
+        return Users;
+      case 'label':
+        return Tag;
       case 'delete':
         return Trash2;
       case 'edit':
@@ -44,6 +48,10 @@ export const NotificationsPage = () => {
         return 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400';
       case 'project':
         return 'bg-amber-500/10 text-amber-500 dark:text-amber-400';
+      case 'partner':
+        return 'bg-indigo-500/10 text-indigo-500 dark:text-indigo-400';
+      case 'label':
+        return 'bg-violet-500/10 text-violet-500 dark:text-violet-400';
       case 'delete':
         return 'bg-destructive/10 text-destructive';
       case 'edit':

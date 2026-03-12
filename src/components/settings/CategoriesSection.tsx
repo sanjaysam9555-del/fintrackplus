@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ShoppingBag, Utensils, Car, Zap, Film, Heart, Plane, Wallet, Briefcase, TrendingUp, Coffee, Home, Gift, GraduationCap, Stethoscope, MoreHorizontal, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ShoppingBag, Utensils, Car, Zap, Film, Heart, Plane, Wallet, Briefcase, TrendingUp, Coffee, Home, Gift, GraduationCap, Stethoscope, MoreHorizontal, ChevronRight, Search } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,6 +46,7 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [formData, setFormData] = useState({ name: '', icon: 'other', color: '#10B981', type: 'expense' as 'income' | 'expense' });
   const [detailCategoryId, setDetailCategoryId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Compute transaction counts per category
   const categoryTransactionCounts = categories.reduce<Record<string, { count: number; total: number }>>((acc, cat) => {
@@ -70,7 +71,8 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
     );
   }
 
-  const filteredCategories = filterType === 'all' ? categories : categories.filter(c => c.type === filterType);
+  const filteredCategories = (filterType === 'all' ? categories : categories.filter(c => c.type === filterType))
+    .filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const handleAdd = () => {
     if (!formData.name.trim()) {
@@ -145,6 +147,19 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
       </div>
 
       <div className="p-4 space-y-3">
+        {/* Search */}
+        {categories.length > 5 && (
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search categories..."
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+        )}
+
         {/* Add Form */}
         <AnimatePresence>
           {showAddForm && (
