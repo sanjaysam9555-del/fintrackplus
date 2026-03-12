@@ -46,6 +46,8 @@ export const PartnerDetailSheet = ({
   onEditSheetChange,
 }: PartnerDetailSheetProps) => {
   const { transactions, getCategoryById } = useFinanceStore();
+  const isMobile = useIsMobile();
+  const [viewMode, setViewMode] = useState<'list' | 'columns'>('list');
   const [incomeOpen, setIncomeOpen] = useState(true);
   const [expenseOpen, setExpenseOpen] = useState(true);
 
