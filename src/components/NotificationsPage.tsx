@@ -48,6 +48,10 @@ export const NotificationsPage = () => {
         return 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400';
       case 'project':
         return 'bg-amber-500/10 text-amber-500 dark:text-amber-400';
+      case 'partner':
+        return 'bg-indigo-500/10 text-indigo-500 dark:text-indigo-400';
+      case 'label':
+        return 'bg-violet-500/10 text-violet-500 dark:text-violet-400';
       case 'delete':
         return 'bg-destructive/10 text-destructive';
       case 'edit':
