@@ -260,7 +260,7 @@ const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldi
 // ── Main component ───────────────────────────────────────────────────
 
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
-  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter } = useFinanceStore();
+  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter, addNotification } = useFinanceStore();
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
