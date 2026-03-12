@@ -1484,10 +1484,17 @@ export const useFinanceStore = create<FinanceStore>()(
           )
         }));
 
+        const labelChanges: { field: string; from: string; to: string }[] = [];
+        if (updates.name && updates.name !== oldLabel?.name) labelChanges.push({ field: 'Name', from: oldLabel?.name || '', to: updates.name });
+        if (updates.color && updates.color !== oldLabel?.color) labelChanges.push({ field: 'Color', from: oldLabel?.color || '', to: updates.color });
+        
         get().addNotification({
           type: 'edit',
           title: 'Label Updated',
           message: `#${updates.name || oldLabel?.name || 'Label'}`,
+          details: labelChanges.length > 0 ? labelChanges : undefined,
+          entityType: 'label',
+          entityId: id,
         });
         
         if (userId) {
