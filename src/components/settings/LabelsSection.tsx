@@ -167,7 +167,9 @@ export const LabelsSection = ({ onBack, userId }: LabelsSectionProps) => {
             <p className="text-sm mt-1">Create labels like #birthday, #wedding to organize projects</p>
           </div>
         ) : (
-          projectLabels.map((label) => {
+          projectLabels
+            .filter(l => !searchQuery || l.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map((label) => {
             const labelProjects = projectsByLabel[label.id] || [];
             const isExpanded = expandedId === label.id;
 

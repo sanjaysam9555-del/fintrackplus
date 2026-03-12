@@ -382,6 +382,19 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
       </div>
 
       <div className="p-4 space-y-3">
+        {/* Search */}
+        {allVendors.length > 5 && (
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search vendors..."
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+        )}
+
         {/* Add Form */}
         <AnimatePresence>
           {showAddForm && (
@@ -409,7 +422,9 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
           </div>
         ) : (
           <>
-          {allVendors.map((vendor) => {
+          {allVendors
+            .filter(v => !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map((vendor) => {
             const stats = vendorStats[vendor.name];
             const isExpanded = expandedId === vendor.id;
             return (
