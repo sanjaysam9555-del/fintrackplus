@@ -200,12 +200,100 @@ export const PartnerDetailSheet = ({
             </div>
           </div>
 
+          {/* View Toggle - Desktop only */}
+          {!isMobile && totalTransactions > 0 && (
+            <div className="flex justify-end">
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={cn(
+                    "p-1.5 rounded-md transition-colors",
+                    viewMode === 'list' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <List size={16} />
+                </button>
+                <button
+                  onClick={() => setViewMode('columns')}
+                  className={cn(
+                    "p-1.5 rounded-md transition-colors",
+                    viewMode === 'columns' ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Columns3 size={16} />
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Transactions Section */}
           {totalTransactions === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <p>No transactions in this period</p>
             </div>
+          ) : !isMobile && viewMode === 'columns' ? (
+            /* Column View - Desktop */
+            <div className="grid grid-cols-2 gap-4">
+              {/* Income Column */}
+              <div className="bg-card rounded-xl border border-border flex flex-col max-h-[50vh]">
+                <div className="flex items-center justify-between p-3 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp size={16} className="text-success" />
+                    <span className="font-semibold text-success text-sm">Income</span>
+                    <span className="text-xs text-muted-foreground">({incomeTransactions.length})</span>
+                  </div>
+                  <span className="text-sm font-bold text-success">
+                    {CURRENCY_SYMBOL}{incomeTotal.toLocaleString()}
+                  </span>
+                </div>
+                <div className="overflow-y-auto flex-1 p-3 space-y-2">
+                  {incomeTransactions.length === 0 ? (
+                    <p className="text-center text-muted-foreground text-sm py-4">No income entries</p>
+                  ) : (
+                    incomeTransactions.map((transaction) => (
+                      <TransactionItem
+                        key={transaction.id}
+                        transaction={transaction}
+                        category={getCategoryById(transaction.categoryId)}
+                        userId={userId}
+                        onEditSheetChange={onEditSheetChange}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Expense Column */}
+              <div className="bg-card rounded-xl border border-border flex flex-col max-h-[50vh]">
+                <div className="flex items-center justify-between p-3 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <TrendingDown size={16} className="text-destructive" />
+                    <span className="font-semibold text-destructive text-sm">Expenses</span>
+                    <span className="text-xs text-muted-foreground">({expenseTransactions.length})</span>
+                  </div>
+                  <span className="text-sm font-bold text-destructive">
+                    {CURRENCY_SYMBOL}{expenseTotal.toLocaleString()}
+                  </span>
+                </div>
+                <div className="overflow-y-auto flex-1 p-3 space-y-2">
+                  {expenseTransactions.length === 0 ? (
+                    <p className="text-center text-muted-foreground text-sm py-4">No expense entries</p>
+                  ) : (
+                    expenseTransactions.map((transaction) => (
+                      <TransactionItem
+                        key={transaction.id}
+                        transaction={transaction}
+                        category={getCategoryById(transaction.categoryId)}
+                        userId={userId}
+                        onEditSheetChange={onEditSheetChange}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
           ) : (
+            /* List View */
             <>
               {/* Income Transactions */}
               {incomeTransactions.length > 0 && (
