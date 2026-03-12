@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ShoppingBag, Utensils, Car, Zap, Film, Heart, Plane, Wallet, Briefcase, TrendingUp, Coffee, Home, Gift, GraduationCap, Stethoscope, MoreHorizontal, ChevronRight } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, ShoppingBag, Utensils, Car, Zap, Film, Heart, Plane, Wallet, Briefcase, TrendingUp, Coffee, Home, Gift, GraduationCap, Stethoscope, MoreHorizontal, ChevronRight, Search } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
