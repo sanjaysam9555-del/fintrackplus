@@ -46,6 +46,7 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [formData, setFormData] = useState({ name: '', icon: 'other', color: '#10B981', type: 'expense' as 'income' | 'expense' });
   const [detailCategoryId, setDetailCategoryId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Compute transaction counts per category
   const categoryTransactionCounts = categories.reduce<Record<string, { count: number; total: number }>>((acc, cat) => {
