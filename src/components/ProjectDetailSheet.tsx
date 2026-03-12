@@ -604,24 +604,22 @@ export const ProjectDetailSheet = ({
               </div>
             </div>
 
-            {/* Income Entries - Collapsed by default */}
-            {incomeTransactions.length > 0 && (
-              <Collapsible open={incomeOpen} onOpenChange={setIncomeOpen}>
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+            {/* Column View - Desktop only */}
+            {!isMobile && viewMode === 'columns' ? (
+              <div className="grid grid-cols-3 gap-4">
+                {/* Income Column */}
+                <div className="bg-card rounded-xl border border-border overflow-hidden flex flex-col">
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-muted/50 border-b border-border">
                     <div className="flex items-center gap-1.5">
-                      <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", incomeOpen && "rotate-180")} />
                       <ArrowDown size={14} className="text-green-500" />
-                      <span className="text-sm font-semibold">Income Entries ({incomeTransactions.length})</span>
+                      <span className="text-sm font-semibold">Income ({incomeTransactions.length})</span>
                     </div>
                     <span className="text-sm font-bold text-green-600 dark:text-green-400">
                       {formatCurrency(totalIncome)}
                     </span>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="space-y-1.5 mt-2">
-                    {incomeTransactions.map((transaction) => (
+                  </div>
+                  <div className="flex-1 overflow-y-auto max-h-[calc(100vh-400px)] p-2 space-y-1.5">
+                    {incomeTransactions.length > 0 ? incomeTransactions.map((transaction) => (
                       <TransactionItem
                         key={transaction.id}
                         transaction={transaction}
@@ -630,30 +628,25 @@ export const ProjectDetailSheet = ({
                         onEditSheetChange={handleChildEditSheetChange}
                         compact
                       />
-                    ))}
+                    )) : (
+                      <p className="text-xs text-muted-foreground text-center py-4">No income entries</p>
+                    )}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
+                </div>
 
-            {/* Expense Entries - Collapsed by default */}
-            {expenseTransactions.length > 0 && (
-              <Collapsible open={expenseOpen} onOpenChange={setExpenseOpen}>
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                {/* Expenses Column */}
+                <div className="bg-card rounded-xl border border-border overflow-hidden flex flex-col">
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-muted/50 border-b border-border">
                     <div className="flex items-center gap-1.5">
-                      <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", expenseOpen && "rotate-180")} />
                       <ArrowUp size={14} className="text-red-500" />
-                      <span className="text-sm font-semibold">Expense Entries ({expenseTransactions.length})</span>
+                      <span className="text-sm font-semibold">Expenses ({expenseTransactions.length})</span>
                     </div>
                     <span className="text-sm font-bold text-destructive">
                       {formatCurrency(totalExpense)}
                     </span>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="space-y-1.5 mt-2">
-                    {expenseTransactions.map((transaction) => (
+                  </div>
+                  <div className="flex-1 overflow-y-auto max-h-[calc(100vh-400px)] p-2 space-y-1.5">
+                    {expenseTransactions.length > 0 ? expenseTransactions.map((transaction) => (
                       <TransactionItem
                         key={transaction.id}
                         transaction={transaction}
@@ -662,85 +655,198 @@ export const ProjectDetailSheet = ({
                         onEditSheetChange={handleChildEditSheetChange}
                         compact
                       />
-                    ))}
+                    )) : (
+                      <p className="text-xs text-muted-foreground text-center py-4">No expense entries</p>
+                    )}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            )}
+                </div>
 
-            {/* Vendor Payments - Collapsed by default */}
-            {vendorBreakdown.length > 0 && (
-              <Collapsible open={vendorsOpen} onOpenChange={setVendorsOpen}>
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                {/* Vendor Payments Column */}
+                <div className="bg-card rounded-xl border border-border overflow-hidden flex flex-col">
+                  <div className="flex items-center justify-between px-3 py-2.5 bg-muted/50 border-b border-border">
                     <div className="flex items-center gap-1.5">
-                      <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", vendorsOpen && "rotate-180")} />
                       <Store size={14} className="text-muted-foreground" />
-                      <span className="text-sm font-semibold">Vendor Payments ({vendorBreakdown.length})</span>
+                      <span className="text-sm font-semibold">Vendors ({vendorBreakdown.length})</span>
                     </div>
                     <span className="text-sm font-bold text-destructive">
                       {formatCurrency(totalVendorSpend)}
                     </span>
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="space-y-1.5 mt-2">
-                    {vendorBreakdown.map((item) => {
-                      const isExpanded = expandedVendors.has(item.vendor);
-                      const vendorTxns = getVendorTransactions(item.vendor);
-                      
-                      return (
-                        <Collapsible
-                          key={item.vendor}
-                          open={isExpanded}
-                          onOpenChange={() => toggleVendor(item.vendor)}
-                        >
-                          <CollapsibleTrigger asChild>
-                            <motion.div
-                              initial={{ opacity: 0, x: -10 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              className="w-full bg-muted/50 rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                  <ChevronDown 
-                                    size={14} 
-                                    className={cn(
-                                      "text-muted-foreground transition-transform duration-200 shrink-0",
-                                      isExpanded && "rotate-180"
-                                    )}
-                                  />
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-medium text-left truncate">{item.vendor}</p>
-                                    <p className="text-[10px] text-muted-foreground text-left">
-                                      {item.count} payment{item.count !== 1 ? 's' : ''} • Last: {format(new Date(item.lastDate), 'MMM d')}
-                                    </p>
-                                  </div>
-                                </div>
-                                <p className="text-sm font-semibold shrink-0">₹{item.amount.toLocaleString()}</p>
-                              </div>
-                            </motion.div>
-                          </CollapsibleTrigger>
-                          <CollapsibleContent>
-                            <div className="mt-1.5 ml-2 space-y-1.5 border-l-2 border-muted pl-2 min-w-0">
-                              {vendorTxns.map((txn) => (
-                                <TransactionItem
-                                  key={txn.id}
-                                  transaction={txn}
-                                  category={getCategoryById(txn.categoryId)}
-                                  userId={userId}
-                                  onEditSheetChange={handleChildEditSheetChange}
-                                  compact
-                                />
-                              ))}
-                            </div>
-                          </CollapsibleContent>
-                        </Collapsible>
-                      );
-                    })}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
+                  <div className="flex-1 overflow-y-auto max-h-[calc(100vh-400px)] p-2 space-y-2">
+                    {vendorBreakdown.length > 0 ? vendorBreakdown.map((item) => {
+                      const vendorTxns = getVendorTransactions(item.vendor);
+                      return (
+                        <div key={item.vendor} className="space-y-1.5">
+                          <div className="flex items-center justify-between px-2 py-1.5 bg-muted/50 rounded-lg">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium truncate">{item.vendor}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {item.count} payment{item.count !== 1 ? 's' : ''} • Last: {format(new Date(item.lastDate), 'MMM d')}
+                              </p>
+                            </div>
+                            <p className="text-sm font-semibold shrink-0">₹{item.amount.toLocaleString()}</p>
+                          </div>
+                          <div className="ml-2 space-y-1.5 border-l-2 border-muted pl-2">
+                            {vendorTxns.map((txn) => (
+                              <TransactionItem
+                                key={txn.id}
+                                transaction={txn}
+                                category={getCategoryById(txn.categoryId)}
+                                userId={userId}
+                                onEditSheetChange={handleChildEditSheetChange}
+                                compact
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    }) : (
+                      <p className="text-xs text-muted-foreground text-center py-4">No vendor payments</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Income Entries - Collapsed by default */}
+                {incomeTransactions.length > 0 && (
+                  <Collapsible open={incomeOpen} onOpenChange={setIncomeOpen}>
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                        <div className="flex items-center gap-1.5">
+                          <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", incomeOpen && "rotate-180")} />
+                          <ArrowDown size={14} className="text-green-500" />
+                          <span className="text-sm font-semibold">Income Entries ({incomeTransactions.length})</span>
+                        </div>
+                        <span className="text-sm font-bold text-green-600 dark:text-green-400">
+                          {formatCurrency(totalIncome)}
+                        </span>
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="space-y-1.5 mt-2">
+                        {incomeTransactions.map((transaction) => (
+                          <TransactionItem
+                            key={transaction.id}
+                            transaction={transaction}
+                            category={getCategoryById(transaction.categoryId)}
+                            userId={userId}
+                            onEditSheetChange={handleChildEditSheetChange}
+                            compact
+                          />
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Expense Entries - Collapsed by default */}
+                {expenseTransactions.length > 0 && (
+                  <Collapsible open={expenseOpen} onOpenChange={setExpenseOpen}>
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                        <div className="flex items-center gap-1.5">
+                          <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", expenseOpen && "rotate-180")} />
+                          <ArrowUp size={14} className="text-red-500" />
+                          <span className="text-sm font-semibold">Expense Entries ({expenseTransactions.length})</span>
+                        </div>
+                        <span className="text-sm font-bold text-destructive">
+                          {formatCurrency(totalExpense)}
+                        </span>
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="space-y-1.5 mt-2">
+                        {expenseTransactions.map((transaction) => (
+                          <TransactionItem
+                            key={transaction.id}
+                            transaction={transaction}
+                            category={getCategoryById(transaction.categoryId)}
+                            userId={userId}
+                            onEditSheetChange={handleChildEditSheetChange}
+                            compact
+                          />
+                        ))}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {/* Vendor Payments - Collapsed by default */}
+                {vendorBreakdown.length > 0 && (
+                  <Collapsible open={vendorsOpen} onOpenChange={setVendorsOpen}>
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                        <div className="flex items-center gap-1.5">
+                          <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", vendorsOpen && "rotate-180")} />
+                          <Store size={14} className="text-muted-foreground" />
+                          <span className="text-sm font-semibold">Vendor Payments ({vendorBreakdown.length})</span>
+                        </div>
+                        <span className="text-sm font-bold text-destructive">
+                          {formatCurrency(totalVendorSpend)}
+                        </span>
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="space-y-1.5 mt-2">
+                        {vendorBreakdown.map((item) => {
+                          const isExpanded = expandedVendors.has(item.vendor);
+                          const vendorTxns = getVendorTransactions(item.vendor);
+                          
+                          return (
+                            <Collapsible
+                              key={item.vendor}
+                              open={isExpanded}
+                              onOpenChange={() => toggleVendor(item.vendor)}
+                            >
+                              <CollapsibleTrigger asChild>
+                                <motion.div
+                                  initial={{ opacity: 0, x: -10 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  className="w-full bg-muted/50 rounded-lg p-2 cursor-pointer hover:bg-muted/70 transition-colors"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                      <ChevronDown 
+                                        size={14} 
+                                        className={cn(
+                                          "text-muted-foreground transition-transform duration-200 shrink-0",
+                                          isExpanded && "rotate-180"
+                                        )}
+                                      />
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-medium text-left truncate">{item.vendor}</p>
+                                        <p className="text-[10px] text-muted-foreground text-left">
+                                          {item.count} payment{item.count !== 1 ? 's' : ''} • Last: {format(new Date(item.lastDate), 'MMM d')}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <p className="text-sm font-semibold shrink-0">₹{item.amount.toLocaleString()}</p>
+                                  </div>
+                                </motion.div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="mt-1.5 ml-2 space-y-1.5 border-l-2 border-muted pl-2 min-w-0">
+                                  {vendorTxns.map((txn) => (
+                                    <TransactionItem
+                                      key={txn.id}
+                                      transaction={txn}
+                                      category={getCategoryById(txn.categoryId)}
+                                      userId={userId}
+                                      onEditSheetChange={handleChildEditSheetChange}
+                                      compact
+                                    />
+                                  ))}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          );
+                        })}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+              </>
             )}
 
             {sortedTransactions.length === 0 && (
