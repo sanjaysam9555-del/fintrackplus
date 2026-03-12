@@ -343,15 +343,6 @@ export const ProjectDetailSheet = ({
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Cost to Client</Label>
-                    <Input
-                      type="number"
-                      value={editForm.clientCost || 0}
-                      onChange={(e) => setEditForm(f => ({ ...f, clientCost: Number(e.target.value) }))}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
                     <Label className="text-xs">Color</Label>
                     <div className="flex items-center gap-2 mt-1">
                       <input
