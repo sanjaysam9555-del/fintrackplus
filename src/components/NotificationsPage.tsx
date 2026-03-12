@@ -21,6 +21,10 @@ export const NotificationsPage = () => {
         return Store;
       case 'project':
         return FolderKanban;
+      case 'partner':
+        return Users;
+      case 'label':
+        return Tag;
       case 'delete':
         return Trash2;
       case 'edit':
