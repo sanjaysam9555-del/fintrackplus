@@ -49,6 +49,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       workbox: {
+        navigateFallbackDenylist: [/^\/~oauth/],
         // Ensure updates activate promptly.
         cleanupOutdatedCaches: true,
         clientsClaim: true,
