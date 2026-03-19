@@ -82,8 +82,14 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
     }
   };
 
+  const fetchPartners = async () => {
+    const { data } = await supabase.from('partners').select('id, name, user_id');
+    if (data) setPartners(data);
+  };
+
   useEffect(() => {
     fetchMembers();
+    fetchPartners();
   }, [user]);
 
   const handleAddMember = async (e: React.FormEvent) => {
