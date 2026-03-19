@@ -255,49 +255,53 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         <InstallmentDueReminder userId={userId} />
       </div>
 
-      {/* Summary Cards */}
-      <div className="px-4 lg:px-0 mb-6">
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          className={cn(
-            "grid gap-2 lg:gap-4",
-            partners.length > 0 ? "grid-cols-4" : "grid-cols-3"
-          )}
-        >
-          <SummaryCard
-            title="Income"
-            amount={currentIncome}
-            type="income"
-          />
-          <SummaryCard
-            title="Expense"
-            amount={currentExpense}
-            type="expense"
-          />
-          <SummaryCard
-            title="Balance"
-            amount={netBalance}
-            type="balance"
-          />
-          {partners.length > 0 && (
+      {/* Summary Cards - hidden for employees */}
+      {!isEmployee && (
+        <div className="px-4 lg:px-0 mb-6">
+          <motion.div
+            initial={false}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "grid gap-2 lg:gap-4",
+              partners.length > 0 ? "grid-cols-4" : "grid-cols-3"
+            )}
+          >
             <SummaryCard
-              title="Holdings"
-              amount={totalHoldings}
-              type="holdings"
+              title="Income"
+              amount={currentIncome}
+              type="income"
             />
-          )}
-        </motion.div>
-      </div>
+            <SummaryCard
+              title="Expense"
+              amount={currentExpense}
+              type="expense"
+            />
+            <SummaryCard
+              title="Balance"
+              amount={netBalance}
+              type="balance"
+            />
+            {partners.length > 0 && (
+              <SummaryCard
+                title="Holdings"
+                amount={totalHoldings}
+                type="holdings"
+              />
+            )}
+          </motion.div>
+        </div>
+      )}
       
-      {/* Cash Flow Chart */}
-      <div className="px-4 lg:px-0 mb-6">
-        <CashFlowChart 
-          transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
-          timeFilter={timeFilter}
-          dateRange={dateRange}
-        />
-      </div>
+      {/* Cash Flow Chart - hidden for employees */}
+      {!isEmployee && (
+        <div className="px-4 lg:px-0 mb-6">
+          <CashFlowChart 
+            transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
+            timeFilter={timeFilter}
+            dateRange={dateRange}
+          />
+        </div>
+      )}
       
       {/* Quick Actions */}
       <div className="px-4 lg:px-0 mb-6">
