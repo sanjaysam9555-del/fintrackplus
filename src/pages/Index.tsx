@@ -8,10 +8,12 @@ import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
 import { useSyncEngine } from "@/hooks/useSyncEngine";
 import { useTheme } from "@/hooks/useTheme";
+import { useUserRole } from "@/hooks/useUserRole";
 import { motion, AnimatePresence } from "framer-motion";
 import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 
 // Lazy load heavy components that aren't needed immediately
 const TransactionList = lazy(() => import("@/components/TransactionList").then(m => ({ default: m.TransactionList })));
@@ -23,7 +25,7 @@ const OnboardingFlow = lazy(() => import("@/components/OnboardingFlow").then(m =
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
 type ViewMode = TabId | 'settings' | 'ai';
-type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | null;
 
 // Enhanced skeleton with logo animation
 const LogoSkeleton = () => (
@@ -119,6 +121,7 @@ const Index = () => {
   }, []);
   const { syncStatus } = useFinanceStore();
   const { user } = useAuth();
+  const { isEmployee, isOwner, mustChangePassword, memberId, loading: roleLoading, refetch: refetchRole } = useUserRole();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Initialize airtight sync engine (all syncing happens silently in background)
@@ -275,6 +278,7 @@ const Index = () => {
             userId={user?.id}
             onSearchClick={handleOpenSearch}
             onEditSheetChange={handleEditSheetChange}
+            isEmployee={isEmployee}
           />
         );
       case 'expenses':
@@ -315,6 +319,11 @@ const Index = () => {
   // Hide dock when viewing settings, AI, or when any transaction sheet is open
   const showDock = viewMode !== 'settings' && viewMode !== 'ai' && !isAddSheetOpen && !isEditSheetOpen;
   
+  // Force password change gate
+  if (mustChangePassword && memberId && !roleLoading) {
+    return <ForcePasswordChange memberId={memberId} onComplete={refetchRole} />;
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Onboarding Flow */}

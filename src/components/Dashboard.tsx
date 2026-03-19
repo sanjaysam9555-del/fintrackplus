@@ -25,9 +25,10 @@ interface DashboardProps {
   userId?: string;
   onSearchClick?: () => void;
   onEditSheetChange?: (isOpen: boolean) => void;
+  isEmployee?: boolean;
 }
 
-export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange }: DashboardProps) => {
+export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange, isEmployee = false }: DashboardProps) => {
   const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt, defaultTimeFilter } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
@@ -162,12 +163,14 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                   <Search size={18} className="text-muted-foreground" />
                 </button>
               )}
-              <button 
-                onClick={() => onNavigate?.('ai')}
-                className="p-1.5 rounded-full hover:bg-muted transition-colors"
-              >
-                <Sparkles size={18} className="text-muted-foreground" />
-              </button>
+              {!isEmployee && (
+                <button 
+                  onClick={() => onNavigate?.('ai')}
+                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
+                >
+                  <Sparkles size={18} className="text-muted-foreground" />
+                </button>
+              )}
               <button 
                 onClick={() => onNavigate?.('settings')}
                 className="p-1.5 rounded-full hover:bg-muted transition-colors"
@@ -216,12 +219,14 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                   <Search size={22} className="text-muted-foreground" />
                 </button>
               )}
-              <button 
-                onClick={() => onNavigate?.('ai')}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-              >
-                <Sparkles size={22} className="text-muted-foreground" />
-              </button>
+              {!isEmployee && (
+                <button 
+                  onClick={() => onNavigate?.('ai')}
+                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                >
+                  <Sparkles size={22} className="text-muted-foreground" />
+                </button>
+              )}
               <button 
                 onClick={() => onNavigate?.('settings')}
                 className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -250,49 +255,53 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         <InstallmentDueReminder userId={userId} />
       </div>
 
-      {/* Summary Cards */}
-      <div className="px-4 lg:px-0 mb-6">
-        <motion.div
-          initial={false}
-          animate={{ opacity: 1, y: 0 }}
-          className={cn(
-            "grid gap-2 lg:gap-4",
-            partners.length > 0 ? "grid-cols-4" : "grid-cols-3"
-          )}
-        >
-          <SummaryCard
-            title="Income"
-            amount={currentIncome}
-            type="income"
-          />
-          <SummaryCard
-            title="Expense"
-            amount={currentExpense}
-            type="expense"
-          />
-          <SummaryCard
-            title="Balance"
-            amount={netBalance}
-            type="balance"
-          />
-          {partners.length > 0 && (
+      {/* Summary Cards - hidden for employees */}
+      {!isEmployee && (
+        <div className="px-4 lg:px-0 mb-6">
+          <motion.div
+            initial={false}
+            animate={{ opacity: 1, y: 0 }}
+            className={cn(
+              "grid gap-2 lg:gap-4",
+              partners.length > 0 ? "grid-cols-4" : "grid-cols-3"
+            )}
+          >
             <SummaryCard
-              title="Holdings"
-              amount={totalHoldings}
-              type="holdings"
+              title="Income"
+              amount={currentIncome}
+              type="income"
             />
-          )}
-        </motion.div>
-      </div>
+            <SummaryCard
+              title="Expense"
+              amount={currentExpense}
+              type="expense"
+            />
+            <SummaryCard
+              title="Balance"
+              amount={netBalance}
+              type="balance"
+            />
+            {partners.length > 0 && (
+              <SummaryCard
+                title="Holdings"
+                amount={totalHoldings}
+                type="holdings"
+              />
+            )}
+          </motion.div>
+        </div>
+      )}
       
-      {/* Cash Flow Chart */}
-      <div className="px-4 lg:px-0 mb-6">
-        <CashFlowChart 
-          transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
-          timeFilter={timeFilter}
-          dateRange={dateRange}
-        />
-      </div>
+      {/* Cash Flow Chart - hidden for employees */}
+      {!isEmployee && (
+        <div className="px-4 lg:px-0 mb-6">
+          <CashFlowChart 
+            transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
+            timeFilter={timeFilter}
+            dateRange={dateRange}
+          />
+        </div>
+      )}
       
       {/* Quick Actions */}
       <div className="px-4 lg:px-0 mb-6">
