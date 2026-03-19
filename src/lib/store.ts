@@ -988,6 +988,7 @@ export const useFinanceStore = create<FinanceStore>()(
               expected_margin: project.expectedMargin || 0,
               color: project.color,
               label_ids: project.labelIds || [],
+              assigned_employee_ids: project.assignedEmployeeIds || [],
               event_date: project.eventDate || null,
               start_date: project.startDate || null,
             },
