@@ -407,6 +407,71 @@ Deno.serve(async (req) => {
         );
       }
 
+      case "link_partner": {
+        const { memberId, partnerId } = body;
+
+        if (!memberId || !partnerId) {
+          return new Response(
+            JSON.stringify({ error: "Member ID and Partner ID are required" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        const { data: targetMember } = await adminClient
+          .from("org_members")
+          .select("user_id, role, org_id")
+          .eq("id", memberId)
+          .eq("org_id", orgId)
+          .single();
+
+        if (!targetMember) {
+          return new Response(
+            JSON.stringify({ error: "Member not found" }),
+            {
+              status: 404,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        if (targetMember.role !== "owner") {
+          return new Response(
+            JSON.stringify({ error: "Only owner members can be linked to partners" }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        // Update the chosen partner's user_id to the target member's user_id
+        const { error: linkError } = await adminClient
+          .from("partners")
+          .update({ user_id: targetMember.user_id })
+          .eq("id", partnerId)
+          .eq("org_id", orgId);
+
+        if (linkError) {
+          return new Response(
+            JSON.stringify({ error: linkError.message }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        return new Response(
+          JSON.stringify({ success: true, message: "Partner linked successfully" }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
       default:
         return new Response(
           JSON.stringify({ error: `Unknown action: ${action}` }),
