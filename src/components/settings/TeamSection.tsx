@@ -99,7 +99,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
     setIsSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke('manage-team', {
-        body: { action: 'create_member', email, name, role },
+        body: { action: 'create_member', email, name, role, existingPartnerId },
       });
 
       if (error) throw error;
