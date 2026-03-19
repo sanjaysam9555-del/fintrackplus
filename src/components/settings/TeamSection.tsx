@@ -146,11 +146,17 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
     }
   };
 
-  const handleRemoveMember = async (memberId: string, memberName: string) => {
+  const handleRemoveMember = (memberId: string, memberName: string, memberRole: AppRole) => {
+    setDeleteConfirmMember({ id: memberId, name: memberName, role: memberRole });
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!deleteConfirmMember) return;
+    const { id: memberId, name: memberName } = deleteConfirmMember;
+    setDeleteConfirmMember(null);
+
     // If other owners exist, require approval instead of direct removal
     if (otherOwners.length > 0 && user && orgId) {
-      if (!confirm(`Request approval to remove "${memberName}"?`)) return;
-
       try {
         const { error } = await supabase.from('change_approvals').insert({
           org_id: orgId,
@@ -164,7 +170,6 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
         });
         if (error) throw error;
 
-        // Add notification with name
         await supabase.from('notifications').insert({
           user_id: user.id,
           org_id: orgId,
@@ -195,6 +200,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
     } catch (err: any) {
       toast.error(err.message || 'Failed to remove member');
     }
+  };
   };
 
   const handleLinkPartner = async (memberId: string) => {
