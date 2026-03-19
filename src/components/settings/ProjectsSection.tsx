@@ -74,10 +74,11 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
+      assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] });
+    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] });
     setNewLabelName('');
   };
 
