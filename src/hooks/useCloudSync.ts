@@ -67,7 +67,7 @@ export const useCloudSync = () => {
         supabase.from('categories').select('*'),
         supabase.from('vendors').select('*'),
         supabase.from('projects').select('*'),
-        fetchAllTransactions(user.id),
+        fetchAllTransactions(),
         supabase.from('partners').select('*'),
         supabase.from('project_labels').select('*')
       ]);
