@@ -1,26 +1,33 @@
 
 
-# Fix: "Email already registered" when re-adding a removed team member
+# Add "Link to Partner" Edit for Existing Owner Members
 
-## Root Cause
+## What
+Allow owners to edit their own (or other owners') partner mapping from the Team members list. Each owner member card will show a small edit button to link/re-link to an existing partner.
 
-When a team member is removed via `remove_member`, the edge function only **bans** the auth account (`ban_duration: "876000h"`) but does **not delete** it. So the user record still exists in `auth.users`. When you try to add a new member with the same email, `admin.createUser()` fails with "A user with this email address has already been registered."
+## Changes
 
-Additionally, the `org_members` row is deleted but the `profiles` row for the removed user remains, and the auth user is orphaned.
+### 1. Edge Function — `supabase/functions/manage-team/index.ts`
+Add a new action `link_partner` that:
+- Takes `memberId` and `partnerId`
+- Verifies the caller is an owner
+- Verifies the target member is also an owner role
+- Updates the selected partner's `user_id` to the target member's `user_id`
+- Optionally unlinks any previously linked partner (sets its `user_id` back or leaves it)
 
-## Fix — `supabase/functions/manage-team/index.ts`
+### 2. UI — `src/components/settings/TeamSection.tsx`
+- Add state for tracking which member is being edited (`editingMemberId`)
+- For each member card where `member.role === 'owner'`, show an edit/link icon button (only visible to the current user if they are an owner)
+- When clicked, expand an inline partner selector dropdown (same as the add-member form) showing existing partners
+- Also fetch and display the currently linked partner name on each owner's card
+- On selection, call the `link_partner` edge function action
+- Show success/error toast and refresh the members list
 
-### 1. Fix `remove_member` action
-- Replace `updateUserById` (ban) with `admin.deleteUser()` to fully remove the auth account
-- Also delete the `profiles` row for the removed user
-- Also delete any `partners` row linked to that user
+### 3. Data Enrichment
+- When fetching members, also fetch partner data to show which partner each owner is currently linked to
+- Query `partners` table filtered by each owner member's `user_id` to find their linked partner
 
-### 2. Fix `create_member` action — handle edge case of previously banned users
-- Before calling `admin.createUser()`, try `admin.listUsers()` filtered by email to check if an existing (banned) user already exists
-- If found and banned: unban them, update their password and metadata, then reuse that user ID
-- If found and active: return error (genuinely duplicate email)
-- This handles any previously banned users from before the fix
-
-### Files Modified
-1. `supabase/functions/manage-team/index.ts` — both `create_member` and `remove_member` cases
+## Files Modified
+1. `supabase/functions/manage-team/index.ts` — add `link_partner` action
+2. `src/components/settings/TeamSection.tsx` — add edit UI for owner partner mapping
 
