@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useProjectDocuments } from "@/hooks/useProjectDocuments";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
