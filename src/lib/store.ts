@@ -311,6 +311,7 @@ export const useFinanceStore = create<FinanceStore>()(
           id: uuidv4(),
           timestamp: new Date().toISOString(),
           read: false,
+          actorName: notification.actorName || get().userProfile.name || 'Unknown',
         }, ...state.notifications].slice(0, 200)
       })),
       
