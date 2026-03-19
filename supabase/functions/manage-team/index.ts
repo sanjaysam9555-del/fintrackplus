@@ -220,15 +220,51 @@ Deno.serve(async (req) => {
           );
         }
 
-        // If role is owner, link to existing partner or create new one
+        // Ensure the invited member's profile belongs to the organization being managed
+        await adminClient
+          .from("profiles")
+          .update({ org_id: orgId, name })
+          .eq("user_id", userId);
+
+        const { data: partnerCandidates } = await adminClient
+          .from("partners")
+          .select("id, org_id")
+          .eq("user_id", userId);
+
+        const existingOrgPartner = partnerCandidates?.find((partner) => partner.org_id === orgId);
+        const foreignOrgPartner = partnerCandidates?.find((partner) => partner.org_id !== orgId);
+
+        // If role is owner, link to existing partner or create/move one into the org
         if (role === "owner") {
           if (existingPartnerId) {
+            const { data: selectedPartner, error: selectedPartnerError } = await adminClient
+              .from("partners")
+              .select("id, org_id")
+              .eq("id", existingPartnerId)
+              .eq("org_id", orgId)
+              .maybeSingle();
+
+            if (selectedPartnerError || !selectedPartner) {
+              return new Response(
+                JSON.stringify({ error: "Selected partner not found in this organization" }),
+                {
+                  status: 404,
+                  headers: { ...corsHeaders, "Content-Type": "application/json" },
+                }
+              );
+            }
+
             await adminClient
               .from("partners")
               .update({ user_id: userId })
               .eq("id", existingPartnerId)
               .eq("org_id", orgId);
-          } else {
+          } else if (!existingOrgPartner && foreignOrgPartner) {
+            await adminClient
+              .from("partners")
+              .update({ org_id: orgId, name })
+              .eq("id", foreignOrgPartner.id);
+          } else if (!existingOrgPartner) {
             await adminClient.from("partners").insert({
               user_id: userId,
               name,
@@ -378,26 +414,48 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Delete org_member
-        await adminClient
+        // Delete org_member only
+        const { error: removeMemberError } = await adminClient
           .from("org_members")
           .delete()
           .eq("id", memberId);
 
-        // Delete linked partners and profile
-        await adminClient
-          .from("partners")
-          .delete()
-          .eq("user_id", targetMember.user_id)
-          .eq("org_id", orgId);
+        if (removeMemberError) {
+          return new Response(
+            JSON.stringify({ error: removeMemberError.message }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
 
-        await adminClient
-          .from("profiles")
-          .delete()
+        // Delete auth/profile only if this user no longer belongs to any org
+        const { count: remainingMemberships, error: membershipsError } = await adminClient
+          .from("org_members")
+          .select("id", { count: "exact", head: true })
           .eq("user_id", targetMember.user_id);
 
-        // Fully delete auth account so email can be reused
-        await adminClient.auth.admin.deleteUser(targetMember.user_id);
+        if (membershipsError) {
+          return new Response(
+            JSON.stringify({ error: membershipsError.message }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        if ((remainingMemberships ?? 0) === 0) {
+          await adminClient
+            .from("profiles")
+            .delete()
+            .eq("user_id", targetMember.user_id);
+
+          await adminClient.auth.admin.deleteUser(targetMember.user_id);
+        }
+
+        // Never delete partner rows here; owners may be linked to existing business partners
 
         return new Response(
           JSON.stringify({ success: true, message: "Member removed" }),

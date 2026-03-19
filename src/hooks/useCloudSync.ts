@@ -33,8 +33,8 @@ export const useCloudSync = () => {
     setSyncStatus('syncing');
 
     try {
-      // Paginated fetch for transactions
-      const fetchAllTransactions = async (userId: string) => {
+      // Paginated fetch for org-scoped transactions
+      const fetchAllTransactions = async () => {
         const allData: any[] = [];
         let offset = 0;
         const batchSize = 1000;
@@ -42,7 +42,6 @@ export const useCloudSync = () => {
           const { data, error } = await supabase
             .from('transactions')
             .select('*')
-            .eq('user_id', userId)
             .order('date', { ascending: false })
             .range(offset, offset + batchSize - 1);
           if (error) throw error;
@@ -54,7 +53,7 @@ export const useCloudSync = () => {
         return allData;
       };
 
-      // Fetch ALL data in parallel for faster sync
+      // Fetch ALL org-scoped data in parallel for faster sync
       const [
         profileResult,
         categoriesResult,
@@ -65,12 +64,12 @@ export const useCloudSync = () => {
         projectLabelsResult
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('categories').select('*').eq('user_id', user.id),
-        supabase.from('vendors').select('*').eq('user_id', user.id),
-        supabase.from('projects').select('*').eq('user_id', user.id),
-        fetchAllTransactions(user.id),
-        supabase.from('partners').select('*').eq('user_id', user.id),
-        supabase.from('project_labels').select('*').eq('user_id', user.id)
+        supabase.from('categories').select('*'),
+        supabase.from('vendors').select('*'),
+        supabase.from('projects').select('*'),
+        fetchAllTransactions(),
+        supabase.from('partners').select('*'),
+        supabase.from('project_labels').select('*')
       ]);
 
       const firstError =
