@@ -33,8 +33,8 @@ export const useCloudSync = () => {
     setSyncStatus('syncing');
 
     try {
-      // Paginated fetch for transactions
-      const fetchAllTransactions = async (userId: string) => {
+      // Paginated fetch for org-scoped transactions
+      const fetchAllTransactions = async () => {
         const allData: any[] = [];
         let offset = 0;
         const batchSize = 1000;
@@ -42,7 +42,6 @@ export const useCloudSync = () => {
           const { data, error } = await supabase
             .from('transactions')
             .select('*')
-            .eq('user_id', userId)
             .order('date', { ascending: false })
             .range(offset, offset + batchSize - 1);
           if (error) throw error;
