@@ -219,12 +219,14 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                   <Search size={22} className="text-muted-foreground" />
                 </button>
               )}
-              <button 
-                onClick={() => onNavigate?.('ai')}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-              >
-                <Sparkles size={22} className="text-muted-foreground" />
-              </button>
+              {!isEmployee && (
+                <button 
+                  onClick={() => onNavigate?.('ai')}
+                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                >
+                  <Sparkles size={22} className="text-muted-foreground" />
+                </button>
+              )}
               <button 
                 onClick={() => onNavigate?.('settings')}
                 className="p-2 rounded-full hover:bg-muted transition-colors"
