@@ -278,6 +278,7 @@ const Index = () => {
             userId={user?.id}
             onSearchClick={handleOpenSearch}
             onEditSheetChange={handleEditSheetChange}
+            isEmployee={isEmployee}
           />
         );
       case 'expenses':
