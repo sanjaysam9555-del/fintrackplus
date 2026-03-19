@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import { UnassignedTransactionsSheet } from "./UnassignedTransactionsSheet";
 import { Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PartnersSectionProps {
   onBack: () => void;
