@@ -51,7 +51,7 @@ function getInitials(name: string): string {
 
 export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const { user } = useAuth();
-  const { isOwner } = useUserRole();
+  const { isOwner, orgId } = useUserRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -66,6 +66,8 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>('');
   const [isLinking, setIsLinking] = useState(false);
+  const [otherOwners, setOtherOwners] = useState<{ user_id: string }[]>([]);
+  const [currentUserName, setCurrentUserName] = useState('');
 
   const fetchMembers = async () => {
     if (!user) return;
