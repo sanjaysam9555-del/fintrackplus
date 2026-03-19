@@ -597,6 +597,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clear_must_change_password: { Args: never; Returns: undefined }
       get_user_org_id: { Args: { _user_id: string }; Returns: string }
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
