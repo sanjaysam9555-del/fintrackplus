@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag, MoreVertical, Wallet, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag, MoreVertical, Wallet, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface ProjectsSectionProps {
   onBack: () => void;
@@ -17,13 +19,39 @@ const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#
 
 export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
   const { projects, addProject, updateProject, deleteProject, getProjectSpending, getProjectIncome, projectLabels, addProjectLabel } = useFinanceStore();
+  const { isOwner, isAdmin } = useUserRole();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [archiveProject, setArchiveProject] = useState<typeof projects[0] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[] });
+  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[], assignedEmployeeIds: [] as string[] });
   const [newLabelName, setNewLabelName] = useState('');
+  const [employees, setEmployees] = useState<{ user_id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      // Fetch org members with employee role and their profiles
+      const { data: members } = await supabase
+        .from('org_members')
+        .select('user_id, role')
+        .eq('role', 'employee')
+        .eq('status', 'active');
+      
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', userIds);
+        
+        setEmployees(
+          (profiles || []).map(p => ({ user_id: p.user_id, name: p.name || 'Unknown' }))
+        );
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   // Filter projects
   const activeProjects = projects.filter(p => !p.archived);
@@ -46,10 +74,11 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
+      assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] });
+    setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] });
     setNewLabelName('');
   };
 
@@ -67,6 +96,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
+      assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
     toast.success("Project updated");
     setEditingId(null);
@@ -100,6 +130,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       expectedMargin: project.expectedMargin || 0,
       color: project.color,
       labelIds: project.labelIds || [],
+      assignedEmployeeIds: project.assignedEmployeeIds || [],
     });
     setNewLabelName('');
   };
@@ -214,6 +245,40 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           )}
         </div>
       </div>
+      {/* Assign Employees */}
+      {(isOwner || isAdmin) && employees.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+            <Users size={12} /> Assign Employees
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {employees.map((emp) => {
+              const isSelected = formData.assignedEmployeeIds.includes(emp.user_id);
+              return (
+                <button
+                  key={emp.user_id}
+                  type="button"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      assignedEmployeeIds: isSelected
+                        ? formData.assignedEmployeeIds.filter(id => id !== emp.user_id)
+                        : [...formData.assignedEmployeeIds, emp.user_id],
+                    });
+                  }}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                    isSelected
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {emp.name}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       {isEdit ? (
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setEditingId(null)} className="flex-1">
@@ -241,7 +306,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           <h1 className="text-xl font-bold">Projects</h1>
         </div>
         {!showArchived && (
-          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}>
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] }); setNewLabelName(''); }}>
             <Plus size={16} className="mr-1" /> Add
           </Button>
         )}
