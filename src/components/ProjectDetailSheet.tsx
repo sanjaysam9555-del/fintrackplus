@@ -203,6 +203,7 @@ export const ProjectDetailSheet = ({
       eventDate: project.eventDate || '',
       startDate: project.startDate || '',
       labelIds: project.labelIds || [],
+      assignedEmployeeIds: project.assignedEmployeeIds || [],
     });
     setIsEditing(true);
   }, [project]);
