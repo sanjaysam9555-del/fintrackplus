@@ -464,7 +464,7 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Delete org_member only
+        // Delete org_member
         const { error: removeMemberError } = await adminClient
           .from("org_members")
           .delete()
@@ -478,6 +478,29 @@ Deno.serve(async (req) => {
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             }
           );
+        }
+
+        // Delete linked partner and unassign their transactions
+        const { data: linkedPartner } = await adminClient
+          .from("partners")
+          .select("id")
+          .eq("user_id", targetMember.user_id)
+          .eq("org_id", orgId)
+          .maybeSingle();
+
+        if (linkedPartner) {
+          // Unassign transactions from this partner
+          await adminClient
+            .from("transactions")
+            .update({ partner_id: null })
+            .eq("partner_id", linkedPartner.id)
+            .eq("org_id", orgId);
+
+          // Delete the partner record
+          await adminClient
+            .from("partners")
+            .delete()
+            .eq("id", linkedPartner.id);
         }
 
         // Delete auth/profile only if this user no longer belongs to any org
@@ -504,8 +527,6 @@ Deno.serve(async (req) => {
 
           await adminClient.auth.admin.deleteUser(targetMember.user_id);
         }
-
-        // Never delete partner rows here; owners may be linked to existing business partners
 
         return new Response(
           JSON.stringify({ success: true, message: "Member removed" }),

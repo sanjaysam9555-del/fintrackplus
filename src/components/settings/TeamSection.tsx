@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User, AlertTriangle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
@@ -67,6 +68,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>('');
   const [isLinking, setIsLinking] = useState(false);
   const [otherOwners, setOtherOwners] = useState<{ user_id: string }[]>([]);
+  const [deleteConfirmMember, setDeleteConfirmMember] = useState<{ id: string; name: string; role: AppRole } | null>(null);
   const [currentUserName, setCurrentUserName] = useState('');
 
   const fetchMembers = async () => {
@@ -144,11 +146,17 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
     }
   };
 
-  const handleRemoveMember = async (memberId: string, memberName: string) => {
+  const handleRemoveMember = (memberId: string, memberName: string, memberRole: AppRole) => {
+    setDeleteConfirmMember({ id: memberId, name: memberName, role: memberRole });
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!deleteConfirmMember) return;
+    const { id: memberId, name: memberName } = deleteConfirmMember;
+    setDeleteConfirmMember(null);
+
     // If other owners exist, require approval instead of direct removal
     if (otherOwners.length > 0 && user && orgId) {
-      if (!confirm(`Request approval to remove "${memberName}"?`)) return;
-
       try {
         const { error } = await supabase.from('change_approvals').insert({
           org_id: orgId,
@@ -162,7 +170,6 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
         });
         if (error) throw error;
 
-        // Add notification with name
         await supabase.from('notifications').insert({
           user_id: user.id,
           org_id: orgId,
@@ -193,6 +200,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
     } catch (err: any) {
       toast.error(err.message || 'Failed to remove member');
     }
+  };
   };
 
   const handleLinkPartner = async (memberId: string) => {
@@ -359,7 +367,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                         size="sm"
                         variant="ghost"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleRemoveMember(member.id, memberName)}
+                        onClick={() => handleRemoveMember(member.id, memberName, member.role)}
                       >
                         <Trash2 size={14} />
                       </Button>
@@ -463,6 +471,34 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           </motion.div>
         )}
       </div>
+
+      {/* Critical Delete Warning Dialog */}
+      <AlertDialog open={!!deleteConfirmMember} onOpenChange={(open) => !open && setDeleteConfirmMember(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle size={20} />
+              Remove {deleteConfirmMember?.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              {deleteConfirmMember?.role === 'owner' ? (
+                <>This will <strong>permanently remove</strong> this member across the entire app — their <strong>profile, partner record, team membership, transaction assignments, and login</strong> will all be deleted. This action cannot be undone.</>
+              ) : (
+                <>This will <strong>permanently remove</strong> this member — their <strong>profile, team membership, and login</strong> will all be deleted. This action cannot be undone.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {otherOwners.length > 0 ? 'Request Removal' : 'Remove Permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
