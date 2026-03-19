@@ -435,6 +435,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
 
     const firstError =
       profileResult.error ||
+      profileRowsResult.error ||
       categoriesResult.error ||
       vendorsResult.error ||
       projectsResult.error ||
@@ -446,6 +447,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
     }
 
     const profile = profileResult.data;
+    const orgProfiles = profileRowsResult.data || [];
+    const profileByUserId = new Map(orgProfiles.map(p => [p.user_id, p]));
     const cloudCategories = categoriesResult.data || [];
     const cloudVendors = vendorsResult.data || [];
     const cloudProjects = projectsResult.data || [];
