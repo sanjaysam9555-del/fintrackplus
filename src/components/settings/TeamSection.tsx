@@ -145,6 +145,40 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   };
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
+    // If other owners exist, require approval instead of direct removal
+    if (otherOwners.length > 0 && user && orgId) {
+      if (!confirm(`Request approval to remove "${memberName}"?`)) return;
+
+      try {
+        const { error } = await supabase.from('change_approvals').insert({
+          org_id: orgId,
+          requester_user_id: user.id,
+          target_user_id: otherOwners[0].user_id,
+          entity_type: 'team_member',
+          entity_id: memberId,
+          action: 'delete',
+          proposed_changes: { name: memberName },
+          status: 'pending',
+        });
+        if (error) throw error;
+
+        // Add notification with name
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          org_id: orgId,
+          type: 'settings',
+          title: 'Removal Requested',
+          message: `${currentUserName} requested removal of team member "${memberName}"`,
+        });
+
+        toast.success('Removal request sent for approval');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to create approval request');
+      }
+      return;
+    }
+
+    // No other owners — remove directly
     try {
       const { data, error } = await supabase.functions.invoke('manage-team', {
         body: { action: 'remove_member', memberId },

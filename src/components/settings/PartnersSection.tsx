@@ -442,10 +442,43 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     resetForm();
   };
   
-  const handleDelete = (partnerId: string, e?: React.MouseEvent) => {
+  const handleDelete = async (partnerId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (confirm('Delete this partner? Transactions will be unassigned.')) {
-      deletePartner(partnerId, userId);
+    const partner = partners.find(p => p.id === partnerId);
+    if (!partner) return;
+
+    // If other owners exist, require approval
+    if (otherOwners.length > 0 && user && orgId) {
+      if (!confirm(`Request approval to delete "${partner.name}"?`)) return;
+
+      try {
+        const { error } = await supabase.from('change_approvals').insert({
+          org_id: orgId,
+          requester_user_id: user.id,
+          target_user_id: otherOwners[0].user_id,
+          entity_type: 'partner',
+          entity_id: partnerId,
+          action: 'delete',
+          proposed_changes: { name: partner.name },
+          status: 'pending',
+        });
+        if (error) throw error;
+
+        addNotification({
+          type: 'partner',
+          title: 'Deletion Requested',
+          message: `${currentUserName} requested deletion of partner "${partner.name}"`,
+        });
+
+        toast.success('Deletion request sent for approval');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to create approval request');
+      }
+    } else {
+      // No other owners — delete directly
+      if (confirm('Delete this partner? Transactions will be unassigned.')) {
+        deletePartner(partnerId, userId);
+      }
     }
   };
   
