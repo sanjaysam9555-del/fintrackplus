@@ -250,7 +250,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             <Search size={18} className="text-muted-foreground" />
           </button>
           <button 
-            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}
+            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] }); setNewLabelName(''); }}
             className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             title="Add Project"
           >
