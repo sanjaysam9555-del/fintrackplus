@@ -19,13 +19,39 @@ const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#
 
 export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
   const { projects, addProject, updateProject, deleteProject, getProjectSpending, getProjectIncome, projectLabels, addProjectLabel } = useFinanceStore();
+  const { isOwner, isAdmin } = useUserRole();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [archiveProject, setArchiveProject] = useState<typeof projects[0] | null>(null);
   const [showArchived, setShowArchived] = useState(false);
-  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[] });
+  const [formData, setFormData] = useState({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[], assignedEmployeeIds: [] as string[] });
   const [newLabelName, setNewLabelName] = useState('');
+  const [employees, setEmployees] = useState<{ user_id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      // Fetch org members with employee role and their profiles
+      const { data: members } = await supabase
+        .from('org_members')
+        .select('user_id, role')
+        .eq('role', 'employee')
+        .eq('status', 'active');
+      
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', userIds);
+        
+        setEmployees(
+          (profiles || []).map(p => ({ user_id: p.user_id, name: p.name || 'Unknown' }))
+        );
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   // Filter projects
   const activeProjects = projects.filter(p => !p.archived);
