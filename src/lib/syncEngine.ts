@@ -372,7 +372,8 @@ export interface CloudData {
 export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudData | null; error: string | null }> => {
   try {
     // Paginated fetch for transactions (may exceed 1000 rows)
-    const fetchAllTransactions = async (userId: string) => {
+    // RLS now scopes by org_id automatically, no need for explicit user_id filter
+    const fetchAllTransactions = async () => {
       const allData: Record<string, unknown>[] = [];
       let offset = 0;
       const batchSize = 1000;
@@ -380,7 +381,6 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
         const { data, error } = await supabase
           .from('transactions')
           .select('*')
-          .eq('user_id', userId)
           .order('date', { ascending: false })
           .range(offset, offset + batchSize - 1);
         if (error) throw error;
@@ -392,6 +392,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       return allData;
     };
 
+    // RLS policies now scope all queries to the user's org automatically
     const [
       profileResult,
       categoriesResult,
@@ -402,12 +403,12 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       projectLabelsResult
     ] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
-      supabase.from('categories').select('*').eq('user_id', userId),
-      supabase.from('vendors').select('*').eq('user_id', userId),
-      supabase.from('projects').select('*').eq('user_id', userId),
-      fetchAllTransactions(userId),
-      supabase.from('partners').select('*').eq('user_id', userId),
-      supabase.from('project_labels').select('*').eq('user_id', userId)
+      supabase.from('categories').select('*'),
+      supabase.from('vendors').select('*'),
+      supabase.from('projects').select('*'),
+      fetchAllTransactions(),
+      supabase.from('partners').select('*'),
+      supabase.from('project_labels').select('*')
     ]);
 
     const firstError =
