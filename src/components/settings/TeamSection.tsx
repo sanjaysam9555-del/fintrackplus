@@ -51,7 +51,7 @@ function getInitials(name: string): string {
 
 export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const { user } = useAuth();
-  const { isOwner } = useUserRole();
+  const { isOwner, orgId } = useUserRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -66,6 +66,8 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>('');
   const [isLinking, setIsLinking] = useState(false);
+  const [otherOwners, setOtherOwners] = useState<{ user_id: string }[]>([]);
+  const [currentUserName, setCurrentUserName] = useState('');
 
   const fetchMembers = async () => {
     if (!user) return;
@@ -93,7 +95,26 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   useEffect(() => {
     fetchMembers();
     fetchPartners();
-  }, [user]);
+    const fetchOwnerData = async () => {
+      if (!user || !orgId) return;
+      const { data } = await supabase
+        .from('org_members')
+        .select('user_id')
+        .eq('org_id', orgId)
+        .eq('role', 'owner')
+        .eq('status', 'active')
+        .neq('user_id', user.id);
+      if (data) setOtherOwners(data);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile?.name) setCurrentUserName(profile.name);
+    };
+    fetchOwnerData();
+  }, [user, orgId]);
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,6 +145,40 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   };
 
   const handleRemoveMember = async (memberId: string, memberName: string) => {
+    // If other owners exist, require approval instead of direct removal
+    if (otherOwners.length > 0 && user && orgId) {
+      if (!confirm(`Request approval to remove "${memberName}"?`)) return;
+
+      try {
+        const { error } = await supabase.from('change_approvals').insert({
+          org_id: orgId,
+          requester_user_id: user.id,
+          target_user_id: otherOwners[0].user_id,
+          entity_type: 'team_member',
+          entity_id: memberId,
+          action: 'delete',
+          proposed_changes: { name: memberName },
+          status: 'pending',
+        });
+        if (error) throw error;
+
+        // Add notification with name
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          org_id: orgId,
+          type: 'settings',
+          title: 'Removal Requested',
+          message: `${currentUserName} requested removal of team member "${memberName}"`,
+        });
+
+        toast.success('Removal request sent for approval');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to create approval request');
+      }
+      return;
+    }
+
+    // No other owners — remove directly
     try {
       const { data, error } = await supabase.functions.invoke('manage-team', {
         body: { action: 'remove_member', memberId },

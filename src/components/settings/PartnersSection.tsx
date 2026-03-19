@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import { UnassignedTransactionsSheet } from "./UnassignedTransactionsSheet";
 import { Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
 
 interface PartnersSectionProps {
   onBack: () => void;
@@ -261,6 +263,32 @@ const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldi
 
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter, addNotification } = useFinanceStore();
+  const { user } = useAuth();
+  const { orgId } = useUserRole();
+  const [otherOwners, setOtherOwners] = useState<{ user_id: string }[]>([]);
+  const [currentUserName, setCurrentUserName] = useState('');
+
+  useEffect(() => {
+    const fetchOwners = async () => {
+      if (!user || !orgId) return;
+      const { data } = await supabase
+        .from('org_members')
+        .select('user_id')
+        .eq('org_id', orgId)
+        .eq('role', 'owner')
+        .eq('status', 'active')
+        .neq('user_id', user.id);
+      if (data) setOtherOwners(data);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile?.name) setCurrentUserName(profile.name);
+    };
+    fetchOwners();
+  }, [user, orgId]);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
@@ -414,10 +442,43 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     resetForm();
   };
   
-  const handleDelete = (partnerId: string, e?: React.MouseEvent) => {
+  const handleDelete = async (partnerId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (confirm('Delete this partner? Transactions will be unassigned.')) {
-      deletePartner(partnerId, userId);
+    const partner = partners.find(p => p.id === partnerId);
+    if (!partner) return;
+
+    // If other owners exist, require approval
+    if (otherOwners.length > 0 && user && orgId) {
+      if (!confirm(`Request approval to delete "${partner.name}"?`)) return;
+
+      try {
+        const { error } = await supabase.from('change_approvals').insert({
+          org_id: orgId,
+          requester_user_id: user.id,
+          target_user_id: otherOwners[0].user_id,
+          entity_type: 'partner',
+          entity_id: partnerId,
+          action: 'delete',
+          proposed_changes: { name: partner.name },
+          status: 'pending',
+        });
+        if (error) throw error;
+
+        addNotification({
+          type: 'partner',
+          title: 'Deletion Requested',
+          message: `${currentUserName} requested deletion of partner "${partner.name}"`,
+        });
+
+        toast.success('Deletion request sent for approval');
+      } catch (err: any) {
+        toast.error(err.message || 'Failed to create approval request');
+      }
+    } else {
+      // No other owners — delete directly
+      if (confirm('Delete this partner? Transactions will be unassigned.')) {
+        deletePartner(partnerId, userId);
+      }
     }
   };
   
