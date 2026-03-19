@@ -367,7 +367,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                         size="sm"
                         variant="ghost"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleRemoveMember(member.id, memberName)}
+                        onClick={() => handleRemoveMember(member.id, memberName, member.role)}
                       >
                         <Trash2 size={14} />
                       </Button>
