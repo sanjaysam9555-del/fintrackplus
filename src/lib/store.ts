@@ -1072,6 +1072,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.archived !== undefined) dbUpdates.archived = updates.archived;
           if (updates.color) dbUpdates.color = updates.color;
           if (updates.labelIds !== undefined) dbUpdates.label_ids = updates.labelIds;
+          if (updates.assignedEmployeeIds !== undefined) dbUpdates.assigned_employee_ids = updates.assignedEmployeeIds;
           if (updates.eventDate !== undefined) dbUpdates.event_date = updates.eventDate || null;
           if (updates.startDate !== undefined) dbUpdates.start_date = updates.startDate || null;
           

@@ -459,6 +459,12 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
             if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
             return [];
           })(),
+          assignedEmployeeIds: (() => {
+            const raw = (p as unknown as { assigned_employee_ids?: unknown }).assigned_employee_ids;
+            if (Array.isArray(raw)) return raw as string[];
+            if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
+            return [];
+          })(),
           color: p.color,
           eventDate: (p as unknown as { event_date?: string }).event_date || undefined,
           startDate: (p as unknown as { start_date?: string }).start_date || undefined,
