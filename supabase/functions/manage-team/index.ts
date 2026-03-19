@@ -220,12 +220,26 @@ Deno.serve(async (req) => {
           );
         }
 
-        // If role is owner, link to existing partner or create new one
+        // Ensure the invited member's profile belongs to the organization being managed
+        await adminClient
+          .from("profiles")
+          .update({ org_id: orgId, name })
+          .eq("user_id", userId);
+
+        const { data: partnerCandidates } = await adminClient
+          .from("partners")
+          .select("id, org_id")
+          .eq("user_id", userId);
+
+        const existingOrgPartner = partnerCandidates?.find((partner) => partner.org_id === orgId);
+        const foreignOrgPartner = partnerCandidates?.find((partner) => partner.org_id !== orgId);
+
+        // If role is owner, link to existing partner or create/move one into the org
         if (role === "owner") {
           if (existingPartnerId) {
             const { data: selectedPartner, error: selectedPartnerError } = await adminClient
               .from("partners")
-              .select("id, org_id, user_id")
+              .select("id, org_id")
               .eq("id", existingPartnerId)
               .eq("org_id", orgId)
               .maybeSingle();
@@ -245,7 +259,12 @@ Deno.serve(async (req) => {
               .update({ user_id: userId })
               .eq("id", existingPartnerId)
               .eq("org_id", orgId);
-          } else {
+          } else if (!existingOrgPartner && foreignOrgPartner) {
+            await adminClient
+              .from("partners")
+              .update({ org_id: orgId, name })
+              .eq("id", foreignOrgPartner.id);
+          } else if (!existingOrgPartner) {
             await adminClient.from("partners").insert({
               user_id: userId,
               name,
