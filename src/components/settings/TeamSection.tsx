@@ -95,7 +95,26 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   useEffect(() => {
     fetchMembers();
     fetchPartners();
-  }, [user]);
+    const fetchOwnerData = async () => {
+      if (!user || !orgId) return;
+      const { data } = await supabase
+        .from('org_members')
+        .select('user_id')
+        .eq('org_id', orgId)
+        .eq('role', 'owner')
+        .eq('status', 'active')
+        .neq('user_id', user.id);
+      if (data) setOtherOwners(data);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile?.name) setCurrentUserName(profile.name);
+    };
+    fetchOwnerData();
+  }, [user, orgId]);
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
