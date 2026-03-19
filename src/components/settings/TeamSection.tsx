@@ -201,7 +201,6 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       toast.error(err.message || 'Failed to remove member');
     }
   };
-  };
 
   const handleLinkPartner = async (memberId: string) => {
     if (!selectedPartnerId) return;
