@@ -54,9 +54,11 @@ export const ProjectDetailSheet = ({
   onEditSheetChange,
 }: ProjectDetailSheetProps) => {
   const { getCategoryById, updateProject, transactions: allTransactions, projectLabels } = useFinanceStore();
+  const { isOwner, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<'list' | 'columns'>('list');
   const [isChildEditing, setIsChildEditing] = useState(false);
+  const [employees, setEmployees] = useState<{ user_id: string; name: string }[]>([]);
   
   const handleChildEditSheetChange = useCallback((open: boolean) => {
     setIsChildEditing(open);
