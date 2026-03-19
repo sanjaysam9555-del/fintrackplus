@@ -1,56 +1,61 @@
 
 
-# Map Existing Partner to New Owner Account
+# Fix: Partner Delete Fails Silently — Partner Keeps Reappearing
 
-## Problem
-When an Owner creates a new Owner account via Team settings, the edge function creates a brand-new Partner entry. But the partner may already exist in the Partners section with hundreds of transactions. This causes duplicate partners and orphaned transaction history.
+## Root Cause
 
-## Solution
-Add an optional "Link to existing partner" dropdown in the Team add-member form. When creating an Owner, show a list of existing partners. If one is selected, the edge function updates that partner's `user_id` to the new user instead of creating a new partner.
+The sync engine's `processOperation` function (in `syncEngine.ts`, lines 227-233) applies `.eq('user_id', userId)` on **all** delete and update operations. 
 
----
+For the `partners` table, `user_id` stores the **linked auth account** of the partner — NOT the currently logged-in user who is performing the delete. So when you (the owner) try to delete a partner whose `user_id` points to the team member's account, the query matches zero rows:
 
-## Changes
+```
+DELETE FROM partners WHERE id = '<partner-id>' AND user_id = '<your-user-id>'
+-- ↑ Matches nothing because user_id = '<team-member-user-id>'
+```
 
-### 1. TeamSection.tsx — Add partner mapping dropdown
-- When role is `owner`, show a dropdown listing existing partners (fetched from the `partners` table).
-- Options: "Create new partner" (default) or select an existing partner by name.
-- Pass `existingPartnerId` to the edge function when a partner is selected.
+The delete silently "succeeds" (no error, zero rows affected). Then the healing refresh (every 30s) re-fetches all partners from the DB and the partner reappears.
 
-### 2. manage-team edge function — Handle partner mapping
-- In the `create_member` action, accept an optional `existingPartnerId` field.
-- If provided and role is `owner`:
-  - Update the existing partner's `user_id` to the new user's ID (instead of inserting a new partner).
-- If not provided and role is `owner`:
-  - Create a new partner as before.
-- The `handle_new_user` trigger also creates a partner for normal signups — since invited users go through the trigger's "invited" path, no duplicate partner is created there (the trigger only creates a profile for invited users, not a partner).
+## Fix
 
-### 3. PartnersSection.tsx — Show mapped email (read-only info)
-- No changes needed for the core mapping flow. Optionally, show which user account a partner is linked to (by fetching the profile name for the partner's `user_id`), but this is cosmetic and can be deferred.
+In `syncEngine.ts`, modify the `update` and `delete` cases in `processOperation` to skip the `user_id` filter for the `partners` table (since RLS already scopes by `org_id`). Only filter by `id`.
 
----
+### Changes — `src/lib/syncEngine.ts`
 
-## Implementation Details
+**Update case (lines 219-225):** For partners, omit `.eq('user_id', userId)`:
+```typescript
+case 'update':
+  result = await (supabase.from(tableName) as any)
+    .update(data)
+    .eq('id', entityId);
+  // For non-partner entities, also filter by user_id for extra safety
+  if (entity !== 'partner') {
+    // Re-do with user_id filter
+  }
+```
 
-**TeamSection.tsx**:
-- Fetch partners list on mount: `supabase.from('partners').select('id, name, user_id')`
-- Filter to partners whose `user_id` matches the current owner (i.e., partners not yet mapped to a separate account)
-- When role changes to `owner`, show the partner select dropdown
-- New state: `existingPartnerId: string | null`
-- Pass to edge function: `{ action: 'create_member', email, name, role, existingPartnerId }`
+Actually, cleaner approach — just conditionally add the `user_id` filter:
 
-**manage-team/index.ts**:
-- Destructure `existingPartnerId` from body in `create_member`
-- Replace the partner creation block:
-  ```
-  if role === 'owner':
-    if existingPartnerId:
-      UPDATE partners SET user_id = newUser.id WHERE id = existingPartnerId AND org_id = orgId
-    else:
-      INSERT INTO partners (user_id, name, org_id)
-  ```
+```typescript
+case 'update': {
+  let query = (supabase.from(tableName) as any).update(data).eq('id', entityId);
+  if (entity !== 'partner') query = query.eq('user_id', userId);
+  result = await query;
+  break;
+}
 
-**Files modified**: 2 files total
-- `src/components/settings/TeamSection.tsx`
-- `supabase/functions/manage-team/index.ts`
+case 'delete': {
+  let query = (supabase.from(tableName) as any).delete().eq('id', entityId);
+  if (entity !== 'partner') query = query.eq('user_id', userId);
+  result = await query;
+  break;
+}
+```
+
+RLS policies on the `partners` table already enforce that only owners within the same org can delete/update, so this is safe.
+
+**Files modified**: 1 file — `src/lib/syncEngine.ts`
+
+### Immediate Cleanup
+
+After deploying this fix, the user should delete the ghost partner again. This time the delete will actually reach the DB row and remove it permanently.
 
