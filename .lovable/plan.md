@@ -1,63 +1,56 @@
 
 
-## Unified Owner-Partner Identity & Cascading Delete
+## Fix: Force Password Change Stuck for Non-Owner Members
 
-### What This Does
+### Root Cause
 
-1. **Profile ↔ Partner sync**: When an owner updates their name or avatar (from Profile or Partners page), the change propagates to both `profiles` and `partners` tables automatically. The `user_id` on the `partners` table serves as the universal linking ID.
+The `org_members` table has an RLS policy that only allows **owners** to update rows:
+```sql
+CREATE POLICY "Owners can update org members"
+  ON public.org_members FOR UPDATE TO authenticated
+  USING (org_id = ... AND get_user_role(auth.uid()) = 'owner');
+```
 
-2. **Auto-partner on signup/invite**: Already handled by `handle_new_user` trigger (fresh signup) and `manage-team` edge function (invited owner). No changes needed here — both already create a partner record with the same name.
+When an admin or employee changes their password, the `ForcePasswordChange` component tries to clear `must_change_password` via a direct update to `org_members`. This silently fails because of RLS — the flag stays `true`, trapping the user on the change password page forever.
 
-3. **Cascading delete with critical warning**: Deleting an owner-linked partner from the Partners page or removing a team member from the Team page triggers a critical warning explaining that it will delete the member across profile, partner, team, and auth. On confirmation (or after approval from the other owner), the `remove_member` edge function handles full cleanup: deletes `org_members`, `partners`, `profiles`, and bans/deletes the auth user.
+### Fix
 
----
+**1. Add an RLS policy allowing users to update their own `must_change_password` flag**
+
+Create a new migration adding a policy that lets any authenticated user update their own `org_members` row, but **only** the `must_change_password` column. Since RLS policies can't restrict columns directly, we'll use a security-definer function instead.
+
+**2. Create a `clear_must_change_password` security-definer function**
+
+```sql
+CREATE OR REPLACE FUNCTION public.clear_must_change_password()
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.org_members
+  SET must_change_password = false
+  WHERE user_id = auth.uid();
+END;
+$$;
+```
+
+This bypasses RLS safely — the user can only clear their own flag.
+
+**3. Update `ForcePasswordChange.tsx`**
+
+Replace the direct `.update()` call with an RPC call:
+```typescript
+const { error } = await supabase.rpc('clear_must_change_password');
+```
+
+**4. After password change, refresh the session**
+
+Call `supabase.auth.refreshSession()` after the password update, then call `onComplete()` to re-fetch the role. This ensures the auth state is stable before navigation.
 
 ### Files to Modify
 
-**1. `src/lib/store.ts` — `updateUserProfile`**
-- After updating `profiles`, also update the linked `partners` row (name + avatar_url) where `user_id = current user`.
-- Update local `partners` state to keep UI in sync immediately.
-
-**2. `src/components/settings/PartnersSection.tsx` — Partner avatar/name edit sync**
-- When a partner's name or avatar is updated and that partner has a `user_id` matching an org member, also update `profiles.name` / `profiles.avatar_url` for that user.
-- On delete: show a critical warning dialog (not just `confirm()`) for owner-linked partners: "This will permanently remove this member from the app — their profile, partner record, team membership, and login will all be deleted."
-- The actual deletion calls the `manage-team` edge function `remove_member` action (which handles full cascading cleanup) instead of just `deletePartner`.
-
-**3. `src/components/settings/TeamSection.tsx` — Cascading delete warning**
-- Replace the simple `confirm()` with a critical warning dialog matching the partner page: "This will permanently remove this member across the app."
-- The `remove_member` edge function already handles cleanup.
-
-**4. `supabase/functions/manage-team/index.ts` — `remove_member` action**
-- When removing an owner, also delete their linked `partners` row in the same org.
-- Currently the function skips partner deletion ("Never delete partner rows here") — change this to: if the member is an owner, delete the partner record linked via `user_id` + `org_id`, and unassign their transactions (`partner_id = null`).
-
-**5. `src/components/settings/PartnersSection.tsx` — Hide direct delete for owner-linked partners OR route through `manage-team`**
-- For owner-linked partners (those with a `user_id` matching an `org_member`), the delete action should invoke `manage-team` `remove_member` instead of the local `deletePartner` store action, ensuring full cascading cleanup.
-
----
-
-### Technical Details
-
-```text
-Profile Edit (name/avatar)
-  └─► updates profiles table
-  └─► updates partners table (where user_id = current user)
-  └─► updates local store (userProfile + partners array)
-
-Partner Edit (name/avatar) for owner-linked partner
-  └─► updates partners table
-  └─► updates profiles table (where user_id = partner.user_id)
-  └─► updates local store
-
-Delete from Team Page or Partners Page (owner-linked)
-  └─► Critical warning dialog
-  └─► If other owners: approval request
-  └─► If approved/no other owners: manage-team remove_member
-       └─► deletes org_members row
-       └─► deletes partners row (+ unassigns transactions)
-       └─► deletes profiles row
-       └─► bans/deletes auth user
-```
-
-No database migration needed — all tables already have the required columns and relationships.
+- **New migration** — `clear_must_change_password` security-definer function
+- **`src/components/ForcePasswordChange.tsx`** — Use RPC instead of direct update; add session refresh
 
