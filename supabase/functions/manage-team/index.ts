@@ -384,10 +384,20 @@ Deno.serve(async (req) => {
           .delete()
           .eq("id", memberId);
 
-        // Disable auth account
-        await adminClient.auth.admin.updateUserById(targetMember.user_id, {
-          ban_duration: "876000h", // ~100 years
-        });
+        // Delete linked partners and profile
+        await adminClient
+          .from("partners")
+          .delete()
+          .eq("user_id", targetMember.user_id)
+          .eq("org_id", orgId);
+
+        await adminClient
+          .from("profiles")
+          .delete()
+          .eq("user_id", targetMember.user_id);
+
+        // Fully delete auth account so email can be reused
+        await adminClient.auth.admin.deleteUser(targetMember.user_id);
 
         return new Response(
           JSON.stringify({ success: true, message: "Member removed" }),
