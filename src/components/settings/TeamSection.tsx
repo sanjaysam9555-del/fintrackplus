@@ -471,6 +471,34 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           </motion.div>
         )}
       </div>
+
+      {/* Critical Delete Warning Dialog */}
+      <AlertDialog open={!!deleteConfirmMember} onOpenChange={(open) => !open && setDeleteConfirmMember(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle size={20} />
+              Remove {deleteConfirmMember?.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              {deleteConfirmMember?.role === 'owner' ? (
+                <>This will <strong>permanently remove</strong> this member across the entire app — their <strong>profile, partner record, team membership, transaction assignments, and login</strong> will all be deleted. This action cannot be undone.</>
+              ) : (
+                <>This will <strong>permanently remove</strong> this member — their <strong>profile, team membership, and login</strong> will all be deleted. This action cannot be undone.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmRemoveMember}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {otherOwners.length > 0 ? 'Request Removal' : 'Remove Permanently'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
