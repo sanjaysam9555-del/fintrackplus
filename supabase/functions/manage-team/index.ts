@@ -395,26 +395,48 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Delete org_member
-        await adminClient
+        // Delete org_member only
+        const { error: removeMemberError } = await adminClient
           .from("org_members")
           .delete()
           .eq("id", memberId);
 
-        // Delete linked partners and profile
-        await adminClient
-          .from("partners")
-          .delete()
-          .eq("user_id", targetMember.user_id)
-          .eq("org_id", orgId);
+        if (removeMemberError) {
+          return new Response(
+            JSON.stringify({ error: removeMemberError.message }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
 
-        await adminClient
-          .from("profiles")
-          .delete()
+        // Delete auth/profile only if this user no longer belongs to any org
+        const { count: remainingMemberships, error: membershipsError } = await adminClient
+          .from("org_members")
+          .select("id", { count: "exact", head: true })
           .eq("user_id", targetMember.user_id);
 
-        // Fully delete auth account so email can be reused
-        await adminClient.auth.admin.deleteUser(targetMember.user_id);
+        if (membershipsError) {
+          return new Response(
+            JSON.stringify({ error: membershipsError.message }),
+            {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            }
+          );
+        }
+
+        if ((remainingMemberships ?? 0) === 0) {
+          await adminClient
+            .from("profiles")
+            .delete()
+            .eq("user_id", targetMember.user_id);
+
+          await adminClient.auth.admin.deleteUser(targetMember.user_id);
+        }
+
+        // Never delete partner rows here; owners may be linked to existing business partners
 
         return new Response(
           JSON.stringify({ success: true, message: "Member removed" }),
