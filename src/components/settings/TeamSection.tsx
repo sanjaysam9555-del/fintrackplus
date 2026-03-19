@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Copy, Check, Trash2, ChevronDown, Users, Shield, UserCheck, User } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { AppRole } from '@/hooks/useUserRole';
@@ -17,6 +18,7 @@ interface TeamMember {
   status: string;
   created_at: string;
   profile?: { name: string; email?: string };
+  linkedPartner?: { id: string; name: string } | null;
 }
 
 interface TeamSectionProps {
@@ -37,6 +39,7 @@ const roleColors: Record<AppRole, string> = {
 
 export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const { user } = useAuth();
+  const { isOwner } = useUserRole();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -48,6 +51,9 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const [copied, setCopied] = useState(false);
   const [existingPartnerId, setExistingPartnerId] = useState<string | null>(null);
   const [partners, setPartners] = useState<{ id: string; name: string; user_id: string }[]>([]);
+  const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string>('');
+  const [isLinking, setIsLinking] = useState(false);
 
   const fetchMembers = async () => {
     if (!user) return;
@@ -58,7 +64,9 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
 
       if (error) throw error;
 
-      // Fetch profiles for each member
+      // Fetch partners for the org
+      const { data: orgPartners } = await supabase.from('partners').select('id, name, user_id');
+
       const membersWithProfiles: TeamMember[] = [];
       for (const m of orgMembers || []) {
         const { data: profile } = await supabase
@@ -67,10 +75,13 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           .eq('user_id', m.user_id)
           .maybeSingle();
 
+        const linkedPartner = (orgPartners || []).find(p => p.user_id === m.user_id);
+
         membersWithProfiles.push({
           ...m,
           role: m.role as AppRole,
           profile: profile ? { name: profile.name } : undefined,
+          linkedPartner: linkedPartner ? { id: linkedPartner.id, name: linkedPartner.name } : null,
         });
       }
 
@@ -112,6 +123,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       setRole('employee');
       setExistingPartnerId(null);
       fetchMembers();
+      fetchPartners();
     } catch (err: any) {
       toast.error(err.message || 'Failed to add member');
     } finally {
@@ -130,8 +142,32 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
 
       toast.success(`${memberName} removed`);
       fetchMembers();
+      fetchPartners();
     } catch (err: any) {
       toast.error(err.message || 'Failed to remove member');
+    }
+  };
+
+  const handleLinkPartner = async (memberId: string) => {
+    if (!selectedPartnerId) return;
+    setIsLinking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('manage-team', {
+        body: { action: 'link_partner', memberId, partnerId: selectedPartnerId },
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      toast.success('Partner linked successfully');
+      setEditingMemberId(null);
+      setSelectedPartnerId('');
+      fetchMembers();
+      fetchPartners();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to link partner');
+    } finally {
+      setIsLinking(false);
     }
   };
 
@@ -217,6 +253,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           members.map((member) => {
             const RoleIcon = roleIcons[member.role];
             const isCurrentUser = member.user_id === user?.id;
+            const isEditing = editingMemberId === member.id;
             return (
               <motion.div
                 key={member.id}
@@ -239,18 +276,83 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                       )}
                     </p>
                     <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
+                    {member.role === 'owner' && member.linkedPartner && (
+                      <p className="text-xs text-primary mt-0.5">
+                        Partner: {member.linkedPartner.name}
+                      </p>
+                    )}
+                    {member.role === 'owner' && !member.linkedPartner && (
+                      <p className="text-xs text-muted-foreground/60 mt-0.5">
+                        No partner linked
+                      </p>
+                    )}
                   </div>
-                  {!isCurrentUser && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => handleRemoveMember(member.id, member.profile?.name || 'Member')}
-                    >
-                      <Trash2 size={14} />
-                    </Button>
-                  )}
+                  <div className="flex items-center gap-1">
+                    {isOwner && member.role === 'owner' && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-primary"
+                        onClick={() => {
+                          if (isEditing) {
+                            setEditingMemberId(null);
+                            setSelectedPartnerId('');
+                          } else {
+                            setEditingMemberId(member.id);
+                            setSelectedPartnerId(member.linkedPartner?.id || '');
+                          }
+                        }}
+                      >
+                        <Link size={14} />
+                      </Button>
+                    )}
+                    {!isCurrentUser && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleRemoveMember(member.id, member.profile?.name || 'Member')}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    )}
+                  </div>
                 </div>
+
+                {/* Inline partner selector */}
+                {isEditing && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-3 pt-3 border-t border-border space-y-2"
+                  >
+                    <p className="text-xs text-muted-foreground">Link to partner</p>
+                    <div className="flex gap-2">
+                      <Select
+                        value={selectedPartnerId}
+                        onValueChange={setSelectedPartnerId}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select partner" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {partners.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="sm"
+                        disabled={!selectedPartnerId || isLinking}
+                        onClick={() => handleLinkPartner(member.id)}
+                      >
+                        {isLinking ? 'Saving…' : 'Save'}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
               </motion.div>
             );
           })
