@@ -121,6 +121,7 @@ const Index = () => {
   }, []);
   const { syncStatus } = useFinanceStore();
   const { user } = useAuth();
+  const { isEmployee, isOwner, mustChangePassword, memberId, loading: roleLoading, refetch: refetchRole } = useUserRole();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   
   // Initialize airtight sync engine (all syncing happens silently in background)
