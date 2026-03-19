@@ -1,12 +1,14 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag, MoreVertical, Wallet, TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, X, Check, FolderKanban, Archive, ArchiveRestore, Tag, MoreVertical, Wallet, TrendingDown, TrendingUp, Users } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface ProjectsSectionProps {
   onBack: () => void;
