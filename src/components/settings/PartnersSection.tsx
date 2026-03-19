@@ -263,6 +263,32 @@ const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldi
 
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter, addNotification } = useFinanceStore();
+  const { user } = useAuth();
+  const { orgId } = useUserRole();
+  const [otherOwners, setOtherOwners] = useState<{ user_id: string }[]>([]);
+  const [currentUserName, setCurrentUserName] = useState('');
+
+  useEffect(() => {
+    const fetchOwners = async () => {
+      if (!user || !orgId) return;
+      const { data } = await supabase
+        .from('org_members')
+        .select('user_id')
+        .eq('org_id', orgId)
+        .eq('role', 'owner')
+        .eq('status', 'active')
+        .neq('user_id', user.id);
+      if (data) setOtherOwners(data);
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (profile?.name) setCurrentUserName(profile.name);
+    };
+    fetchOwners();
+  }, [user, orgId]);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
