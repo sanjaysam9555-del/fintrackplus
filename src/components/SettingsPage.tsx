@@ -227,7 +227,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
