@@ -111,6 +111,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
+      assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
     toast.success("Project updated");
     setEditingProjectId(null);
