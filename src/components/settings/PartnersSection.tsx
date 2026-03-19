@@ -460,8 +460,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     resetForm();
   };
 
-  const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
-  const [isOwnerLinkedDelete, setIsOwnerLinkedDelete] = useState(false);
+
+
   
   const handleDelete = async (partnerId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
