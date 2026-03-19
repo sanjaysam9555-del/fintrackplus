@@ -319,6 +319,11 @@ const Index = () => {
   // Hide dock when viewing settings, AI, or when any transaction sheet is open
   const showDock = viewMode !== 'settings' && viewMode !== 'ai' && !isAddSheetOpen && !isEditSheetOpen;
   
+  // Force password change gate
+  if (mustChangePassword && memberId && !roleLoading) {
+    return <ForcePasswordChange memberId={memberId} onComplete={refetchRole} />;
+  }
+
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Onboarding Flow */}
