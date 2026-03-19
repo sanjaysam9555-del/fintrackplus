@@ -300,6 +300,24 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                   <SelectItem value="employee">Employee</SelectItem>
                 </SelectContent>
               </Select>
+              {role === 'owner' && (
+                <Select
+                  value={existingPartnerId || '__new__'}
+                  onValueChange={(v) => setExistingPartnerId(v === '__new__' ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Link to existing partner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__new__">Create new partner</SelectItem>
+                    {partners.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
               <div className="flex gap-2">
                 <Button
                   type="button"
