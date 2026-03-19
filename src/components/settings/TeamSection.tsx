@@ -110,6 +110,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       setEmail('');
       setName('');
       setRole('employee');
+      setExistingPartnerId(null);
       fetchMembers();
     } catch (err: any) {
       toast.error(err.message || 'Failed to add member');
