@@ -52,14 +52,35 @@ const getHealthDot = (status: HealthStatus): string => {
 
 export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
   const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject, projectLabels, addProjectLabel } = useFinanceStore();
+  const { isOwner, isAdmin } = useUserRole();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [archiveProject, setArchiveProject] = useState<Project | null>(null);
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[] });
+  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[], assignedEmployeeIds: [] as string[] });
   const [newLabelName, setNewLabelName] = useState('');
+  const [employees, setEmployees] = useState<{ user_id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      const { data: members } = await supabase
+        .from('org_members')
+        .select('user_id, role')
+        .eq('role', 'employee')
+        .eq('status', 'active');
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', userIds);
+        setEmployees((profiles || []).map(p => ({ user_id: p.user_id, name: p.name || 'Unknown' })));
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   const startEdit = (project: Project) => {
     setEditingProjectId(project.id);
