@@ -96,6 +96,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
       expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
+      assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
     toast.success("Project updated");
     setEditingId(null);
