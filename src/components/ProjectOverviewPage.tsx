@@ -751,6 +751,36 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                             )}
                           </div>
                         </div>
+                        {/* Assign Employees */}
+                        {(isOwner || isAdmin) && employees.length > 0 && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                              <Users size={12} /> Assign Employees
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {employees.map((emp) => {
+                                const isSelected = formData.assignedEmployeeIds.includes(emp.user_id);
+                                return (
+                                  <button
+                                    key={emp.user_id}
+                                    type="button"
+                                    onClick={() => setFormData({
+                                      ...formData,
+                                      assignedEmployeeIds: isSelected
+                                        ? formData.assignedEmployeeIds.filter(id => id !== emp.user_id)
+                                        : [...formData.assignedEmployeeIds, emp.user_id],
+                                    })}
+                                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                                    }`}
+                                  >
+                                    {emp.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                         <div className="flex gap-2">
                           <Button variant="outline" onClick={() => setEditingProjectId(null)} className="flex-1" size="sm">
                             Cancel
