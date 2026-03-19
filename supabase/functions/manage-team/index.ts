@@ -130,23 +130,66 @@ Deno.serve(async (req) => {
           Math.random().toString(36).slice(-4).toUpperCase() +
           "!1";
 
-        // Create auth user
-        const { data: newUser, error: createError } =
-          await adminClient.auth.admin.createUser({
-            email,
-            password: tempPassword,
-            email_confirm: true,
-            user_metadata: { name },
-          });
+        let userId: string;
 
-        if (createError) {
-          return new Response(
-            JSON.stringify({ error: createError.message }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
+        // Check if a user with this email already exists (e.g. previously banned)
+        const { data: listData } = await adminClient.auth.admin.listUsers();
+        const existingUser = listData?.users?.find(
+          (u: any) => u.email === email
+        );
+
+        if (existingUser) {
+          // If user is banned, reactivate them
+          if (existingUser.banned_until && new Date(existingUser.banned_until) > new Date()) {
+            const { error: updateErr } = await adminClient.auth.admin.updateUserById(
+              existingUser.id,
+              {
+                ban_duration: "none",
+                password: tempPassword,
+                email_confirm: true,
+                user_metadata: { name },
+              }
+            );
+            if (updateErr) {
+              return new Response(
+                JSON.stringify({ error: updateErr.message }),
+                {
+                  status: 400,
+                  headers: { ...corsHeaders, "Content-Type": "application/json" },
+                }
+              );
             }
-          );
+            userId = existingUser.id;
+          } else {
+            // User exists and is active — genuine duplicate
+            return new Response(
+              JSON.stringify({ error: "A user with this email address is already active" }),
+              {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            );
+          }
+        } else {
+          // Create new auth user
+          const { data: newUser, error: createError } =
+            await adminClient.auth.admin.createUser({
+              email,
+              password: tempPassword,
+              email_confirm: true,
+              user_metadata: { name },
+            });
+
+          if (createError) {
+            return new Response(
+              JSON.stringify({ error: createError.message }),
+              {
+                status: 400,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              }
+            );
+          }
+          userId = newUser.user.id;
         }
 
         // Upsert org_member (handle_new_user trigger may have already inserted a row)
@@ -155,7 +198,7 @@ Deno.serve(async (req) => {
           .upsert(
             {
               org_id: orgId,
-              user_id: newUser.user.id,
+              user_id: userId,
               role,
               must_change_password: true,
               status: "active",
@@ -164,8 +207,10 @@ Deno.serve(async (req) => {
           );
 
         if (memberError) {
-          // Cleanup: delete the created auth user
-          await adminClient.auth.admin.deleteUser(newUser.user.id);
+          // Cleanup: delete the created auth user if it was new
+          if (!existingUser) {
+            await adminClient.auth.admin.deleteUser(userId);
+          }
           return new Response(
             JSON.stringify({ error: memberError.message }),
             {
@@ -180,12 +225,12 @@ Deno.serve(async (req) => {
           if (existingPartnerId) {
             await adminClient
               .from("partners")
-              .update({ user_id: newUser.user.id })
+              .update({ user_id: userId })
               .eq("id", existingPartnerId)
               .eq("org_id", orgId);
           } else {
             await adminClient.from("partners").insert({
-              user_id: newUser.user.id,
+              user_id: userId,
               name,
               org_id: orgId,
             });
@@ -196,7 +241,7 @@ Deno.serve(async (req) => {
           JSON.stringify({
             success: true,
             tempPassword,
-            userId: newUser.user.id,
+            userId,
             message: `Member ${name} created successfully`,
           }),
           {
@@ -339,10 +384,20 @@ Deno.serve(async (req) => {
           .delete()
           .eq("id", memberId);
 
-        // Disable auth account
-        await adminClient.auth.admin.updateUserById(targetMember.user_id, {
-          ban_duration: "876000h", // ~100 years
-        });
+        // Delete linked partners and profile
+        await adminClient
+          .from("partners")
+          .delete()
+          .eq("user_id", targetMember.user_id)
+          .eq("org_id", orgId);
+
+        await adminClient
+          .from("profiles")
+          .delete()
+          .eq("user_id", targetMember.user_id);
+
+        // Fully delete auth account so email can be reused
+        await adminClient.auth.admin.deleteUser(targetMember.user_id);
 
         return new Response(
           JSON.stringify({ success: true, message: "Member removed" }),
