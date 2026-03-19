@@ -272,7 +272,7 @@ export const ProjectsSection = ({ onBack, userId }: ProjectsSectionProps) => {
           <h1 className="text-xl font-bold">Projects</h1>
         </div>
         {!showArchived && (
-          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}>
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', notes: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] }); setNewLabelName(''); }}>
             <Plus size={16} className="mr-1" /> Add
           </Button>
         )}
