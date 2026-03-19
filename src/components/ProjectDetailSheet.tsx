@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, TrendingUp, TrendingDown, Save, Check, Calendar, Tag, X, Pencil, Eye, Columns3, List } from "lucide-react";
+import { ArrowLeft, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, TrendingUp, TrendingDown, Save, Check, Calendar, Tag, X, Pencil, Eye, Columns3, List, Users } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProjectDocument } from "@/hooks/useProjectDocuments";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useProjectDocuments } from "@/hooks/useProjectDocuments";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -52,9 +54,11 @@ export const ProjectDetailSheet = ({
   onEditSheetChange,
 }: ProjectDetailSheetProps) => {
   const { getCategoryById, updateProject, transactions: allTransactions, projectLabels } = useFinanceStore();
+  const { isOwner, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<'list' | 'columns'>('list');
   const [isChildEditing, setIsChildEditing] = useState(false);
+  const [employees, setEmployees] = useState<{ user_id: string; name: string }[]>([]);
   
   const handleChildEditSheetChange = useCallback((open: boolean) => {
     setIsChildEditing(open);
@@ -148,6 +152,27 @@ export const ProjectDetailSheet = ({
   }, [project]);
 
   useEffect(() => {
+    const fetchEmployees = async () => {
+      const { data: members } = await supabase
+        .from('org_members')
+        .select('user_id, role')
+        .eq('role', 'employee')
+        .eq('status', 'active');
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', userIds);
+        setEmployees((profiles || []).map(p => ({ user_id: p.user_id, name: p.name || 'Unknown' })));
+      } else {
+        setEmployees([]);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  useEffect(() => {
     if (!isOpen) {
       prevProjectId.current = null;
     }
@@ -178,6 +203,7 @@ export const ProjectDetailSheet = ({
       eventDate: project.eventDate || '',
       startDate: project.startDate || '',
       labelIds: project.labelIds || [],
+      assignedEmployeeIds: project.assignedEmployeeIds || [],
     });
     setIsEditing(true);
   }, [project]);
@@ -387,6 +413,41 @@ export const ProjectDetailSheet = ({
                         );
                       })}
                     </div>
+                  </div>
+                )}
+                {(isOwner || isAdmin) && (
+                  <div>
+                    <Label className="text-xs">Assign Employees</Label>
+                    {employees.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {employees.map((emp) => {
+                          const selectedIds = (editForm.assignedEmployeeIds as string[] | undefined) || [];
+                          const isSelected = selectedIds.includes(emp.user_id);
+                          return (
+                            <button
+                              key={emp.user_id}
+                              type="button"
+                              onClick={() => setEditForm(f => ({
+                                ...f,
+                                assignedEmployeeIds: isSelected
+                                  ? selectedIds.filter((id: string) => id !== emp.user_id)
+                                  : [...selectedIds, emp.user_id],
+                              }))}
+                              className={cn(
+                                "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+                                isSelected
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-transparent border-border text-muted-foreground hover:bg-muted"
+                              )}
+                            >
+                              {emp.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic mt-1">No employees added yet. Add employees via Settings → Team.</p>
+                    )}
                   </div>
                 )}
                 <div className="flex gap-2 pt-1">
