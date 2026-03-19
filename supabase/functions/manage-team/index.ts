@@ -77,6 +77,56 @@ Deno.serve(async (req) => {
     const { action } = body;
 
     switch (action) {
+      case "list_members": {
+        // Fetch org members with profiles and emails
+        const { data: orgMembers, error: membersError } = await adminClient
+          .from("org_members")
+          .select("id, user_id, role, status, created_at")
+          .eq("org_id", orgId);
+
+        if (membersError) {
+          return new Response(JSON.stringify({ error: membersError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+
+        const enrichedMembers = [];
+        for (const m of orgMembers || []) {
+          // Get profile
+          const { data: profile } = await adminClient
+            .from("profiles")
+            .select("name, avatar_url")
+            .eq("user_id", m.user_id)
+            .maybeSingle();
+
+          // Get email from auth.users
+          const { data: authUser } = await adminClient.auth.admin.getUserById(m.user_id);
+
+          // Get linked partner
+          const { data: partners } = await adminClient
+            .from("partners")
+            .select("id, name")
+            .eq("user_id", m.user_id)
+            .eq("org_id", orgId);
+
+          enrichedMembers.push({
+            ...m,
+            profile: {
+              name: profile?.name || authUser?.user?.user_metadata?.name || "Unknown",
+              email: authUser?.user?.email || null,
+              avatar_url: profile?.avatar_url || null,
+            },
+            linkedPartner: partners && partners.length > 0 ? { id: partners[0].id, name: partners[0].name } : null,
+          });
+        }
+
+        return new Response(JSON.stringify({ members: enrichedMembers }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+
       case "create_member": {
         const { email, name, role, existingPartnerId } = body;
 
