@@ -152,6 +152,27 @@ export const ProjectDetailSheet = ({
   }, [project]);
 
   useEffect(() => {
+    const fetchEmployees = async () => {
+      const { data: members } = await supabase
+        .from('org_members')
+        .select('user_id, role')
+        .eq('role', 'employee')
+        .eq('status', 'active');
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', userIds);
+        setEmployees((profiles || []).map(p => ({ user_id: p.user_id, name: p.name || 'Unknown' })));
+      } else {
+        setEmployees([]);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  useEffect(() => {
     if (!isOpen) {
       prevProjectId.current = null;
     }
