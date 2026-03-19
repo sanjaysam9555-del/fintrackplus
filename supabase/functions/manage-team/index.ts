@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "create_member": {
-        const { email, name, role } = body;
+        const { email, name, role, existingPartnerId } = body;
 
         if (!email || !name || !role) {
           return new Response(
@@ -175,13 +175,21 @@ Deno.serve(async (req) => {
           );
         }
 
-        // If role is owner, also create a Partner entry
+        // If role is owner, link to existing partner or create new one
         if (role === "owner") {
-          await adminClient.from("partners").insert({
-            user_id: newUser.user.id,
-            name,
-            org_id: orgId,
-          });
+          if (existingPartnerId) {
+            await adminClient
+              .from("partners")
+              .update({ user_id: newUser.user.id })
+              .eq("id", existingPartnerId)
+              .eq("org_id", orgId);
+          } else {
+            await adminClient.from("partners").insert({
+              user_id: newUser.user.id,
+              name,
+              org_id: orgId,
+            });
+          }
         }
 
         return new Response(

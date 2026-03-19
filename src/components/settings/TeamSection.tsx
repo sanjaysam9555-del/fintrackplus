@@ -46,6 +46,8 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [existingPartnerId, setExistingPartnerId] = useState<string | null>(null);
+  const [partners, setPartners] = useState<{ id: string; name: string; user_id: string }[]>([]);
 
   const fetchMembers = async () => {
     if (!user) return;
@@ -80,8 +82,14 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
     }
   };
 
+  const fetchPartners = async () => {
+    const { data } = await supabase.from('partners').select('id, name, user_id');
+    if (data) setPartners(data);
+  };
+
   useEffect(() => {
     fetchMembers();
+    fetchPartners();
   }, [user]);
 
   const handleAddMember = async (e: React.FormEvent) => {
@@ -91,7 +99,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
     setIsSubmitting(true);
     try {
       const { data, error } = await supabase.functions.invoke('manage-team', {
-        body: { action: 'create_member', email, name, role },
+        body: { action: 'create_member', email, name, role, existingPartnerId },
       });
 
       if (error) throw error;
@@ -102,6 +110,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       setEmail('');
       setName('');
       setRole('employee');
+      setExistingPartnerId(null);
       fetchMembers();
     } catch (err: any) {
       toast.error(err.message || 'Failed to add member');
@@ -291,6 +300,24 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                   <SelectItem value="employee">Employee</SelectItem>
                 </SelectContent>
               </Select>
+              {role === 'owner' && (
+                <Select
+                  value={existingPartnerId || '__new__'}
+                  onValueChange={(v) => setExistingPartnerId(v === '__new__' ? null : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Link to existing partner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__new__">Create new partner</SelectItem>
+                    {partners.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
               <div className="flex gap-2">
                 <Button
                   type="button"
@@ -300,6 +327,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                     setEmail('');
                     setName('');
                     setRole('employee');
+                    setExistingPartnerId(null);
                   }}
                   className="flex-1"
                 >
