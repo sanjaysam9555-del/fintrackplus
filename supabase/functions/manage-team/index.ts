@@ -149,16 +149,19 @@ Deno.serve(async (req) => {
           );
         }
 
-        // Insert org_member
+        // Upsert org_member (handle_new_user trigger may have already inserted a row)
         const { error: memberError } = await adminClient
           .from("org_members")
-          .insert({
-            org_id: orgId,
-            user_id: newUser.user.id,
-            role,
-            must_change_password: true,
-            status: "active",
-          });
+          .upsert(
+            {
+              org_id: orgId,
+              user_id: newUser.user.id,
+              role,
+              must_change_password: true,
+              status: "active",
+            },
+            { onConflict: "user_id", ignoreDuplicates: false }
+          );
 
         if (memberError) {
           // Cleanup: delete the created auth user
