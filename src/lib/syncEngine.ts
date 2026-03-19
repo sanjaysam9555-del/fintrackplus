@@ -512,15 +512,18 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined,
           createdAt: t.created_at || new Date().toISOString(),
         })),
-        partners: cloudPartners.map(p => ({
-          id: (p as { id: string }).id,
-          name: (p as { name: string }).name,
-          color: (p as { color: string }).color,
-          initialCashBalance: Number((p as { initial_cash_balance: number }).initial_cash_balance) || 0,
-          initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
-          avatarUrl: (p as { avatar_url?: string }).avatar_url || undefined,
-          createdAt: (p as { created_at: string }).created_at.split('T')[0]
-        })),
+        partners: cloudPartners.map(p => {
+          const linkedProfile = profileByUserId.get((p as { user_id?: string }).user_id);
+          return {
+            id: (p as { id: string }).id,
+            name: linkedProfile?.name || (p as { name: string }).name,
+            color: (p as { color: string }).color,
+            initialCashBalance: Number((p as { initial_cash_balance: number }).initial_cash_balance) || 0,
+            initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
+            avatarUrl: linkedProfile?.avatar_url || (p as { avatar_url?: string }).avatar_url || undefined,
+            createdAt: (p as { created_at: string }).created_at.split('T')[0]
+          };
+        }),
         projectLabels: cloudProjectLabels.map(l => ({
           id: (l as { id: string }).id,
           name: (l as { name: string }).name,

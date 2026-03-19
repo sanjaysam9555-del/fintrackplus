@@ -201,30 +201,41 @@ export const useFinanceStore = create<FinanceStore>()(
       
       const currentState = get();
       
-      // Helper to merge arrays: keep pending/recently-synced inserts from local, exclude pending deletes from cloud
+      // Helper to merge arrays: keep pending/recently-synced inserts from local, exclude pending deletes from cloud,
+      // and preserve local versions for records with pending updates so stale refreshes don't overwrite avatars/names.
       const mergeData = <T extends { id: string }>(
         cloudItems: T[],
         localItems: T[],
         entityType: string
       ): T[] => {
         const insertIds = pendingInserts.get(entityType) || new Set();
+        const updateIds = pendingUpdates.get(entityType) || new Set();
         const recentIds = recentInserts.get(entityType) || new Set();
         const deleteIds = pendingDeletes.get(entityType) || new Set();
+        const localById = new Map(localItems.map(item => [item.id, item]));
         
-        // Start with cloud items, excluding ones pending delete
-        const merged = cloudItems.filter(item => !deleteIds.has(item.id));
+        const merged = cloudItems
+          .filter(item => !deleteIds.has(item.id))
+          .map(item => {
+            const localItem = localById.get(item.id);
+            const hasPendingUpdate = updateIds.has(item.id);
+            const isRecentlySynced = recentIds.has(item.id);
+
+            if (localItem && (hasPendingUpdate || isRecentlySynced)) {
+              return localItem;
+            }
+
+            return item;
+          });
         
-        // Build set of IDs already in cloud
         const cloudIds = new Set(cloudItems.map(c => c.id));
         
-        // Add locally inserted items that aren't in cloud yet
-        // Include both pending inserts AND recently synced items (prevents race condition)
         localItems.forEach(localItem => {
-          const isPending = insertIds.has(localItem.id);
-          const isRecentlysynced = recentIds.has(localItem.id);
+          const isPendingInsert = insertIds.has(localItem.id);
+          const isRecentlySynced = recentIds.has(localItem.id);
           const notInCloud = !cloudIds.has(localItem.id);
           
-          if ((isPending || isRecentlysynced) && notInCloud) {
+          if ((isPendingInsert || isRecentlySynced) && notInCloud) {
             merged.push(localItem);
           }
         });

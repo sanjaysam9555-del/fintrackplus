@@ -296,6 +296,7 @@ export const useCloudSync = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, debouncedFetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, debouncedFetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'partners' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, debouncedFetch)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'project_labels' }, debouncedFetch)
       .subscribe();
 
