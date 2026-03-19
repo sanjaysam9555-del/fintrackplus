@@ -327,6 +327,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                     setEmail('');
                     setName('');
                     setRole('employee');
+                    setExistingPartnerId(null);
                   }}
                   className="flex-1"
                 >
