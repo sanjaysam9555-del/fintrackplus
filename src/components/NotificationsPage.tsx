@@ -252,6 +252,9 @@ export const NotificationsPage = () => {
                     
                     <p className="text-xs text-muted-foreground mt-2">
                       {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
+                      {notification.actorName && (
+                        <span> · by {notification.actorName}</span>
+                      )}
                     </p>
                   </div>
                 </div>

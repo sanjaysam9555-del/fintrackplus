@@ -124,5 +124,6 @@ export interface Notification {
   read: boolean;
   details?: NotificationChange[];
   entityType?: string;
+  actorName?: string;
   entityId?: string;
 }
