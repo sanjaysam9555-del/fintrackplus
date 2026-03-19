@@ -299,6 +299,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
   const [showUnassignedSheet, setShowUnassignedSheet] = useState(false);
+  const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
+  const [isOwnerLinkedDelete, setIsOwnerLinkedDelete] = useState(false);
   
   // Form state
   const [name, setName] = useState("");
