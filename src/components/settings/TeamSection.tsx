@@ -67,6 +67,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const [selectedPartnerId, setSelectedPartnerId] = useState<string>('');
   const [isLinking, setIsLinking] = useState(false);
   const [otherOwners, setOtherOwners] = useState<{ user_id: string }[]>([]);
+  const [deleteConfirmMember, setDeleteConfirmMember] = useState<{ id: string; name: string; role: AppRole } | null>(null);
   const [currentUserName, setCurrentUserName] = useState('');
 
   const fetchMembers = async () => {

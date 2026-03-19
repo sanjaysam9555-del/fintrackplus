@@ -275,13 +275,46 @@ export const useFinanceStore = create<FinanceStore>()(
         // Sync to cloud
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase
-            .from('profiles')
-            .update({ 
-              name: profile.name, 
-              avatar_url: profile.avatar 
-            })
-            .eq('user_id', user.id);
+          const profileUpdates: Record<string, unknown> = {};
+          if (profile.name !== undefined) profileUpdates.name = profile.name;
+          if (profile.avatar !== undefined) profileUpdates.avatar_url = profile.avatar || null;
+
+          if (Object.keys(profileUpdates).length > 0) {
+            await supabase
+              .from('profiles')
+              .update(profileUpdates)
+              .eq('user_id', user.id);
+          }
+
+          // Sync name/avatar to linked partner record
+          const partnerUpdates: Record<string, unknown> = {};
+          if (profile.name !== undefined) partnerUpdates.name = profile.name;
+          if (profile.avatar !== undefined) partnerUpdates.avatar_url = profile.avatar || null;
+
+          if (Object.keys(partnerUpdates).length > 0) {
+            const { data: linkedPartner } = await supabase
+              .from('partners')
+              .select('id')
+              .eq('user_id', user.id)
+              .maybeSingle();
+
+            if (linkedPartner) {
+              await supabase.from('partners').update(partnerUpdates).eq('id', linkedPartner.id);
+
+              // Update local partners state immediately
+              set((state) => ({
+                partners: state.partners.map(p =>
+                  p.id === linkedPartner.id
+                    ? {
+                        ...p,
+                        ...(profile.name !== undefined ? { name: profile.name } : {}),
+                        ...(profile.avatar !== undefined ? { avatarUrl: profile.avatar || undefined } : {}),
+                      }
+                    : p
+                ),
+              }));
+            }
+          }
         }
         
         // Log distinct notifications based on what changed

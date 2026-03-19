@@ -428,7 +428,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setEditingPartner(partnerId);
   };
   
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!editingPartner || !name.trim()) return;
     
     updatePartner(editingPartner, {
@@ -438,46 +438,141 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       initialOnlineBalance: parseFloat(initialOnline) || 0,
       avatarUrl,
     }, userId);
+
+    // If this partner is linked to a user (owner), sync name/avatar to their profile
+    const partnerRecord = partners.find(p => p.id === editingPartner);
+    if (partnerRecord) {
+      const { data: dbPartner } = await supabase
+        .from('partners')
+        .select('user_id')
+        .eq('id', editingPartner)
+        .maybeSingle();
+
+      if (dbPartner?.user_id) {
+        const profileUpdates: Record<string, unknown> = { name: name.trim() };
+        if (avatarUrl !== undefined) profileUpdates.avatar_url = avatarUrl || null;
+        await supabase.from('profiles').update(profileUpdates).eq('user_id', dbPartner.user_id);
+      }
+    }
     
     resetForm();
   };
+
+  const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
+  const [isOwnerLinkedDelete, setIsOwnerLinkedDelete] = useState(false);
   
   const handleDelete = async (partnerId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     const partner = partners.find(p => p.id === partnerId);
     if (!partner) return;
 
-    // If other owners exist, require approval
-    if (otherOwners.length > 0 && user && orgId) {
-      if (!confirm(`Request approval to delete "${partner.name}"?`)) return;
+    // Check if this partner is linked to a user (owner-linked)
+    const { data: dbPartner } = await supabase
+      .from('partners')
+      .select('user_id')
+      .eq('id', partnerId)
+      .maybeSingle();
 
-      try {
-        const { error } = await supabase.from('change_approvals').insert({
-          org_id: orgId,
-          requester_user_id: user.id,
-          target_user_id: otherOwners[0].user_id,
-          entity_type: 'partner',
-          entity_id: partnerId,
-          action: 'delete',
-          proposed_changes: { name: partner.name },
-          status: 'pending',
-        });
-        if (error) throw error;
+    const { data: orgMember } = dbPartner?.user_id
+      ? await supabase
+          .from('org_members')
+          .select('id')
+          .eq('user_id', dbPartner.user_id)
+          .eq('status', 'active')
+          .maybeSingle()
+      : { data: null };
 
-        addNotification({
-          type: 'partner',
-          title: 'Deletion Requested',
-          message: `${currentUserName} requested deletion of partner "${partner.name}"`,
-        });
+    setIsOwnerLinkedDelete(!!orgMember);
+    setDeleteConfirmPartner(partner);
+  };
 
-        toast.success('Deletion request sent for approval');
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to create approval request');
+  const confirmDelete = async () => {
+    if (!deleteConfirmPartner) return;
+    const partner = deleteConfirmPartner;
+    setDeleteConfirmPartner(null);
+
+    if (isOwnerLinkedDelete) {
+      // Owner-linked: route through manage-team for cascading delete
+      if (otherOwners.length > 0 && user && orgId) {
+        try {
+          const { error } = await supabase.from('change_approvals').insert({
+            org_id: orgId,
+            requester_user_id: user.id,
+            target_user_id: otherOwners[0].user_id,
+            entity_type: 'partner',
+            entity_id: partner.id,
+            action: 'delete',
+            proposed_changes: { name: partner.name },
+            status: 'pending',
+          });
+          if (error) throw error;
+          addNotification({
+            type: 'partner',
+            title: 'Deletion Requested',
+            message: `${currentUserName} requested deletion of partner "${partner.name}"`,
+          });
+          toast.success('Deletion request sent for approval');
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to create approval request');
+        }
+      } else {
+        // Find the org_member id for this partner's user_id
+        const { data: dbPartner } = await supabase
+          .from('partners')
+          .select('user_id')
+          .eq('id', partner.id)
+          .maybeSingle();
+
+        if (dbPartner?.user_id) {
+          const { data: member } = await supabase
+            .from('org_members')
+            .select('id')
+            .eq('user_id', dbPartner.user_id)
+            .eq('status', 'active')
+            .maybeSingle();
+
+          if (member) {
+            try {
+              const { data, error } = await supabase.functions.invoke('manage-team', {
+                body: { action: 'remove_member', memberId: member.id },
+              });
+              if (error) throw error;
+              if (data?.error) throw new Error(data.error);
+              toast.success(`${partner.name} removed from app`);
+              // Refresh local state
+              window.location.reload();
+            } catch (err: any) {
+              toast.error(err.message || 'Failed to remove member');
+            }
+          }
+        }
       }
     } else {
-      // No other owners — delete directly
-      if (confirm('Delete this partner? Transactions will be unassigned.')) {
-        deletePartner(partnerId, userId);
+      // Non-owner partner: simple delete
+      if (otherOwners.length > 0 && user && orgId) {
+        try {
+          const { error } = await supabase.from('change_approvals').insert({
+            org_id: orgId,
+            requester_user_id: user.id,
+            target_user_id: otherOwners[0].user_id,
+            entity_type: 'partner',
+            entity_id: partner.id,
+            action: 'delete',
+            proposed_changes: { name: partner.name },
+            status: 'pending',
+          });
+          if (error) throw error;
+          addNotification({
+            type: 'partner',
+            title: 'Deletion Requested',
+            message: `${currentUserName} requested deletion of partner "${partner.name}"`,
+          });
+          toast.success('Deletion request sent for approval');
+        } catch (err: any) {
+          toast.error(err.message || 'Failed to create approval request');
+        }
+      } else {
+        deletePartner(partner.id, userId);
       }
     }
   };
