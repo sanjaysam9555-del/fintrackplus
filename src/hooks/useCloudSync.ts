@@ -280,68 +280,15 @@ export const useCloudSync = () => {
       }, 300); // 300ms debounce
     };
 
+    // RLS handles org scoping — no user_id filter needed for org-wide realtime updates
     const channel = supabase
       .channel('db-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transactions',
-          filter: `user_id=eq.${user.id}`,
-        },
-        debouncedFetch
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'categories',
-          filter: `user_id=eq.${user.id}`,
-        },
-        debouncedFetch
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'vendors',
-          filter: `user_id=eq.${user.id}`,
-        },
-        debouncedFetch
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'projects',
-          filter: `user_id=eq.${user.id}`,
-        },
-        debouncedFetch
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'partners',
-          filter: `user_id=eq.${user.id}`,
-        },
-        debouncedFetch
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'project_labels',
-          filter: `user_id=eq.${user.id}`,
-        },
-        debouncedFetch
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'partners' }, debouncedFetch)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_labels' }, debouncedFetch)
       .subscribe();
 
     return () => {

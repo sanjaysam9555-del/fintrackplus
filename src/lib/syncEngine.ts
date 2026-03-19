@@ -195,6 +195,25 @@ export const getQueueSize = (): number => {
 
 // ============ Sync Operations ============
 
+// ============ Org ID Resolution (cached per session) ============
+
+let _cachedOrgId: string | null = null;
+
+export const resolveOrgId = async (userId: string): Promise<string | null> => {
+  if (_cachedOrgId) return _cachedOrgId;
+  try {
+    const { data } = await supabase.rpc('get_user_org_id', { _user_id: userId });
+    _cachedOrgId = (data as string) || null;
+    return _cachedOrgId;
+  } catch (err) {
+    console.error('[SyncEngine] Failed to resolve org_id:', err);
+    return null;
+  }
+};
+
+// Clear cached org on logout (call from auth hook if needed)
+export const clearCachedOrgId = () => { _cachedOrgId = null; };
+
 export const processOperation = async (operation: SyncOperation): Promise<{ success: boolean; error?: string }> => {
   const { type, entity, entityId, data, userId } = operation;
   const tableName = getTableName(entity);
@@ -203,34 +222,33 @@ export const processOperation = async (operation: SyncOperation): Promise<{ succ
     let result;
     
     switch (type) {
-      case 'insert':
-        // Use upsert for idempotency (last-write-wins)
+      case 'insert': {
+        // Resolve org_id for inserts so RLS INSERT checks pass
+        const orgId = await resolveOrgId(userId);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         result = await (supabase.from(tableName) as any).upsert(
           {
             ...data,
             id: entityId,
             user_id: userId,
+            org_id: orgId,
           },
           { onConflict: 'id' }
         );
         break;
+      }
         
       case 'update': {
+        // RLS handles org-scoped access — no need for .eq('user_id', userId)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let updateQuery = (supabase.from(tableName) as any).update(data).eq('id', entityId);
-        // Partners store the linked account's user_id, not the acting user — RLS handles auth
-        if (entity !== 'partner') updateQuery = updateQuery.eq('user_id', userId);
-        result = await updateQuery;
+        result = await (supabase.from(tableName) as any).update(data).eq('id', entityId);
         break;
       }
         
       case 'delete': {
+        // RLS handles org-scoped access — no need for .eq('user_id', userId)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let deleteQuery = (supabase.from(tableName) as any).delete().eq('id', entityId);
-        // Partners store the linked account's user_id, not the acting user — RLS handles auth
-        if (entity !== 'partner') deleteQuery = deleteQuery.eq('user_id', userId);
-        result = await deleteQuery;
+        result = await (supabase.from(tableName) as any).delete().eq('id', entityId);
         break;
       }
     }

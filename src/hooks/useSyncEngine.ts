@@ -25,28 +25,33 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
-// Ensure "Not Specified" vendor + categories exist in backend for this user
+// Ensure "Not Specified" vendor + categories exist in backend for this org
 const ensureDefaultTaxonomy = async (userId: string) => {
   try {
+    // Resolve org_id for inserts
+    const { data: orgData } = await supabase.rpc('get_user_org_id', { _user_id: userId });
+    const orgId = orgData as string | null;
+
+    // RLS scopes SELECTs to the org — no need for .eq('user_id', ...)
     const [{ data: vendors }, { data: cats }] = await Promise.all([
-      supabase.from('vendors').select('id, name').eq('user_id', userId).eq('name', 'Not Specified'),
-      supabase.from('categories').select('id, name, type').eq('user_id', userId).eq('name', 'Not Specified'),
+      supabase.from('vendors').select('id, name').eq('name', 'Not Specified'),
+      supabase.from('categories').select('id, name, type').eq('name', 'Not Specified'),
     ]);
 
     const inserts: (() => PromiseLike<unknown>)[] = [];
 
     if (!vendors || vendors.length === 0) {
-      inserts.push(() => supabase.from('vendors').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'Store', color: '#6B7280' }));
+      inserts.push(() => supabase.from('vendors').insert({ id: uuidv4(), user_id: userId, org_id: orgId, name: 'Not Specified', icon: 'Store', color: '#6B7280' }));
     }
 
     const hasExpense = cats?.some(c => c.type === 'expense');
     const hasIncome = cats?.some(c => c.type === 'income');
 
     if (!hasExpense) {
-      inserts.push(() => supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' }));
+      inserts.push(() => supabase.from('categories').insert({ id: uuidv4(), user_id: userId, org_id: orgId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'expense' }));
     }
     if (!hasIncome) {
-      inserts.push(() => supabase.from('categories').insert({ id: uuidv4(), user_id: userId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' }));
+      inserts.push(() => supabase.from('categories').insert({ id: uuidv4(), user_id: userId, org_id: orgId, name: 'Not Specified', icon: 'other', color: '#6B7280', type: 'income' }));
     }
 
     if (inserts.length > 0) {
