@@ -46,6 +46,8 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [existingPartnerId, setExistingPartnerId] = useState<string | null>(null);
+  const [partners, setPartners] = useState<{ id: string; name: string; user_id: string }[]>([]);
 
   const fetchMembers = async () => {
     if (!user) return;
