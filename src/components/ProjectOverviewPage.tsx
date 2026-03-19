@@ -93,6 +93,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       expectedMargin: project.expectedMargin || 0,
       color: project.color,
       labelIds: project.labelIds || [],
+      assignedEmployeeIds: project.assignedEmployeeIds || [],
     });
     setNewLabelName('');
   };
