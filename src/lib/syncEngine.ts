@@ -216,21 +216,23 @@ export const processOperation = async (operation: SyncOperation): Promise<{ succ
         );
         break;
         
-      case 'update':
+      case 'update': {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        result = await (supabase.from(tableName) as any)
-          .update(data)
-          .eq('id', entityId)
-          .eq('user_id', userId);
+        let updateQuery = (supabase.from(tableName) as any).update(data).eq('id', entityId);
+        // Partners store the linked account's user_id, not the acting user — RLS handles auth
+        if (entity !== 'partner') updateQuery = updateQuery.eq('user_id', userId);
+        result = await updateQuery;
         break;
+      }
         
-      case 'delete':
+      case 'delete': {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        result = await (supabase.from(tableName) as any)
-          .delete()
-          .eq('id', entityId)
-          .eq('user_id', userId);
+        let deleteQuery = (supabase.from(tableName) as any).delete().eq('id', entityId);
+        // Partners store the linked account's user_id, not the acting user — RLS handles auth
+        if (entity !== 'partner') deleteQuery = deleteQuery.eq('user_id', userId);
+        result = await deleteQuery;
         break;
+      }
     }
     
     if (result?.error) {
