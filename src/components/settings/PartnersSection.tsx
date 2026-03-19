@@ -888,6 +888,36 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         endDate={dateRange.end}
         userId={userId}
       />
+
+      {/* Critical Delete Warning Dialog */}
+      <AlertDialog open={!!deleteConfirmPartner} onOpenChange={(open) => !open && setDeleteConfirmPartner(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle size={20} />
+              Delete {deleteConfirmPartner?.name}?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              {isOwnerLinkedDelete ? (
+                <>This will <strong>permanently remove</strong> this member across the entire app — their <strong>profile, partner record, team membership, transaction assignments, and login</strong> will all be deleted. This action cannot be undone.</>
+              ) : (
+                <>Delete this partner? Their transactions will be unassigned.</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isOwnerLinkedDelete
+                ? (otherOwners.length > 0 ? 'Request Removal' : 'Remove Permanently')
+                : (otherOwners.length > 0 ? 'Request Deletion' : 'Delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
