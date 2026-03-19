@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     switch (action) {
       case "create_member": {
-        const { email, name, role } = body;
+        const { email, name, role, existingPartnerId } = body;
 
         if (!email || !name || !role) {
           return new Response(
