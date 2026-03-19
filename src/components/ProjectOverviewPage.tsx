@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check, Tag, ArrowDown, Pencil } from "lucide-react";
+import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check, Tag, ArrowDown, Pencil, Users } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
@@ -10,6 +10,8 @@ import { formatCompactCurrency } from "@/lib/constants";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,14 +52,35 @@ const getHealthDot = (status: HealthStatus): string => {
 
 export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
   const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject, projectLabels, addProjectLabel } = useFinanceStore();
+  const { isOwner, isAdmin } = useUserRole();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [archiveProject, setArchiveProject] = useState<Project | null>(null);
   const [deleteProjectState, setDeleteProjectState] = useState<Project | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
-  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[] });
+  const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[], assignedEmployeeIds: [] as string[] });
   const [newLabelName, setNewLabelName] = useState('');
+  const [employees, setEmployees] = useState<{ user_id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      const { data: members } = await supabase
+        .from('org_members')
+        .select('user_id, role')
+        .eq('role', 'employee')
+        .eq('status', 'active');
+      if (members && members.length > 0) {
+        const userIds = members.map(m => m.user_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', userIds);
+        setEmployees((profiles || []).map(p => ({ user_id: p.user_id, name: p.name || 'Unknown' })));
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   const startEdit = (project: Project) => {
     setEditingProjectId(project.id);
@@ -70,6 +93,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       expectedMargin: project.expectedMargin || 0,
       color: project.color,
       labelIds: project.labelIds || [],
+      assignedEmployeeIds: project.assignedEmployeeIds || [],
     });
     setNewLabelName('');
   };
@@ -87,6 +111,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
+      assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
     toast.success("Project updated");
     setEditingProjectId(null);
@@ -109,10 +134,11 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
       expectedMargin: formData.expectedMargin,
       color: formData.color,
       labelIds: formData.labelIds,
+      assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
     toast.success("Project added");
     setShowAddForm(false);
-    setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] });
+    setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] });
     setNewLabelName('');
   };
 
@@ -224,7 +250,7 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
             <Search size={18} className="text-muted-foreground" />
           </button>
           <button 
-            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] }); setNewLabelName(''); }}
+            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] }); setNewLabelName(''); }}
             className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             title="Add Project"
           >
@@ -345,6 +371,36 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                   )}
                 </div>
               </div>
+              {/* Assign Employees */}
+              {(isOwner || isAdmin) && employees.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                    <Users size={12} /> Assign Employees
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {employees.map((emp) => {
+                      const isSelected = formData.assignedEmployeeIds.includes(emp.user_id);
+                      return (
+                        <button
+                          key={emp.user_id}
+                          type="button"
+                          onClick={() => setFormData({
+                            ...formData,
+                            assignedEmployeeIds: isSelected
+                              ? formData.assignedEmployeeIds.filter(id => id !== emp.user_id)
+                              : [...formData.assignedEmployeeIds, emp.user_id],
+                          })}
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                            isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                          }`}
+                        >
+                          {emp.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <Button onClick={handleAddProject} className="w-full" size="sm">
                 <Check size={14} className="mr-1" /> Add Project
               </Button>
@@ -695,6 +751,36 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
                             )}
                           </div>
                         </div>
+                        {/* Assign Employees */}
+                        {(isOwner || isAdmin) && employees.length > 0 && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                              <Users size={12} /> Assign Employees
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {employees.map((emp) => {
+                                const isSelected = formData.assignedEmployeeIds.includes(emp.user_id);
+                                return (
+                                  <button
+                                    key={emp.user_id}
+                                    type="button"
+                                    onClick={() => setFormData({
+                                      ...formData,
+                                      assignedEmployeeIds: isSelected
+                                        ? formData.assignedEmployeeIds.filter(id => id !== emp.user_id)
+                                        : [...formData.assignedEmployeeIds, emp.user_id],
+                                    })}
+                                    className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground hover:bg-muted/80'
+                                    }`}
+                                  >
+                                    {emp.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                         <div className="flex gap-2">
                           <Button variant="outline" onClick={() => setEditingProjectId(null)} className="flex-1" size="sm">
                             Cancel
