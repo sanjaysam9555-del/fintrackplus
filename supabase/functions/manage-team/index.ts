@@ -223,6 +223,23 @@ Deno.serve(async (req) => {
         // If role is owner, link to existing partner or create new one
         if (role === "owner") {
           if (existingPartnerId) {
+            const { data: selectedPartner, error: selectedPartnerError } = await adminClient
+              .from("partners")
+              .select("id, org_id, user_id")
+              .eq("id", existingPartnerId)
+              .eq("org_id", orgId)
+              .maybeSingle();
+
+            if (selectedPartnerError || !selectedPartner) {
+              return new Response(
+                JSON.stringify({ error: "Selected partner not found in this organization" }),
+                {
+                  status: 404,
+                  headers: { ...corsHeaders, "Content-Type": "application/json" },
+                }
+              );
+            }
+
             await adminClient
               .from("partners")
               .update({ user_id: userId })
