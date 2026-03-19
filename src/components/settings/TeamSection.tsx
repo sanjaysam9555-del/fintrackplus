@@ -4,6 +4,8 @@ import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User } f
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { Badge } from '../ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -17,7 +19,7 @@ interface TeamMember {
   role: AppRole;
   status: string;
   created_at: string;
-  profile?: { name: string; email?: string };
+  profile?: { name: string; email?: string | null; avatar_url?: string | null };
   linkedPartner?: { id: string; name: string } | null;
 }
 
@@ -25,17 +27,27 @@ interface TeamSectionProps {
   onBack: () => void;
 }
 
-const roleIcons: Record<AppRole, React.ElementType> = {
-  owner: Shield,
-  admin: UserCheck,
-  employee: User,
+const roleColors: Record<AppRole, string> = {
+  owner: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/20',
+  admin: 'bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/20',
+  employee: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
 };
 
-const roleColors: Record<AppRole, string> = {
-  owner: 'text-amber-600 dark:text-amber-400 bg-amber-500/10',
-  admin: 'text-blue-600 dark:text-blue-400 bg-blue-500/10',
-  employee: 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10',
+const avatarColors: Record<AppRole, string> = {
+  owner: 'bg-amber-500/10 text-amber-700 dark:text-amber-400',
+  admin: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
+  employee: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400',
 };
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .map(w => w[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+}
 
 export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const { user } = useAuth();
@@ -58,34 +70,14 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const fetchMembers = async () => {
     if (!user) return;
     try {
-      const { data: orgMembers, error } = await supabase
-        .from('org_members')
-        .select('id, user_id, role, status, created_at');
+      const { data, error } = await supabase.functions.invoke('manage-team', {
+        body: { action: 'list_members' },
+      });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
-      // Fetch partners for the org
-      const { data: orgPartners } = await supabase.from('partners').select('id, name, user_id');
-
-      const membersWithProfiles: TeamMember[] = [];
-      for (const m of orgMembers || []) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('name')
-          .eq('user_id', m.user_id)
-          .maybeSingle();
-
-        const linkedPartner = (orgPartners || []).find(p => p.user_id === m.user_id);
-
-        membersWithProfiles.push({
-          ...m,
-          role: m.role as AppRole,
-          profile: profile ? { name: profile.name } : undefined,
-          linkedPartner: linkedPartner ? { id: linkedPartner.id, name: linkedPartner.name } : null,
-        });
-      }
-
-      setMembers(membersWithProfiles);
+      setMembers((data.members || []).map((m: any) => ({ ...m, role: m.role as AppRole })));
     } catch (err) {
       console.error('Failed to fetch team members:', err);
     } finally {
@@ -212,21 +204,11 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
               <code className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-mono select-all">
                 {tempPassword}
               </code>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCopyPassword}
-                className="shrink-0"
-              >
+              <Button size="sm" variant="outline" onClick={handleCopyPassword} className="shrink-0">
                 {copied ? <Check size={14} /> : <Copy size={14} />}
               </Button>
             </div>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="mt-2 w-full"
-              onClick={() => setTempPassword(null)}
-            >
+            <Button size="sm" variant="ghost" className="mt-2 w-full" onClick={() => setTempPassword(null)}>
               Dismiss
             </Button>
           </motion.div>
@@ -240,10 +222,10 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
             {[1, 2].map(i => (
               <div key={i} className="bg-card rounded-2xl p-4 border border-border">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-muted skeleton" />
+                  <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-24 bg-muted rounded skeleton" />
-                    <div className="h-3 w-32 bg-muted rounded skeleton" />
+                    <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                    <div className="h-3 w-32 bg-muted rounded animate-pulse" />
                   </div>
                 </div>
               </div>
@@ -251,9 +233,11 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           </div>
         ) : (
           members.map((member) => {
-            const RoleIcon = roleIcons[member.role];
             const isCurrentUser = member.user_id === user?.id;
             const isEditing = editingMemberId === member.id;
+            const memberName = member.profile?.name || 'Unknown';
+            const initials = getInitials(memberName);
+
             return (
               <motion.div
                 key={member.id}
@@ -262,32 +246,41 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                 className="bg-card rounded-2xl p-4 border border-border"
               >
                 <div className="flex items-center gap-3">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center",
-                    roleColors[member.role]
-                  )}>
-                    <RoleIcon size={18} />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">
-                      {member.profile?.name || 'Unknown'}
-                      {isCurrentUser && (
-                        <span className="text-xs text-muted-foreground ml-1">(You)</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground capitalize">{member.role}</p>
-                    {member.role === 'owner' && member.linkedPartner && (
-                      <p className="text-xs text-primary mt-0.5">
+                  <Avatar className="h-10 w-10">
+                    {member.profile?.avatar_url ? (
+                      <AvatarImage src={member.profile.avatar_url} alt={memberName} />
+                    ) : null}
+                    <AvatarFallback className={cn("text-xs font-semibold", avatarColors[member.role])}>
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">
+                        {memberName}
+                        {isCurrentUser && (
+                          <span className="text-xs text-muted-foreground ml-1">(You)</span>
+                        )}
+                      </p>
+                      <Badge
+                        variant="outline"
+                        className={cn("text-[10px] px-1.5 py-0 capitalize shrink-0", roleColors[member.role])}
+                      >
+                        {member.role}
+                      </Badge>
+                    </div>
+                    {member.profile?.email && (
+                      <p className="text-xs text-muted-foreground truncate">{member.profile.email}</p>
+                    )}
+                    {member.linkedPartner && (
+                      <p className="text-xs text-primary mt-0.5 truncate">
                         Partner: {member.linkedPartner.name}
                       </p>
                     )}
-                    {member.role === 'owner' && !member.linkedPartner && (
-                      <p className="text-xs text-muted-foreground/60 mt-0.5">
-                        No partner linked
-                      </p>
-                    )}
                   </div>
-                  <div className="flex items-center gap-1">
+
+                  <div className="flex items-center gap-1 shrink-0">
                     {isOwner && member.role === 'owner' && (
                       <Button
                         size="sm"
@@ -311,7 +304,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                         size="sm"
                         variant="ghost"
                         className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleRemoveMember(member.id, member.profile?.name || 'Member')}
+                        onClick={() => handleRemoveMember(member.id, memberName)}
                       >
                         <Trash2 size={14} />
                       </Button>
@@ -328,18 +321,13 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                   >
                     <p className="text-xs text-muted-foreground">Link to partner</p>
                     <div className="flex gap-2">
-                      <Select
-                        value={selectedPartnerId}
-                        onValueChange={setSelectedPartnerId}
-                      >
+                      <Select value={selectedPartnerId} onValueChange={setSelectedPartnerId}>
                         <SelectTrigger className="flex-1">
                           <SelectValue placeholder="Select partner" />
                         </SelectTrigger>
                         <SelectContent>
                           {partners.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -379,23 +367,10 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           >
             <h3 className="font-medium">Add New Member</h3>
             <form onSubmit={handleAddMember} className="space-y-3">
-              <Input
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
+              <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+              <Input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
               <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="owner">Owner</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
@@ -407,15 +382,11 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                   value={existingPartnerId || '__new__'}
                   onValueChange={(v) => setExistingPartnerId(v === '__new__' ? null : v)}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Link to existing partner" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Link to existing partner" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__new__">Create new partner</SelectItem>
                     {partners.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -424,22 +395,12 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                 <Button
                   type="button"
                   variant="ghost"
-                  onClick={() => {
-                    setShowAddForm(false);
-                    setEmail('');
-                    setName('');
-                    setRole('employee');
-                    setExistingPartnerId(null);
-                  }}
+                  onClick={() => { setShowAddForm(false); setEmail(''); setName(''); setRole('employee'); setExistingPartnerId(null); }}
                   className="flex-1"
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting || !email || !name}
-                  className="flex-1"
-                >
+                <Button type="submit" disabled={isSubmitting || !email || !name} className="flex-1">
                   {isSubmitting ? 'Adding…' : 'Save'}
                 </Button>
               </div>
