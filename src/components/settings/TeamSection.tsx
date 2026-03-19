@@ -317,7 +317,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                     ))}
                   </SelectContent>
                 </Select>
-              )
+              )}
               <div className="flex gap-2">
                 <Button
                   type="button"
