@@ -22,10 +22,13 @@ import {
   Cloud,
   CloudOff,
   Loader2,
-  WifiOff
+  WifiOff,
+  Shield,
+  ClipboardCheck
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
 import { ProfileEditSheet } from "./ProfileEditSheet";
 import { CategoriesSection } from "./settings/CategoriesSection";
@@ -35,6 +38,8 @@ import { ReportsSection } from "./settings/ReportsSection";
 import { PartnersSection } from "./settings/PartnersSection";
 import { LabelsSection } from "./settings/LabelsSection";
 import { AppFeaturesGuide } from "./settings/AppFeaturesGuide";
+import { TeamSection } from "./settings/TeamSection";
+import { ChangeApprovalPage } from "./settings/ChangeApprovalPage";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
