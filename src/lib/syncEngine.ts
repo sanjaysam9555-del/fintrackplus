@@ -519,14 +519,17 @@ export const createRealtimeSubscription = (
     debounceTimer = setTimeout(onDataChange, 200);
   };
 
+  // Subscribe to all changes on relevant tables (RLS handles org scoping)
   const channel = supabase
     .channel(`user-data-${userId}`)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions', filter: `user_id=eq.${userId}` }, debouncedCallback)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${userId}` }, debouncedCallback)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors', filter: `user_id=eq.${userId}` }, debouncedCallback)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${userId}` }, debouncedCallback)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'project_labels', filter: `user_id=eq.${userId}` }, debouncedCallback)
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'project_documents', filter: `user_id=eq.${userId}` }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'transactions' }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'vendors' }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'project_labels' }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'project_documents' }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'partners' }, debouncedCallback)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'change_approvals' }, debouncedCallback)
     .subscribe();
 
   return {
