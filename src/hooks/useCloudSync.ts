@@ -56,6 +56,7 @@ export const useCloudSync = () => {
       // Fetch ALL org-scoped data in parallel for faster sync
       const [
         profileResult,
+        profileRowsResult,
         categoriesResult,
         vendorsResult,
         projectsResult,
@@ -64,6 +65,7 @@ export const useCloudSync = () => {
         projectLabelsResult
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase.from('profiles').select('user_id, name, avatar_url'),
         supabase.from('categories').select('*'),
         supabase.from('vendors').select('*'),
         supabase.from('projects').select('*'),

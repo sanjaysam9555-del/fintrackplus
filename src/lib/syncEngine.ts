@@ -415,6 +415,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
     // RLS policies now scope all queries to the user's org automatically
     const [
       profileResult,
+      profileRowsResult,
       categoriesResult,
       vendorsResult,
       projectsResult,
@@ -423,6 +424,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       projectLabelsResult
     ] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
+      supabase.from('profiles').select('user_id, name, avatar_url'),
       supabase.from('categories').select('*'),
       supabase.from('vendors').select('*'),
       supabase.from('projects').select('*'),
