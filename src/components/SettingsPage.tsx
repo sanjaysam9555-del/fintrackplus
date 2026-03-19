@@ -243,6 +243,7 @@ interface SettingsPageProps {
 export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, onBackToHome, onRefresh, isRefreshing, isOnline = true, pendingCount = 0 }: SettingsPageProps) => {
   const { categories, projects, userProfile, partners, projectLabels, defaultTimeFilter, setDefaultTimeFilter, syncStatus, lastSyncedAt } = useFinanceStore();
   const { signOut, user } = useAuth();
+  const { isOwner, isAdmin, isEmployee, canViewPartners, canViewReports, canViewLogs, canManageTeam } = useUserRole();
   const { mode, setTheme, isDark, isOled } = useTheme();
   const navigate = useNavigate();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
@@ -284,48 +285,84 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   const { notifications } = useFinanceStore();
   const unreadNotifications = notifications.filter(n => !n.read).length;
   
+  // Build menu items based on role
+  const dataItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
+  
+  if (canViewPartners) {
+    dataItems.push({ 
+      icon: Users, 
+      label: "Partners", 
+      sublabel: `${partners?.length || 0} partner${(partners?.length || 0) !== 1 ? 's' : ''}`,
+      onClick: () => handleSectionChange('partners')
+    });
+  }
+  
+  if (!isEmployee) {
+    dataItems.push(
+      { 
+        icon: Grid3X3, 
+        label: "Categories", 
+        sublabel: `${categories.length} categories`,
+        onClick: () => handleSectionChange('categories')
+      },
+      { 
+        icon: Store, 
+        label: "Vendors", 
+        sublabel: `${vendorCount} vendors`,
+        onClick: () => handleSectionChange('vendors')
+      },
+      { 
+        icon: Tag, 
+        label: "Labels", 
+        sublabel: `${projectLabels.length} label${projectLabels.length !== 1 ? 's' : ''}`,
+        onClick: () => handleSectionChange('labels')
+      }
+    );
+  }
+  
+  if (canViewReports) {
+    dataItems.push({ 
+      icon: FileBarChart, 
+      label: "Reports", 
+      sublabel: "View & export",
+      onClick: () => handleSectionChange('reports')
+    });
+  }
+  
+  if (canViewLogs) {
+    dataItems.push({ 
+      icon: ScrollText, 
+      label: "Logs", 
+      sublabel: "Activity history",
+      onClick: () => handleSectionChange('logs')
+    });
+  }
+
+  // Team management section (owner only)
+  const teamItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
+  
+  if (canManageTeam) {
+    teamItems.push({ 
+      icon: Shield, 
+      label: "Team", 
+      sublabel: "Manage members",
+      onClick: () => handleSectionChange('team')
+    });
+  }
+  
+  // Change approval (owners only)
+  if (isOwner) {
+    teamItems.push({ 
+      icon: ClipboardCheck, 
+      label: "Change Approval", 
+      sublabel: "Pending requests",
+      onClick: () => handleSectionChange('approvals')
+    });
+  }
+  
   const menuItems = [
-    {
-      section: "Data Management",
-      items: [
-        { 
-          icon: Users, 
-          label: "Partners", 
-          sublabel: `${partners?.length || 0} partner${(partners?.length || 0) !== 1 ? 's' : ''}`,
-          onClick: () => handleSectionChange('partners')
-        },
-        { 
-          icon: Grid3X3, 
-          label: "Categories", 
-          sublabel: `${categories.length} categories`,
-          onClick: () => handleSectionChange('categories')
-        },
-        { 
-          icon: Store, 
-          label: "Vendors", 
-          sublabel: `${vendorCount} vendors`,
-          onClick: () => handleSectionChange('vendors')
-        },
-        { 
-          icon: Tag, 
-          label: "Labels", 
-          sublabel: `${projectLabels.length} label${projectLabels.length !== 1 ? 's' : ''}`,
-          onClick: () => handleSectionChange('labels')
-        },
-        { 
-          icon: FileBarChart, 
-          label: "Reports", 
-          sublabel: "View & export",
-          onClick: () => handleSectionChange('reports')
-        },
-        { 
-          icon: ScrollText, 
-          label: "Logs", 
-          sublabel: "Activity history",
-          onClick: () => handleSectionChange('logs')
-        },
-      ]
-    },
+    ...(dataItems.length > 0 ? [{ section: "Data Management", items: dataItems }] : []),
+    ...(teamItems.length > 0 ? [{ section: "Team & Approvals", items: teamItems }] : []),
   ];
   
   const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
@@ -336,6 +373,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   ];
   
   // Render section sub-pages using dedicated components
+  if (activeSection === 'team') {
+    return <TeamSection onBack={handleBack} />;
+  }
+  if (activeSection === 'approvals') {
+    return <ChangeApprovalPage onBack={handleBack} />;
+  }
   if (activeSection === 'partners') {
     return <PartnersSection onBack={handleBack} userId={user?.id} />;
   }
