@@ -415,6 +415,41 @@ export const ProjectDetailSheet = ({
                     </div>
                   </div>
                 )}
+                {(isOwner || isAdmin) && (
+                  <div>
+                    <Label className="text-xs">Assign Employees</Label>
+                    {employees.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {employees.map((emp) => {
+                          const selectedIds = (editForm.assignedEmployeeIds as string[] | undefined) || [];
+                          const isSelected = selectedIds.includes(emp.user_id);
+                          return (
+                            <button
+                              key={emp.user_id}
+                              type="button"
+                              onClick={() => setEditForm(f => ({
+                                ...f,
+                                assignedEmployeeIds: isSelected
+                                  ? selectedIds.filter((id: string) => id !== emp.user_id)
+                                  : [...selectedIds, emp.user_id],
+                              }))}
+                              className={cn(
+                                "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+                                isSelected
+                                  ? "bg-primary text-primary-foreground border-primary"
+                                  : "bg-transparent border-border text-muted-foreground hover:bg-muted"
+                              )}
+                            >
+                              {emp.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic mt-1">No employees added yet. Add employees via Settings → Team.</p>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-2 pt-1">
                   <Button size="sm" onClick={handleSaveEdit} className="flex-1">
                     <Check size={14} /> Save
