@@ -54,7 +54,7 @@ export const useCloudSync = () => {
         return allData;
       };
 
-      // Fetch ALL data in parallel for faster sync
+      // Fetch ALL org-scoped data in parallel for faster sync
       const [
         profileResult,
         categoriesResult,
@@ -65,12 +65,12 @@ export const useCloudSync = () => {
         projectLabelsResult
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('user_id', user.id).maybeSingle(),
-        supabase.from('categories').select('*').eq('user_id', user.id),
-        supabase.from('vendors').select('*').eq('user_id', user.id),
-        supabase.from('projects').select('*').eq('user_id', user.id),
+        supabase.from('categories').select('*'),
+        supabase.from('vendors').select('*'),
+        supabase.from('projects').select('*'),
         fetchAllTransactions(user.id),
-        supabase.from('partners').select('*').eq('user_id', user.id),
-        supabase.from('project_labels').select('*').eq('user_id', user.id)
+        supabase.from('partners').select('*'),
+        supabase.from('project_labels').select('*')
       ]);
 
       const firstError =
