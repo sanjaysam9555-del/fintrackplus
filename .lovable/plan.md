@@ -1,68 +1,47 @@
 
 
-## Make Activity Logs Org-Wide with Team Member Attribution
+## Fix Activity Logs: Include Team Member Names in Messages
 
-### Problem
-Currently, activity logs (notifications) are stored locally in each user's browser via Zustand/localStorage. This means:
-- Each team member only sees their own actions
-- Owners cannot see what employees or admins did
-- The `actorName` field exists but is meaningless since you only see your own logs
+### Problems Identified
+1. **Notification messages are generic** — they say things like "Shop ABC" instead of "John updated vendor 'Shop ABC'". The actor name exists as a separate field but isn't embedded in the message text itself.
+2. **DB is empty** — the migration added persistence, but old local-only notifications weren't migrated. Going forward, new actions will persist correctly.
+3. **Message format doesn't clearly describe the action** — "Vendor Updated" with message "Shop ABC" doesn't tell you who did what.
 
-The DB `notifications` table already exists with `org_id` and proper RLS, but it's barely used (only one insert in TeamSection).
+### Fix
 
-### Solution
-Persist every notification to the DB `notifications` table so all org members see a unified activity log. Each log entry will clearly show which team member performed the action, with detailed before/after changes.
+**`src/lib/store.ts`** — Update ALL `addNotification` calls to include the actor's name directly in the `message` field, making each log entry self-descriptive:
 
-### Database Changes
+| Action | Current Message | New Message |
+|---|---|---|
+| Add transaction | `"Rent - ₹5,000"` | `"John added expense 'Rent' — ₹5,000"` |
+| Edit transaction | `"Transaction modified"` | `"John edited transaction 'Rent'"` |
+| Delete transaction | `"Rent"` | `"John deleted transaction 'Rent' — ₹5,000"` |
+| Add vendor | `"Shop ABC"` | `"John added vendor 'Shop ABC'"` |
+| Edit vendor | `"Shop ABC"` | `"John updated vendor 'Shop ABC'"` |
+| Delete vendor | `"Shop ABC"` | `"John deleted vendor 'Shop ABC'"` |
+| Add category | `"Food"` | `"John added category 'Food'"` |
+| Edit category | `"Food"` | `"John updated category 'Food'"` |
+| Delete category | `"Food"` | `"John deleted category 'Food'"` |
+| Add project | `"Wedding"` | `"John added project 'Wedding'"` |
+| Edit project | `"Wedding"` | `"John updated project 'Wedding'"` |
+| Delete project | `"Wedding"` | `"John deleted project 'Wedding'"` |
+| Add partner | `"Alice"` | `"John added partner 'Alice'"` |
+| Edit partner | `"Alice"` | `"John updated partner 'Alice'"` |
+| Delete partner | `"Alice — 3 txns unassigned"` | `"John deleted partner 'Alice' — 3 transactions unassigned"` |
+| Add label | `"#urgent"` | `"John added label '#urgent'"` |
+| Edit label | `"#urgent"` | `"John updated label '#urgent'"` |
+| Delete label | `"#urgent"` | `"John deleted label '#urgent'"` |
+| Partner transfer | `"₹5,000 transferred..."` | `"John transferred ₹5,000 from Alice to Bob"` |
+| Profile name | `"Name updated"` | `"John changed name from 'Old' to 'New'"` |
+| Theme changed | `"Theme changed"` | `"John changed theme to Dark"` |
+| Export | `"Exported..."` | `"John exported data..."` |
+| Settings | `"Default time frame changed"` | `"John changed default time frame"` |
 
-**1. Add columns to `notifications` table** (migration):
-- `details` (jsonb, default '[]') — stores before/after change arrays
-- `entity_type` (text, nullable) — e.g. 'transaction', 'vendor', 'category'
-- `entity_id` (text, nullable) — ID of the affected entity
-- `actor_name` (text, nullable) — name of the team member who performed the action
-
-### Code Changes
-
-**2. `src/lib/store.ts`** — Modify `addNotification` to also INSERT into the DB `notifications` table:
-- After creating the local notification, fire a `supabase.from('notifications').insert(...)` with `user_id`, `org_id`, `type`, `title`, `message`, `details`, `entity_type`, `entity_id`, `actor_name`
-- The org_id will be fetched once and cached (similar to sync engine pattern)
-
-**3. `src/components/NotificationsPage.tsx`** — Fetch notifications from DB instead of local store:
-- On mount, query `supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(200)`
-- Map DB rows to the existing `Notification` interface
-- Display `actor_name` prominently on each log card (currently it's a subtle "· by Name" at the bottom — make it more visible)
-- Keep the existing filter tabs, badge system, and detail rendering
-- Subscribe to realtime on the `notifications` table for live updates
-
-**4. `src/lib/store.ts`** — Ensure `actorName` is always set correctly:
-- The current code on line 358 already sets `actorName` from `userProfile.name` — this is correct
-- Ensure all `addNotification` calls include `entityType` consistently (some are missing it)
-
-### UI Enhancement for Actor Attribution
-
-Each notification card will show the actor name more prominently:
-- Move "by {actorName}" from the timestamp line to a dedicated line right below the title, styled as a subtle badge
-- Format: **"Vendor Updated"** `EDITED` — *by John Doe*
-- For detailed logs like vendor edits: "John changed vendor name from 'ABC' to 'XYZ'"
-
-### Message Text Improvements
-
-Make notification messages more descriptive by including the actor name in the message itself:
-- Before: `"Shop ABC"` (message for vendor update)
-- After: `"John updated vendor 'Shop ABC'"` 
-- Before: `"₹5,000 expense"` (for transaction delete)
-- After: `"John deleted expense '₹5,000 - Shop ABC'"`
+The approach: Since `addNotification` already resolves `actorName` from `get().userProfile.name`, each call site will read `get().userProfile.name` and embed it into the message string before calling `addNotification`.
 
 ### Files to modify
 | File | Change |
 |---|---|
-| Migration | Add `details`, `entity_type`, `entity_id`, `actor_name` columns to `notifications` table |
-| `src/lib/store.ts` | Persist notifications to DB with all metadata; improve message text to include actor name |
-| `src/components/NotificationsPage.tsx` | Fetch from DB instead of local store; show actor name prominently; add realtime subscription |
-
-### Summary
-- All activity logs become org-wide (visible to all team members)
-- Every log clearly attributes the action to a specific team member by name
-- Detailed before/after changes are preserved in the DB
-- Realtime updates ensure all team members see logs instantly
+| `src/lib/store.ts` | Update ~25 `addNotification` calls to embed actor name in message text |
+| `src/components/SettingsPage.tsx` | Update 1 `addNotification` call (theme change) to include actor name |
 
