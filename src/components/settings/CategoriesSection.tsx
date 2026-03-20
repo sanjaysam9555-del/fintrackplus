@@ -13,6 +13,7 @@ import { CURRENCY_SYMBOL } from "@/lib/constants";
 interface CategoriesSectionProps {
   onBack: () => void;
   userId?: string;
+  isEmployee?: boolean;
 }
 
 const ICON_OPTIONS: { id: string; icon: LucideIcon }[] = [
