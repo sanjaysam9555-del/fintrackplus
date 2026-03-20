@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      backups: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          label: string
+          org_id: string
+          snapshot: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          label?: string
+          org_id: string
+          snapshot?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string
+          org_id?: string
+          snapshot?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backups_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string
@@ -611,6 +646,10 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      trigger_all_org_backups: {
+        Args: { backup_label: string }
+        Returns: undefined
       }
     }
     Enums: {

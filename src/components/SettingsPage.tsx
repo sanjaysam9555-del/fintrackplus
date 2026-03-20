@@ -24,7 +24,8 @@ import {
   Loader2,
   WifiOff,
   Shield,
-  ClipboardCheck
+  ClipboardCheck,
+  Database
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,6 +41,7 @@ import { LabelsSection } from "./settings/LabelsSection";
 import { AppFeaturesGuide } from "./settings/AppFeaturesGuide";
 import { TeamSection } from "./settings/TeamSection";
 import { ChangeApprovalPage } from "./settings/ChangeApprovalPage";
+import { BackupRestoreSection } from "./settings/BackupRestoreSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
@@ -227,7 +229,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -360,9 +362,21 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
     });
   }
   
+  // Backup items (owner only)
+  const backupItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
+  if (isOwner) {
+    backupItems.push({
+      icon: Database,
+      label: "Backup & Restore",
+      sublabel: "Manage data backups",
+      onClick: () => handleSectionChange('backup'),
+    });
+  }
+  
   const menuItems = [
     ...(dataItems.length > 0 ? [{ section: "Data Management", items: dataItems }] : []),
     ...(teamItems.length > 0 ? [{ section: "Team & Approvals", items: teamItems }] : []),
+    ...(backupItems.length > 0 ? [{ section: "Backup", items: backupItems }] : []),
   ];
   
   const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
@@ -378,6 +392,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   }
   if (activeSection === 'approvals') {
     return <ChangeApprovalPage onBack={handleBack} />;
+  }
+  if (activeSection === 'backup') {
+    return <BackupRestoreSection onBack={handleBack} />;
   }
   if (activeSection === 'partners') {
     return <PartnersSection onBack={handleBack} userId={user?.id} />;
