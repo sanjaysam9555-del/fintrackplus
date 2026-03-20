@@ -742,12 +742,12 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <button
                               key={p.id}
                               onClick={() => {
-                                setHandledBy(p.id);
+                                setHandledBy(p.userId || p.id);
                                 setShowPartners(false);
                               }}
                               className={cn(
                                 "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
-                                handledBy === p.id ? "bg-primary/10" : "hover:bg-muted"
+                                handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
                               )}
                             >
                               {p.avatarUrl ? (
@@ -761,7 +761,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 </div>
                               )}
                               <span className="flex-1">{p.name}</span>
-                              <Check size={14} className={cn("text-primary shrink-0", handledBy === p.id ? "opacity-100" : "opacity-0")} />
+                              <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
                             </button>
                           ))}
                         </div>
