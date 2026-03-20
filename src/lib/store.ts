@@ -792,10 +792,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (transaction) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Transaction Deleted',
-            message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+            message: `${userName} deleted transaction '${transaction.title || transaction.vendor}' — ₹${transaction.amount.toLocaleString()}`,
             details,
             entityType: 'transaction',
             entityId: id,
