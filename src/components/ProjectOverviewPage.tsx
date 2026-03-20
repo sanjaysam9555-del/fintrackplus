@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 interface ProjectOverviewPageProps {
   userId?: string;
+  isEmployee?: boolean;
   onEditSheetChange?: (isOpen: boolean) => void;
   onSearchClick?: () => void;
 }
@@ -50,7 +51,7 @@ const getHealthDot = (status: HealthStatus): string => {
   }
 };
 
-export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
+export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
   const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject, projectLabels, addProjectLabel } = useFinanceStore();
   const { isOwner, isAdmin } = useUserRole();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -142,9 +143,9 @@ export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }
     setNewLabelName('');
   };
 
-  // Filter projects
-  const activeProjects = projects.filter(p => !p.archived);
-  const archivedProjects = projects.filter(p => p.archived);
+  // Filter projects - employees only see assigned projects
+  const activeProjects = projects.filter(p => !p.archived).filter(p => !isEmployee || (p.assignedEmployeeIds || []).includes(userId || ''));
+  const archivedProjects = projects.filter(p => p.archived).filter(p => !isEmployee || (p.assignedEmployeeIds || []).includes(userId || ''));
   const displayedProjects = showArchived ? archivedProjects : activeProjects;
 
   // Calculate totals based on selected tab

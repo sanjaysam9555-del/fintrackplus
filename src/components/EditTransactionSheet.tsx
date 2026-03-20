@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ReceiptUpload } from "./ReceiptUpload";
 import { GstToggle } from "./GstToggle";
+import { useUserRole } from "@/hooks/useUserRole";
 
 interface EditTransactionSheetProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ interface EditTransactionSheetProps {
 export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: EditTransactionSheetProps) => {
   const navigate = useNavigate();
   const { categories, projects, transactions, vendors, partners, updateTransaction } = useFinanceStore();
-  
+  const { isEmployee } = useUserRole();
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [amount, setAmount] = useState(transaction.amount.toString());
   const [title, setTitle] = useState(transaction.title || "");
@@ -74,6 +75,10 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
   const selectedPartner = partners.find(p => p.userId === handledBy);
+  const availableProjects = useMemo(() => {
+    if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
+    return projects.filter(p => !p.archived);
+  }, [projects, isEmployee, userId]);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
@@ -558,9 +563,9 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                           >
                             No Project
                           </button>
-                          {projects.filter(p => !p.archived).filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
+                          {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
                             <>
-                              {projects.filter(p => !p.archived).filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
+                              {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
                                 <button
                                   key={proj.id}
                                   onClick={() => {

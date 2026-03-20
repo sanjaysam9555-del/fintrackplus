@@ -18,12 +18,13 @@ import type { TimeFilter } from "./TimeFrameSelector";
 interface TransactionListProps {
   type: TransactionType;
   userId?: string;
+  isEmployee?: boolean;
   onEditSheetChange?: (isOpen: boolean) => void;
   onSearchClick?: () => void;
   onNavigate?: (section: string) => void;
 }
 
-export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick, onNavigate }: TransactionListProps) => {
+export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetChange, onSearchClick, onNavigate }: TransactionListProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense, defaultTimeFilter } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -40,7 +41,10 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
   }, [timeFilter, customStartDate, customEndDate]);
   
   const filteredTransactions = useMemo(() => {
-    return transactions
+    const base = isEmployee
+      ? transactions.filter(t => t.userId === userId)
+      : transactions;
+    return base
       .filter(t => t.type === type)
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
       .filter(t => !selectedCategory || t.categoryId === selectedCategory)
@@ -54,7 +58,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
         if (uncategorizedFilter === 'no-partner') return !t.handledBy;
         return true;
       });
-  }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter]);
+  }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter, isEmployee, userId]);
   
   const total = type === 'income' 
     ? getTotalIncome(dateRange.start, dateRange.end)

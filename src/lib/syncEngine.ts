@@ -497,6 +497,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
         })),
         transactions: (cloudTransactions as any[]).map(t => ({
           id: t.id as string,
+          userId: t.user_id as string,
           type: t.type as 'income' | 'expense',
           amount: Number(t.amount),
           title: t.title || undefined,

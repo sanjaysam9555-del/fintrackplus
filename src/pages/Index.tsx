@@ -284,19 +284,19 @@ const Index = () => {
       case 'expenses':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="expense" userId={user?.id} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
+            <TransactionList type="expense" userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
           </Suspense>
         );
       case 'income':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="income" userId={user?.id} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
+            <TransactionList type="income" userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
           </Suspense>
         );
       case 'projects':
         return (
           <Suspense fallback={<ContentSkeleton />}>
-            <ProjectOverviewPage userId={user?.id} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} />
+            <ProjectOverviewPage userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} />
           </Suspense>
         );
       case 'ai':
@@ -392,6 +392,7 @@ const Index = () => {
             isOpen={isAddSheetOpen}
             onClose={handleCloseAddSheet}
             userId={user?.id}
+            isEmployee={isEmployee}
             onNavigate={handleNavigate}
           />
         </Suspense>

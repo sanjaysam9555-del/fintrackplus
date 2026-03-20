@@ -39,10 +39,11 @@ interface AddTransactionSheetProps {
   onClose: () => void;
   defaultType?: TransactionType;
   userId?: string;
+  isEmployee?: boolean;
   onNavigate?: (section: string) => void;
 }
 
-export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId, onNavigate }: AddTransactionSheetProps) => {
+export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId, isEmployee = false, onNavigate }: AddTransactionSheetProps) => {
   const navigate = useNavigate();
   const { categories, projects, transactions, vendors, partners, addTransaction } = useFinanceStore();
   const { checkForDuplicates } = useDuplicateDetection();
@@ -86,6 +87,10 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       if (notSpecifiedCat) setCategoryId(notSpecifiedCat.id);
     }
   }, [type, filteredCategories]);
+  const availableProjects = useMemo(() => {
+    if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
+    return projects.filter(p => !p.archived);
+  }, [projects, isEmployee, userId]);
   const selectedProject = projects.find(p => p.id === projectId);
   const selectedPartner = partners.find(p => p.userId === handledBy);
   
@@ -828,9 +833,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <span className="flex-1 text-muted-foreground">None</span>
                             <Check size={14} className={cn("text-primary shrink-0", !projectId ? "opacity-100" : "opacity-0")} />
                           </button>
-                          {projects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
+                          {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
                             <>
-                              {projects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
+                              {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
                                 <button
                                   key={proj.id}
                                   onClick={() => {
