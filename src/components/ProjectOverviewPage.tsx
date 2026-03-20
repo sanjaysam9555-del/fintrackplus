@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 interface ProjectOverviewPageProps {
   userId?: string;
+  isEmployee?: boolean;
   onEditSheetChange?: (isOpen: boolean) => void;
   onSearchClick?: () => void;
 }
