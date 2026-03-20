@@ -1088,10 +1088,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'project',
           title: 'Project Added',
-          message: project.name,
+          message: `${userName} added project '${project.name}'`,
           details: [
             { field: 'Name', from: 'New', to: project.name },
             { field: 'Internal Cost', from: 'New', to: `₹${project.internalCost.toLocaleString()}` },
