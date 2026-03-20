@@ -476,11 +476,11 @@ Deno.serve(async (req) => {
           .maybeSingle();
 
         if (linkedPartner) {
-          // Unassign transactions from this partner
+          // Unassign transactions handled by this user
           await adminClient
             .from("transactions")
-            .update({ partner_id: null })
-            .eq("partner_id", linkedPartner.id)
+            .update({ handled_by: null })
+            .eq("handled_by", targetMember.user_id)
             .eq("org_id", orgId);
 
           // Delete the partner record
