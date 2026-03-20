@@ -264,12 +264,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           partner.id === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
+                            {partner.avatarUrl ? (
+                              <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
                             <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                          style={{ backgroundColor: partner.color }}>
-                          
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              style={{ backgroundColor: partner.color }}>
                               {partner.name.charAt(0).toUpperCase()}
                             </div>
+                            )}
                             <span className="text-sm font-medium">{partner.name}</span>
                           </button>
                       )}

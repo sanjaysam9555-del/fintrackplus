@@ -105,12 +105,16 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                     )}
                   >
                     <div className="flex items-center gap-3 mb-3">
-                      <div 
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: partner.color }}
-                      >
-                        {partner.name.charAt(0).toUpperCase()}
-                      </div>
+                      {partner.avatarUrl ? (
+                        <img src={partner.avatarUrl} alt={partner.name} className="w-8 h-8 rounded-full object-cover" />
+                      ) : (
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                          style={{ backgroundColor: partner.color }}
+                        >
+                          {partner.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
                       <span className="font-medium">{partner.name}</span>
                     </div>
                     
