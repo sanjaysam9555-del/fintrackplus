@@ -15,6 +15,7 @@ import { TransactionItem } from "@/components/TransactionItem";
 interface VendorsSectionProps {
   onBack: () => void;
   userId?: string;
+  isEmployee?: boolean;
 }
 
 const VENDOR_COLORS = [
@@ -35,7 +36,7 @@ const VENDOR_ICONS = [
   'Pill', 'Stethoscope', 'GraduationCap', 'Book', 'Laptop', 'Smartphone'
 ];
 
-export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
+export const VendorsSection = ({ onBack, userId, isEmployee }: VendorsSectionProps) => {
   const { vendors, addVendor, updateVendor, deleteVendor, transactions, updateTransaction, projects, getCategoryById } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -70,7 +71,8 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
   // Compute vendor stats from transactions
   const vendorStats = useMemo(() => {
     const stats: Record<string, { total: number; count: number; projectIds: Set<string>; all: Transaction[] }> = {};
-    transactions.forEach((t: Transaction) => {
+    const txns = isEmployee && userId ? transactions.filter(t => t.userId === userId) : transactions;
+    txns.forEach((t: Transaction) => {
       const key = t.vendor;
       if (!key) return;
       if (!stats[key]) stats[key] = { total: 0, count: 0, projectIds: new Set(), all: [] };
@@ -83,7 +85,7 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
       s.all.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
     });
     return stats;
-  }, [transactions]);
+  }, [transactions, isEmployee, userId]);
 
   const formatAmount = (amount: number) => `${CURRENCY_SYMBOL}${amount.toLocaleString('en-IN')}`;
 
@@ -376,9 +378,11 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
           </button>
           <h1 className="text-xl font-bold">Vendors</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setName(''); setSelectedColor(VENDOR_COLORS[0]); setSelectedIcon('Store'); }}>
-          <Plus size={16} className="mr-1" /> Add
-        </Button>
+        {!isEmployee && (
+          <Button size="sm" onClick={() => { setShowAddForm(true); setName(''); setSelectedColor(VENDOR_COLORS[0]); setSelectedIcon('Store'); }}>
+            <Plus size={16} className="mr-1" /> Add
+          </Button>
+        )}
       </div>
 
       <div className="p-4 space-y-3">
@@ -462,19 +466,26 @@ export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {vendor.name !== 'Not Specified' && (
-                          <button onClick={(e) => { e.stopPropagation(); startEdit(vendor.id, vendor.name, vendor.color, vendor.icon); }} className="p-2 hover:bg-muted rounded-lg">
-                            <Pencil size={16} className="text-muted-foreground" />
-                          </button>
-                        )}
-                        {vendor.name !== 'Not Specified' && (
-                          <button onClick={(e) => { e.stopPropagation(); setDeleteId(vendor.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
-                            <Trash2 size={16} className="text-destructive" />
-                          </button>
-                        )}
-                        {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                      </div>
+                      {!isEmployee && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          {vendor.name !== 'Not Specified' && (
+                            <button onClick={(e) => { e.stopPropagation(); startEdit(vendor.id, vendor.name, vendor.color, vendor.icon); }} className="p-2 hover:bg-muted rounded-lg">
+                              <Pencil size={16} className="text-muted-foreground" />
+                            </button>
+                          )}
+                          {vendor.name !== 'Not Specified' && (
+                            <button onClick={(e) => { e.stopPropagation(); setDeleteId(vendor.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
+                              <Trash2 size={16} className="text-destructive" />
+                            </button>
+                          )}
+                          {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                        </div>
+                      )}
+                      {isEmployee && (
+                        <div className="shrink-0">
+                          {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                        </div>
+                      )}
                     </button>
                     <AnimatePresence>
                       {isExpanded && stats && (

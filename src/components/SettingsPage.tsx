@@ -383,10 +383,10 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
     return <PartnersSection onBack={handleBack} userId={user?.id} />;
   }
   if (activeSection === 'categories') {
-    return <CategoriesSection onBack={handleBack} userId={user?.id} />;
+    return <CategoriesSection onBack={handleBack} userId={user?.id} isEmployee={isEmployee} />;
   }
   if (activeSection === 'vendors') {
-    return <VendorsSection onBack={handleBack} userId={user?.id} />;
+    return <VendorsSection onBack={handleBack} userId={user?.id} isEmployee={isEmployee} />;
   }
   if (activeSection === 'labels') {
     return <LabelsSection onBack={handleBack} userId={user?.id} />;

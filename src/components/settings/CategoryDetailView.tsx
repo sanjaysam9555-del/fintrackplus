@@ -36,21 +36,24 @@ interface CategoryDetailViewProps {
   onEdit: () => void;
   onDelete: () => void;
   userId?: string;
+  isEmployee?: boolean;
+  currentUserId?: string;
 }
 
-export const CategoryDetailView = ({ category, onBack, onEdit, onDelete, userId }: CategoryDetailViewProps) => {
+export const CategoryDetailView = ({ category, onBack, onEdit, onDelete, userId, isEmployee, currentUserId }: CategoryDetailViewProps) => {
   const { transactions, projects, getCategoryById } = useFinanceStore();
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
 
   const categoryStats = useMemo(() => {
-    const catTransactions = transactions.filter((t: Transaction) => t.categoryId === category.id);
+    let catTransactions = transactions.filter((t: Transaction) => t.categoryId === category.id);
+    if (isEmployee && currentUserId) catTransactions = catTransactions.filter(t => t.userId === currentUserId);
     const projectIds = new Set<string>();
     catTransactions.forEach(t => { if (t.projectId) projectIds.add(t.projectId); });
     catTransactions.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
     const total = catTransactions.reduce((sum, t) => sum + t.amount, 0);
     return { total, count: catTransactions.length, projectIds, all: catTransactions };
-  }, [transactions, category.id]);
+  }, [transactions, category.id, isEmployee, currentUserId]);
 
   const toggleProjectFilter = (pid: string) => {
     setSelectedProjectIds(prev => {
@@ -81,14 +84,16 @@ export const CategoryDetailView = ({ category, onBack, onEdit, onDelete, userId 
           </button>
           <h1 className="text-xl font-bold truncate">{category.name}</h1>
         </div>
-        <div className="flex items-center gap-1">
-          <button onClick={onEdit} className="p-2 hover:bg-muted rounded-lg">
-            <Pencil size={16} className="text-muted-foreground" />
-          </button>
-          <button onClick={onDelete} className="p-2 hover:bg-destructive/10 rounded-lg">
-            <Trash2 size={16} className="text-destructive" />
-          </button>
-        </div>
+        {!isEmployee && (
+          <div className="flex items-center gap-1">
+            <button onClick={onEdit} className="p-2 hover:bg-muted rounded-lg">
+              <Pencil size={16} className="text-muted-foreground" />
+            </button>
+            <button onClick={onDelete} className="p-2 hover:bg-destructive/10 rounded-lg">
+              <Trash2 size={16} className="text-destructive" />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="p-4 space-y-4">

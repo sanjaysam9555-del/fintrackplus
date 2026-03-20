@@ -13,6 +13,7 @@ import { CURRENCY_SYMBOL } from "@/lib/constants";
 interface CategoriesSectionProps {
   onBack: () => void;
   userId?: string;
+  isEmployee?: boolean;
 }
 
 const ICON_OPTIONS: { id: string; icon: LucideIcon }[] = [
@@ -38,7 +39,7 @@ const getIconComponent = (iconId: string): LucideIcon => {
   return ICON_OPTIONS.find(i => i.id === iconId)?.icon || MoreHorizontal;
 };
 
-export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) => {
+export const CategoriesSection = ({ onBack, userId, isEmployee }: CategoriesSectionProps) => {
   const { categories, addCategory, updateCategory, deleteCategory, transactions } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -50,7 +51,8 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
 
   // Compute transaction counts per category
   const categoryTransactionCounts = categories.reduce<Record<string, { count: number; total: number }>>((acc, cat) => {
-    const catTxns = transactions.filter(t => t.categoryId === cat.id);
+    let catTxns = transactions.filter(t => t.categoryId === cat.id);
+    if (isEmployee && userId) catTxns = catTxns.filter(t => t.userId === userId);
     acc[cat.id] = { count: catTxns.length, total: catTxns.reduce((s, t) => s + t.amount, 0) };
     return acc;
   }, {});
@@ -64,9 +66,11 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
       <CategoryDetailView
         category={detailCategory}
         onBack={() => setDetailCategoryId(null)}
-        onEdit={() => { startEdit(detailCategory); setDetailCategoryId(null); }}
-        onDelete={() => { setDeleteId(detailCategory.id); setDetailCategoryId(null); }}
+        onEdit={() => { if (!isEmployee) { startEdit(detailCategory); setDetailCategoryId(null); } }}
+        onDelete={() => { if (!isEmployee) { setDeleteId(detailCategory.id); setDetailCategoryId(null); } }}
         userId={userId}
+        isEmployee={isEmployee}
+        currentUserId={userId}
       />
     );
   }
@@ -127,9 +131,11 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
           </button>
           <h1 className="text-xl font-bold">Categories</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', icon: 'other', color: '#10B981', type: filterType === 'all' ? 'expense' : filterType }); }}>
-          <Plus size={16} className="mr-1" /> Add
-        </Button>
+        {!isEmployee && (
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', icon: 'other', color: '#10B981', type: filterType === 'all' ? 'expense' : filterType }); }}>
+            <Plus size={16} className="mr-1" /> Add
+          </Button>
+        )}
       </div>
 
       <div className="sticky top-[57px] bg-background z-10 px-4 pt-3 pb-1">
@@ -323,19 +329,24 @@ export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) =>
                     </p>
                   </div>
                 </button>
-                <div className="flex items-center gap-1 shrink-0">
-                  {cat.name !== 'Not Specified' && (
-                    <button onClick={(e) => { e.stopPropagation(); startEdit(cat); }} className="p-2 hover:bg-muted rounded-lg">
-                      <Pencil size={16} className="text-muted-foreground" />
-                    </button>
-                  )}
-                  {cat.name !== 'Not Specified' && (
-                    <button onClick={(e) => { e.stopPropagation(); setDeleteId(cat.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
-                      <Trash2 size={16} className="text-destructive" />
-                    </button>
-                  )}
-                  <ChevronRight size={16} className="text-muted-foreground" />
-                </div>
+                {!isEmployee && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    {cat.name !== 'Not Specified' && (
+                      <button onClick={(e) => { e.stopPropagation(); startEdit(cat); }} className="p-2 hover:bg-muted rounded-lg">
+                        <Pencil size={16} className="text-muted-foreground" />
+                      </button>
+                    )}
+                    {cat.name !== 'Not Specified' && (
+                      <button onClick={(e) => { e.stopPropagation(); setDeleteId(cat.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
+                        <Trash2 size={16} className="text-destructive" />
+                      </button>
+                    )}
+                    <ChevronRight size={16} className="text-muted-foreground" />
+                  </div>
+                )}
+                {isEmployee && (
+                  <ChevronRight size={16} className="text-muted-foreground shrink-0" />
+                )}
               </div>
             )}
           </motion.div>
