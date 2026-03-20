@@ -29,11 +29,16 @@ export const GlobalSearchDialog = ({
   const { lightTap } = useHaptics();
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
+  const handleClose = useCallback(() => {
+    clearSearch();
+    onClose();
+  }, [clearSearch, onClose]);
+
   // Close on escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
       }
     };
 
@@ -41,14 +46,7 @@ export const GlobalSearchDialog = ({
       document.addEventListener('keydown', handleKeyDown);
       return () => document.removeEventListener('keydown', handleKeyDown);
     }
-  }, [isOpen, onClose]);
-
-  // Clear search when closing
-  useEffect(() => {
-    if (!isOpen) {
-      clearSearch();
-    }
-  }, [isOpen, clearSearch]);
+  }, [isOpen, handleClose]);
 
   const handleResultClick = useCallback((result: SearchResult) => {
     lightTap();
