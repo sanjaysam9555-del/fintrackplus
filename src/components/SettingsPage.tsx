@@ -393,6 +393,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   if (activeSection === 'approvals') {
     return <ChangeApprovalPage onBack={handleBack} />;
   }
+  if (activeSection === 'backup') {
+    return <BackupRestoreSection onBack={handleBack} />;
+  }
   if (activeSection === 'partners') {
     return <PartnersSection onBack={handleBack} userId={user?.id} />;
   }
