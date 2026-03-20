@@ -1574,10 +1574,11 @@ export const useFinanceStore = create<FinanceStore>()(
           projectLabels: [...state.projectLabels, { ...label, id, createdAt }]
         }));
 
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'label',
           title: 'Label Added',
-          message: `#${label.name}`,
+          message: `${userName} added label '#${label.name}'`,
           details: [
             { field: 'Name', from: 'New', to: label.name },
             { field: 'Color', from: 'New', to: label.color },
