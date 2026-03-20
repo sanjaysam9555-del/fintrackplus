@@ -546,6 +546,10 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       },
       error: null
     };
+
+    _lastFetchTimestamp = Date.now();
+    _lastFetchResult = result;
+    return result;
   } catch (error) {
     return { data: null, error: String(error) };
   }
