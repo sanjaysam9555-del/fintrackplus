@@ -131,9 +131,11 @@ export const CategoriesSection = ({ onBack, userId, isEmployee }: CategoriesSect
           </button>
           <h1 className="text-xl font-bold">Categories</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', icon: 'other', color: '#10B981', type: filterType === 'all' ? 'expense' : filterType }); }}>
-          <Plus size={16} className="mr-1" /> Add
-        </Button>
+        {!isEmployee && (
+          <Button size="sm" onClick={() => { setShowAddForm(true); setFormData({ name: '', icon: 'other', color: '#10B981', type: filterType === 'all' ? 'expense' : filterType }); }}>
+            <Plus size={16} className="mr-1" /> Add
+          </Button>
+        )}
       </div>
 
       <div className="sticky top-[57px] bg-background z-10 px-4 pt-3 pb-1">
