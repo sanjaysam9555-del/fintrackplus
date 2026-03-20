@@ -167,6 +167,8 @@ export const useCloudSync = () => {
             initialCashBalance: Number(p.initial_cash_balance) || 0,
             initialOnlineBalance: Number(p.initial_online_balance) || 0,
             avatarUrl: linkedProfile?.avatar_url || p.avatar_url || undefined,
+            userId: p.user_id,
+            role: (p as any).role || 'owner',
             createdAt: p.created_at.split('T')[0]
           };
         }) || [],
