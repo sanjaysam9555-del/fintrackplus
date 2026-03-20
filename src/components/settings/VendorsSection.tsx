@@ -15,6 +15,7 @@ import { TransactionItem } from "@/components/TransactionItem";
 interface VendorsSectionProps {
   onBack: () => void;
   userId?: string;
+  isEmployee?: boolean;
 }
 
 const VENDOR_COLORS = [
