@@ -27,6 +27,7 @@ interface DesktopSidebarProps {
   onTabChange: (tab: TabId) => void;
   onAddClick: () => void;
   onNavigate: (section: string) => void;
+  isEmployee?: boolean;
 }
 
 const navItems = [
