@@ -1,40 +1,48 @@
 
 
-## Fix Employee & Admin Permissions for Categories, Vendors & Transaction Visibility
+## Fix App Performance: Reduce Redundant Sync Calls
 
-### Problem
-1. **Employees can access Categories & Vendors sections** — While the settings menu hides these items for employees, the components themselves have no role guards. If an employee navigates there (e.g. via direct URL or a cached state), they see full add/edit/delete controls and ALL org transactions within category/vendor detail views.
-2. **Employees see all org transactions in detail views** — `CategoryDetailView` and `VendorsSection` detail views show every transaction in the org, not filtered to the employee's own.
-3. **RLS allows employees to SELECT all categories/vendors/transactions** — The DB policies grant all org members `SELECT` access. While we can't restrict categories/vendors at DB level (employees need them for dropdowns), transaction visibility in detail views must be filtered client-side.
+### Root Cause
+
+The sync engine is extremely aggressive — on login alone, it fires:
+1. `ensureDefaultTaxonomy` — 3+ DB queries
+2. `fullSync` — push queue + fetch ALL 8 tables
+3. Realtime subscription fires immediately → another full 8-table fetch
+4. Every 30s healing interval → push + full 8-table fetch
+5. Every visibility change → full push + pull
+
+Every single sync event re-fetches ALL data (profiles, categories, vendors, projects, transactions, partners, project_labels) even if only one row changed. With realtime + healing + visibility, this results in dozens of full re-fetches per minute.
+
+Additionally, the `useEffect` dependency array on line 301 (`[user, fullSync, syncFromCloud, pushToCloud, setSyncStatus]`) can cause the entire sync infrastructure to tear down and rebuild if any callback reference changes, triggering yet another full sync.
 
 ### Changes
 
-**1. `src/components/settings/CategoriesSection.tsx`** — Accept `isEmployee` prop. Hide Add button, edit/delete actions for employees. In the category transaction counts and detail view, filter transactions to only the employee's own (`t.userId === userId`).
+**1. `src/hooks/useSyncEngine.ts`** — Stabilize sync setup effect
 
-**2. `src/components/settings/CategoryDetailView.tsx`** — Accept `isEmployee` and `currentUserId` props. Filter `catTransactions` to only show `t.userId === currentUserId` when employee. Hide edit/delete buttons for employees.
+- Move `syncFromCloud`, `pushToCloud`, `fullSync` into refs so the setup effect only depends on `user`. This prevents the effect from re-running and re-subscribing on every callback identity change.
+- Add a debounce/throttle to `syncFromCloud` — ignore calls if one completed less than 5 seconds ago (currently 200ms debounce on realtime is too short and doesn't prevent overlapping fetches).
+- Increase healing interval from 30s to 120s (2 minutes). 30s is excessive for a finance tracker.
+- Skip `ensureDefaultTaxonomy` on every mount — run it only once per session using `sessionStorage`.
 
-**3. `src/components/settings/VendorsSection.tsx`** — Accept `isEmployee` prop. Hide Add button, edit/delete actions for employees. Filter vendor transaction stats to only the employee's own transactions. In the detail view, filter transactions similarly.
+**2. `src/lib/syncEngine.ts`** — Add sync throttling
 
-**4. `src/components/SettingsPage.tsx`** — Pass `isEmployee` to `CategoriesSection` and `VendorsSection`. Also, as a defensive guard, if an employee somehow reaches the categories/vendors section, redirect them back.
+- Add a `lastFetchTimestamp` variable. If `fetchAllCloudData` was called less than 5 seconds ago, skip (return cached result). This prevents the cascade of realtime + visibility + healing all triggering simultaneous full fetches.
+- Increase realtime debounce from 200ms to 1000ms.
 
-**5. `src/pages/Index.tsx`** — Defensive guard: if `isEmployee` and `settingsSection` is `categories`, `vendors`, or `labels`, reset to `null`.
+**3. Delete `src/hooks/useCloudSync.ts`** — Unused file (dead code), remove it.
 
-### Summary of Role Permissions
+### Summary of timing changes
 
-| Feature | Owner | Admin | Employee |
-|---|---|---|---|
-| Categories: View list | Yes | Yes | No (hidden from menu) |
-| Categories: Add/Edit/Delete | Yes | Yes | No |
-| Categories: See all txn detail | Yes | Yes | No (own only) |
-| Vendors: View list | Yes | Yes | No (hidden from menu) |
-| Vendors: Add/Edit/Delete | Yes | Yes | No |
-| Vendors: See all txn detail | Yes | Yes | No (own only) |
-| Labels: View/Manage | Yes | Yes | No |
+| Mechanism | Before | After |
+|---|---|---|
+| Realtime debounce | 200ms | 1000ms |
+| Fetch throttle | None | 5s minimum gap |
+| Healing interval | 30s | 120s |
+| `ensureDefaultTaxonomy` | Every mount | Once per session |
+| Setup effect deps | Callback refs (unstable) | `user` only via refs |
 
 ### Files to modify
-- `src/components/settings/CategoriesSection.tsx` — Add `isEmployee` prop, hide CRUD actions, filter transactions
-- `src/components/settings/CategoryDetailView.tsx` — Add `isEmployee`/`currentUserId` props, filter transactions, hide edit/delete
-- `src/components/settings/VendorsSection.tsx` — Add `isEmployee` prop, hide CRUD actions, filter transactions
-- `src/components/SettingsPage.tsx` — Pass `isEmployee` to sub-components, add defensive guard
-- `src/pages/Index.tsx` — Defensive guard for employee settings navigation
+- `src/hooks/useSyncEngine.ts` — Stabilize effect deps, session-gate taxonomy, increase healing
+- `src/lib/syncEngine.ts` — Add fetch throttle, increase realtime debounce
+- Delete `src/hooks/useCloudSync.ts` — Dead code
 
