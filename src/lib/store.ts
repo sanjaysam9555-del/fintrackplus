@@ -148,6 +148,9 @@ export const useFinanceStore = create<FinanceStore>()(
       partners: [],
       projectLabels: [],
       userProfile: { name: 'User' },
+      orgName: 'My Organization',
+      orgLogoUrl: null,
+      setOrgInfo: (name, logoUrl) => set({ orgName: name, orgLogoUrl: logoUrl }),
       notifications: [],
       defaultTimeFilter: 'fy',
       setDefaultTimeFilter: (filter) => {
