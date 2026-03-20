@@ -98,12 +98,16 @@ export const PartnerDetailSheet = ({
         {/* Header */}
         <DrawerHeader className="border-b border-border pb-4">
           <div className="flex items-center gap-3">
-            <div 
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
-              style={{ backgroundColor: partner.color }}
-            >
-              {partner.name.charAt(0).toUpperCase()}
-            </div>
+            {partner.avatarUrl ? (
+              <img src={partner.avatarUrl} alt={partner.name} className="w-12 h-12 rounded-full object-cover" />
+            ) : (
+              <div 
+                className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                style={{ backgroundColor: partner.color }}
+              >
+                {partner.name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div className="flex-1">
               <DrawerTitle className="text-left">{partner.name}</DrawerTitle>
               <DrawerDescription className="text-left">

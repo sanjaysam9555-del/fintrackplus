@@ -127,36 +127,42 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                 {/* Transfer Visual */}
                 <div className="flex items-center justify-center gap-3 py-4">
                   <div className="flex flex-col items-center gap-2">
-                    {fromPartner ?
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
-                    style={{ backgroundColor: fromPartner.color }}>
-                    
-                        {fromPartner.name.charAt(0).toUpperCase()}
-                      </div> :
-
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    {fromPartner ? (
+                      fromPartner.avatarUrl ? (
+                        <img src={fromPartner.avatarUrl} alt={fromPartner.name} className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
+                          style={{ backgroundColor: fromPartner.color }}>
+                          {fromPartner.name.charAt(0).toUpperCase()}
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                         <Users size={20} className="text-muted-foreground" />
                       </div>
-                  }
+                    )}
                     <span className="text-xs text-muted-foreground">From</span>
                   </div>
                   
                   <ArrowRight size={24} className="text-accent-foreground" />
                   
                   <div className="flex flex-col items-center gap-2">
-                    {toPartner ?
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
-                    style={{ backgroundColor: toPartner.color }}>
-                    
-                        {toPartner.name.charAt(0).toUpperCase()}
-                      </div> :
-
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    {toPartner ? (
+                      toPartner.avatarUrl ? (
+                        <img src={toPartner.avatarUrl} alt={toPartner.name} className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
+                          style={{ backgroundColor: toPartner.color }}>
+                          {toPartner.name.charAt(0).toUpperCase()}
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                         <Users size={20} className="text-muted-foreground" />
                       </div>
-                  }
+                    )}
                     <span className="text-xs text-muted-foreground">To</span>
                   </div>
                 </div>
@@ -169,12 +175,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                         {fromPartner ?
                       <div className="flex items-center gap-2">
+                            {fromPartner.avatarUrl ? (
+                              <img src={fromPartner.avatarUrl} alt={fromPartner.name} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
                             <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                          style={{ backgroundColor: fromPartner.color }}>
-                          
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              style={{ backgroundColor: fromPartner.color }}>
                               {fromPartner.name.charAt(0).toUpperCase()}
                             </div>
+                            )}
                             <span className="text-sm font-medium">{fromPartner.name}</span>
                           </div> :
 
@@ -198,12 +207,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           partner.id === toPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
+                            {partner.avatarUrl ? (
+                              <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
                             <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                          style={{ backgroundColor: partner.color }}>
-                          
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              style={{ backgroundColor: partner.color }}>
                               {partner.name.charAt(0).toUpperCase()}
                             </div>
+                            )}
                             <span className="text-sm font-medium">{partner.name}</span>
                           </button>
                       )}
@@ -220,12 +232,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                         {toPartner ?
                       <div className="flex items-center gap-2">
+                            {toPartner.avatarUrl ? (
+                              <img src={toPartner.avatarUrl} alt={toPartner.name} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
                             <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                          style={{ backgroundColor: toPartner.color }}>
-                          
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              style={{ backgroundColor: toPartner.color }}>
                               {toPartner.name.charAt(0).toUpperCase()}
                             </div>
+                            )}
                             <span className="text-sm font-medium">{toPartner.name}</span>
                           </div> :
 
@@ -249,12 +264,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           partner.id === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
+                            {partner.avatarUrl ? (
+                              <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
                             <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                          style={{ backgroundColor: partner.color }}>
-                          
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              style={{ backgroundColor: partner.color }}>
                               {partner.name.charAt(0).toUpperCase()}
                             </div>
+                            )}
                             <span className="text-sm font-medium">{partner.name}</span>
                           </button>
                       )}
