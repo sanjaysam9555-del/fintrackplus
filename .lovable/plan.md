@@ -1,51 +1,40 @@
 
 
-## Fix Employee Data Leaks: Graph Totals, AI Summary Access, Quick Actions
+## Fix Employee & Admin Permissions for Categories, Vendors & Transaction Visibility
 
-### Issues Found
-
-1. **TransactionList `total` (line 63-65)** uses `getTotalIncome`/`getTotalExpense` which aggregate ALL org transactions — employees see the full business total in the header and chart total.
-2. **DesktopSidebar** always renders the "AI Summary" nav item regardless of role — employees can click it.
-3. **Dashboard quick actions** show "Logs" and "Reports" to employees, which per the role rules they shouldn't access.
-
-Dashboard summary cards and cashflow chart are already hidden for employees (lines 262, 299). Transaction filtering is correct. The AI button on the dashboard is already hidden (lines 169, 225).
+### Problem
+1. **Employees can access Categories & Vendors sections** — While the settings menu hides these items for employees, the components themselves have no role guards. If an employee navigates there (e.g. via direct URL or a cached state), they see full add/edit/delete controls and ALL org transactions within category/vendor detail views.
+2. **Employees see all org transactions in detail views** — `CategoryDetailView` and `VendorsSection` detail views show every transaction in the org, not filtered to the employee's own.
+3. **RLS allows employees to SELECT all categories/vendors/transactions** — The DB policies grant all org members `SELECT` access. While we can't restrict categories/vendors at DB level (employees need them for dropdowns), transaction visibility in detail views must be filtered client-side.
 
 ### Changes
 
-**1. `src/components/TransactionList.tsx`** — Compute `total` from `filteredTransactions` instead of `getTotalIncome`/`getTotalExpense`
+**1. `src/components/settings/CategoriesSection.tsx`** — Accept `isEmployee` prop. Hide Add button, edit/delete actions for employees. In the category transaction counts and detail view, filter transactions to only the employee's own (`t.userId === userId`).
 
-Replace lines 63-65:
-```typescript
-const total = useMemo(() => {
-  return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
-}, [filteredTransactions]);
-```
+**2. `src/components/settings/CategoryDetailView.tsx`** — Accept `isEmployee` and `currentUserId` props. Filter `catTransactions` to only show `t.userId === currentUserId` when employee. Hide edit/delete buttons for employees.
 
-This ensures employees only see the sum of their own filtered transactions, and owners/admins see the full org total (since their `filteredTransactions` isn't filtered by userId).
+**3. `src/components/settings/VendorsSection.tsx`** — Accept `isEmployee` prop. Hide Add button, edit/delete actions for employees. Filter vendor transaction stats to only the employee's own transactions. In the detail view, filter transactions similarly.
 
-**2. `src/components/DesktopSidebar.tsx`** — Accept `isEmployee` prop and hide "AI Summary" nav item for employees
+**4. `src/components/SettingsPage.tsx`** — Pass `isEmployee` to `CategoriesSection` and `VendorsSection`. Also, as a defensive guard, if an employee somehow reaches the categories/vendors section, redirect them back.
 
-- Add `isEmployee?: boolean` to `DesktopSidebarProps`
-- Conditionally filter the Tools section to exclude AI Summary when `isEmployee`
+**5. `src/pages/Index.tsx`** — Defensive guard: if `isEmployee` and `settingsSection` is `categories`, `vendors`, or `labels`, reset to `null`.
 
-**3. `src/pages/Index.tsx`** — Pass `isEmployee` to `DesktopSidebar`
+### Summary of Role Permissions
 
-**4. `src/components/Dashboard.tsx`** — Filter quick actions for employees
-
-- Hide "Logs" and "Reports" quick action buttons when `isEmployee` is true (per role rules: employees cannot view logs or reports)
-
-**5. `src/pages/Index.tsx`** — Block employee navigation to AI view
-
-- In `handleNavigate` and `handleTabChange`, prevent employees from reaching the 'ai' viewMode (defensive guard in case they somehow trigger it)
-
----
+| Feature | Owner | Admin | Employee |
+|---|---|---|---|
+| Categories: View list | Yes | Yes | No (hidden from menu) |
+| Categories: Add/Edit/Delete | Yes | Yes | No |
+| Categories: See all txn detail | Yes | Yes | No (own only) |
+| Vendors: View list | Yes | Yes | No (hidden from menu) |
+| Vendors: Add/Edit/Delete | Yes | Yes | No |
+| Vendors: See all txn detail | Yes | Yes | No (own only) |
+| Labels: View/Manage | Yes | Yes | No |
 
 ### Files to modify
-
-| File | Change |
-|---|---|
-| `src/components/TransactionList.tsx` | Compute total from filtered data |
-| `src/components/DesktopSidebar.tsx` | Accept `isEmployee`, hide AI Summary |
-| `src/components/Dashboard.tsx` | Hide Logs/Reports quick actions for employees |
-| `src/pages/Index.tsx` | Pass `isEmployee` to sidebar; guard AI navigation |
+- `src/components/settings/CategoriesSection.tsx` — Add `isEmployee` prop, hide CRUD actions, filter transactions
+- `src/components/settings/CategoryDetailView.tsx` — Add `isEmployee`/`currentUserId` props, filter transactions, hide edit/delete
+- `src/components/settings/VendorsSection.tsx` — Add `isEmployee` prop, hide CRUD actions, filter transactions
+- `src/components/SettingsPage.tsx` — Pass `isEmployee` to sub-components, add defensive guard
+- `src/pages/Index.tsx` — Defensive guard for employee settings navigation
 
