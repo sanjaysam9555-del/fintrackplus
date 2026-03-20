@@ -1553,10 +1553,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (partner) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Partner Deleted',
-            message: `${partner.name} — ${affectedTransactionIds.length} transaction${affectedTransactionIds.length !== 1 ? 's' : ''} unassigned`,
+            message: `${userName} deleted partner '${partner.name}' — ${affectedTransactionIds.length} transaction${affectedTransactionIds.length !== 1 ? 's' : ''} unassigned`,
             details,
             entityType: 'partner',
             entityId: id,
