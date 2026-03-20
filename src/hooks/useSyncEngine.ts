@@ -4,6 +4,7 @@
  * - Background sync on visibility change
  * - Online/offline detection with auto-retry
  * - Optimistic updates with queue management
+ * - Stabilized refs to prevent effect re-runs
  */
 
 import { useEffect, useCallback, useRef, useState } from 'react';
@@ -26,13 +27,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
 // Ensure "Not Specified" vendor + categories exist in backend for this org
+// Only runs once per session via sessionStorage gate
 const ensureDefaultTaxonomy = async (userId: string) => {
+  const SESSION_KEY = 'fintrack_taxonomy_ensured';
+  if (sessionStorage.getItem(SESSION_KEY)) return;
+
   try {
-    // Resolve org_id for inserts
     const { data: orgData } = await supabase.rpc('get_user_org_id', { _user_id: userId });
     const orgId = orgData as string | null;
 
-    // RLS scopes SELECTs to the org — no need for .eq('user_id', ...)
     const [{ data: vendors }, { data: cats }] = await Promise.all([
       supabase.from('vendors').select('id, name').eq('name', 'Not Specified'),
       supabase.from('categories').select('id, name, type').eq('name', 'Not Specified'),
@@ -58,6 +61,8 @@ const ensureDefaultTaxonomy = async (userId: string) => {
       for (const fn of inserts) await fn();
       console.log('[SyncEngine] Created missing default taxonomy entries');
     }
+
+    sessionStorage.setItem(SESSION_KEY, '1');
   } catch (err) {
     console.error('[SyncEngine] ensureDefaultTaxonomy failed:', err);
   }
@@ -84,17 +89,24 @@ export const useSyncEngine = () => {
   const onlineRef = useRef<{ cleanup: () => void } | null>(null);
   const isMounted = useRef(true);
 
+  // Stable refs for store setters (they never change identity but satisfy exhaustive-deps)
+  const setCloudDataRef = useRef(setCloudData);
+  const setSyncStatusRef = useRef(setSyncStatus);
+  const setLastSyncedAtRef = useRef(setLastSyncedAt);
+  setCloudDataRef.current = setCloudData;
+  setSyncStatusRef.current = setSyncStatus;
+  setLastSyncedAtRef.current = setLastSyncedAt;
+
   // Update pending count
   const refreshPendingCount = useCallback(() => {
     setPendingCount(getQueueSize());
   }, []);
 
-  // Core sync function - fetches cloud data (always silent - no UI changes)
+  // Core sync function - fetches cloud data (always silent)
   const syncFromCloud = useCallback(async (options: { showToast?: boolean; isBackground?: boolean } = {}) => {
     const { showToast = false } = options;
     
     if (!user || !navigator.onLine) return;
-    // Never set syncing status - keep sync completely invisible
 
     try {
       const { data, error } = await fetchAllCloudData(user.id);
@@ -105,13 +117,11 @@ export const useSyncEngine = () => {
         throw new Error(error || 'Unknown error fetching data');
       }
 
-      setCloudData(data);
-      setLastSyncedAt(new Date().toISOString());
+      setCloudDataRef.current(data);
+      setLastSyncedAtRef.current(new Date().toISOString());
       
       refreshPendingCount();
-      
-      // Always update status silently
-      setSyncStatus('synced');
+      setSyncStatusRef.current('synced');
 
       if (showToast) {
         const remaining = getQueueSize();
@@ -124,14 +134,14 @@ export const useSyncEngine = () => {
     } catch (error) {
       console.error('[SyncEngine] Fetch failed:', error);
       if (!isMounted.current) return;
-      setSyncStatus('error');
+      setSyncStatusRef.current('error');
       if (showToast) {
         toast.error('Sync failed');
       }
     }
-  }, [user, setCloudData, setSyncStatus, setLastSyncedAt, refreshPendingCount]);
+  }, [user, refreshPendingCount]);
 
-  // Push pending operations to cloud (always silent - no UI changes)
+  // Push pending operations to cloud (always silent)
   const pushToCloud = useCallback(async (options: { showToast?: boolean } = {}) => {
     const { showToast = false } = options;
     
@@ -146,32 +156,37 @@ export const useSyncEngine = () => {
     if (!isMounted.current) return result;
 
     if (result.failed > 0) {
-      setSyncStatus('error');
+      setSyncStatusRef.current('error');
       if (showToast) toast.error(`${result.failed} change${result.failed > 1 ? 's' : ''} failed`);
     } else if (result.synced > 0) {
-      setSyncStatus('synced');
-      setLastSyncedAt(new Date().toISOString());
+      setSyncStatusRef.current('synced');
+      setLastSyncedAtRef.current(new Date().toISOString());
     }
 
     return result;
-  }, [user, setSyncStatus, setLastSyncedAt, refreshPendingCount]);
+  }, [user, refreshPendingCount]);
 
-  // Full sync: push pending, then pull from cloud (completely silent)
+  // Full sync: push pending, then pull from cloud
   const fullSync = useCallback(async (options: { showToast?: boolean } = {}) => {
     const { showToast = false } = options;
     
     if (!user) return;
 
     try {
-      // First push any pending changes
       await pushToCloud({ showToast: false });
-      
-      // Then fetch latest from cloud
       await syncFromCloud({ showToast });
     } catch (error) {
       console.error('[SyncEngine] Full sync failed:', error);
     }
   }, [user, pushToCloud, syncFromCloud]);
+
+  // Store callback refs so the setup effect doesn't depend on them
+  const syncFromCloudRef = useRef(syncFromCloud);
+  const pushToCloudRef = useRef(pushToCloud);
+  const fullSyncRef = useRef(fullSync);
+  syncFromCloudRef.current = syncFromCloud;
+  pushToCloudRef.current = pushToCloud;
+  fullSyncRef.current = fullSync;
 
   // Manual refresh (user-triggered)
   const refreshData = useCallback(async () => {
@@ -202,14 +217,12 @@ export const useSyncEngine = () => {
     
     refreshPendingCount();
 
-    // Try to push immediately if online
     if (navigator.onLine) {
-      // Use setTimeout to allow the local state update to complete first
       setTimeout(() => {
-        pushToCloud({ showToast: false }).catch(console.error);
+        pushToCloudRef.current({ showToast: false }).catch(console.error);
       }, 100);
     }
-  }, [user, refreshPendingCount, pushToCloud]);
+  }, [user, refreshPendingCount]);
 
   // Check for onboarding + load cloud theme
   useEffect(() => {
@@ -228,7 +241,6 @@ export const useSyncEngine = () => {
       }
     };
 
-    // Load cloud theme preference on login (only if no local pref)
     import('./useTheme').then(({ loadCloudTheme }) => {
       loadCloudTheme(user.id);
     });
@@ -248,33 +260,32 @@ export const useSyncEngine = () => {
     setShowOnboarding(false);
   }, [user]);
 
-  // Setup all sync mechanisms
+  // Setup all sync mechanisms — depends ONLY on `user` thanks to refs
   useEffect(() => {
     if (!user) return;
 
     isMounted.current = true;
 
-    // Ensure default taxonomy exists in backend before first sync
     const initSync = async () => {
       await ensureDefaultTaxonomy(user.id);
-      await fullSync({ showToast: false });
+      await fullSyncRef.current({ showToast: false });
     };
     initSync();
 
     // 1. Realtime subscriptions
     realtimeRef.current = createRealtimeSubscription(user.id, () => {
-      syncFromCloud({ showToast: false, isBackground: true });
+      syncFromCloudRef.current({ showToast: false, isBackground: true });
     });
 
-    // 2. Periodic healing refresh (every 30s)
+    // 2. Periodic healing refresh (every 2 minutes)
     healingRef.current = createHealingInterval(async () => {
-      await pushToCloud({ showToast: false });
-      await syncFromCloud({ showToast: false, isBackground: true });
+      await pushToCloudRef.current({ showToast: false });
+      await syncFromCloudRef.current({ showToast: false, isBackground: true });
     });
 
     // 3. Background sync on visibility change
     backgroundRef.current = setupBackgroundSync(async () => {
-      await fullSync({ showToast: false });
+      await fullSyncRef.current({ showToast: false });
     });
 
     // 4. Online/offline detection
@@ -282,12 +293,12 @@ export const useSyncEngine = () => {
       () => {
         setIsOnline(true);
         toast.success('Back online');
-        fullSync({ showToast: false });
+        fullSyncRef.current({ showToast: false });
       },
       () => {
         setIsOnline(false);
         toast.warning('You are offline');
-        setSyncStatus('error');
+        setSyncStatusRef.current('error');
       }
     );
 
@@ -298,22 +309,19 @@ export const useSyncEngine = () => {
       backgroundRef.current?.cleanup();
       onlineRef.current?.cleanup();
     };
-  }, [user, fullSync, syncFromCloud, pushToCloud, setSyncStatus]);
+  }, [user]); // Only depends on user — callbacks accessed via refs
 
   return {
-    // State
     isOnline,
     isSyncing,
     pendingCount,
     showOnboarding,
     userName,
     
-    // Actions
     refreshData,
     queueOperation,
     completeOnboarding,
     
-    // For compatibility with existing code
     fetchCloudData: syncFromCloud,
     isRefreshing: isSyncing,
   };
