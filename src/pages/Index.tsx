@@ -296,7 +296,7 @@ const Index = () => {
       case 'projects':
         return (
           <Suspense fallback={<ContentSkeleton />}>
-            <ProjectOverviewPage userId={user?.id} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} />
+            <ProjectOverviewPage userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} />
           </Suspense>
         );
       case 'ai':
