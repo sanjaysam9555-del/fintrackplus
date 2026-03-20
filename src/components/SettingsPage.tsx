@@ -291,8 +291,8 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   if (canViewPartners) {
     dataItems.push({ 
       icon: Users, 
-      label: "Partners", 
-      sublabel: `${partners?.length || 0} partner${(partners?.length || 0) !== 1 ? 's' : ''}`,
+      label: "Financial Holdings", 
+      sublabel: `${partners?.length || 0} member${(partners?.length || 0) !== 1 ? 's' : ''}`,
       onClick: () => handleSectionChange('partners')
     });
   }
