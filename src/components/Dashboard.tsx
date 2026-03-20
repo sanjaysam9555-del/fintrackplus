@@ -78,7 +78,10 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   
   // Filter transactions based on selected date range
   const filteredTransactions = useMemo(() => {
-    const filtered = transactions
+    const base = isEmployee
+      ? transactions.filter(t => t.userId === userId)
+      : transactions;
+    const filtered = base
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
       .slice();
     
