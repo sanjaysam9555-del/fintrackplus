@@ -1,72 +1,42 @@
 
 
-## Fix Employee Data Visibility, Dropdown & Project Access
+## Fix Employee Data Leaks: Graph Totals, AI Summary Access, Quick Actions
 
-### Issues
-1. **Employees see all transactions** — No client-side filtering exists; RLS returns all org transactions
-2. **Employees see all projects** — No filtering by `assigned_employee_ids`
-3. **Employee missing from "Handled By" dropdown** — Only `partners` records are shown; employees without a partner record don't appear
-4. **Employees can't INSERT transactions** — RLS only allows owners/admins to insert; employees need insert permission for their own transactions
-5. **Financial Holdings (Partners) should show all org members** — Currently only shows partner records (owners)
+### Issues Found
 
----
+1. **TransactionList `total` (line 63-65)** uses `getTotalIncome`/`getTotalExpense` which aggregate ALL org transactions — employees see the full business total in the header and chart total.
+2. **DesktopSidebar** always renders the "AI Summary" nav item regardless of role — employees can click it.
+3. **Dashboard quick actions** show "Logs" and "Reports" to employees, which per the role rules they shouldn't access.
 
-### Step 1: Add `userId` to Transaction type and map it
+Dashboard summary cards and cashflow chart are already hidden for employees (lines 262, 299). Transaction filtering is correct. The AI button on the dashboard is already hidden (lines 169, 225).
 
-**`src/lib/types.ts`** — Add `userId?: string` to the `Transaction` interface.
+### Changes
 
-**`src/hooks/useCloudSync.ts`** — Map `t.user_id` → `userId` in the transaction cloud fetch mapping.
+**1. `src/components/TransactionList.tsx`** — Compute `total` from `filteredTransactions` instead of `getTotalIncome`/`getTotalExpense`
 
-**`src/lib/syncEngine.ts`** — Map `user_id` ↔ `userId` in sync engine.
-
-### Step 2: Filter transactions for employees (client-side)
-
-**`src/components/Dashboard.tsx`** — Filter `filteredTransactions` to only show `t.userId === userId` when `isEmployee`.
-
-**`src/components/TransactionList.tsx`** — Accept `isEmployee` prop; filter transactions where `t.userId === userId` when employee.
-
-**`src/pages/Index.tsx`** — Pass `isEmployee` to `TransactionList`.
-
-### Step 3: Filter projects for employees (client-side)
-
-**`src/components/ProjectOverviewPage.tsx`** — When `isEmployee`, filter projects to only those where `assignedEmployeeIds` includes the current user's ID.
-
-**`src/pages/Index.tsx`** — Already passes `userId`; just need `isEmployee` passed to `ProjectOverviewPage`.
-
-**`src/components/AddTransactionSheet.tsx`** / **`EditTransactionSheet.tsx`** — Filter the project dropdown for employees to only assigned projects.
-
-### Step 4: Allow employees to INSERT transactions (RLS)
-
-**Database migration** — Add a new RLS policy on `transactions`:
-```sql
-CREATE POLICY "Employees can insert own transactions"
-  ON public.transactions FOR INSERT TO authenticated
-  WITH CHECK (
-    org_id = get_user_org_id(auth.uid())
-    AND user_id = auth.uid()
-  );
-```
-This allows any org member (including employees) to insert transactions tagged with their own `user_id`.
-
-### Step 5: Ensure all org members appear in "Handled By" dropdown
-
-The `manage-team` edge function should already create partner records for all new members (done in previous implementation). For the existing employee "Akash Kushwaha" who has no partner record, we need a **backfill migration**:
-
-```sql
-INSERT INTO public.partners (user_id, name, org_id, role)
-SELECT om.user_id, p.name, om.org_id, om.role::text
-FROM public.org_members om
-JOIN public.profiles p ON p.user_id = om.user_id
-WHERE om.status = 'active'
-  AND NOT EXISTS (
-    SELECT 1 FROM public.partners pt 
-    WHERE pt.user_id = om.user_id AND pt.org_id = om.org_id
-  );
+Replace lines 63-65:
+```typescript
+const total = useMemo(() => {
+  return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+}, [filteredTransactions]);
 ```
 
-### Step 6: Financial Holdings shows all org members (visible only to owners)
+This ensures employees only see the sum of their own filtered transactions, and owners/admins see the full org total (since their `filteredTransactions` isn't filtered by userId).
 
-**`src/components/settings/PartnersSection.tsx`** — Already restricted to owners via `canViewPartners`. No change needed for visibility. The backfill in Step 5 ensures admins/employees appear as financial records here too.
+**2. `src/components/DesktopSidebar.tsx`** — Accept `isEmployee` prop and hide "AI Summary" nav item for employees
+
+- Add `isEmployee?: boolean` to `DesktopSidebarProps`
+- Conditionally filter the Tools section to exclude AI Summary when `isEmployee`
+
+**3. `src/pages/Index.tsx`** — Pass `isEmployee` to `DesktopSidebar`
+
+**4. `src/components/Dashboard.tsx`** — Filter quick actions for employees
+
+- Hide "Logs" and "Reports" quick action buttons when `isEmployee` is true (per role rules: employees cannot view logs or reports)
+
+**5. `src/pages/Index.tsx`** — Block employee navigation to AI view
+
+- In `handleNavigate` and `handleTabChange`, prevent employees from reaching the 'ai' viewMode (defensive guard in case they somehow trigger it)
 
 ---
 
@@ -74,14 +44,8 @@ WHERE om.status = 'active'
 
 | File | Change |
 |---|---|
-| New migration | Employee INSERT policy on transactions + backfill missing partner records |
-| `src/lib/types.ts` | Add `userId` to Transaction |
-| `src/hooks/useCloudSync.ts` | Map `user_id` → `userId` |
-| `src/lib/syncEngine.ts` | Map `user_id` ↔ `userId` |
-| `src/components/Dashboard.tsx` | Filter transactions for employees |
-| `src/components/TransactionList.tsx` | Accept `isEmployee`, filter transactions |
-| `src/components/ProjectOverviewPage.tsx` | Accept `isEmployee`, filter projects |
-| `src/components/AddTransactionSheet.tsx` | Accept `isEmployee`+`userId`, filter projects dropdown |
-| `src/components/EditTransactionSheet.tsx` | Same as above |
-| `src/pages/Index.tsx` | Pass `isEmployee` to TransactionList, ProjectOverviewPage, AddTransactionSheet |
+| `src/components/TransactionList.tsx` | Compute total from filtered data |
+| `src/components/DesktopSidebar.tsx` | Accept `isEmployee`, hide AI Summary |
+| `src/components/Dashboard.tsx` | Hide Logs/Reports quick actions for employees |
+| `src/pages/Index.tsx` | Pass `isEmployee` to sidebar; guard AI navigation |
 
