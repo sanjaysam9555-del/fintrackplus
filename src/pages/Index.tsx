@@ -348,6 +348,7 @@ const Index = () => {
           onTabChange={handleTabChange}
           onAddClick={handleOpenAddSheet}
           onNavigate={handleNavigate}
+          isEmployee={isEmployee}
         />
         
         {/* Main Content Area */}

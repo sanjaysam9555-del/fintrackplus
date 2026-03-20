@@ -153,7 +153,7 @@ export const DesktopSidebar = ({
           )}
           <div className={cn("space-y-1", isCollapsed && "mt-4")}>
             {[
-              { id: 'ai', icon: Sparkles, label: 'AI Summary' },
+              ...(!isEmployee ? [{ id: 'ai', icon: Sparkles, label: 'AI Summary' }] : []),
               { id: 'settings', icon: Settings, label: 'Settings' },
             ].map((item) => {
               const isActive = viewMode === item.id;
