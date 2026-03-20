@@ -232,12 +232,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                         {toPartner ?
                       <div className="flex items-center gap-2">
+                            {toPartner.avatarUrl ? (
+                              <img src={toPartner.avatarUrl} alt={toPartner.name} className="w-6 h-6 rounded-full object-cover" />
+                            ) : (
                             <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
-                          style={{ backgroundColor: toPartner.color }}>
-                          
+                              className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                              style={{ backgroundColor: toPartner.color }}>
                               {toPartner.name.charAt(0).toUpperCase()}
                             </div>
+                            )}
                             <span className="text-sm font-medium">{toPartner.name}</span>
                           </div> :
 
