@@ -1039,10 +1039,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (category) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Category Deleted',
-            message: category.name,
+            message: `${userName} deleted category '${category.name}'`,
             details,
             entityType: 'category',
             entityId: id,
