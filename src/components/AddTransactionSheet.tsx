@@ -87,6 +87,10 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       if (notSpecifiedCat) setCategoryId(notSpecifiedCat.id);
     }
   }, [type, filteredCategories]);
+  const availableProjects = useMemo(() => {
+    if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
+    return projects.filter(p => !p.archived);
+  }, [projects, isEmployee, userId]);
   const selectedProject = projects.find(p => p.id === projectId);
   const selectedPartner = partners.find(p => p.userId === handledBy);
   
