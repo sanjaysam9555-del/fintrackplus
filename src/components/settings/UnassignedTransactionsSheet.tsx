@@ -27,10 +27,10 @@ export const UnassignedTransactionsSheet = ({
   const [assigningId, setAssigningId] = useState<string | null>(null);
 
   const unassignedTransactions = useMemo(() => {
-    const partnerIds = new Set(partners.map(p => p.id));
+    const partnerUserIds = new Set(partners.map(p => p.userId).filter(Boolean));
     return transactions
       .filter(t => t.date >= startDate && t.date <= endDate)
-      .filter(t => !t.handledBy || !partnerIds.has(t.handledBy))
+      .filter(t => !t.handledBy || !partnerUserIds.has(t.handledBy))
       .sort((a, b) => {
         const d = b.date.localeCompare(a.date);
         return d !== 0 ? d : b.time.localeCompare(a.time);
