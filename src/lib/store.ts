@@ -1335,10 +1335,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'edit',
           title: 'Vendor Updated',
-          message: updates.name || vendor?.name || 'Vendor modified',
+          message: `${userName} updated vendor '${updates.name || vendor?.name || 'Unknown'}'`,
           details: changes.length > 0 ? changes : undefined,
           entityType: 'vendor',
           entityId: id,
