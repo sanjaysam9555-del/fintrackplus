@@ -388,7 +388,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           addNotification({
             type: 'partner',
             title: 'Partner Photo Updated',
-            message: `Profile photo changed for ${partnerObj.name}`
+            message: `${useFinanceStore.getState().userProfile.name || 'Unknown'} updated profile photo for ${partnerObj.name}`
           });
         }
       }
