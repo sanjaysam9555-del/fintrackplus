@@ -335,11 +335,6 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
                     {member.profile?.email && (
                       <p className="text-xs text-muted-foreground truncate">{member.profile.email}</p>
                     )}
-                    {member.linkedPartner && (
-                      <p className="text-xs text-primary mt-0.5 truncate">
-                        Partner: {member.linkedPartner.name}
-                      </p>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
