@@ -593,7 +593,7 @@ export const createRealtimeSubscription = (
 
 // ============ Healing Refresh ============
 
-const HEAL_INTERVAL_MS = 30000; // 30 seconds
+const HEAL_INTERVAL_MS = 120000; // 2 minutes
 
 export const createHealingInterval = (
   onHeal: () => Promise<void>
