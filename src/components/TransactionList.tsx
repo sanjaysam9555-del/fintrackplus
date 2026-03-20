@@ -18,12 +18,13 @@ import type { TimeFilter } from "./TimeFrameSelector";
 interface TransactionListProps {
   type: TransactionType;
   userId?: string;
+  isEmployee?: boolean;
   onEditSheetChange?: (isOpen: boolean) => void;
   onSearchClick?: () => void;
   onNavigate?: (section: string) => void;
 }
 
-export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick, onNavigate }: TransactionListProps) => {
+export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetChange, onSearchClick, onNavigate }: TransactionListProps) => {
   const { transactions, categories, getTotalIncome, getTotalExpense, defaultTimeFilter } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
