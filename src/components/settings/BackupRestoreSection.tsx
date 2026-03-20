@@ -30,11 +30,11 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
 
   const fetchBackups = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("backups")
-      .select("id, label, snapshot, created_at")
-      .order("created_at", { ascending: false })
-      .limit(50);
+    const { data, error } = await supabase.
+    from("backups").
+    select("id, label, snapshot, created_at").
+    order("created_at", { ascending: false }).
+    limit(50);
 
     if (!error && data) {
       setBackups(data as BackupRow[]);
@@ -51,7 +51,7 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
     setCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke("create-backup", {
-        body: { org_id: orgId, created_by: user.id },
+        body: { org_id: orgId, created_by: user.id }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -69,7 +69,7 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.functions.invoke("restore-backup", {
-        body: { backup_id: backupId },
+        body: { backup_id: backupId }
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -115,8 +115,8 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
           </button>
           <h1 className="text-2xl font-bold">Backup & Restore</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-1 ml-1">
-          Your backups are stored forever — like diamonds, but more useful 💎
+        <p className="text-sm text-muted-foreground mt-1 ml-1">Your backups are stored forever like diamonds, but more useful 💎. Automatic snapshots run twice daily. You can also create one manually.
+
           <br />
           Automatic snapshots run twice daily. You can also create one manually.
         </p>
@@ -127,32 +127,32 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
           onClick={handleCreateBackup}
           disabled={creating}
           className="w-full gap-2"
-          size="lg"
-        >
+          size="lg">
+          
           {creating ? <Loader2 size={18} className="animate-spin" /> : <Plus size={18} />}
           {creating ? "Creating Backup..." : "Create Backup Now"}
         </Button>
       </div>
 
       <div className="px-4 mt-6 space-y-3">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
+        {loading ?
+        <div className="flex items-center justify-center py-12">
             <Loader2 className="animate-spin text-muted-foreground" size={24} />
-          </div>
-        ) : backups.length === 0 ? (
-          <div className="text-center py-12">
+          </div> :
+        backups.length === 0 ?
+        <div className="text-center py-12">
             <Database size={40} className="mx-auto text-muted-foreground/40 mb-3" />
             <p className="text-muted-foreground text-sm">No backups yet</p>
             <p className="text-muted-foreground/60 text-xs mt-1">
               Create your first backup or wait for the automatic schedule.
             </p>
-          </div>
-        ) : (
-          backups.map((backup) => (
-            <div
-              key={backup.id}
-              className="rounded-xl border bg-card p-4 space-y-2"
-            >
+          </div> :
+
+        backups.map((backup) =>
+        <div
+          key={backup.id}
+          className="rounded-xl border bg-card p-4 space-y-2">
+          
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{backup.label}</p>
@@ -161,9 +161,9 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
                   </p>
                 </div>
                 <button
-                  onClick={() => setDeleteTarget(backup)}
-                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                >
+              onClick={() => setDeleteTarget(backup)}
+              className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+              
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -173,26 +173,26 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
               </p>
 
               <Button
-                variant="outline"
-                size="sm"
-                className="w-full gap-2 mt-1"
-                disabled={restoringId === backup.id}
-                onClick={() => {
-                  if (confirm("⚠️ This will replace ALL current data with this backup. This action cannot be undone. Continue?")) {
-                    handleRestore(backup.id);
-                  }
-                }}
-              >
-                {restoringId === backup.id ? (
-                  <Loader2 size={14} className="animate-spin" />
-                ) : (
-                  <RotateCcw size={14} />
-                )}
+            variant="outline"
+            size="sm"
+            className="w-full gap-2 mt-1"
+            disabled={restoringId === backup.id}
+            onClick={() => {
+              if (confirm("⚠️ This will replace ALL current data with this backup. This action cannot be undone. Continue?")) {
+                handleRestore(backup.id);
+              }
+            }}>
+            
+                {restoringId === backup.id ?
+            <Loader2 size={14} className="animate-spin" /> :
+
+            <RotateCcw size={14} />
+            }
                 {restoringId === backup.id ? "Restoring..." : "Restore This Backup"}
               </Button>
             </div>
-          ))
-        )}
+        )
+        }
       </div>
 
       <DeleteConfirmDialog
@@ -200,8 +200,8 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Delete Backup"
-        description={`Delete "${deleteTarget?.label}"? This cannot be undone.`}
-      />
-    </div>
-  );
+        description={`Delete "${deleteTarget?.label}"? This cannot be undone.`} />
+      
+    </div>);
+
 };
