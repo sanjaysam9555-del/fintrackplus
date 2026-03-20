@@ -149,12 +149,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                   
                   <div className="flex flex-col items-center gap-2">
                     {toPartner ?
+                  {toPartner.avatarUrl ? (
+                    <img src={toPartner.avatarUrl} alt={toPartner.name} className="w-12 h-12 rounded-full object-cover" />
+                  ) : (
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
                     style={{ backgroundColor: toPartner.color }}>
-                    
                         {toPartner.name.charAt(0).toUpperCase()}
-                      </div> :
+                  </div>
+                  )}
 
                   <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                         <Users size={20} className="text-muted-foreground" />
