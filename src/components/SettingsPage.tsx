@@ -40,6 +40,7 @@ import { LabelsSection } from "./settings/LabelsSection";
 import { AppFeaturesGuide } from "./settings/AppFeaturesGuide";
 import { TeamSection } from "./settings/TeamSection";
 import { ChangeApprovalPage } from "./settings/ChangeApprovalPage";
+import { BackupRestoreSection } from "./settings/BackupRestoreSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
