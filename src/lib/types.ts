@@ -54,7 +54,7 @@ export interface Transaction {
   vendor: string;
   categoryId: string;
   projectId?: string;
-  partnerId?: string;
+  handledBy?: string;
   paymentMethod: PaymentMethod;
   date: string;
   time: string;
