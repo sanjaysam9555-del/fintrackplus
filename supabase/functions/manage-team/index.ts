@@ -284,43 +284,30 @@ Deno.serve(async (req) => {
         const existingOrgPartner = partnerCandidates?.find((partner) => partner.org_id === orgId);
         const foreignOrgPartner = partnerCandidates?.find((partner) => partner.org_id !== orgId);
 
-        // If role is owner, link to existing partner or create/move one into the org
-        if (role === "owner") {
-          if (existingPartnerId) {
-            const { data: selectedPartner, error: selectedPartnerError } = await adminClient
-              .from("partners")
-              .select("id, org_id")
-              .eq("id", existingPartnerId)
-              .eq("org_id", orgId)
-              .maybeSingle();
-
-            if (selectedPartnerError || !selectedPartner) {
-              return new Response(
-                JSON.stringify({ error: "Selected partner not found in this organization" }),
-                {
-                  status: 404,
-                  headers: { ...corsHeaders, "Content-Type": "application/json" },
-                }
-              );
-            }
-
+        // Create partner record for ALL roles (not just owners)
+        if (!existingOrgPartner) {
+          if (role === "owner" && existingPartnerId) {
             await adminClient
               .from("partners")
               .update({ user_id: userId })
               .eq("id", existingPartnerId)
               .eq("org_id", orgId);
-          } else if (!existingOrgPartner && foreignOrgPartner) {
+          } else if (foreignOrgPartner) {
             await adminClient
               .from("partners")
-              .update({ org_id: orgId, name })
+              .update({ org_id: orgId, name, role })
               .eq("id", foreignOrgPartner.id);
-          } else if (!existingOrgPartner) {
+          } else {
             await adminClient.from("partners").insert({
               user_id: userId,
               name,
               org_id: orgId,
+              role,
             });
           }
+        } else {
+          // Update role on existing partner
+          await adminClient.from("partners").update({ role }).eq("id", existingOrgPartner.id);
         }
 
         return new Response(
