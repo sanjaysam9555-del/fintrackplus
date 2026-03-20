@@ -41,6 +41,8 @@ export interface Partner {
   initialCashBalance: number;
   initialOnlineBalance: number;
   avatarUrl?: string;
+  userId?: string;
+  role?: string;
   createdAt: string;
 }
 
