@@ -376,6 +376,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   const menuItems = [
     ...(dataItems.length > 0 ? [{ section: "Data Management", items: dataItems }] : []),
     ...(teamItems.length > 0 ? [{ section: "Team & Approvals", items: teamItems }] : []),
+    ...(backupItems.length > 0 ? [{ section: "Backup", items: backupItems }] : []),
   ];
   
   const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
