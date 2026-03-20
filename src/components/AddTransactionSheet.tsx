@@ -53,7 +53,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [vendor, setVendor] = useState("Not Specified");
   const [categoryId, setCategoryId] = useState("");
   const [projectId, setProjectId] = useState("");
-  const [partnerId, setPartnerId] = useState("");
+  const [handledBy, setHandledBy] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState("");
@@ -87,7 +87,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     }
   }, [type, filteredCategories]);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.id === partnerId);
+  const selectedPartner = partners.find(p => p.userId === handledBy);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
@@ -150,7 +150,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       vendor: vendor || 'Not Specified',
       categoryId,
       projectId: projectId || undefined,
-      partnerId: partnerId || undefined,
+      handledBy: handledBy || undefined,
       paymentMethod,
       date: format(date, 'yyyy-MM-dd'),
       time: format(new Date(), 'HH:mm'),
@@ -175,7 +175,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setVendor("Not Specified");
     setCategoryId("");
     setProjectId("");
-    setPartnerId("");
+    setHandledBy("");
     setNotes("");
     setVendorSearch("");
     setIsRecurring(false);
@@ -188,7 +188,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setTotalExpectedAmount("");
     setPlannedInstallments([]);
     onClose();
-  }, [type, amount, title, vendor, categoryId, projectId, partnerId, paymentMethod, date, notes, isRecurring, recurringFrequency, receiptUrl, isGst, isPartPayment, totalExpectedAmount, plannedInstallments, userId, addTransaction, onClose]);
+  }, [type, amount, title, vendor, categoryId, projectId, handledBy, paymentMethod, date, notes, isRecurring, recurringFrequency, receiptUrl, isGst, isPartPayment, totalExpectedAmount, plannedInstallments, userId, addTransaction, onClose]);
   
   // Installment helper functions
   const addNewInstallment = useCallback(() => {
@@ -724,30 +724,30 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         <div className="space-y-1">
                           <button
                             onClick={() => {
-                              setPartnerId("");
+                              setHandledBy("");
                               setShowPartners(false);
                             }}
                             className={cn(
                               "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
-                              !partnerId ? "bg-primary/10" : "hover:bg-muted"
+                              !handledBy ? "bg-primary/10" : "hover:bg-muted"
                             )}
                           >
                             <div className="w-6 h-6 rounded-full bg-muted flex items-center justify-center">
                               <Users size={12} className="text-muted-foreground" />
                             </div>
                             <span className="flex-1 text-muted-foreground">None</span>
-                            <Check size={14} className={cn("text-primary shrink-0", !partnerId ? "opacity-100" : "opacity-0")} />
+                            <Check size={14} className={cn("text-primary shrink-0", !handledBy ? "opacity-100" : "opacity-0")} />
                           </button>
                           {partners.map((p) => (
                             <button
                               key={p.id}
                               onClick={() => {
-                                setPartnerId(p.id);
+                                setHandledBy(p.userId || p.id);
                                 setShowPartners(false);
                               }}
                               className={cn(
                                 "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
-                                partnerId === p.id ? "bg-primary/10" : "hover:bg-muted"
+                                handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
                               )}
                             >
                               {p.avatarUrl ? (
@@ -761,7 +761,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 </div>
                               )}
                               <span className="flex-1">{p.name}</span>
-                              <Check size={14} className={cn("text-primary shrink-0", partnerId === p.id ? "opacity-100" : "opacity-0")} />
+                              <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
                             </button>
                           ))}
                         </div>

@@ -60,9 +60,9 @@ export const InstallmentDueReminder = ({ userId }: InstallmentDueReminderProps) 
     return due;
   }, [transactions, todayStr, dismissedIds]);
 
-  const handleConfirm = async (item: DueInstallment, paymentMethod: PaymentMethod, partnerId?: string) => {
+  const handleConfirm = async (item: DueInstallment, paymentMethod: PaymentMethod, handledBy?: string) => {
     setConfirmingId(item.installmentId);
-    confirmInstallment(item.parentTransactionId, item.installmentId, userId, { paymentMethod, partnerId });
+    confirmInstallment(item.parentTransactionId, item.installmentId, userId, { paymentMethod, handledBy });
     setExpandedConfirmId(null);
     setTimeout(() => setConfirmingId(null), 500);
   };
@@ -185,8 +185,8 @@ export const InstallmentDueReminder = ({ userId }: InstallmentDueReminderProps) 
                       defaultPaymentMethod={
                         (transactions.find(t => t.id === item.parentTransactionId)?.paymentMethod as PaymentMethod) || 'cash'
                       }
-                      defaultPartnerId={
-                        transactions.find(t => t.id === item.parentTransactionId)?.partnerId
+                      defaultHandledBy={
+                        transactions.find(t => t.id === item.parentTransactionId)?.handledBy
                       }
                       amount={item.amount}
                       onConfirm={(pm, pid) => handleConfirm(item, pm, pid)}

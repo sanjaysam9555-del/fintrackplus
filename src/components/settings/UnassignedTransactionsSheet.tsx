@@ -27,18 +27,18 @@ export const UnassignedTransactionsSheet = ({
   const [assigningId, setAssigningId] = useState<string | null>(null);
 
   const unassignedTransactions = useMemo(() => {
-    const partnerIds = new Set(partners.map(p => p.id));
+    const partnerUserIds = new Set(partners.map(p => p.userId).filter(Boolean));
     return transactions
       .filter(t => t.date >= startDate && t.date <= endDate)
-      .filter(t => !t.partnerId || !partnerIds.has(t.partnerId))
+      .filter(t => !t.handledBy || !partnerUserIds.has(t.handledBy))
       .sort((a, b) => {
         const d = b.date.localeCompare(a.date);
         return d !== 0 ? d : b.time.localeCompare(a.time);
       });
   }, [transactions, partners, startDate, endDate]);
 
-  const handleAssign = (transactionId: string, partnerId: string) => {
-    updateTransaction(transactionId, { partnerId }, userId);
+  const handleAssign = (transactionId: string, handledBy: string) => {
+    updateTransaction(transactionId, { handledBy }, userId);
     setAssigningId(null);
   };
 
@@ -105,14 +105,14 @@ export const UnassignedTransactionsSheet = ({
                   {/* Assign control */}
                   <Select
                     value=""
-                    onValueChange={(partnerId) => handleAssign(t.id, partnerId)}
+                    onValueChange={(handledBy) => handleAssign(t.id, handledBy)}
                   >
                     <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Assign to partner…" />
+                      <SelectValue placeholder="Assign to team member…" />
                     </SelectTrigger>
                     <SelectContent>
                       {partners.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
+                        <SelectItem key={p.id} value={p.userId || p.id}>
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full flex-shrink-0"

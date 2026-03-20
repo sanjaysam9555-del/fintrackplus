@@ -16,10 +16,10 @@ interface InstallmentRowProps {
   onUpdate: (updates: Partial<PlannedInstallment>) => void;
   onRemove: () => void;
   showConfirmButton?: boolean;
-  onConfirm?: (paymentMethod: PaymentMethod, partnerId?: string) => void;
+  onConfirm?: (paymentMethod: PaymentMethod, handledBy?: string) => void;
   readOnly?: boolean;
   defaultPaymentMethod?: PaymentMethod;
-  defaultPartnerId?: string;
+  defaultHandledBy?: string;
 }
 
 export const InstallmentRow = ({
@@ -31,7 +31,7 @@ export const InstallmentRow = ({
   onConfirm,
   readOnly = false,
   defaultPaymentMethod = 'cash',
-  defaultPartnerId
+  defaultHandledBy
 }: InstallmentRowProps) => {
   const [showForm, setShowForm] = useState(false);
 
@@ -137,7 +137,7 @@ export const InstallmentRow = ({
       {showForm && installment.status === 'pending' && (
         <InstallmentConfirmForm
           defaultPaymentMethod={defaultPaymentMethod}
-          defaultPartnerId={defaultPartnerId}
+          defaultHandledBy={defaultHandledBy}
           amount={installment.amount}
           onConfirm={(pm, pid) => {
             onConfirm?.(pm, pid);

@@ -140,7 +140,7 @@ export const useCloudSync = () => {
           vendor: t.vendor,
           categoryId: t.category_id || '',
           projectId: t.project_id || undefined,
-          partnerId: (t as unknown as { partner_id?: string }).partner_id || undefined,
+          handledBy: (t as unknown as { handled_by?: string }).handled_by || undefined,
           paymentMethod: t.payment_method as 'cash' | 'online',
           date: t.date,
           time: t.time,
@@ -167,6 +167,8 @@ export const useCloudSync = () => {
             initialCashBalance: Number(p.initial_cash_balance) || 0,
             initialOnlineBalance: Number(p.initial_online_balance) || 0,
             avatarUrl: linkedProfile?.avatar_url || p.avatar_url || undefined,
+            userId: p.user_id,
+            role: (p as any).role || 'owner',
             createdAt: p.created_at.split('T')[0]
           };
         }) || [],

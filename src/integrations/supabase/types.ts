@@ -218,6 +218,7 @@ export type Database = {
           initial_online_balance: number
           name: string
           org_id: string | null
+          role: string | null
           user_id: string
         }
         Insert: {
@@ -229,6 +230,7 @@ export type Database = {
           initial_online_balance?: number
           name: string
           org_id?: string | null
+          role?: string | null
           user_id: string
         }
         Update: {
@@ -240,6 +242,7 @@ export type Database = {
           initial_online_balance?: number
           name?: string
           org_id?: string | null
+          role?: string | null
           user_id?: string
         }
         Relationships: [
@@ -453,6 +456,7 @@ export type Database = {
           category_id: string | null
           created_at: string
           date: string
+          handled_by: string | null
           id: string
           is_gst: boolean | null
           is_part_payment: boolean | null
@@ -460,7 +464,6 @@ export type Database = {
           linked_transaction_id: string | null
           notes: string | null
           org_id: string | null
-          partner_id: string | null
           payment_method: string
           planned_installments: Json | null
           project_id: string | null
@@ -478,6 +481,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           date?: string
+          handled_by?: string | null
           id?: string
           is_gst?: boolean | null
           is_part_payment?: boolean | null
@@ -485,7 +489,6 @@ export type Database = {
           linked_transaction_id?: string | null
           notes?: string | null
           org_id?: string | null
-          partner_id?: string | null
           payment_method: string
           planned_installments?: Json | null
           project_id?: string | null
@@ -503,6 +506,7 @@ export type Database = {
           category_id?: string | null
           created_at?: string
           date?: string
+          handled_by?: string | null
           id?: string
           is_gst?: boolean | null
           is_part_payment?: boolean | null
@@ -510,7 +514,6 @@ export type Database = {
           linked_transaction_id?: string | null
           notes?: string | null
           org_id?: string | null
-          partner_id?: string | null
           payment_method?: string
           planned_installments?: Json | null
           project_id?: string | null
@@ -536,13 +539,6 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "transactions_partner_id_fkey"
-            columns: ["partner_id"]
-            isOneToOne: false
-            referencedRelation: "partners"
             referencedColumns: ["id"]
           },
           {

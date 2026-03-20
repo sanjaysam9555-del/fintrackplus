@@ -26,7 +26,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
   const { deleteTransaction, addTransaction, projects, partners } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const partner = partners.find(p => p.id === transaction.partnerId);
+  const partner = partners.find(p => p.userId === transaction.handledBy);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
@@ -71,7 +71,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
             vendor: deletedTransaction.vendor,
             categoryId: deletedTransaction.categoryId,
             projectId: deletedTransaction.projectId,
-            partnerId: deletedTransaction.partnerId,
+            handledBy: deletedTransaction.handledBy,
             paymentMethod: deletedTransaction.paymentMethod,
             date: deletedTransaction.date,
             time: deletedTransaction.time,
@@ -95,7 +95,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
               vendor: deletedLinked.vendor,
               categoryId: deletedLinked.categoryId,
               projectId: deletedLinked.projectId,
-              partnerId: deletedLinked.partnerId,
+              handledBy: deletedLinked.handledBy,
               paymentMethod: deletedLinked.paymentMethod,
               date: deletedLinked.date,
               time: deletedLinked.time,

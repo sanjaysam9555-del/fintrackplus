@@ -17,22 +17,22 @@ import { cn } from "@/lib/utils";
 
 interface InstallmentConfirmFormProps {
   defaultPaymentMethod: PaymentMethod;
-  defaultPartnerId?: string;
+  defaultHandledBy?: string;
   amount: number;
-  onConfirm: (paymentMethod: PaymentMethod, partnerId?: string) => void;
+  onConfirm: (paymentMethod: PaymentMethod, handledBy?: string) => void;
   onCancel: () => void;
 }
 
 export const InstallmentConfirmForm = ({
   defaultPaymentMethod,
-  defaultPartnerId,
+  defaultHandledBy,
   amount,
   onConfirm,
   onCancel,
 }: InstallmentConfirmFormProps) => {
   const { partners } = useFinanceStore();
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(defaultPaymentMethod);
-  const [partnerId, setPartnerId] = useState<string | undefined>(defaultPartnerId);
+  const [handledBy, setHandledBy] = useState<string | undefined>(defaultHandledBy);
 
   return (
     <div className="p-3 bg-muted/50 border border-border rounded-lg space-y-3 mt-2">
@@ -80,8 +80,8 @@ export const InstallmentConfirmForm = ({
         <div className="space-y-1.5">
           <Label className="text-xs text-muted-foreground">Handled By</Label>
           <Select
-            value={partnerId || "__none__"}
-            onValueChange={(v) => setPartnerId(v === "__none__" ? undefined : v)}
+            value={handledBy || "__none__"}
+            onValueChange={(v) => setHandledBy(v === "__none__" ? undefined : v)}
           >
             <SelectTrigger className="h-8 text-sm">
               <SelectValue placeholder="No partner" />
@@ -103,7 +103,7 @@ export const InstallmentConfirmForm = ({
         <Button
           size="sm"
           className="flex-1 bg-success hover:bg-success/90 text-white text-xs"
-          onClick={() => onConfirm(paymentMethod, partnerId)}
+          onClick={() => onConfirm(paymentMethod, handledBy)}
         >
           Confirm Payment
         </Button>

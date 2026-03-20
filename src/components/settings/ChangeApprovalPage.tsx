@@ -118,11 +118,14 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
         } else if (approval.action === 'edit' && approval.entity_type === 'transaction') {
           await supabase.from('transactions').update(approval.proposed_changes).eq('id', approval.entity_id);
         } else if (approval.action === 'delete' && approval.entity_type === 'partner') {
-          // Unassign transactions first
-          await supabase
-            .from('transactions')
-            .update({ partner_id: null })
-            .eq('partner_id', approval.entity_id);
+          // Unassign transactions handled by this partner's user_id
+          const { data: partnerData } = await supabase.from('partners').select('user_id').eq('id', approval.entity_id).maybeSingle();
+          if (partnerData?.user_id) {
+            await supabase
+              .from('transactions')
+              .update({ handled_by: null } as any)
+              .eq('handled_by', partnerData.user_id);
+          }
           await supabase.from('partners').delete().eq('id', approval.entity_id);
         } else if (approval.action === 'delete' && approval.entity_type === 'team_member') {
           // Invoke edge function to remove team member

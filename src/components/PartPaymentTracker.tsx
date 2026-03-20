@@ -71,7 +71,7 @@ export const PartPaymentTracker = ({ onAddNextPayment, onEditPayment }: PartPaym
       {groupedPayments.map((group) => {
         const category = categories.find(c => c.id === group.parent.categoryId);
         const project = projects.find(p => p.id === group.parent.projectId);
-        const partner = partners.find(p => p.id === group.parent.partnerId);
+        const partner = partners.find(p => p.userId === group.parent.handledBy);
         const isExpanded = expandedId === group.parent.id;
         const isComplete = group.remaining === 0;
         
@@ -219,10 +219,10 @@ export const PartPaymentTracker = ({ onAddNextPayment, onEditPayment }: PartPaym
                               {confirmingInstId === inst.id && (
                                 <InstallmentConfirmForm
                                   defaultPaymentMethod={group.parent.paymentMethod as PaymentMethod}
-                                  defaultPartnerId={group.parent.partnerId}
+                                  defaultHandledBy={group.parent.handledBy}
                                   amount={inst.amount}
                                   onConfirm={(pm, pid) => {
-                                    confirmInstallment(group.parent.id, inst.id, user?.id, { paymentMethod: pm, partnerId: pid });
+                                    confirmInstallment(group.parent.id, inst.id, user?.id, { paymentMethod: pm, handledBy: pid });
                                     setConfirmingInstId(null);
                                   }}
                                   onCancel={() => setConfirmingInstId(null)}

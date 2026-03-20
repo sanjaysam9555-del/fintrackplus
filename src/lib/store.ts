@@ -76,7 +76,7 @@ interface FinanceStore extends FinanceState {
   }, userId?: string) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
-  confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; partnerId?: string }) => void;
+  confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; handledBy?: string }) => void;
   
   // Category actions
   addCategory: (category: Omit<Category, 'id'>, userId?: string) => void;
@@ -380,7 +380,7 @@ export const useFinanceStore = create<FinanceStore>()(
           vendor: transaction.vendor,
           category_id: (transaction.categoryId && get().categories.some(c => c.id === transaction.categoryId)) ? transaction.categoryId : null,
           project_id: transaction.projectId || null,
-          partner_id: transaction.partnerId || null,
+          handled_by: transaction.handledBy || null,
           payment_method: transaction.paymentMethod,
           date: transaction.date,
           time: transaction.time,
@@ -437,7 +437,7 @@ export const useFinanceStore = create<FinanceStore>()(
           { field: 'Date', from: 'New', to: transaction.date },
         ];
         if (transaction.projectId) addDetails.push({ field: 'Project', from: 'New', to: getProjectName(transaction.projectId) });
-        if (transaction.partnerId) addDetails.push({ field: 'Partner', from: 'New', to: getPartnerName(transaction.partnerId) });
+        if (transaction.handledBy) addDetails.push({ field: 'Partner', from: 'New', to: getPartnerName(transaction.handledBy) });
         
         get().addNotification({
           type: 'transaction',
@@ -461,7 +461,7 @@ export const useFinanceStore = create<FinanceStore>()(
           title: `Transfer to ${params.toPartnerName}`,
           vendor: 'Partner Transfer',
           categoryId: params.expenseCategoryId,
-          partnerId: params.fromPartnerId,
+          handledBy: params.fromPartnerId,
           paymentMethod: params.paymentMethod,
           date: params.date,
           time: params.time,
@@ -477,7 +477,7 @@ export const useFinanceStore = create<FinanceStore>()(
           title: `Transfer from ${params.fromPartnerName}`,
           vendor: 'Partner Transfer',
           categoryId: params.incomeCategoryId,
-          partnerId: params.toPartnerId,
+          handledBy: params.toPartnerId,
           paymentMethod: params.paymentMethod,
           date: params.date,
           time: params.time,
@@ -507,7 +507,7 @@ export const useFinanceStore = create<FinanceStore>()(
             vendor: txn.vendor,
             category_id: validCategoryId,
             project_id: txn.projectId || null,
-            partner_id: txn.partnerId || null,
+            handled_by: txn.handledBy || null,
             payment_method: txn.paymentMethod,
             date: txn.date,
             time: txn.time,
@@ -559,8 +559,8 @@ export const useFinanceStore = create<FinanceStore>()(
           categories.find(c => c.id === catId)?.name || 'None';
         const getProjectName = (projId?: string) => 
           projects.find(p => p.id === projId)?.name || 'None';
-        const getPartnerName = (partnerId?: string) => 
-          partners.find(p => p.id === partnerId)?.name || 'None';
+        const getPartnerName = (handledBy?: string) => 
+          partners.find(p => p.userId === handledBy)?.name || 'None';
         
         // Build change details before update
         const changes: NotificationChange[] = [];
@@ -601,11 +601,11 @@ export const useFinanceStore = create<FinanceStore>()(
               to: getProjectName(updates.projectId)
             });
           }
-          if (updates.partnerId !== undefined && updates.partnerId !== transaction.partnerId) {
+          if (updates.handledBy !== undefined && updates.handledBy !== transaction.handledBy) {
             changes.push({
               field: 'Partner',
-              from: getPartnerName(transaction.partnerId),
-              to: getPartnerName(updates.partnerId)
+              from: getPartnerName(transaction.handledBy),
+              to: getPartnerName(updates.handledBy)
             });
           }
           if (updates.paymentMethod && updates.paymentMethod !== transaction.paymentMethod) {
@@ -647,7 +647,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.vendor) dbUpdates.vendor = updates.vendor;
           if (updates.categoryId !== undefined) dbUpdates.category_id = updates.categoryId || null;
           if (updates.projectId !== undefined) dbUpdates.project_id = updates.projectId || null;
-          if (updates.partnerId !== undefined) dbUpdates.partner_id = updates.partnerId || null;
+          if (updates.handledBy !== undefined) dbUpdates.handled_by = updates.handledBy || null;
           if (updates.paymentMethod) dbUpdates.payment_method = updates.paymentMethod;
           if (updates.date) dbUpdates.date = updates.date;
           if (updates.time) dbUpdates.time = updates.time;
@@ -704,8 +704,8 @@ export const useFinanceStore = create<FinanceStore>()(
           categories.find(c => c.id === catId)?.name || 'None';
         const getProjectName = (projId?: string) => 
           projects.find(p => p.id === projId)?.name || 'None';
-        const getPartnerName = (partnerId?: string) => 
-          partners.find(p => p.id === partnerId)?.name || 'None';
+        const getPartnerName = (handledBy?: string) => 
+          partners.find(p => p.userId === handledBy)?.name || 'None';
         
         // Capture details before deletion
         const details: NotificationChange[] = transaction ? [
@@ -714,7 +714,7 @@ export const useFinanceStore = create<FinanceStore>()(
           { field: 'Date', from: transaction.date, to: 'Deleted' },
           { field: 'Category', from: getCategoryName(transaction.categoryId), to: 'Deleted' },
           ...(transaction.projectId ? [{ field: 'Project', from: getProjectName(transaction.projectId), to: 'Deleted' }] : []),
-          ...(transaction.partnerId ? [{ field: 'Partner', from: getPartnerName(transaction.partnerId), to: 'Deleted' }] : []),
+          ...(transaction.handledBy ? [{ field: 'Partner', from: getPartnerName(transaction.handledBy), to: 'Deleted' }] : []),
           { field: 'Payment', from: transaction.paymentMethod === 'cash' ? 'Cash' : 'Online', to: 'Deleted' },
         ] : [];
         
@@ -786,7 +786,7 @@ export const useFinanceStore = create<FinanceStore>()(
           vendor: parent.vendor,
           categoryId: parent.categoryId,
           projectId: parent.projectId,
-          partnerId: overrides?.partnerId ?? parent.partnerId,
+          handledBy: overrides?.handledBy ?? parent.handledBy,
           paymentMethod: overrides?.paymentMethod ?? parent.paymentMethod,
           date: today.toISOString().split('T')[0],
           time: `${String(today.getHours()).padStart(2, '0')}:${String(today.getMinutes()).padStart(2, '0')}`,
@@ -830,7 +830,7 @@ export const useFinanceStore = create<FinanceStore>()(
               vendor: linkedTransaction.vendor,
               category_id: linkedTransaction.categoryId || null,
               project_id: linkedTransaction.projectId || null,
-              partner_id: linkedTransaction.partnerId || null,
+              handled_by: linkedTransaction.handledBy || null,
               payment_method: linkedTransaction.paymentMethod,
               date: linkedTransaction.date,
               time: linkedTransaction.time,
@@ -1461,16 +1461,17 @@ export const useFinanceStore = create<FinanceStore>()(
         ] : [];
         
         // Find all transactions assigned to this partner so we can unassign them
-        const affectedTransactionIds = get().transactions
-          .filter(t => t.partnerId === id)
-          .map(t => t.id);
+        const partnerUserId = partner?.userId;
+        const affectedTransactionIds = partnerUserId ? get().transactions
+          .filter(t => t.handledBy === partnerUserId)
+          .map(t => t.id) : [];
         
         set((state) => ({
           partners: state.partners.filter((p) => p.id !== id),
           // Unassign transactions from deleted partner
-          transactions: state.transactions.map(t => 
-            t.partnerId === id ? { ...t, partnerId: undefined } : t
-          ),
+          transactions: partnerUserId ? state.transactions.map(t => 
+            t.handledBy === partnerUserId ? { ...t, handledBy: undefined } : t
+          ) : state.transactions,
         }));
         
         if (userId) {
@@ -1489,7 +1490,7 @@ export const useFinanceStore = create<FinanceStore>()(
               type: 'update',
               entity: 'transaction',
               entityId: txnId,
-              data: { partner_id: null },
+              data: { handled_by: null },
               userId,
             });
           });
@@ -1655,7 +1656,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          const partnerTxns = transactions.filter(t => t.partnerId === partner.id);
+          const partnerTxns = transactions.filter(t => t.handledBy === partner.userId);
           
           const cashTxns = partnerTxns.filter(t => t.paymentMethod === 'cash');
           const onlineTxns = partnerTxns.filter(t => t.paymentMethod === 'online');
@@ -1693,10 +1694,10 @@ export const useFinanceStore = create<FinanceStore>()(
         return partners.map(partner => {
           // Opening balance = initialBalance + all transactions BEFORE startDate
           const txnsBeforePeriod = transactions.filter(t => 
-            t.partnerId === partner.id && t.date < startDate
+            t.handledBy === partner.userId && t.date < startDate
           );
           const txnsInPeriod = transactions.filter(t => 
-            t.partnerId === partner.id && t.date >= startDate && t.date <= endDate
+            t.handledBy === partner.userId && t.date >= startDate && t.date <= endDate
           );
           
           // Calculate opening balances (initial + all txns before period)

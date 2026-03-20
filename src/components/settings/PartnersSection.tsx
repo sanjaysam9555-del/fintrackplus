@@ -322,10 +322,10 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
   // Compute unassigned/orphaned transactions
   const unassignedStats = useMemo(() => {
-    const partnerIds = new Set(partners.map(p => p.id));
+    const partnerUserIds = new Set(partners.map(p => p.userId).filter(Boolean));
     const unassigned = transactions
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
-      .filter(t => !t.partnerId || !partnerIds.has(t.partnerId));
+      .filter(t => !t.handledBy || !partnerUserIds.has(t.handledBy));
     
     let cashNet = 0;
     let onlineNet = 0;
@@ -383,7 +383,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       
       // Log partner photo change if editing an existing partner
       if (editingPartner) {
-        const partnerObj = partners.find(p => p.id === editingPartner);
+        const partnerObj = partners.find(p => p.userId === editingPartner);
         if (partnerObj) {
           addNotification({
             type: 'partner',
@@ -419,8 +419,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setIsAddOpen(false);
   };
   
-  const handleEdit = (partnerId: string) => {
-    const partner = partners.find(p => p.id === partnerId);
+  const handleEdit = (handledBy: string) => {
+    const partner = partners.find(p => p.userId === handledBy);
     if (!partner) return;
     
     setName(partner.name);
@@ -428,7 +428,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setInitialCash(partner.initialCashBalance.toString());
     setInitialOnline(partner.initialOnlineBalance.toString());
     setAvatarUrl(partner.avatarUrl);
-    setEditingPartner(partnerId);
+    setEditingPartner(handledBy);
   };
   
   const handleUpdate = async () => {
@@ -443,7 +443,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     }, userId);
 
     // If this partner is linked to a user (owner), sync name/avatar to their profile
-    const partnerRecord = partners.find(p => p.id === editingPartner);
+    const partnerRecord = partners.find(p => p.userId === editingPartner);
     if (partnerRecord) {
       const { data: dbPartner } = await supabase
         .from('partners')
@@ -464,16 +464,16 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
 
   
-  const handleDelete = async (partnerId: string, e?: React.MouseEvent) => {
+  const handleDelete = async (handledBy: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const partner = partners.find(p => p.id === partnerId);
+    const partner = partners.find(p => p.userId === handledBy);
     if (!partner) return;
 
     // Check if this partner is linked to a user (owner-linked)
     const { data: dbPartner } = await supabase
       .from('partners')
       .select('user_id')
-      .eq('id', partnerId)
+      .eq('id', handledBy)
       .maybeSingle();
 
     const { data: orgMember } = dbPartner?.user_id
@@ -580,9 +580,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     }
   };
   
-  const handleEditClick = (partnerId: string, e: React.MouseEvent) => {
+  const handleEditClick = (handledBy: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    handleEdit(partnerId);
+    handleEdit(handledBy);
   };
   
   const openPartnerDetail = (balanceData: typeof partnerBalances[0]) => {
@@ -820,7 +820,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         )}
       </div>
       
-      {/* Transfer Between Partners Button */}
+      {/* Transfer Between Team Button */}
       {partners.length >= 2 && (
         <div className="px-4 mt-4">
           <Button
@@ -830,7 +830,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             onClick={() => setShowTransferSheet(true)}
           >
             <ArrowLeftRight size={18} className="mr-2" />
-            Transfer Between Partners
+            Transfer Between Team
           </Button>
         </div>
       )}

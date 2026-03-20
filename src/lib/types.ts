@@ -41,6 +41,8 @@ export interface Partner {
   initialCashBalance: number;
   initialOnlineBalance: number;
   avatarUrl?: string;
+  userId?: string;
+  role?: string;
   createdAt: string;
 }
 
@@ -52,7 +54,7 @@ export interface Transaction {
   vendor: string;
   categoryId: string;
   projectId?: string;
-  partnerId?: string;
+  handledBy?: string;
   paymentMethod: PaymentMethod;
   date: string;
   time: string;
