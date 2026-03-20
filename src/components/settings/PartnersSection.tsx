@@ -512,7 +512,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           addNotification({
             type: 'partner',
             title: 'Deletion Requested',
-            message: `${currentUserName} requested deletion of partner "${partner.name}"`
+            message: `${currentUserName} requested deletion of partner '${partner.name}'`
           });
           toast.success('Deletion request sent for approval');
         } catch (err: any) {
