@@ -163,7 +163,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                 
                 {/* From Partner */}
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">From Partner *</Label>
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">FROM *</Label>
                   <Popover open={showFromPartners} onOpenChange={setShowFromPartners}>
                     <PopoverTrigger asChild>
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
