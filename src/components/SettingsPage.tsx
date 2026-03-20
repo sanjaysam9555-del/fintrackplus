@@ -447,6 +447,34 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         </div>
       </div>
       
+      {/* Organization Card */}
+      <div className="px-4 mb-3">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          onClick={() => isOwner && setShowOrgEdit(true)}
+          className={cn(
+            "bg-card rounded-2xl p-3 shadow-card border border-border transition-colors",
+            isOwner ? "cursor-pointer hover:bg-muted/50" : ""
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-14 h-14 rounded-2xl overflow-hidden border border-border bg-muted flex items-center justify-center">
+              {orgLogoUrl ? (
+                <img src={orgLogoUrl} alt="Org" className="w-full h-full object-cover" />
+              ) : (
+                <Building2 size={24} className="text-muted-foreground" />
+              )}
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold">{orgName || 'My Organization'}</h2>
+              <p className="text-sm text-muted-foreground capitalize">{isOwner ? 'Owner' : isAdmin ? 'Admin' : 'Employee'}</p>
+            </div>
+            {isOwner && <ChevronRight size={18} className="text-muted-foreground" />}
+          </div>
+        </motion.div>
+      </div>
+
       {/* Profile Card */}
       <div className="px-4 mb-6">
         <motion.div
