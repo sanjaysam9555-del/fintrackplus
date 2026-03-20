@@ -24,7 +24,8 @@ import {
   Loader2,
   WifiOff,
   Shield,
-  ClipboardCheck
+  ClipboardCheck,
+  Database
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
