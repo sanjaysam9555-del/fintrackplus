@@ -34,7 +34,8 @@ interface EditTransactionSheetProps {
 export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: EditTransactionSheetProps) => {
   const navigate = useNavigate();
   const { categories, projects, transactions, vendors, partners, updateTransaction } = useFinanceStore();
-  const { isEmployee } = useUserRole();
+  const { isEmployee, orgId } = useUserRole();
+  const { user } = useAuth();
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [amount, setAmount] = useState(transaction.amount.toString());
   const [title, setTitle] = useState(transaction.title || "");
