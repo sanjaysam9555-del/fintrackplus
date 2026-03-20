@@ -628,10 +628,11 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                     const oldMode = mode;
                     setTheme(option.value);
                     if (oldMode !== option.value) {
+                      const userName = useFinanceStore.getState().userProfile.name || 'Unknown';
                       useFinanceStore.getState().addNotification({
                         type: 'settings',
                         title: 'Theme Changed',
-                        message: `Appearance changed to ${option.label}`,
+                        message: `${userName} changed theme to ${option.label}`,
                         details: [{ field: 'Theme', from: oldMode.charAt(0).toUpperCase() + oldMode.slice(1), to: option.label }],
                       });
                     }
