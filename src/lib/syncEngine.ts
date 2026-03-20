@@ -464,84 +464,11 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
     const cloudProjects = projectsResult.data || [];
     const cloudPartners = partnersResult.data || [];
     const cloudProjectLabels = projectLabelsResult.data || [];
-    return {
+    const result = {
       data: {
         profile: profile ? { name: profile.name, avatar: profile.avatar_url } : undefined,
         categories: cloudCategories.map(c => ({
-          id: c.id,
-          name: c.name,
-          icon: c.icon,
-          color: c.color,
-          type: c.type as 'income' | 'expense'
-        })),
-        vendors: cloudVendors.map(v => ({
-          id: v.id,
-          name: v.name,
-          icon: v.icon || undefined,
-          color: v.color || undefined
-        })),
-        projects: cloudProjects.map(p => ({
-          id: p.id,
-          name: p.name,
-          description: p.description || undefined,
-          internalCost: Number(p.budget_limit),
-          clientCost: Number((p as unknown as { margin?: number }).margin) || 0,
-          expectedMargin: Number((p as unknown as { expected_margin?: number }).expected_margin) || 0,
-          archived: (p as unknown as { archived?: boolean }).archived || false,
-          labelIds: (() => {
-            const raw = (p as unknown as { label_ids?: unknown }).label_ids;
-            if (Array.isArray(raw)) return raw as string[];
-            if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
-            return [];
-          })(),
-          assignedEmployeeIds: (() => {
-            const raw = (p as unknown as { assigned_employee_ids?: unknown }).assigned_employee_ids;
-            if (Array.isArray(raw)) return raw as string[];
-            if (typeof raw === 'string') { try { const parsed = JSON.parse(raw); return Array.isArray(parsed) ? parsed : []; } catch { return []; } }
-            return [];
-          })(),
-          color: p.color,
-          eventDate: (p as unknown as { event_date?: string }).event_date || undefined,
-          startDate: (p as unknown as { start_date?: string }).start_date || undefined,
-          createdAt: p.created_at.split('T')[0]
-        })),
-        transactions: (cloudTransactions as any[]).map(t => ({
-          id: t.id as string,
-          userId: t.user_id as string,
-          type: t.type as 'income' | 'expense',
-          amount: Number(t.amount),
-          title: t.title || undefined,
-          vendor: t.vendor as string,
-          categoryId: t.category_id || '',
-          projectId: t.project_id || undefined,
-          handledBy: t.handled_by || undefined,
-          paymentMethod: t.payment_method as 'cash' | 'online',
-          date: t.date as string,
-          time: t.time as string,
-          notes: t.notes || undefined,
-          isRecurring: t.is_recurring || false,
-          recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined,
-          createdAt: t.created_at || new Date().toISOString(),
-        })),
-        partners: cloudPartners.map(p => {
-          const linkedProfile = profileByUserId.get((p as { user_id?: string }).user_id);
-          return {
-            id: (p as { id: string }).id,
-            name: linkedProfile?.name || (p as { name: string }).name,
-            color: (p as { color: string }).color,
-            initialCashBalance: Number((p as { initial_cash_balance: number }).initial_cash_balance) || 0,
-            initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
-            avatarUrl: linkedProfile?.avatar_url || (p as { avatar_url?: string }).avatar_url || undefined,
-            userId: (p as { user_id?: string }).user_id,
-            role: (p as { role?: string }).role || 'owner',
-            createdAt: (p as { created_at: string }).created_at.split('T')[0]
-          };
-        }),
-        projectLabels: cloudProjectLabels.map(l => ({
-          id: (l as { id: string }).id,
-          name: (l as { name: string }).name,
-          color: (l as { color: string }).color,
-          createdAt: (l as { created_at: string }).created_at.split('T')[0]
+...
         }))
       },
       error: null
