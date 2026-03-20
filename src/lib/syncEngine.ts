@@ -389,7 +389,17 @@ export interface CloudData {
   projectLabels: ProjectLabelType[];
 }
 
+// ============ Fetch Throttle ============
+let _lastFetchTimestamp = 0;
+let _lastFetchResult: { data: CloudData | null; error: string | null } | null = null;
+const FETCH_THROTTLE_MS = 5000; // 5 second minimum gap between fetches
+
 export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudData | null; error: string | null }> => {
+  const now = Date.now();
+  if (_lastFetchResult && now - _lastFetchTimestamp < FETCH_THROTTLE_MS) {
+    console.log('[SyncEngine] Fetch throttled, returning cached result');
+    return _lastFetchResult;
+  }
   try {
     // Paginated fetch for transactions (may exceed 1000 rows)
     // RLS now scopes by org_id automatically, no need for explicit user_id filter
