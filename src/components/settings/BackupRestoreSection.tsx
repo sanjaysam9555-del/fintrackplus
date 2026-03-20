@@ -194,8 +194,8 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
       </div>
 
       <DeleteConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
         title="Delete Backup"
         description={`Delete "${deleteTarget?.label}"? This cannot be undone.`}

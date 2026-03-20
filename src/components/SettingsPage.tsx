@@ -361,6 +361,17 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
     });
   }
   
+  // Backup items (owner only)
+  const backupItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
+  if (isOwner) {
+    backupItems.push({
+      icon: Database,
+      label: "Backup & Restore",
+      sublabel: "Manage data backups",
+      onClick: () => handleSectionChange('backup'),
+    });
+  }
+  
   const menuItems = [
     ...(dataItems.length > 0 ? [{ section: "Data Management", items: dataItems }] : []),
     ...(teamItems.length > 0 ? [{ section: "Team & Approvals", items: teamItems }] : []),
