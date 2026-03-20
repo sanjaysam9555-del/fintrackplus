@@ -1840,7 +1840,7 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       getTotalExpense: (startDate, endDate) => {
-        let transactions = get().transactions.filter((t) => t.type === 'expense');
+        let transactions = get().transactions.filter((t) => t.type === 'expense' && t.vendor !== 'Partner Transfer');
         if (startDate && endDate) {
           transactions = transactions.filter((t) => t.date >= startDate && t.date <= endDate);
         }
