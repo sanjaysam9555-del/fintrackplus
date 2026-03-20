@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { isLandingDomain } from '@/lib/domainUtils';
@@ -27,20 +27,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const intentionalSignOut = useRef(false);
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        if (intentionalSignOut.current) {
+          setSession(null);
+          setUser(null);
+          setLoading(false);
+          intentionalSignOut.current = false;
+        } else {
+          // Unexpected sign-out — try to recover session
+          supabase.auth.refreshSession().then(({ data }) => {
+            if (data.session) {
+              setSession(data.session);
+              setUser(data.session.user);
+            } else {
+              setSession(null);
+              setUser(null);
+            }
+            setLoading(false);
+          });
+        }
+        return;
+      }
+
+      if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        return;
+      }
+
+      // All other events
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // THEN check for existing session
+    // Check for existing session with retry
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        setLoading(false);
+      } else {
+        // No session — attempt refresh before giving up
+        supabase.auth.refreshSession().then(({ data }) => {
+          setSession(data.session);
+          setUser(data.session?.user ?? null);
+          setLoading(false);
+        });
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -67,6 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    intentionalSignOut.current = true;
     await supabase.auth.signOut();
   };
 
