@@ -473,10 +473,11 @@ export const useFinanceStore = create<FinanceStore>()(
         if (transaction.projectId) addDetails.push({ field: 'Project', from: 'New', to: getProjectName(transaction.projectId) });
         if (transaction.handledBy) addDetails.push({ field: 'Partner', from: 'New', to: getPartnerName(transaction.handledBy) });
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'transaction',
           title: `${transaction.type === 'income' ? 'Income' : 'Expense'} Added`,
-          message: `${transaction.title || transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+          message: `${userName} added ${transaction.type} '${transaction.title || transaction.vendor}' — ₹${transaction.amount.toLocaleString()}`,
           details: addDetails,
           entityType: 'transaction',
           entityId: id,
