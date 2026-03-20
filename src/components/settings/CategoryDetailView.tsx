@@ -36,6 +36,8 @@ interface CategoryDetailViewProps {
   onEdit: () => void;
   onDelete: () => void;
   userId?: string;
+  isEmployee?: boolean;
+  currentUserId?: string;
 }
 
 export const CategoryDetailView = ({ category, onBack, onEdit, onDelete, userId }: CategoryDetailViewProps) => {
