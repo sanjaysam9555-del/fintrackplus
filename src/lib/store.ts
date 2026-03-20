@@ -1419,10 +1419,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'partner',
           title: 'Partner Added',
-          message: partner.name,
+          message: `${userName} added partner '${partner.name}'`,
           details: [
             { field: 'Name', from: 'New', to: partner.name },
             { field: 'Cash Balance', from: 'New', to: `₹${partner.initialCashBalance.toLocaleString()}` },
