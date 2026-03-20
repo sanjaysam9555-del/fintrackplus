@@ -40,19 +40,20 @@ interface CategoryDetailViewProps {
   currentUserId?: string;
 }
 
-export const CategoryDetailView = ({ category, onBack, onEdit, onDelete, userId }: CategoryDetailViewProps) => {
+export const CategoryDetailView = ({ category, onBack, onEdit, onDelete, userId, isEmployee, currentUserId }: CategoryDetailViewProps) => {
   const { transactions, projects, getCategoryById } = useFinanceStore();
   const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
 
   const categoryStats = useMemo(() => {
-    const catTransactions = transactions.filter((t: Transaction) => t.categoryId === category.id);
+    let catTransactions = transactions.filter((t: Transaction) => t.categoryId === category.id);
+    if (isEmployee && currentUserId) catTransactions = catTransactions.filter(t => t.userId === currentUserId);
     const projectIds = new Set<string>();
     catTransactions.forEach(t => { if (t.projectId) projectIds.add(t.projectId); });
     catTransactions.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
     const total = catTransactions.reduce((sum, t) => sum + t.amount, 0);
     return { total, count: catTransactions.length, projectIds, all: catTransactions };
-  }, [transactions, category.id]);
+  }, [transactions, category.id, isEmployee, currentUserId]);
 
   const toggleProjectFilter = (pid: string) => {
     setSelectedProjectIds(prev => {
