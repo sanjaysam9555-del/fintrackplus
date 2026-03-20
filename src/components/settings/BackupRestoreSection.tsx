@@ -115,7 +115,7 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
           </button>
           <h1 className="text-2xl font-bold">Backup & Restore</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-1 ml-1">Your backups are stored forever like diamonds, but more useful 💎. Automatic snapshots run twice daily. You can also create one manually.
+        <p className="text-muted-foreground mt-1 ml-1 text-xs font-mono text-left font-extralight mx-[2px] border-none">Your backups are stored forever like diamonds, but more useful 💎. Automatic snapshots run twice daily. You can also create one manually.
 
           <br />
           Automatic snapshots run twice daily. You can also create one manually.
