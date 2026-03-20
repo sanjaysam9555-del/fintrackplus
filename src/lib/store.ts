@@ -1178,10 +1178,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'edit',
           title: 'Project Updated',
-          message: updates.name || project?.name || 'Project modified',
+          message: `${userName} updated project '${updates.name || project?.name || 'Unknown'}'`,
           details: changes.length > 0 ? changes : undefined,
           entityType: 'project',
           entityId: id,
