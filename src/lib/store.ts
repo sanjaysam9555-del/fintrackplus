@@ -714,10 +714,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
 
         if (transaction) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'edit',
             title: 'Transaction Updated',
-            message: `${updates.vendor || transaction.vendor} - ₹${(updates.amount ?? transaction.amount).toLocaleString()}`,
+            message: `${userName} edited transaction '${updates.title || updates.vendor || transaction.title || transaction.vendor}' — ₹${(updates.amount ?? transaction.amount).toLocaleString()}`,
             details: changes.length > 0 ? changes : undefined,
             entityType: 'transaction',
             entityId: id,
