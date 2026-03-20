@@ -1,29 +1,34 @@
 
 
-## Harden Backup Security — Owner-Only Access
+## Exclude Partner Transfers from Income/Expense Totals
 
-### Current Security Gaps
-
-1. **`create-backup` edge function has NO auth check** — it accepts any `org_id` in the request body and creates a backup using the service role key. Anyone who knows the function URL can trigger a backup for any org. The `restore-backup` function already validates the caller is an owner, but `create-backup` does not.
-
-2. **RLS policies are correct** — the `backups` table already restricts SELECT/INSERT/DELETE to owners only. The UI menu is also owner-gated. The gap is purely in the edge function.
+### Problem
+When a partner transfer is made, the system creates two transactions: one `income` and one `expense`, both with `vendor: 'Partner Transfer'`. The `getTotalIncome` and `getTotalExpense` functions include these, inflating the dashboard totals. Transfers are internal money movements — not real revenue or costs.
 
 ### Fix
 
-**`supabase/functions/create-backup/index.ts`** — Add the same auth verification pattern used in `restore-backup`:
-- Extract the `Authorization` header
-- Verify the JWT to get the caller's `user_id`
-- Look up the caller's `org_members` record and confirm `role = 'owner'`
-- Use the caller's `org_id` from the DB instead of trusting the request body's `org_id`
-- Only fall back to the body's `org_id` when there's no auth header (for the pg_cron scheduled calls, which don't have a user context)
+**`src/lib/store.ts`** — Filter out transfer transactions in `getTotalIncome` and `getTotalExpense`:
 
-This ensures:
-- Manual backup requests from the UI are authenticated and owner-verified
-- Scheduled pg_cron calls (which pass `org_id` in the body without auth) still work
-- No admin/employee/unauthenticated user can trigger or view backups
+```typescript
+getTotalIncome: (startDate, endDate) => {
+  let transactions = get().transactions.filter(
+    (t) => t.type === 'income' && t.vendor !== 'Partner Transfer'
+  );
+  // ...rest unchanged
+},
+
+getTotalExpense: (startDate, endDate) => {
+  let transactions = get().transactions.filter(
+    (t) => t.type === 'expense' && t.vendor !== 'Partner Transfer'
+  );
+  // ...rest unchanged
+},
+```
+
+This ensures transfers still appear in the transaction list and in partner balance calculations, but don't distort the overall income/expense/balance summary on the Dashboard, Transaction List headers, and AI Summary.
 
 ### Files to modify
 | File | Change |
 |---|---|
-| `supabase/functions/create-backup/index.ts` | Add JWT auth + owner role verification; derive org_id from DB when auth is present |
+| `src/lib/store.ts` | Exclude `vendor === 'Partner Transfer'` from `getTotalIncome` and `getTotalExpense` |
 
