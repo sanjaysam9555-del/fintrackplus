@@ -21,6 +21,8 @@ import { toast } from "sonner";
 import { ReceiptUpload } from "./ReceiptUpload";
 import { GstToggle } from "./GstToggle";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 interface EditTransactionSheetProps {
   isOpen: boolean;
