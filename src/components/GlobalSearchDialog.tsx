@@ -89,7 +89,7 @@ export const GlobalSearchDialog = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/40 z-50 backdrop-blur-sm"
-            onClick={onClose}
+            onClick={handleClose}
           />
           
           {/* Dialog Container - Centers relative to content area on desktop */}
