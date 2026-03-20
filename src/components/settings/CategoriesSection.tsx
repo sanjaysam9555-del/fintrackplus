@@ -66,9 +66,11 @@ export const CategoriesSection = ({ onBack, userId, isEmployee }: CategoriesSect
       <CategoryDetailView
         category={detailCategory}
         onBack={() => setDetailCategoryId(null)}
-        onEdit={() => { startEdit(detailCategory); setDetailCategoryId(null); }}
-        onDelete={() => { setDeleteId(detailCategory.id); setDetailCategoryId(null); }}
+        onEdit={() => { if (!isEmployee) { startEdit(detailCategory); setDetailCategoryId(null); } }}
+        onDelete={() => { if (!isEmployee) { setDeleteId(detailCategory.id); setDetailCategoryId(null); } }}
         userId={userId}
+        isEmployee={isEmployee}
+        currentUserId={userId}
       />
     );
   }
