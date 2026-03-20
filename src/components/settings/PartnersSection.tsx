@@ -325,7 +325,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     const partnerIds = new Set(partners.map(p => p.id));
     const unassigned = transactions
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
-      .filter(t => !t.partnerId || !partnerIds.has(t.partnerId));
+      .filter(t => !t.handledBy || !partnerIds.has(t.handledBy));
     
     let cashNet = 0;
     let onlineNet = 0;
@@ -419,8 +419,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setIsAddOpen(false);
   };
   
-  const handleEdit = (partnerId: string) => {
-    const partner = partners.find(p => p.id === partnerId);
+  const handleEdit = (handledBy: string) => {
+    const partner = partners.find(p => p.id === handledBy);
     if (!partner) return;
     
     setName(partner.name);
@@ -428,7 +428,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setInitialCash(partner.initialCashBalance.toString());
     setInitialOnline(partner.initialOnlineBalance.toString());
     setAvatarUrl(partner.avatarUrl);
-    setEditingPartner(partnerId);
+    setEditingPartner(handledBy);
   };
   
   const handleUpdate = async () => {
@@ -464,16 +464,16 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
 
   
-  const handleDelete = async (partnerId: string, e?: React.MouseEvent) => {
+  const handleDelete = async (handledBy: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const partner = partners.find(p => p.id === partnerId);
+    const partner = partners.find(p => p.id === handledBy);
     if (!partner) return;
 
     // Check if this partner is linked to a user (owner-linked)
     const { data: dbPartner } = await supabase
       .from('partners')
       .select('user_id')
-      .eq('id', partnerId)
+      .eq('id', handledBy)
       .maybeSingle();
 
     const { data: orgMember } = dbPartner?.user_id
@@ -580,9 +580,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     }
   };
   
-  const handleEditClick = (partnerId: string, e: React.MouseEvent) => {
+  const handleEditClick = (handledBy: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    handleEdit(partnerId);
+    handleEdit(handledBy);
   };
   
   const openPartnerDetail = (balanceData: typeof partnerBalances[0]) => {

@@ -87,7 +87,7 @@ export const UpcomingRecurringBanner = ({ type }: UpcomingRecurringBannerProps) 
           {/* List */}
           <div className="space-y-2 overflow-y-auto max-h-[calc(70vh-180px)]">
             {items.map((item) => {
-              const partner = partners.find(p => p.id === item.baseTransaction.partnerId);
+              const partner = partners.find(p => p.id === item.baseTransaction.handledBy);
               const category = categories.find(c => c.id === item.baseTransaction.categoryId);
               
               return (

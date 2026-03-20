@@ -51,7 +51,7 @@ export const TransactionList = ({ type, userId, onEditSheetChange, onSearchClick
         }
         if (uncategorizedFilter === 'no-project') return !t.projectId;
         if (uncategorizedFilter === 'no-vendor') return !t.vendor || t.vendor === 'Unknown' || t.vendor === '' || t.vendor === 'Not Specified';
-        if (uncategorizedFilter === 'no-partner') return !t.partnerId;
+        if (uncategorizedFilter === 'no-partner') return !t.handledBy;
         return true;
       });
   }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter]);

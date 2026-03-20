@@ -38,7 +38,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [vendor, setVendor] = useState(transaction.vendor);
   const [categoryId, setCategoryId] = useState(transaction.categoryId);
   const [projectId, setProjectId] = useState(transaction.projectId || "");
-  const [partnerId, setPartnerId] = useState(transaction.partnerId || "");
+  const [handledBy, setHandledBy] = useState(transaction.handledBy || "");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(transaction.paymentMethod);
   const [date, setDate] = useState<Date>(parseISO(transaction.date));
   const [notes, setNotes] = useState(transaction.notes || "");
@@ -62,7 +62,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     setVendor(transaction.vendor);
     setCategoryId(transaction.categoryId);
     setProjectId(transaction.projectId || "");
-    setPartnerId(transaction.partnerId || "");
+    setHandledBy(transaction.handledBy || "");
     setPaymentMethod(transaction.paymentMethod);
     setDate(parseISO(transaction.date));
     setNotes(transaction.notes || "");
@@ -73,7 +73,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.id === partnerId);
+  const selectedPartner = partners.find(p => p.id === handledBy);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
@@ -118,7 +118,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
       vendor: vendor || 'Not Specified',
       categoryId,
       projectId: projectId || undefined,
-      partnerId: partnerId || undefined,
+      handledBy: handledBy || undefined,
       paymentMethod,
       date: format(date, 'yyyy-MM-dd'),
       notes: notes || undefined,
@@ -651,12 +651,12 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                           <div className="space-y-1">
                             <button
                               onClick={() => {
-                                setPartnerId("");
+                                setHandledBy("");
                                 setShowPartners(false);
                               }}
                               className={cn(
                                 "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors",
-                                !partnerId ? "bg-primary/10" : "hover:bg-muted"
+                                !handledBy ? "bg-primary/10" : "hover:bg-muted"
                               )}
                             >
                               None
@@ -665,12 +665,12 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                               <button
                                 key={p.id}
                                 onClick={() => {
-                                  setPartnerId(p.id);
+                                  setHandledBy(p.id);
                                   setShowPartners(false);
                                 }}
                                 className={cn(
                                   "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-2",
-                                  partnerId === p.id ? "bg-primary/10" : "hover:bg-muted"
+                                  handledBy === p.id ? "bg-primary/10" : "hover:bg-muted"
                                 )}
                               >
                                 {p.avatarUrl ? (
@@ -684,7 +684,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                   </div>
                                 )}
                                 <span className="font-medium flex-1">{p.name}</span>
-                                <Check size={14} className={cn("text-primary shrink-0", partnerId === p.id ? "opacity-100" : "opacity-0")} />
+                                <Check size={14} className={cn("text-primary shrink-0", handledBy === p.id ? "opacity-100" : "opacity-0")} />
                               </button>
                             ))}
                           </div>

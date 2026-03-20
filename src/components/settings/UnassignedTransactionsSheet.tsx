@@ -30,15 +30,15 @@ export const UnassignedTransactionsSheet = ({
     const partnerIds = new Set(partners.map(p => p.id));
     return transactions
       .filter(t => t.date >= startDate && t.date <= endDate)
-      .filter(t => !t.partnerId || !partnerIds.has(t.partnerId))
+      .filter(t => !t.handledBy || !partnerIds.has(t.handledBy))
       .sort((a, b) => {
         const d = b.date.localeCompare(a.date);
         return d !== 0 ? d : b.time.localeCompare(a.time);
       });
   }, [transactions, partners, startDate, endDate]);
 
-  const handleAssign = (transactionId: string, partnerId: string) => {
-    updateTransaction(transactionId, { partnerId }, userId);
+  const handleAssign = (transactionId: string, handledBy: string) => {
+    updateTransaction(transactionId, { handledBy }, userId);
     setAssigningId(null);
   };
 
@@ -105,7 +105,7 @@ export const UnassignedTransactionsSheet = ({
                   {/* Assign control */}
                   <Select
                     value=""
-                    onValueChange={(partnerId) => handleAssign(t.id, partnerId)}
+                    onValueChange={(handledBy) => handleAssign(t.id, handledBy)}
                   >
                     <SelectTrigger className="h-8 text-xs">
                       <SelectValue placeholder="Assign to partner…" />

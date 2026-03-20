@@ -503,7 +503,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           vendor: t.vendor as string,
           categoryId: t.category_id || '',
           projectId: t.project_id || undefined,
-          partnerId: t.partner_id || undefined,
+          handledBy: t.handled_by || undefined,
           paymentMethod: t.payment_method as 'cash' | 'online',
           date: t.date as string,
           time: t.time as string,

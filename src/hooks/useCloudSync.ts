@@ -140,7 +140,7 @@ export const useCloudSync = () => {
           vendor: t.vendor,
           categoryId: t.category_id || '',
           projectId: t.project_id || undefined,
-          partnerId: (t as unknown as { partner_id?: string }).partner_id || undefined,
+          handledBy: (t as unknown as { handled_by?: string }).handled_by || undefined,
           paymentMethod: t.payment_method as 'cash' | 'online',
           date: t.date,
           time: t.time,

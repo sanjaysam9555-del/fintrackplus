@@ -56,7 +56,7 @@ export const PartnerDetailSheet = ({
     if (!partner) return [];
     return transactions
       .filter(t => 
-        t.partnerId === partner.id && 
+        t.handledBy === partner.id && 
         t.date >= dateRange.start && 
         t.date <= dateRange.end
       )
