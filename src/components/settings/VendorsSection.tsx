@@ -71,7 +71,8 @@ export const VendorsSection = ({ onBack, userId, isEmployee }: VendorsSectionPro
   // Compute vendor stats from transactions
   const vendorStats = useMemo(() => {
     const stats: Record<string, { total: number; count: number; projectIds: Set<string>; all: Transaction[] }> = {};
-    transactions.forEach((t: Transaction) => {
+    const txns = isEmployee && userId ? transactions.filter(t => t.userId === userId) : transactions;
+    txns.forEach((t: Transaction) => {
       const key = t.vendor;
       if (!key) return;
       if (!stats[key]) stats[key] = { total: 0, count: 0, projectIds: new Set(), all: [] };
@@ -84,7 +85,7 @@ export const VendorsSection = ({ onBack, userId, isEmployee }: VendorsSectionPro
       s.all.sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
     });
     return stats;
-  }, [transactions]);
+  }, [transactions, isEmployee, userId]);
 
   const formatAmount = (amount: number) => `${CURRENCY_SYMBOL}${amount.toLocaleString('en-IN')}`;
 
