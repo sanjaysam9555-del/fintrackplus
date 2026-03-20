@@ -51,7 +51,7 @@ const getHealthDot = (status: HealthStatus): string => {
   }
 };
 
-export const ProjectOverviewPage = ({ userId, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
+export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
   const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject, projectLabels, addProjectLabel } = useFinanceStore();
   const { isOwner, isAdmin } = useUserRole();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
