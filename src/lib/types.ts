@@ -48,6 +48,7 @@ export interface Partner {
 
 export interface Transaction {
   id: string;
+  userId?: string;
   type: TransactionType;
   amount: number;
   title?: string;
