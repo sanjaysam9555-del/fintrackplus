@@ -45,6 +45,11 @@ interface CloudData {
 }
 
 interface FinanceStore extends FinanceState {
+  // Organization info
+  orgName: string;
+  orgLogoUrl: string | null;
+  setOrgInfo: (name: string, logoUrl: string | null) => void;
+  
   // User Profile
   userProfile: UserProfile;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
