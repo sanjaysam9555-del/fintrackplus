@@ -1220,10 +1220,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (project) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Project Deleted',
-            message: project.name,
+            message: `${userName} deleted project '${project.name}'`,
             details,
             entityType: 'project',
             entityId: id,
