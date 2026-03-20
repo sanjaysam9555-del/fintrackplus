@@ -119,7 +119,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
       return;
     }
     
-    await updateTransaction(transaction.id, {
+    const updates = {
       type,
       amount: parseFloat(amount),
       title: title || undefined,
@@ -132,9 +132,41 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
       notes: notes || undefined,
       receiptUrl: receiptUrl || undefined,
       isGst: isGst || undefined,
-    }, userId);
+    };
+
+    // Check if this transaction belongs to another owner
+    if (user && orgId) {
+      const txnOwnerUserId = transaction.handledBy || transaction.userId;
+      if (txnOwnerUserId && txnOwnerUserId !== user.id) {
+        const { data: owners } = await supabase
+          .from('org_members')
+          .select('user_id')
+          .eq('org_id', orgId)
+          .eq('role', 'owner')
+          .eq('status', 'active');
+
+        const belongsToAnotherOwner = (owners || []).some(o => o.user_id === txnOwnerUserId);
+
+        if (belongsToAnotherOwner) {
+          await supabase.from('change_approvals').insert({
+            org_id: orgId,
+            requester_user_id: user.id,
+            target_user_id: txnOwnerUserId,
+            entity_type: 'transaction',
+            entity_id: transaction.id,
+            action: 'edit',
+            proposed_changes: { ...updates, name: transaction.title || transaction.vendor },
+            status: 'pending',
+          });
+          toast.success('Edit request sent for approval');
+          onClose();
+          return;
+        }
+      }
+    }
+
+    await updateTransaction(transaction.id, updates, userId);
     
-    // Show success confirmation
     toast.success('Transaction Updated', {
       description: `₹${parseFloat(amount).toLocaleString()} ${title ? `- ${title}` : ''}`,
       duration: 3000,

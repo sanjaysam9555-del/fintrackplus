@@ -42,9 +42,39 @@ export const TransactionDetailSheet = ({
   const partner = partners.find(p => p.userId === transaction.handledBy);
   const isExpense = transaction.type === 'expense';
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    // Check if this transaction belongs to another owner
+    if (user && orgId) {
+      const txnOwnerUserId = transaction.handledBy || transaction.userId;
+      if (txnOwnerUserId && txnOwnerUserId !== user.id) {
+        const { data: owners } = await supabase
+          .from('org_members')
+          .select('user_id')
+          .eq('org_id', orgId)
+          .eq('role', 'owner')
+          .eq('status', 'active');
+
+        const belongsToAnotherOwner = (owners || []).some(o => o.user_id === txnOwnerUserId);
+
+        if (belongsToAnotherOwner) {
+          await supabase.from('change_approvals').insert({
+            org_id: orgId,
+            requester_user_id: user.id,
+            target_user_id: txnOwnerUserId,
+            entity_type: 'transaction',
+            entity_id: transaction.id,
+            action: 'delete',
+            proposed_changes: { name: transaction.title || transaction.vendor, amount: transaction.amount },
+            status: 'pending',
+          });
+          toast.success('Delete request sent for approval');
+          onClose();
+          return;
+        }
+      }
+    }
+
     const deletedTransaction = { ...transaction };
-    // Capture linked transfer before deletion
     const allTransactions = useFinanceStore.getState().transactions;
     const linkedTxn = (deletedTransaction.vendor === 'Partner Transfer' && deletedTransaction.linkedTransactionId)
       ? allTransactions.find(t => t.id === deletedTransaction.linkedTransactionId)
