@@ -941,10 +941,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'category',
           title: 'Category Added',
-          message: category.name,
+          message: `${userName} added category '${category.name}'`,
           details: [
             { field: 'Name', from: 'New', to: category.name },
             { field: 'Type', from: 'New', to: category.type === 'income' ? 'Income' : 'Expense' },
