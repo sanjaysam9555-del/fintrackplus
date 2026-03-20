@@ -42,7 +42,8 @@ export const DesktopSidebar = ({
   viewMode, 
   onTabChange, 
   onAddClick,
-  onNavigate 
+  onNavigate,
+  isEmployee = false
 }: DesktopSidebarProps) => {
   const { userProfile } = useFinanceStore();
   const { signOut, user } = useAuth();
