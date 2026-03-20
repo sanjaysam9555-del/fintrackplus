@@ -1375,10 +1375,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (vendor) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Vendor Deleted',
-            message: vendor.name,
+            message: `${userName} deleted vendor '${vendor.name}'`,
             details,
             entityType: 'vendor',
             entityId: id,
