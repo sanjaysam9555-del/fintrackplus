@@ -36,7 +36,7 @@ const VENDOR_ICONS = [
   'Pill', 'Stethoscope', 'GraduationCap', 'Book', 'Laptop', 'Smartphone'
 ];
 
-export const VendorsSection = ({ onBack, userId }: VendorsSectionProps) => {
+export const VendorsSection = ({ onBack, userId, isEmployee }: VendorsSectionProps) => {
   const { vendors, addVendor, updateVendor, deleteVendor, transactions, updateTransaction, projects, getCategoryById } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
