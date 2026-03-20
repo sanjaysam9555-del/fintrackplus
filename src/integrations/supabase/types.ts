@@ -647,6 +647,10 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      trigger_all_org_backups: {
+        Args: { backup_label: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "owner" | "admin" | "employee"
