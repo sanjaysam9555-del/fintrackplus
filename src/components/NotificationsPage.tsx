@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban, Users, Tag, Settings } from "lucide-react";
-import { useFinanceStore } from "@/lib/store";
+import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban, Users, Tag, Settings, Loader2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { supabase } from "@/integrations/supabase/client";
+import type { Notification } from "@/lib/types";
 
 const getActionBadge = (notification: { type: string; details?: { from: string }[] }) => {
   const isNew = notification.details && notification.details.length > 0 && notification.details[0].from === 'New';
@@ -34,56 +35,126 @@ const filterTabs = [
   { key: 'settings', label: 'Settings' },
 ] as const;
 
+const getIcon = (type: string) => {
+  switch (type) {
+    case 'transaction': return ArrowUpRight;
+    case 'export': return FileDown;
+    case 'profile': return User;
+    case 'category': return Grid3X3;
+    case 'vendor': return Store;
+    case 'project': return FolderKanban;
+    case 'partner': return Users;
+    case 'label': return Tag;
+    case 'delete': return Trash2;
+    case 'edit': return Pencil;
+    case 'settings': return Settings;
+    default: return Bell;
+  }
+};
+
+const getIconColor = (type: string) => {
+  switch (type) {
+    case 'transaction': return 'bg-accent text-accent-foreground';
+    case 'export': return 'bg-success/10 text-success';
+    case 'profile': return 'bg-purple-500/10 text-purple-500 dark:text-purple-400';
+    case 'category': return 'bg-blue-500/10 text-blue-500 dark:text-blue-400';
+    case 'vendor': return 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400';
+    case 'project': return 'bg-amber-500/10 text-amber-500 dark:text-amber-400';
+    case 'partner': return 'bg-indigo-500/10 text-indigo-500 dark:text-indigo-400';
+    case 'label': return 'bg-violet-500/10 text-violet-500 dark:text-violet-400';
+    case 'delete': return 'bg-destructive/10 text-destructive';
+    case 'edit': return 'bg-orange-500/10 text-orange-500 dark:text-orange-400';
+    case 'settings': return 'bg-muted text-muted-foreground';
+    default: return 'bg-muted text-muted-foreground';
+  }
+};
+
+interface DbNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  created_at: string;
+  read: boolean | null;
+  details: any;
+  entity_type: string | null;
+  entity_id: string | null;
+  actor_name: string | null;
+  user_id: string;
+  org_id: string | null;
+}
+
+const mapDbToNotification = (row: DbNotification): Notification => ({
+  id: row.id,
+  type: row.type as Notification['type'],
+  title: row.title,
+  message: row.message,
+  timestamp: row.created_at,
+  read: row.read ?? false,
+  details: Array.isArray(row.details) ? row.details : [],
+  entityType: row.entity_type || undefined,
+  entityId: row.entity_id || undefined,
+  actorName: row.actor_name || undefined,
+});
+
 export const NotificationsPage = () => {
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useFinanceStore();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState('all');
-  
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'transaction': return ArrowUpRight;
-      case 'export': return FileDown;
-      case 'profile': return User;
-      case 'category': return Grid3X3;
-      case 'vendor': return Store;
-      case 'project': return FolderKanban;
-      case 'partner': return Users;
-      case 'label': return Tag;
-      case 'delete': return Trash2;
-      case 'edit': return Pencil;
-      case 'settings': return Settings;
-      default: return Bell;
+
+  const fetchNotifications = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200);
+    
+    if (!error && data) {
+      setNotifications((data as unknown as DbNotification[]).map(mapDbToNotification));
     }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+
+    // Realtime subscription
+    const channel = supabase
+      .channel('notifications-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        const newNotif = mapDbToNotification(payload.new as DbNotification);
+        setNotifications(prev => [newNotif, ...prev].slice(0, 200));
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, (payload) => {
+        const updated = mapDbToNotification(payload.new as DbNotification);
+        setNotifications(prev => prev.map(n => n.id === updated.id ? updated : n));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [fetchNotifications]);
+
+  const markNotificationRead = async (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    await supabase.from('notifications').update({ read: true } as any).eq('id', id);
   };
-  
-  const getIconColor = (type: string) => {
-    switch (type) {
-      case 'transaction': return 'bg-accent text-accent-foreground';
-      case 'export': return 'bg-success/10 text-success';
-      case 'profile': return 'bg-purple-500/10 text-purple-500 dark:text-purple-400';
-      case 'category': return 'bg-blue-500/10 text-blue-500 dark:text-blue-400';
-      case 'vendor': return 'bg-emerald-500/10 text-emerald-500 dark:text-emerald-400';
-      case 'project': return 'bg-amber-500/10 text-amber-500 dark:text-amber-400';
-      case 'partner': return 'bg-indigo-500/10 text-indigo-500 dark:text-indigo-400';
-      case 'label': return 'bg-violet-500/10 text-violet-500 dark:text-violet-400';
-      case 'delete': return 'bg-destructive/10 text-destructive';
-      case 'edit': return 'bg-orange-500/10 text-orange-500 dark:text-orange-400';
-      case 'settings': return 'bg-muted text-muted-foreground';
-      default: return 'bg-muted text-muted-foreground';
-    }
+
+  const markAllNotificationsRead = async () => {
+    const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+    if (unreadIds.length === 0) return;
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    await supabase.from('notifications').update({ read: true } as any).in('id', unreadIds);
   };
   
   const filteredNotifications = activeFilter === 'all' 
     ? notifications 
     : notifications.filter(n => {
-        // For 'transaction' filter, include transaction type and edit/delete with entityType transaction
         if (activeFilter === 'transaction') {
           return n.type === 'transaction' || ((n.type === 'edit' || n.type === 'delete') && n.entityType === 'transaction');
         }
-        // For 'settings' filter, include profile and settings types
         if (activeFilter === 'settings') {
           return n.type === 'profile' || n.type === 'settings';
         }
-        // For entity-based filters, match type or entityType
         return n.type === activeFilter || n.entityType === activeFilter;
       });
   
@@ -97,7 +168,7 @@ export const NotificationsPage = () => {
       {/* Header */}
       <div className="p-4 safe-top flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Notifications</h1>
+          <h1 className="text-2xl font-bold">Activity Log</h1>
           {unreadCount > 0 && (
             <p className="text-sm text-muted-foreground">{unreadCount} unread</p>
           )}
@@ -144,14 +215,18 @@ export const NotificationsPage = () => {
       </div>
       
       <div className="px-4 space-y-3">
-        {filteredNotifications.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={24} className="animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredNotifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Bell size={24} className="text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground">No notifications yet</p>
+            <p className="text-muted-foreground">No activity yet</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Your activity will appear here
+              Team activity will appear here
             </p>
           </div>
         ) : (
@@ -189,6 +264,14 @@ export const NotificationsPage = () => {
                         <span className="w-2 h-2 rounded-full bg-primary shrink-0" />
                       )}
                     </div>
+                    
+                    {/* Actor attribution - prominent */}
+                    {notification.actorName && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        by <span className="font-semibold text-foreground/80">{notification.actorName}</span>
+                      </p>
+                    )}
+                    
                     <p className="text-sm text-muted-foreground mt-1">
                       {notification.message}
                     </p>
@@ -252,9 +335,6 @@ export const NotificationsPage = () => {
                     
                     <p className="text-xs text-muted-foreground mt-2">
                       {formatDistanceToNow(new Date(notification.timestamp), { addSuffix: true })}
-                      {notification.actorName && (
-                        <span> · by {notification.actorName}</span>
-                      )}
                     </p>
                   </div>
                 </div>
