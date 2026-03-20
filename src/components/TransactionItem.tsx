@@ -26,7 +26,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
   const { deleteTransaction, addTransaction, projects, partners } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const partner = partners.find(p => p.id === transaction.handledBy);
+  const partner = partners.find(p => p.userId === transaction.handledBy);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   

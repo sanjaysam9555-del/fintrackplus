@@ -383,7 +383,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       
       // Log partner photo change if editing an existing partner
       if (editingPartner) {
-        const partnerObj = partners.find(p => p.id === editingPartner);
+        const partnerObj = partners.find(p => p.userId === editingPartner);
         if (partnerObj) {
           addNotification({
             type: 'partner',
@@ -420,7 +420,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   };
   
   const handleEdit = (handledBy: string) => {
-    const partner = partners.find(p => p.id === handledBy);
+    const partner = partners.find(p => p.userId === handledBy);
     if (!partner) return;
     
     setName(partner.name);
@@ -443,7 +443,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     }, userId);
 
     // If this partner is linked to a user (owner), sync name/avatar to their profile
-    const partnerRecord = partners.find(p => p.id === editingPartner);
+    const partnerRecord = partners.find(p => p.userId === editingPartner);
     if (partnerRecord) {
       const { data: dbPartner } = await supabase
         .from('partners')
@@ -466,7 +466,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   
   const handleDelete = async (handledBy: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const partner = partners.find(p => p.id === handledBy);
+    const partner = partners.find(p => p.userId === handledBy);
     if (!partner) return;
 
     // Check if this partner is linked to a user (owner-linked)

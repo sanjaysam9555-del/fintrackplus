@@ -87,7 +87,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     }
   }, [type, filteredCategories]);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.id === handledBy);
+  const selectedPartner = partners.find(p => p.userId === handledBy);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
