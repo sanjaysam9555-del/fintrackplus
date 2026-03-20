@@ -12,6 +12,9 @@ import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { shareTransaction } from "@/lib/shareTransaction";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TransactionDetailSheetProps {
   transaction: Transaction | null;
