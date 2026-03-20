@@ -30,6 +30,8 @@ export const TransactionDetailSheet = ({
   userId,
 }: TransactionDetailSheetProps) => {
   const { categories, projects, partners, deleteTransaction, addTransaction } = useFinanceStore();
+  const { user } = useAuth();
+  const { orgId } = useUserRole();
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
