@@ -334,17 +334,18 @@ export const useFinanceStore = create<FinanceStore>()(
           get().addNotification({
             type: 'profile',
             title: 'Name Changed',
-            message: `Display name updated`,
+            message: `${profile.name} changed display name from '${previousProfile.name || 'Not set'}' to '${profile.name}'`,
             details: [
               { field: 'Name', from: previousProfile.name || 'Not set', to: profile.name },
             ],
           });
         }
         if (profile.avatar !== undefined && profile.avatar !== previousProfile.avatar) {
+          const currentName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'profile',
             title: 'Profile Photo Changed',
-            message: 'Your display picture has been updated',
+            message: `${currentName} updated their display picture`,
           });
         }
       },
