@@ -820,7 +820,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         )}
       </div>
       
-      {/* Transfer Between Partners Button */}
+      {/* Transfer Between Team Button */}
       {partners.length >= 2 && (
         <div className="px-4 mt-4">
           <Button
@@ -830,7 +830,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             onClick={() => setShowTransferSheet(true)}
           >
             <ArrowLeftRight size={18} className="mr-2" />
-            Transfer Between Partners
+            Transfer Between Team
           </Button>
         </div>
       )}

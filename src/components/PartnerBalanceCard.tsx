@@ -58,7 +58,7 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
               <Users size={20} className="text-primary" />
             </div>
             <div className="text-left">
-              <h3 className="font-semibold text-sm">Partner Balances</h3>
+              <h3 className="font-semibold text-sm">Financial Holdings</h3>
               <p className="text-xs text-muted-foreground">
                 {partnerBalances.length} partner{partnerBalances.length !== 1 ? 's' : ''} • Closing
               </p>
@@ -158,7 +158,7 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                       className="w-full gap-2"
                     >
                       <ArrowLeftRight size={16} />
-                      Transfer Between Partners
+                      Transfer Between Team
                     </Button>
                   </div>
                 )}
