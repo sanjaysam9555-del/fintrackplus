@@ -35,8 +35,8 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   const [showToPartners, setShowToPartners] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   
-  const fromPartner = partners.find(p => p.id === fromPartnerId);
-  const toPartner = partners.find(p => p.id === toPartnerId);
+  const fromPartner = partners.find(p => (p.userId || p.id) === fromPartnerId);
+  const toPartner = partners.find(p => (p.userId || p.id) === toPartnerId);
   
   // Find real persisted categories for transfers - prefer "Not Specified"
   const expenseCategory = categories.find(c => c.name === 'Not Specified' && c.type === 'expense') 
@@ -188,13 +188,13 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           <button
                             key={partner.id}
                             onClick={() => {
-                              setFromPartnerId(partner.id);
+                              setFromPartnerId(partner.userId || partner.id);
                               setShowFromPartners(false);
                             }}
                             disabled={partner.id === toPartnerId}
                             className={cn(
                               "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                              fromPartnerId === partner.id ? "bg-primary/10" : "hover:bg-muted",
+                              fromPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
                               partner.id === toPartnerId && "opacity-50 cursor-not-allowed"
                             )}
                           >
@@ -239,13 +239,13 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           <button
                             key={partner.id}
                             onClick={() => {
-                              setToPartnerId(partner.id);
+                              setToPartnerId(partner.userId || partner.id);
                               setShowToPartners(false);
                             }}
                             disabled={partner.id === fromPartnerId}
                             className={cn(
                               "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                              toPartnerId === partner.id ? "bg-primary/10" : "hover:bg-muted",
+                              toPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
                               partner.id === fromPartnerId && "opacity-50 cursor-not-allowed"
                             )}
                           >
