@@ -45,11 +45,6 @@ interface CloudData {
 }
 
 interface FinanceStore extends FinanceState {
-  // Organization info
-  orgName: string;
-  orgLogoUrl: string | null;
-  setOrgInfo: (name: string, logoUrl: string | null) => void;
-  
   // User Profile
   userProfile: UserProfile;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
@@ -148,9 +143,6 @@ export const useFinanceStore = create<FinanceStore>()(
       partners: [],
       projectLabels: [],
       userProfile: { name: 'User' },
-      orgName: 'My Organization',
-      orgLogoUrl: null,
-      setOrgInfo: (name, logoUrl) => set({ orgName: name, orgLogoUrl: logoUrl }),
       notifications: [],
       defaultTimeFilter: 'fy',
       setDefaultTimeFilter: (filter) => {

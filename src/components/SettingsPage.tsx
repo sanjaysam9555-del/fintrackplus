@@ -25,8 +25,7 @@ import {
   WifiOff,
   Shield,
   ClipboardCheck,
-  Database,
-  Building2
+  Database
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,7 +42,6 @@ import { AppFeaturesGuide } from "./settings/AppFeaturesGuide";
 import { TeamSection } from "./settings/TeamSection";
 import { ChangeApprovalPage } from "./settings/ChangeApprovalPage";
 import { BackupRestoreSection } from "./settings/BackupRestoreSection";
-import { OrgEditSheet } from "./OrgEditSheet";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
@@ -245,13 +243,12 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, onBackToHome, onRefresh, isRefreshing, isOnline = true, pendingCount = 0 }: SettingsPageProps) => {
-  const { categories, projects, userProfile, partners, projectLabels, defaultTimeFilter, setDefaultTimeFilter, syncStatus, lastSyncedAt, orgName, orgLogoUrl } = useFinanceStore();
+  const { categories, projects, userProfile, partners, projectLabels, defaultTimeFilter, setDefaultTimeFilter, syncStatus, lastSyncedAt } = useFinanceStore();
   const { signOut, user } = useAuth();
   const { isOwner, isAdmin, isEmployee, canViewPartners, canViewReports, canViewLogs, canManageTeam } = useUserRole();
   const { mode, setTheme, isDark, isOled } = useTheme();
   const navigate = useNavigate();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
-  const [showOrgEdit, setShowOrgEdit] = useState(false);
   const isInstalled = typeof window !== 'undefined' && (
     window.matchMedia('(display-mode: standalone)').matches ||
     (window.navigator as any).standalone === true
@@ -447,34 +444,6 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         </div>
       </div>
       
-      {/* Organization Card */}
-      <div className="px-4 mb-3">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={() => isOwner && setShowOrgEdit(true)}
-          className={cn(
-            "bg-card rounded-2xl p-3 shadow-card border border-border transition-colors",
-            isOwner ? "cursor-pointer hover:bg-muted/50" : ""
-          )}
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-2xl overflow-hidden border border-border bg-muted flex items-center justify-center">
-              {orgLogoUrl ? (
-                <img src={orgLogoUrl} alt="Org" className="w-full h-full object-cover" />
-              ) : (
-                <Building2 size={24} className="text-muted-foreground" />
-              )}
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold">{orgName || 'My Organization'}</h2>
-              <p className="text-sm text-muted-foreground capitalize">{isOwner ? 'Owner' : isAdmin ? 'Admin' : 'Employee'}</p>
-            </div>
-            {isOwner && <ChevronRight size={18} className="text-muted-foreground" />}
-          </div>
-        </motion.div>
-      </div>
-
       {/* Profile Card */}
       <div className="px-4 mb-6">
         <motion.div
@@ -774,12 +743,6 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
       <ProfileEditSheet
         isOpen={showProfileEdit}
         onClose={() => setShowProfileEdit(false)}
-      />
-      
-      {/* Org Edit Sheet */}
-      <OrgEditSheet
-        isOpen={showOrgEdit}
-        onClose={() => setShowOrgEdit(false)}
       />
     </div>
   );
