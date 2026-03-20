@@ -134,6 +134,7 @@ export const useCloudSync = () => {
         })) || [],
         transactions: cloudTransactions?.map(t => ({
           id: t.id,
+          userId: t.user_id,
           type: t.type as 'income' | 'expense',
           amount: Number(t.amount),
           title: (t as unknown as { title?: string }).title || undefined,

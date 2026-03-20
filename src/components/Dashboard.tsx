@@ -110,7 +110,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
     }
     
     return filtered.slice(0, 10);
-  }, [transactions, dateRange, sortBy]);
+  }, [transactions, dateRange, sortBy, isEmployee, userId]);
   
   const greeting = useMemo(() => {
     const hour = today.getHours();

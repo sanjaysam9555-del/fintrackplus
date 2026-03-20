@@ -58,7 +58,7 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
         if (uncategorizedFilter === 'no-partner') return !t.handledBy;
         return true;
       });
-  }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter]);
+  }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter, isEmployee, userId]);
   
   const total = type === 'income' 
     ? getTotalIncome(dateRange.start, dateRange.end)
