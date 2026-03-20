@@ -1461,16 +1461,17 @@ export const useFinanceStore = create<FinanceStore>()(
         ] : [];
         
         // Find all transactions assigned to this partner so we can unassign them
-        const affectedTransactionIds = get().transactions
+        const partnerUserId = partner?.userId;
+        const affectedTransactionIds = partnerUserId ? get().transactions
           .filter(t => t.handledBy === partnerUserId)
-          .map(t => t.id);
+          .map(t => t.id) : [];
         
         set((state) => ({
           partners: state.partners.filter((p) => p.id !== id),
           // Unassign transactions from deleted partner
-          transactions: state.transactions.map(t => 
+          transactions: partnerUserId ? state.transactions.map(t => 
             t.handledBy === partnerUserId ? { ...t, handledBy: undefined } : t
-          ),
+          ) : state.transactions,
         }));
         
         if (userId) {
@@ -1489,7 +1490,7 @@ export const useFinanceStore = create<FinanceStore>()(
               type: 'update',
               entity: 'transaction',
               entityId: txnId,
-              data: { partner_id: null },
+              data: { handled_by: null },
               userId,
             });
           });
