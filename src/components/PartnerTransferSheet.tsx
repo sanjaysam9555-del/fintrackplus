@@ -178,7 +178,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                             <span className="text-sm font-medium">{fromPartner.name}</span>
                           </div> :
 
-                      <span className="text-sm text-muted-foreground">Select partner...</span>
+                      <span className="text-sm text-muted-foreground">Select Team Member</span>
                       }
                       </button>
                     </PopoverTrigger>
