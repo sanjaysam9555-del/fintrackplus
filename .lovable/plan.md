@@ -1,40 +1,60 @@
 
 
-## Sync Display Pictures Across All Components
+## Route Transaction Edits/Deletes Through Approval When Entry Belongs to Another Owner
 
 ### Problem
-Several components display partner/team member avatars using only colored initials (first letter), completely ignoring the `avatarUrl` property that's already available on partner objects. The `userProfile.avatar` and `partner.avatarUrl` data is correctly synced in the store — the issue is purely in the rendering code.
+When an owner/partner edits or deletes a transaction that was created or handled by another owner/partner, the change applies immediately — bypassing the approval system entirely. The approval flow only exists for partner/team member deletions today.
 
-### Components Missing Avatar Images
+### Solution
+Add approval checks in two places:
+1. **Edit** — in `EditTransactionSheet.tsx`, before calling `updateTransaction`, check if the transaction's `handledBy` (or `userId`) belongs to a different owner. If so, insert a `change_approvals` row instead of applying the edit.
+2. **Delete** — in `TransactionDetailSheet.tsx`, before calling `deleteTransaction`, same check. Route to approval if it belongs to another owner.
 
-| Component | Location | Issue |
-|---|---|---|
-| `PartnerBalanceCard.tsx` | Partner rows (line 109-112) | Shows colored initial, ignores `partner.avatarUrl` |
-| `PartnerTransferSheet.tsx` | From/To visual (lines 131-135, 149-153) | Shows colored initial, ignores `avatarUrl` |
-| `PartnerTransferSheet.tsx` | From partner selected (lines 172-177) | Shows colored initial, ignores `avatarUrl` |
-| `PartnerTransferSheet.tsx` | From partner list items (lines 201-206) | Shows colored initial, ignores `avatarUrl` |
-| `PartnerTransferSheet.tsx` | To partner selected (lines 223-228) | Shows colored initial, ignores `avatarUrl` |
-| `PartnerTransferSheet.tsx` | To partner list items (lines 252-257) | Shows colored initial, ignores `avatarUrl` |
-| `PartnerDetailSheet.tsx` | Header (lines 101-106) | Shows colored initial, ignores `partner.avatarUrl` |
-
-### Fix
-In each location, replace the colored-initial `<div>` with a conditional: if `avatarUrl` exists, render an `<img>`, otherwise fall back to the existing colored initial. Pattern:
-
-```tsx
-{partner.avatarUrl ? (
-  <img src={partner.avatarUrl} alt={partner.name} className="w-8 h-8 rounded-full object-cover" />
-) : (
-  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-    style={{ backgroundColor: partner.color }}>
-    {partner.name.charAt(0).toUpperCase()}
-  </div>
-)}
-```
+### Logic
+- Fetch `otherOwners` from `org_members` (same pattern used in `PartnersSection`)
+- A transaction "belongs to another owner" if `transaction.handledBy !== currentUser.id` AND `transaction.handledBy` is an owner's `user_id` (i.e., exists in `org_members` with role `owner`)
+- If there are other owners and the transaction belongs to one of them, create a `change_approvals` entry targeting that owner
+- If the transaction belongs to the current user, or there's only one owner, apply directly as today
 
 ### Files to modify
+
 | File | Change |
 |---|---|
-| `src/components/PartnerBalanceCard.tsx` | Add avatar image check for partner rows |
-| `src/components/PartnerTransferSheet.tsx` | Add avatar image check in 6 locations (from/to visual, selected, list items) |
-| `src/components/settings/PartnerDetailSheet.tsx` | Add avatar image check in header |
+| `src/components/EditTransactionSheet.tsx` | In `handleSubmit`, check if transaction belongs to another owner. If yes, insert `change_approvals` with `action: 'edit'`, `entity_type: 'transaction'`, and `proposed_changes` containing the updates. Show toast "Edit request sent for approval" and close sheet. |
+| `src/components/TransactionDetailSheet.tsx` | In `handleDelete`, check if transaction belongs to another owner. If yes, insert `change_approvals` with `action: 'delete'`, `entity_type: 'transaction'`. Show toast "Delete request sent for approval" and close sheet. Skip the undo toast in this case. |
+| `src/components/settings/ChangeApprovalPage.tsx` | Already handles `edit` and `delete` for `transaction` entity type in `handleApproval` — no changes needed. |
+
+### Approval check pattern (used in both files)
+```typescript
+// Fetch other owners in the org
+const { data: owners } = await supabase
+  .from('org_members')
+  .select('user_id')
+  .eq('org_id', orgId)
+  .eq('role', 'owner')
+  .eq('status', 'active');
+
+const otherOwners = (owners || []).filter(o => o.user_id !== user.id);
+const txnOwnerUserId = transaction.handledBy || transaction.userId;
+const belongsToAnotherOwner = otherOwners.some(o => o.user_id === txnOwnerUserId);
+
+if (belongsToAnotherOwner && otherOwners.length > 0) {
+  // Route to approval
+  await supabase.from('change_approvals').insert({
+    org_id: orgId,
+    requester_user_id: user.id,
+    target_user_id: txnOwnerUserId,
+    entity_type: 'transaction',
+    entity_id: transaction.id,
+    action: 'edit', // or 'delete'
+    proposed_changes: { ...updates, name: transaction.title || transaction.vendor },
+    status: 'pending'
+  });
+  toast.success('Edit request sent for approval');
+  onClose();
+  return;
+}
+```
+
+Both components already import `useAuth`/`useUserRole` or can access `userId`. They'll need `supabase` import and `orgId` from `useUserRole()`.
 
