@@ -116,7 +116,9 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
           <h1 className="text-2xl font-bold">Backup & Restore</h1>
         </div>
         <p className="text-sm text-muted-foreground mt-1 ml-1">
-          Backups are created automatically twice daily. You can also create one manually.
+          Your backups are stored forever — like diamonds, but more useful 💎
+          <br />
+          Automatic snapshots run twice daily. You can also create one manually.
         </p>
       </div>
 
