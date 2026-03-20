@@ -149,10 +149,11 @@ export const useFinanceStore = create<FinanceStore>()(
         const oldFilter = get().defaultTimeFilter;
         set({ defaultTimeFilter: filter });
         if (oldFilter !== filter) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'settings' as any,
             title: 'Time Filter Changed',
-            message: `Default time frame changed`,
+            message: `${userName} changed default time frame from ${oldFilter.toUpperCase()} to ${filter.toUpperCase()}`,
             details: [{ field: 'Time Frame', from: oldFilter.toUpperCase(), to: filter.toUpperCase() }],
           });
         }
@@ -333,17 +334,18 @@ export const useFinanceStore = create<FinanceStore>()(
           get().addNotification({
             type: 'profile',
             title: 'Name Changed',
-            message: `Display name updated`,
+            message: `${profile.name} changed display name from '${previousProfile.name || 'Not set'}' to '${profile.name}'`,
             details: [
               { field: 'Name', from: previousProfile.name || 'Not set', to: profile.name },
             ],
           });
         }
         if (profile.avatar !== undefined && profile.avatar !== previousProfile.avatar) {
+          const currentName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'profile',
             title: 'Profile Photo Changed',
-            message: 'Your display picture has been updated',
+            message: `${currentName} updated their display picture`,
           });
         }
       },
@@ -471,10 +473,11 @@ export const useFinanceStore = create<FinanceStore>()(
         if (transaction.projectId) addDetails.push({ field: 'Project', from: 'New', to: getProjectName(transaction.projectId) });
         if (transaction.handledBy) addDetails.push({ field: 'Partner', from: 'New', to: getPartnerName(transaction.handledBy) });
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'transaction',
           title: `${transaction.type === 'income' ? 'Income' : 'Expense'} Added`,
-          message: `${transaction.title || transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+          message: `${userName} added ${transaction.type} '${transaction.title || transaction.vendor}' — ₹${transaction.amount.toLocaleString()}`,
           details: addDetails,
           entityType: 'transaction',
           entityId: id,
@@ -566,10 +569,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         // Notifications
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'partner',
           title: 'Partner Transfer',
-          message: `₹${params.amount.toLocaleString()} transferred between partners`,
+          message: `${userName} transferred ₹${params.amount.toLocaleString()} from ${params.fromPartnerName} to ${params.toPartnerName}`,
           entityType: 'transaction',
           entityId: expenseId,
           details: [
@@ -710,10 +714,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
 
         if (transaction) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'edit',
             title: 'Transaction Updated',
-            message: `${updates.vendor || transaction.vendor} - ₹${(updates.amount ?? transaction.amount).toLocaleString()}`,
+            message: `${userName} edited transaction '${updates.title || updates.vendor || transaction.title || transaction.vendor}' — ₹${(updates.amount ?? transaction.amount).toLocaleString()}`,
             details: changes.length > 0 ? changes : undefined,
             entityType: 'transaction',
             entityId: id,
@@ -787,10 +792,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (transaction) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Transaction Deleted',
-            message: `${transaction.vendor} - ₹${transaction.amount.toLocaleString()}`,
+            message: `${userName} deleted transaction '${transaction.title || transaction.vendor}' — ₹${transaction.amount.toLocaleString()}`,
             details,
             entityType: 'transaction',
             entityId: id,
@@ -890,10 +896,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'transaction',
           title: 'Installment Confirmed',
-          message: `₹${installment.amount.toLocaleString('en-IN')} received for ${parent.title || parent.vendor}`,
+          message: `${userName} confirmed installment of ₹${installment.amount.toLocaleString('en-IN')} for '${parent.title || parent.vendor}'`,
           details: [
             { field: 'Amount', from: 'New', to: `₹${installment.amount.toLocaleString('en-IN')}` },
             { field: 'Parent Transaction', from: 'New', to: parent.title || parent.vendor },
@@ -934,10 +941,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'category',
           title: 'Category Added',
-          message: category.name,
+          message: `${userName} added category '${category.name}'`,
           details: [
             { field: 'Name', from: 'New', to: category.name },
             { field: 'Type', from: 'New', to: category.type === 'income' ? 'Income' : 'Expense' },
@@ -990,10 +998,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'edit',
           title: 'Category Updated',
-          message: updates.name || category?.name || 'Category modified',
+          message: `${userName} updated category '${updates.name || category?.name || 'Unknown'}'`,
           details: changes.length > 0 ? changes : undefined,
           entityType: 'category',
           entityId: id,
@@ -1030,10 +1039,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (category) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Category Deleted',
-            message: category.name,
+            message: `${userName} deleted category '${category.name}'`,
             details,
             entityType: 'category',
             entityId: id,
@@ -1078,10 +1088,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'project',
           title: 'Project Added',
-          message: project.name,
+          message: `${userName} added project '${project.name}'`,
           details: [
             { field: 'Name', from: 'New', to: project.name },
             { field: 'Internal Cost', from: 'New', to: `₹${project.internalCost.toLocaleString()}` },
@@ -1167,10 +1178,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'edit',
           title: 'Project Updated',
-          message: updates.name || project?.name || 'Project modified',
+          message: `${userName} updated project '${updates.name || project?.name || 'Unknown'}'`,
           details: changes.length > 0 ? changes : undefined,
           entityType: 'project',
           entityId: id,
@@ -1208,10 +1220,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (project) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Project Deleted',
-            message: project.name,
+            message: `${userName} deleted project '${project.name}'`,
             details,
             entityType: 'project',
             entityId: id,
@@ -1248,10 +1261,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'vendor',
           title: 'Vendor Added',
-          message: name,
+          message: `${userName} added vendor '${name}'`,
           details: [
             { field: 'Name', from: 'New', to: name },
             ...(icon ? [{ field: 'Icon', from: 'New', to: icon }] : []),
@@ -1321,10 +1335,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'edit',
           title: 'Vendor Updated',
-          message: updates.name || vendor?.name || 'Vendor modified',
+          message: `${userName} updated vendor '${updates.name || vendor?.name || 'Unknown'}'`,
           details: changes.length > 0 ? changes : undefined,
           entityType: 'vendor',
           entityId: id,
@@ -1360,10 +1375,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (vendor) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Vendor Deleted',
-            message: vendor.name,
+            message: `${userName} deleted vendor '${vendor.name}'`,
             details,
             entityType: 'vendor',
             entityId: id,
@@ -1403,10 +1419,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'partner',
           title: 'Partner Added',
-          message: partner.name,
+          message: `${userName} added partner '${partner.name}'`,
           details: [
             { field: 'Name', from: 'New', to: partner.name },
             { field: 'Cash Balance', from: 'New', to: `₹${partner.initialCashBalance.toLocaleString()}` },
@@ -1471,10 +1488,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (partner) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'edit',
             title: 'Partner Updated',
-            message: updates.name || partner.name,
+            message: `${userName} updated partner '${updates.name || partner.name}'`,
             details: changes.length > 0 ? changes : undefined,
             entityType: 'partner',
             entityId: id,
@@ -1535,10 +1553,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         if (partner) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Partner Deleted',
-            message: `${partner.name} — ${affectedTransactionIds.length} transaction${affectedTransactionIds.length !== 1 ? 's' : ''} unassigned`,
+            message: `${userName} deleted partner '${partner.name}' — ${affectedTransactionIds.length} transaction${affectedTransactionIds.length !== 1 ? 's' : ''} unassigned`,
             details,
             entityType: 'partner',
             entityId: id,
@@ -1555,10 +1574,11 @@ export const useFinanceStore = create<FinanceStore>()(
           projectLabels: [...state.projectLabels, { ...label, id, createdAt }]
         }));
 
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'label',
           title: 'Label Added',
-          message: `#${label.name}`,
+          message: `${userName} added label '#${label.name}'`,
           details: [
             { field: 'Name', from: 'New', to: label.name },
             { field: 'Color', from: 'New', to: label.color },
@@ -1600,10 +1620,11 @@ export const useFinanceStore = create<FinanceStore>()(
         if (updates.name && updates.name !== oldLabel?.name) labelChanges.push({ field: 'Name', from: oldLabel?.name || '', to: updates.name });
         if (updates.color && updates.color !== oldLabel?.color) labelChanges.push({ field: 'Color', from: oldLabel?.color || '', to: updates.color });
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'edit',
           title: 'Label Updated',
-          message: `#${updates.name || oldLabel?.name || 'Label'}`,
+          message: `${userName} updated label '#${updates.name || oldLabel?.name || 'Label'}'`,
           details: labelChanges.length > 0 ? labelChanges : undefined,
           entityType: 'label',
           entityId: id,
@@ -1642,10 +1663,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }));
 
         if (label) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Label Deleted',
-            message: `#${label.name}`,
+            message: `${userName} deleted label '#${label.name}'`,
             details: [
               { field: 'Name', from: label.name, to: 'Deleted' },
               { field: 'Color', from: label.color, to: 'Deleted' },

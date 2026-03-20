@@ -388,7 +388,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           addNotification({
             type: 'partner',
             title: 'Partner Photo Updated',
-            message: `Profile photo changed for ${partnerObj.name}`
+            message: `${useFinanceStore.getState().userProfile.name || 'Unknown'} updated profile photo for ${partnerObj.name}`
           });
         }
       }
@@ -512,7 +512,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           addNotification({
             type: 'partner',
             title: 'Deletion Requested',
-            message: `${currentUserName} requested deletion of partner "${partner.name}"`
+            message: `${currentUserName} requested deletion of partner '${partner.name}'`
           });
           toast.success('Deletion request sent for approval');
         } catch (err: any) {
@@ -568,7 +568,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           addNotification({
             type: 'partner',
             title: 'Deletion Requested',
-            message: `${currentUserName} requested deletion of partner "${partner.name}"`
+            message: `${currentUserName} requested deletion of partner '${partner.name}'`
           });
           toast.success('Deletion request sent for approval');
         } catch (err: any) {
