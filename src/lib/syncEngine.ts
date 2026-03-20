@@ -521,6 +521,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
             initialCashBalance: Number((p as { initial_cash_balance: number }).initial_cash_balance) || 0,
             initialOnlineBalance: Number((p as { initial_online_balance: number }).initial_online_balance) || 0,
             avatarUrl: linkedProfile?.avatar_url || (p as { avatar_url?: string }).avatar_url || undefined,
+            userId: (p as { user_id?: string }).user_id,
+            role: (p as { role?: string }).role || 'owner',
             createdAt: (p as { created_at: string }).created_at.split('T')[0]
           };
         }),
