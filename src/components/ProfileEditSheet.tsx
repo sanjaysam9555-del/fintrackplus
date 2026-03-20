@@ -118,7 +118,7 @@ export const ProfileEditSheet = ({ isOpen, onClose }: ProfileEditSheetProps) => 
             className="fixed inset-0 z-50 bg-background overflow-y-auto"
           >
             {/* Header with Back Button */}
-            <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 border-b border-border">
+            <div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 safe-top border-b border-border">
               <button onClick={handleClose} className="p-2 -ml-2 rounded-full hover:bg-muted">
                 <X size={20} />
               </button>
