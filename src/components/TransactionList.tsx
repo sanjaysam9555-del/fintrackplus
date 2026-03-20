@@ -41,7 +41,10 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
   }, [timeFilter, customStartDate, customEndDate]);
   
   const filteredTransactions = useMemo(() => {
-    return transactions
+    const base = isEmployee
+      ? transactions.filter(t => t.userId === userId)
+      : transactions;
+    return base
       .filter(t => t.type === type)
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
       .filter(t => !selectedCategory || t.categoryId === selectedCategory)
