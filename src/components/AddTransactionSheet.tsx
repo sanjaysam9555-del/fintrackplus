@@ -720,7 +720,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               <span className="text-sm font-medium">{selectedPartner.name}</span>
                             </div>
                           ) : (
-                            <span className="text-sm text-muted-foreground">Select partner...</span>
+                            <span className="text-sm text-muted-foreground">Select team member...</span>
                           )}
                           <ChevronDown size={16} className="text-muted-foreground" />
                         </button>
