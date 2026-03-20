@@ -51,7 +51,8 @@ export const CategoriesSection = ({ onBack, userId, isEmployee }: CategoriesSect
 
   // Compute transaction counts per category
   const categoryTransactionCounts = categories.reduce<Record<string, { count: number; total: number }>>((acc, cat) => {
-    const catTxns = transactions.filter(t => t.categoryId === cat.id);
+    let catTxns = transactions.filter(t => t.categoryId === cat.id);
+    if (isEmployee && userId) catTxns = catTxns.filter(t => t.userId === userId);
     acc[cat.id] = { count: catTxns.length, total: catTxns.reduce((s, t) => s + t.amount, 0) };
     return acc;
   }, {});
