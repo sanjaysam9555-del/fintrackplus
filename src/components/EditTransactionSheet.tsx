@@ -75,6 +75,10 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId, isE
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
   const selectedPartner = partners.find(p => p.userId === handledBy);
+  const availableProjects = useMemo(() => {
+    if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
+    return projects.filter(p => !p.archived);
+  }, [projects, isEmployee, userId]);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
