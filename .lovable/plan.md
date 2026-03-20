@@ -1,18 +1,21 @@
 
 
-## Fix Sidebar and Content Height Mismatch on Tablet
+## Fix Edit Profile Header Behind iOS Status Bar
 
-### Problem
-The sidebar uses `h-screen` (CSS `height: 100vh`) while the main content area uses `h-dvh` (CSS `height: 100dvh`). On tablets — especially iOS with dynamic toolbars — `100vh` and `100dvh` resolve to different pixel values, causing the two panels to have mismatched heights.
+The `ProfileEditSheet` header uses `sticky top-0` with no safe-area padding, so on iOS standalone (home-screen) apps the close button and "Edit Profile" title sit behind the clock/notch.
 
 ### Fix
-Align both to use `h-dvh` consistently.
+
+**`src/components/ProfileEditSheet.tsx`** — Add the `safe-top` utility class to the sticky header div (same pattern used elsewhere in the app for iOS safe-area handling). Change the header from `p-4` to include top safe-area padding:
+
+```tsx
+<div className="sticky top-0 bg-background z-10 flex items-center gap-3 p-4 safe-top border-b border-border">
+```
+
+This applies the app's existing `safe-top` utility which provides `env(safe-area-inset-top)` padding on standalone iOS PWAs.
 
 ### Files to modify
-
 | File | Change |
 |---|---|
-| `src/components/DesktopSidebar.tsx` | Change `h-screen` → `h-dvh` on the `<motion.aside>` element |
-
-Single line change — `className` on line 66.
+| `src/components/ProfileEditSheet.tsx` | Add `safe-top` class to sticky header div |
 
