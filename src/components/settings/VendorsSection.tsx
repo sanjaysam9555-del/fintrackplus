@@ -466,19 +466,26 @@ export const VendorsSection = ({ onBack, userId, isEmployee }: VendorsSectionPro
                           </p>
                         )}
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        {vendor.name !== 'Not Specified' && (
-                          <button onClick={(e) => { e.stopPropagation(); startEdit(vendor.id, vendor.name, vendor.color, vendor.icon); }} className="p-2 hover:bg-muted rounded-lg">
-                            <Pencil size={16} className="text-muted-foreground" />
-                          </button>
-                        )}
-                        {vendor.name !== 'Not Specified' && (
-                          <button onClick={(e) => { e.stopPropagation(); setDeleteId(vendor.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
-                            <Trash2 size={16} className="text-destructive" />
-                          </button>
-                        )}
-                        {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
-                      </div>
+                      {!isEmployee && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          {vendor.name !== 'Not Specified' && (
+                            <button onClick={(e) => { e.stopPropagation(); startEdit(vendor.id, vendor.name, vendor.color, vendor.icon); }} className="p-2 hover:bg-muted rounded-lg">
+                              <Pencil size={16} className="text-muted-foreground" />
+                            </button>
+                          )}
+                          {vendor.name !== 'Not Specified' && (
+                            <button onClick={(e) => { e.stopPropagation(); setDeleteId(vendor.id); }} className="p-2 hover:bg-destructive/10 rounded-lg">
+                              <Trash2 size={16} className="text-destructive" />
+                            </button>
+                          )}
+                          {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                        </div>
+                      )}
+                      {isEmployee && (
+                        <div className="shrink-0">
+                          {isExpanded ? <ChevronUp size={16} className="text-muted-foreground" /> : <ChevronDown size={16} className="text-muted-foreground" />}
+                        </div>
+                      )}
                     </button>
                     <AnimatePresence>
                       {isExpanded && stats && (
