@@ -210,15 +210,10 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 )}
               </motion.div>
               <div>
-                {orgName && (
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    {orgLogoUrl ? (
-                      <img src={orgLogoUrl} alt="" className="w-4 h-4 rounded object-cover" />
-                    ) : null}
-                    <span className="text-xs text-muted-foreground font-medium">{orgName}</span>
-                  </div>
-                )}
-                <p className="text-sm text-muted-foreground">{greeting},</p>
+                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  {orgLogoUrl && <img src={orgLogoUrl} alt="" className="w-4 h-4 rounded object-cover inline" />}
+                  {orgName || greeting}
+                </p>
                 <h1 className="text-lg font-bold">{userProfile.name}</h1>
               </div>
             </div>
