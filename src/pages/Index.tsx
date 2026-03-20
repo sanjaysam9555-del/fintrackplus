@@ -284,7 +284,7 @@ const Index = () => {
       case 'expenses':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="expense" userId={user?.id} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
+            <TransactionList type="expense" userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
           </Suspense>
         );
       case 'income':
