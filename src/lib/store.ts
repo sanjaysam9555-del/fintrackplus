@@ -149,10 +149,11 @@ export const useFinanceStore = create<FinanceStore>()(
         const oldFilter = get().defaultTimeFilter;
         set({ defaultTimeFilter: filter });
         if (oldFilter !== filter) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'settings' as any,
             title: 'Time Filter Changed',
-            message: `Default time frame changed`,
+            message: `${userName} changed default time frame from ${oldFilter.toUpperCase()} to ${filter.toUpperCase()}`,
             details: [{ field: 'Time Frame', from: oldFilter.toUpperCase(), to: filter.toUpperCase() }],
           });
         }
