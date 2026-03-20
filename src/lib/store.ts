@@ -998,10 +998,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'edit',
           title: 'Category Updated',
-          message: updates.name || category?.name || 'Category modified',
+          message: `${userName} updated category '${updates.name || category?.name || 'Unknown'}'`,
           details: changes.length > 0 ? changes : undefined,
           entityType: 'category',
           entityId: id,
