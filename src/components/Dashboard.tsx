@@ -150,10 +150,15 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 )}
               </motion.div>
               <div>
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                  {orgLogoUrl && <img src={orgLogoUrl} alt="" className="w-3.5 h-3.5 rounded object-cover inline" />}
-                  {orgName || greeting}
-                </p>
+                {orgName && (
+                  <div className="flex items-center gap-1 mb-0.5">
+                    {orgLogoUrl ? (
+                      <img src={orgLogoUrl} alt="" className="w-4 h-4 rounded object-cover" />
+                    ) : null}
+                    <span className="text-[10px] text-muted-foreground font-medium truncate max-w-[120px]">{orgName}</span>
+                  </div>
+                )}
+                <p className="text-[11px] text-muted-foreground">{greeting},</p>
                 <h1 className="text-sm font-bold leading-tight">{userProfile.name}</h1>
               </div>
             </div>
@@ -210,10 +215,15 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 )}
               </motion.div>
               <div>
-                <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                  {orgLogoUrl && <img src={orgLogoUrl} alt="" className="w-4 h-4 rounded object-cover inline" />}
-                  {orgName || greeting}
-                </p>
+                {orgName && (
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {orgLogoUrl ? (
+                      <img src={orgLogoUrl} alt="" className="w-4 h-4 rounded object-cover" />
+                    ) : null}
+                    <span className="text-xs text-muted-foreground font-medium">{orgName}</span>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">{greeting},</p>
                 <h1 className="text-lg font-bold">{userProfile.name}</h1>
               </div>
             </div>
