@@ -1261,10 +1261,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'vendor',
           title: 'Vendor Added',
-          message: name,
+          message: `${userName} added vendor '${name}'`,
           details: [
             { field: 'Name', from: 'New', to: name },
             ...(icon ? [{ field: 'Icon', from: 'New', to: icon }] : []),
