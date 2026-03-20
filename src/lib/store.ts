@@ -349,15 +349,47 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       // Notifications
-      addNotification: (notification) => set((state) => ({
-        notifications: [{
-          ...notification,
-          id: uuidv4(),
-          timestamp: new Date().toISOString(),
-          read: false,
-          actorName: notification.actorName || get().userProfile.name || 'Unknown',
-        }, ...state.notifications].slice(0, 200)
-      })),
+      addNotification: (notification) => {
+        const actorName = notification.actorName || get().userProfile.name || 'Unknown';
+        const id = uuidv4();
+        const timestamp = new Date().toISOString();
+        
+        // Update local state
+        set((state) => ({
+          notifications: [{
+            ...notification,
+            id,
+            timestamp,
+            read: false,
+            actorName,
+          }, ...state.notifications].slice(0, 200)
+        }));
+
+        // Persist to DB (fire-and-forget)
+        (async () => {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+            const orgId = await supabase.rpc('get_user_org_id', { _user_id: user.id }).then(r => r.data);
+            if (!orgId) return;
+            await supabase.from('notifications').insert({
+              id,
+              user_id: user.id,
+              org_id: orgId,
+              type: notification.type,
+              title: notification.title,
+              message: notification.message,
+              details: (notification.details || []) as any,
+              entity_type: notification.entityType || null,
+              entity_id: notification.entityId || null,
+              actor_name: actorName,
+              read: false,
+            } as any);
+          } catch (e) {
+            console.error('Failed to persist notification:', e);
+          }
+        })();
+      },
       
       markNotificationRead: (id) => set((state) => ({
         notifications: state.notifications.map((n) =>
