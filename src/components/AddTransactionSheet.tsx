@@ -833,9 +833,9 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <span className="flex-1 text-muted-foreground">None</span>
                             <Check size={14} className={cn("text-primary shrink-0", !projectId ? "opacity-100" : "opacity-0")} />
                           </button>
-                          {projects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
+                          {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
                             <>
-                              {projects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
+                              {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
                                 <button
                                   key={proj.id}
                                   onClick={() => {

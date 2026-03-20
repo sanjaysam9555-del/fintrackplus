@@ -558,9 +558,9 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                           >
                             No Project
                           </button>
-                          {projects.filter(p => !p.archived).filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
+                          {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
                             <>
-                              {projects.filter(p => !p.archived).filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
+                              {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
                                 <button
                                   key={proj.id}
                                   onClick={() => {
