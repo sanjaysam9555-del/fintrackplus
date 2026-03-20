@@ -67,8 +67,7 @@ export const GlobalSearchDialog = ({
 
   const handleCloseTransactionDetail = useCallback(() => {
     setSelectedTransaction(null);
-    onClose();
-  }, [onClose]);
+  }, []);
 
   const getTypeIcon = (type: SearchResult['type']) => {
     switch (type) {
