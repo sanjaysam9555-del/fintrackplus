@@ -1,58 +1,81 @@
 
 
-## Three Fixes: Backup Lifetime Note, Session Persistence, Role Caching
+## Add Organization Branding (Name + Logo) Across the App
 
-### 1. Backup Lifetime Quirky Note
+### Overview
+Add the ability for owners to see and edit their organization's name and logo. Display it as a compact badge on the Dashboard home screen and as a dedicated editable card on the Settings page.
 
-**`src/components/settings/BackupRestoreSection.tsx`** — Replace the subtitle text with a warmer message:
+### Database Changes
 
-Current: `"Backups are created automatically twice daily. You can also create one manually."`
+**Migration — Add `logo_url` column + allow owners to update organizations:**
+```sql
+ALTER TABLE public.organizations ADD COLUMN logo_url text;
 
-New: `"Your backups are stored forever — like diamonds, but more useful 💎 Automatic snapshots run twice daily. You can also create one manually."`
+-- Allow owners to update their org (name, logo)
+CREATE POLICY "Owners can update their org" ON public.organizations
+  FOR UPDATE TO authenticated
+  USING (id = get_user_org_id(auth.uid()) AND get_user_role(auth.uid()) = 'owner'::app_role)
+  WITH CHECK (id = get_user_org_id(auth.uid()) AND get_user_role(auth.uid()) = 'owner'::app_role);
+```
 
-No technical changes needed — backups table has no TTL or cleanup policy, so they already persist for lifetime.
+**Storage — Create `org-logos` public bucket** for org logo uploads.
 
----
+### Store Changes
 
-### 2. Fix Frequent Logouts
+**`src/lib/store.ts`** — Add org data to the store:
+- New state: `orgName: string`, `orgLogoUrl: string | null`
+- New action: `setOrgInfo(name, logoUrl)`
+- Fetch org info during `syncFromCloud` using the existing `organizations` table query
+- Update org info when owner edits it
 
-**Problem**: The `useAuth` hook doesn't handle the `TOKEN_REFRESHED` or `SIGNED_OUT` events gracefully. More critically, there's no error recovery when a token refresh fails — the user just gets silently logged out.
+### New Component: `OrgEditSheet.tsx`
 
-**`src/hooks/useAuth.tsx`** — Improve session persistence:
-- In `onAuthStateChange`, handle `TOKEN_REFRESHED` event explicitly to avoid unnecessary state resets
-- Add a `SIGNED_OUT` handler that only clears state if the sign-out was intentional (not a failed refresh)
-- Add retry logic: if `getSession()` returns null but localStorage still has a session, attempt `refreshSession()` before giving up
+A bottom sheet (similar to `ProfileEditSheet`) for owners to:
+- Edit org name (text input)
+- Upload org logo (image picker → upload to `org-logos` bucket)
+- Preview current logo
+- Save updates to `organizations` table
 
----
+### Dashboard Changes (`src/components/Dashboard.tsx`)
 
-### 3. Cache User Role to Avoid Repeated DB Calls
+Add a small badge above the greeting on mobile:
+```text
+┌─────────────────────────────┐
+│ [logo] My Organization      │  ← small, muted text + tiny logo
+│ Good morning,               │
+│ John                        │
+└─────────────────────────────┘
+```
+- Reads `orgName` and `orgLogoUrl` from the store
+- Shows org logo (16×16 rounded) + org name in `text-[11px] text-muted-foreground`
+- Same pattern on desktop layout
 
-**Problem**: `useUserRole()` is called in 12+ components. Each instance makes its own independent `org_members` query on mount. This means navigating to Settings → Team triggers multiple simultaneous role-fetching queries, slowing page loads.
+### Settings Changes (`src/components/SettingsPage.tsx`)
 
-**Solution**: Lift role data into a React Context (similar to `AuthProvider`) so the query runs once at app startup and all consumers read from the cached context.
+Add a dedicated org card **above** the profile card:
+```text
+┌─────────────────────────────┐
+│ [logo]  My Organization     │
+│         Owner · 3 members   │
+│                          >  │
+└─────────────────────────────┘
+┌─────────────────────────────┐
+│ [avatar]  John Doe          │
+│           john@example.com  │
+└─────────────────────────────┘
+```
+- Tapping it opens `OrgEditSheet` (owner only)
+- Non-owners see the card but it's not tappable
+- Shows member count from org_members
 
-**New file: `src/hooks/UserRoleProvider.tsx`**:
-- Create `UserRoleContext` with a provider component
-- Fetch role once when user is available (after auth)
-- Cache `role`, `orgId`, `mustChangePassword`, `memberId` in context state
-- Expose all derived booleans (`isOwner`, `canEdit`, etc.)
-- Provide `refetch` for the rare cases where role might change mid-session
+### Files to create/modify
 
-**`src/hooks/useUserRole.ts`** — Convert to a thin wrapper:
-- Change `useUserRole()` to read from `UserRoleContext` instead of making its own DB query
-- Keep the same return type so all 12+ consumers need zero changes
-
-**`src/App.tsx`** — Wrap with `UserRoleProvider`:
-- Add `<UserRoleProvider>` inside `<AuthProvider>` so it has access to the user
-- This ensures the role query runs exactly once per session, not per component mount
-
-### Files to modify
-
-| File | Change |
+| File | Action |
 |---|---|
-| `src/components/settings/BackupRestoreSection.tsx` | Add quirky lifetime backup note |
-| `src/hooks/useAuth.tsx` | Add token refresh retry and better sign-out handling |
-| `src/hooks/UserRoleProvider.tsx` | New — Context provider for cached role data |
-| `src/hooks/useUserRole.ts` | Read from context instead of querying DB |
-| `src/App.tsx` | Wrap app with `UserRoleProvider` |
+| Migration | Add `logo_url` to organizations, add UPDATE policy for owners |
+| Storage bucket | Create `org-logos` (public) |
+| `src/lib/store.ts` | Add `orgName`, `orgLogoUrl` state; fetch in sync; add `setOrgInfo` |
+| `src/components/OrgEditSheet.tsx` | New — edit org name + upload logo |
+| `src/components/Dashboard.tsx` | Add org name badge above greeting (mobile + desktop) |
+| `src/components/SettingsPage.tsx` | Add org card above profile card, import OrgEditSheet |
 
