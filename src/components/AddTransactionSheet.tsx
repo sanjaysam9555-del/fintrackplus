@@ -39,10 +39,11 @@ interface AddTransactionSheetProps {
   onClose: () => void;
   defaultType?: TransactionType;
   userId?: string;
+  isEmployee?: boolean;
   onNavigate?: (section: string) => void;
 }
 
-export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId, onNavigate }: AddTransactionSheetProps) => {
+export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId, isEmployee = false, onNavigate }: AddTransactionSheetProps) => {
   const navigate = useNavigate();
   const { categories, projects, transactions, vendors, partners, addTransaction } = useFinanceStore();
   const { checkForDuplicates } = useDuplicateDetection();

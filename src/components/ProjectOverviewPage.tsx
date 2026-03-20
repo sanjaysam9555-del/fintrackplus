@@ -143,9 +143,9 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
     setNewLabelName('');
   };
 
-  // Filter projects
-  const activeProjects = projects.filter(p => !p.archived);
-  const archivedProjects = projects.filter(p => p.archived);
+  // Filter projects - employees only see assigned projects
+  const activeProjects = projects.filter(p => !p.archived).filter(p => !isEmployee || (p.assignedEmployeeIds || []).includes(userId || ''));
+  const archivedProjects = projects.filter(p => p.archived).filter(p => !isEmployee || (p.assignedEmployeeIds || []).includes(userId || ''));
   const displayedProjects = showArchived ? archivedProjects : activeProjects;
 
   // Calculate totals based on selected tab
