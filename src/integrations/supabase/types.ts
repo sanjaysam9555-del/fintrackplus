@@ -107,7 +107,11 @@ export type Database = {
       }
       notifications: {
         Row: {
+          actor_name: string | null
           created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
           id: string
           message: string
           org_id: string | null
@@ -117,7 +121,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actor_name?: string | null
           created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           message: string
           org_id?: string | null
@@ -127,7 +135,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actor_name?: string | null
           created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
           id?: string
           message?: string
           org_id?: string | null
