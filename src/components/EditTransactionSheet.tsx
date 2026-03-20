@@ -645,7 +645,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                           ) : (
                             <div className="flex items-center gap-2">
                               <Users size={16} className="text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">Select partner...</span>
+                              <span className="text-sm text-muted-foreground">Select team member...</span>
                             </div>
                           )}
                           <ChevronDown size={16} className="text-muted-foreground" />
