@@ -567,7 +567,7 @@ export const createRealtimeSubscription = (
   
   const debouncedCallback = () => {
     if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(onDataChange, 200);
+    debounceTimer = setTimeout(onDataChange, 1000);
   };
 
   // Subscribe to all changes on relevant tables (RLS handles org scoping)
