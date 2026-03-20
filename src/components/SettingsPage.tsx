@@ -251,6 +251,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   const { mode, setTheme, isDark, isOled } = useTheme();
   const navigate = useNavigate();
   const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showOrgEdit, setShowOrgEdit] = useState(false);
   const isInstalled = typeof window !== 'undefined' && (
     window.matchMedia('(display-mode: standalone)').matches ||
     (window.navigator as any).standalone === true
