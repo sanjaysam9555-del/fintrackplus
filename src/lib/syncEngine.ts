@@ -389,7 +389,17 @@ export interface CloudData {
   projectLabels: ProjectLabelType[];
 }
 
+// ============ Fetch Throttle ============
+let _lastFetchTimestamp = 0;
+let _lastFetchResult: { data: CloudData | null; error: string | null } | null = null;
+const FETCH_THROTTLE_MS = 5000; // 5 second minimum gap between fetches
+
 export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudData | null; error: string | null }> => {
+  const now = Date.now();
+  if (_lastFetchResult && now - _lastFetchTimestamp < FETCH_THROTTLE_MS) {
+    console.log('[SyncEngine] Fetch throttled, returning cached result');
+    return _lastFetchResult;
+  }
   try {
     // Paginated fetch for transactions (may exceed 1000 rows)
     // RLS now scopes by org_id automatically, no need for explicit user_id filter
@@ -454,7 +464,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
     const cloudProjects = projectsResult.data || [];
     const cloudPartners = partnersResult.data || [];
     const cloudProjectLabels = projectLabelsResult.data || [];
-    return {
+    const result: { data: CloudData; error: null } = {
       data: {
         profile: profile ? { name: profile.name, avatar: profile.avatar_url } : undefined,
         categories: cloudCategories.map(c => ({
@@ -536,6 +546,10 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       },
       error: null
     };
+
+    _lastFetchTimestamp = Date.now();
+    _lastFetchResult = result;
+    return result;
   } catch (error) {
     return { data: null, error: String(error) };
   }
@@ -553,7 +567,7 @@ export const createRealtimeSubscription = (
   
   const debouncedCallback = () => {
     if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(onDataChange, 200);
+    debounceTimer = setTimeout(onDataChange, 1000);
   };
 
   // Subscribe to all changes on relevant tables (RLS handles org scoping)
@@ -579,7 +593,7 @@ export const createRealtimeSubscription = (
 
 // ============ Healing Refresh ============
 
-const HEAL_INTERVAL_MS = 30000; // 30 seconds
+const HEAL_INTERVAL_MS = 120000; // 2 minutes
 
 export const createHealingInterval = (
   onHeal: () => Promise<void>
