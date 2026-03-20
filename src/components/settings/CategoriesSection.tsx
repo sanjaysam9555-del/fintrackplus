@@ -39,7 +39,7 @@ const getIconComponent = (iconId: string): LucideIcon => {
   return ICON_OPTIONS.find(i => i.id === iconId)?.icon || MoreHorizontal;
 };
 
-export const CategoriesSection = ({ onBack, userId }: CategoriesSectionProps) => {
+export const CategoriesSection = ({ onBack, userId, isEmployee }: CategoriesSectionProps) => {
   const { categories, addCategory, updateCategory, deleteCategory, transactions } = useFinanceStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
