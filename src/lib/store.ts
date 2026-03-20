@@ -896,10 +896,11 @@ export const useFinanceStore = create<FinanceStore>()(
           }
         }
         
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'transaction',
           title: 'Installment Confirmed',
-          message: `₹${installment.amount.toLocaleString('en-IN')} received for ${parent.title || parent.vendor}`,
+          message: `${userName} confirmed installment of ₹${installment.amount.toLocaleString('en-IN')} for '${parent.title || parent.vendor}'`,
           details: [
             { field: 'Amount', from: 'New', to: `₹${installment.amount.toLocaleString('en-IN')}` },
             { field: 'Parent Transaction', from: 'New', to: parent.title || parent.vendor },
