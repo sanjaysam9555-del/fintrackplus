@@ -1,36 +1,36 @@
 
 
-## Add Role Permissions Guide to Team Page
+## Preserve Search After Closing Transaction Detail
 
-### What
-Add an info button (e.g., `HelpCircle` icon) next to the "Team" title that opens a dialog/sheet showing a visual comparison table of what each role (Owner, Admin, Employee) can and cannot do.
+### Problem
+When a search result is clicked, the transaction detail sheet opens. Closing that sheet also closes the entire search dialog (line 72: `onClose()` is called in `handleCloseTransactionDetail`), and the search query is cleared (line 48-50: `clearSearch()` runs when `isOpen` becomes false). The user loses their search context.
 
-### Permissions Matrix
+### Fix
 
-| Permission | Owner | Admin | Employee |
-|---|---|---|---|
-| View Dashboard & Summaries | ✅ | ✅ | ❌ |
-| Add Income/Expense | ✅ | ✅ | ✅ (own only) |
-| Edit/Delete Transactions | ✅ | ✅ | ❌ |
-| Manage Categories & Vendors | ✅ | ✅ | ❌ |
-| Manage Projects | ✅ | ✅ | ❌ |
-| View Reports | ✅ | ✅ | ❌ |
-| View Partner Balances | ✅ | ❌ | ❌ |
-| Manage Team Members | ✅ | ❌ | ❌ |
-| View Activity Logs | ✅ | ❌ | ❌ |
-| Backup & Restore | ✅ | ❌ | ❌ |
-| View Cashflow & AI Insights | ✅ | ✅ | ❌ |
-| View Only Own Transactions | ❌ | ❌ | ✅ |
+**`src/components/GlobalSearchDialog.tsx`** — Two changes:
 
-### UI Design
-- Add `HelpCircle` icon button next to the "Team" header
-- Opens a `Dialog` with a clean comparison table
-- Three columns color-coded to match existing role badge colors (amber/blue/emerald)
-- Check (✅) and X (❌) icons for each permission row
-- Title: "Role Permissions Guide"
+1. **`handleCloseTransactionDetail`** — Stop calling `onClose()`. Just clear `selectedTransaction` so the user returns to the search results:
+   ```typescript
+   const handleCloseTransactionDetail = useCallback(() => {
+     setSelectedTransaction(null);
+   }, []);
+   ```
+
+2. **Remove the `clearSearch` on close effect** (lines 47-51) — Instead, clear search only inside `handleResultClick` for non-transaction results (categories/projects/vendors that navigate away). For transactions, the search stays intact. The search will naturally reset when the user explicitly closes the search dialog via the backdrop or ESC key, at which point `onClose` is called by the parent and `isOpen` flips to false — we can clear then but only if no transaction detail is open.
+
+   Actually, simpler: just move `clearSearch()` into the explicit close action (backdrop click / ESC) rather than the `isOpen` effect. This way reopening search starts fresh, but closing a transaction detail doesn't wipe the query.
+
+   Replace the effect with:
+   ```typescript
+   const handleClose = useCallback(() => {
+     clearSearch();
+     onClose();
+   }, [clearSearch, onClose]);
+   ```
+   Use `handleClose` for the backdrop `onClick` and ESC handler. Keep `onClose` only in `handleResultClick` for non-transaction navigations.
 
 ### Files to modify
 | File | Change |
 |---|---|
-| `src/components/settings/TeamSection.tsx` | Add HelpCircle button + Dialog with permissions comparison table |
+| `src/components/GlobalSearchDialog.tsx` | Stop closing search when transaction detail closes; clear search only on explicit dialog dismiss |
 
