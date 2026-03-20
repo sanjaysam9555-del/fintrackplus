@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 Deno.serve(async (req) => {
@@ -13,13 +13,56 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Parse body
     const body = await req.json().catch(() => ({}));
-    const { org_id, label, created_by } = body;
+    const { label, created_by } = body;
 
-    if (!org_id) {
+    let orgId: string | null = null;
+    let userId: string | null = null;
+
+    // Check for auth header (manual UI calls)
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claims, error: claimsErr } = await userClient.auth.getClaims(token);
+
+      if (claimsErr || !claims?.claims?.sub) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      userId = claims.claims.sub as string;
+
+      // Verify owner role
+      const { data: member } = await serviceClient
+        .from("org_members")
+        .select("org_id, role")
+        .eq("user_id", userId)
+        .eq("status", "active")
+        .single();
+
+      if (!member || member.role !== "owner") {
+        return new Response(JSON.stringify({ error: "Only owners can create backups" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      orgId = member.org_id;
+    } else {
+      // No auth header — pg_cron scheduled call, trust body org_id
+      orgId = body.org_id;
+    }
+
+    if (!orgId) {
       return new Response(JSON.stringify({ error: "org_id is required" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -28,25 +71,18 @@ Deno.serve(async (req) => {
 
     // Fetch all org data in parallel
     const [
-      transactions,
-      categories,
-      vendors,
-      projects,
-      partners,
-      projectLabels,
-      profiles,
-      orgMembers,
-      projectDocuments,
+      transactions, categories, vendors, projects,
+      partners, projectLabels, profiles, orgMembers, projectDocuments,
     ] = await Promise.all([
-      supabase.from("transactions").select("*").eq("org_id", org_id),
-      supabase.from("categories").select("*").eq("org_id", org_id),
-      supabase.from("vendors").select("*").eq("org_id", org_id),
-      supabase.from("projects").select("*").eq("org_id", org_id),
-      supabase.from("partners").select("*").eq("org_id", org_id),
-      supabase.from("project_labels").select("*").eq("org_id", org_id),
-      supabase.from("profiles").select("*").eq("org_id", org_id),
-      supabase.from("org_members").select("*").eq("org_id", org_id),
-      supabase.from("project_documents").select("*").eq("org_id", org_id),
+      serviceClient.from("transactions").select("*").eq("org_id", orgId),
+      serviceClient.from("categories").select("*").eq("org_id", orgId),
+      serviceClient.from("vendors").select("*").eq("org_id", orgId),
+      serviceClient.from("projects").select("*").eq("org_id", orgId),
+      serviceClient.from("partners").select("*").eq("org_id", orgId),
+      serviceClient.from("project_labels").select("*").eq("org_id", orgId),
+      serviceClient.from("profiles").select("*").eq("org_id", orgId),
+      serviceClient.from("org_members").select("*").eq("org_id", orgId),
+      serviceClient.from("project_documents").select("*").eq("org_id", orgId),
     ]);
 
     const snapshot = {
@@ -69,9 +105,9 @@ Deno.serve(async (req) => {
         timeStyle: "short",
       })}`;
 
-    const { data, error } = await supabase.from("backups").insert({
-      org_id,
-      created_by: created_by || "00000000-0000-0000-0000-000000000000",
+    const { data, error } = await serviceClient.from("backups").insert({
+      org_id: orgId,
+      created_by: userId || created_by || "00000000-0000-0000-0000-000000000000",
       snapshot,
       label: backupLabel,
     }).select("id, label, created_at").single();
