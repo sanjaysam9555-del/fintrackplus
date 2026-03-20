@@ -26,13 +26,12 @@ interface EditTransactionSheetProps {
   onClose: () => void;
   transaction: Transaction;
   userId?: string;
-  isEmployee?: boolean;
 }
 
-export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId, isEmployee = false }: EditTransactionSheetProps) => {
+export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: EditTransactionSheetProps) => {
   const navigate = useNavigate();
   const { categories, projects, transactions, vendors, partners, updateTransaction } = useFinanceStore();
-  
+  const { isEmployee } = useUserRole();
   const [type, setType] = useState<TransactionType>(transaction.type);
   const [amount, setAmount] = useState(transaction.amount.toString());
   const [title, setTitle] = useState(transaction.title || "");
