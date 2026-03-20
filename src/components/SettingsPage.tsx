@@ -245,7 +245,7 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, onBackToHome, onRefresh, isRefreshing, isOnline = true, pendingCount = 0 }: SettingsPageProps) => {
-  const { categories, projects, userProfile, partners, projectLabels, defaultTimeFilter, setDefaultTimeFilter, syncStatus, lastSyncedAt } = useFinanceStore();
+  const { categories, projects, userProfile, partners, projectLabels, defaultTimeFilter, setDefaultTimeFilter, syncStatus, lastSyncedAt, orgName, orgLogoUrl } = useFinanceStore();
   const { signOut, user } = useAuth();
   const { isOwner, isAdmin, isEmployee, canViewPartners, canViewReports, canViewLogs, canManageTeam } = useUserRole();
   const { mode, setTheme, isDark, isOled } = useTheme();
