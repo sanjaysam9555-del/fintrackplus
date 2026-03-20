@@ -16,8 +16,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  DialogTrigger } from
+"@/components/ui/dialog";
 import { PartnerDetailSheet } from "./PartnerDetailSheet";
 import { PartnerTransferSheet } from "@/components/PartnerTransferSheet";
 import { UnassignedTransactionsSheet } from "./UnassignedTransactionsSheet";
@@ -33,9 +33,9 @@ interface PartnersSectionProps {
 }
 
 const PARTNER_COLORS = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
-];
+'#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+'#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'];
+
 
 import { TimeFrameSelector, computeDateRange, getTimeFilterLabel } from "@/components/TimeFrameSelector";
 import type { TimeFilter } from "@/components/TimeFrameSelector";
@@ -50,37 +50,37 @@ interface AvatarUploadButtonProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
-const AvatarUploadButton = ({ avatarUrl, isUploading, onTriggerUpload, fileInputRef, onFileChange }: AvatarUploadButtonProps) => (
-  <div className="flex items-center gap-3">
+const AvatarUploadButton = ({ avatarUrl, isUploading, onTriggerUpload, fileInputRef, onFileChange }: AvatarUploadButtonProps) =>
+<div className="flex items-center gap-3">
     <button
-      type="button"
-      onClick={onTriggerUpload}
-      className="relative w-14 h-14 rounded-full border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors overflow-hidden"
-      disabled={isUploading}
-    >
-      {avatarUrl ? (
-        <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" />
-      ) : (
-        <Camera size={20} className="text-muted-foreground" />
-      )}
-      {isUploading && (
-        <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-full">
+    type="button"
+    onClick={onTriggerUpload}
+    className="relative w-14 h-14 rounded-full border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors overflow-hidden"
+    disabled={isUploading}>
+    
+      {avatarUrl ?
+    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover rounded-full" /> :
+
+    <Camera size={20} className="text-muted-foreground" />
+    }
+      {isUploading &&
+    <div className="absolute inset-0 bg-background/60 flex items-center justify-center rounded-full">
           <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
-      )}
+    }
     </button>
     <div className="text-xs text-muted-foreground">
       {avatarUrl ? 'Tap to change' : 'Add photo'}
     </div>
     <input
-      ref={fileInputRef}
-      type="file"
-      accept="image/*"
-      className="hidden"
-      onChange={onFileChange}
-    />
-  </div>
-);
+    ref={fileInputRef}
+    type="file"
+    accept="image/*"
+    className="hidden"
+    onChange={onFileChange} />
+  
+  </div>;
+
 
 interface PartnerFormProps {
   isEdit?: boolean;
@@ -108,42 +108,42 @@ const PartnerForm = ({
   initialOnline, setInitialOnline,
   avatarUrl, isUploading,
   onTriggerUpload, fileInputRef, onFileChange,
-  onSubmit,
-}: PartnerFormProps) => (
-  <div className="space-y-4">
+  onSubmit
+}: PartnerFormProps) =>
+<div className="space-y-4">
     <AvatarUploadButton
-      avatarUrl={avatarUrl}
-      isUploading={isUploading}
-      onTriggerUpload={onTriggerUpload}
-      fileInputRef={fileInputRef}
-      onFileChange={onFileChange}
-    />
+    avatarUrl={avatarUrl}
+    isUploading={isUploading}
+    onTriggerUpload={onTriggerUpload}
+    fileInputRef={fileInputRef}
+    onFileChange={onFileChange} />
+  
 
     <div>
       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name</Label>
       <Input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        placeholder="e.g., Partner 1"
-        className="mt-1"
-        autoCapitalize="words"
-      />
+      value={name}
+      onChange={(e) => setName(e.target.value)}
+      placeholder="e.g., Partner 1"
+      className="mt-1"
+      autoCapitalize="words" />
+    
     </div>
     
     <div>
       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Color</Label>
       <div className="grid grid-cols-5 gap-2 mt-2">
-        {PARTNER_COLORS.map((c) => (
-          <button
-            key={c}
-            onClick={() => setColor(c)}
-            className={cn(
-              "w-10 h-10 rounded-full transition-all",
-              color === c && "ring-2 ring-offset-2 ring-primary"
-            )}
-            style={{ backgroundColor: c }}
-          />
-        ))}
+        {PARTNER_COLORS.map((c) =>
+      <button
+        key={c}
+        onClick={() => setColor(c)}
+        className={cn(
+          "w-10 h-10 rounded-full transition-all",
+          color === c && "ring-2 ring-offset-2 ring-primary"
+        )}
+        style={{ backgroundColor: c }} />
+
+      )}
       </div>
     </div>
     
@@ -157,11 +157,11 @@ const PartnerForm = ({
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
         <Input
-          type="number"
-          value={initialCash}
-          onChange={(e) => setInitialCash(e.target.value)}
-          placeholder="0"
-        />
+        type="number"
+        value={initialCash}
+        onChange={(e) => setInitialCash(e.target.value)}
+        placeholder="0" />
+      
       </div>
     </div>
     
@@ -175,23 +175,23 @@ const PartnerForm = ({
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
         <Input
-          type="number"
-          value={initialOnline}
-          onChange={(e) => setInitialOnline(e.target.value)}
-          placeholder="0"
-        />
+        type="number"
+        value={initialOnline}
+        onChange={(e) => setInitialOnline(e.target.value)}
+        placeholder="0" />
+      
       </div>
     </div>
     
-    <Button 
-      onClick={onSubmit}
-      disabled={!name.trim()}
-      className="w-full"
-    >
+    <Button
+    onClick={onSubmit}
+    disabled={!name.trim()}
+    className="w-full">
+    
       {isEdit ? 'Update Partner' : 'Add Partner'}
     </Button>
-  </div>
-);
+  </div>;
+
 
 // ── Total Holdings Card (static, all-time) ──────────────────────────
 
@@ -218,7 +218,7 @@ const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldi
           </div>
           <div>
             <h3 className="font-semibold text-sm">Total Holdings</h3>
-            <p className="text-xs text-muted-foreground">All-time • All partners</p>
+            <p className="text-xs text-muted-foreground">All-time • All team member</p>
           </div>
           <div className="ml-auto text-right">
             <p className={cn(
@@ -256,8 +256,8 @@ const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldi
           </div>
         </div>
       </div>
-    </div>
-  );
+    </div>);
+
 };
 
 // ── Main component ───────────────────────────────────────────────────
@@ -266,26 +266,26 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter, addNotification } = useFinanceStore();
   const { user } = useAuth();
   const { orgId } = useUserRole();
-  const [otherOwners, setOtherOwners] = useState<{ user_id: string }[]>([]);
+  const [otherOwners, setOtherOwners] = useState<{user_id: string;}[]>([]);
   const [currentUserName, setCurrentUserName] = useState('');
 
   useEffect(() => {
     const fetchOwners = async () => {
       if (!user || !orgId) return;
-      const { data } = await supabase
-        .from('org_members')
-        .select('user_id')
-        .eq('org_id', orgId)
-        .eq('role', 'owner')
-        .eq('status', 'active')
-        .neq('user_id', user.id);
+      const { data } = await supabase.
+      from('org_members').
+      select('user_id').
+      eq('org_id', orgId).
+      eq('role', 'owner').
+      eq('status', 'active').
+      neq('user_id', user.id);
       if (data) setOtherOwners(data);
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('name')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { data: profile } = await supabase.
+      from('profiles').
+      select('name').
+      eq('user_id', user.id).
+      maybeSingle();
       if (profile?.name) setCurrentUserName(profile.name);
     };
     fetchOwners();
@@ -295,14 +295,14 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
-  
+
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
   const [showUnassignedSheet, setShowUnassignedSheet] = useState(false);
   const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
   const [isOwnerLinkedDelete, setIsOwnerLinkedDelete] = useState(false);
-  
+
   // Form state
   const [name, setName] = useState("");
   const [color, setColor] = useState(PARTNER_COLORS[0]);
@@ -311,33 +311,33 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const dateRange = useMemo(() => {
     return computeDateRange(timeFilter, customStartDate, customEndDate);
   }, [timeFilter, customStartDate, customEndDate]);
-  
+
   const partnerBalances = useMemo(() => {
     return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
   }, [getPartnerBalancesForPeriod, dateRange, partners, transactions]);
 
   // Compute unassigned/orphaned transactions
   const unassignedStats = useMemo(() => {
-    const partnerUserIds = new Set(partners.map(p => p.userId).filter(Boolean));
-    const unassigned = transactions
-      .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
-      .filter(t => !t.handledBy || !partnerUserIds.has(t.handledBy));
-    
+    const partnerUserIds = new Set(partners.map((p) => p.userId).filter(Boolean));
+    const unassigned = transactions.
+    filter((t) => t.date >= dateRange.start && t.date <= dateRange.end).
+    filter((t) => !t.handledBy || !partnerUserIds.has(t.handledBy));
+
     let cashNet = 0;
     let onlineNet = 0;
-    unassigned.forEach(t => {
+    unassigned.forEach((t) => {
       const sign = t.type === 'income' ? 1 : -1;
-      if (t.paymentMethod === 'cash') cashNet += sign * t.amount;
-      else onlineNet += sign * t.amount;
+      if (t.paymentMethod === 'cash') cashNet += sign * t.amount;else
+      onlineNet += sign * t.amount;
     });
-    
+
     return { count: unassigned.length, cashNet, onlineNet };
   }, [transactions, partners, dateRange]);
-  
+
   const resetForm = () => {
     setName("");
     setColor(PARTNER_COLORS[0]);
@@ -353,17 +353,17 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
     e.target.value = '';
     setIsUploading(true);
-    
+
     const fileExt = file.name.split('.').pop();
     const filePath = `${userId}/${Date.now()}.${fileExt}`;
-    
+
     const attemptUpload = async (attempt: number): Promise<void> => {
-      const { error: uploadError } = await supabase.storage
-        .from('partner-avatars')
-        .upload(filePath, file, { 
-          upsert: true,
-          contentType: file.type,
-        });
+      const { error: uploadError } = await supabase.storage.
+      from('partner-avatars').
+      upload(filePath, file, {
+        upsert: true,
+        contentType: file.type
+      });
 
       if (uploadError) {
         if (attempt < 2) {
@@ -373,22 +373,22 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('partner-avatars')
-        .getPublicUrl(filePath);
+      const { data: { publicUrl } } = supabase.storage.
+      from('partner-avatars').
+      getPublicUrl(filePath);
 
       const newUrl = `${publicUrl}?t=${Date.now()}`;
       setAvatarUrl(newUrl);
       toast.success('Photo uploaded');
-      
+
       // Log partner photo change if editing an existing partner
       if (editingPartner) {
-        const partnerObj = partners.find(p => p.userId === editingPartner);
+        const partnerObj = partners.find((p) => p.userId === editingPartner);
         if (partnerObj) {
           addNotification({
             type: 'partner',
             title: 'Partner Photo Updated',
-            message: `Profile photo changed for ${partnerObj.name}`,
+            message: `Profile photo changed for ${partnerObj.name}`
           });
         }
       }
@@ -403,26 +403,26 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       setIsUploading(false);
     }
   };
-  
+
   const handleAdd = () => {
     if (!name.trim()) return;
-    
+
     addPartner({
       name: name.trim(),
       color,
       initialCashBalance: parseFloat(initialCash) || 0,
       initialOnlineBalance: parseFloat(initialOnline) || 0,
-      avatarUrl,
+      avatarUrl
     }, userId);
-    
+
     resetForm();
     setIsAddOpen(false);
   };
-  
+
   const handleEdit = (handledBy: string) => {
-    const partner = partners.find(p => p.userId === handledBy);
+    const partner = partners.find((p) => p.userId === handledBy);
     if (!partner) return;
-    
+
     setName(partner.name);
     setColor(partner.color);
     setInitialCash(partner.initialCashBalance.toString());
@@ -430,26 +430,26 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setAvatarUrl(partner.avatarUrl);
     setEditingPartner(handledBy);
   };
-  
+
   const handleUpdate = async () => {
     if (!editingPartner || !name.trim()) return;
-    
+
     updatePartner(editingPartner, {
       name: name.trim(),
       color,
       initialCashBalance: parseFloat(initialCash) || 0,
       initialOnlineBalance: parseFloat(initialOnline) || 0,
-      avatarUrl,
+      avatarUrl
     }, userId);
 
     // If this partner is linked to a user (owner), sync name/avatar to their profile
-    const partnerRecord = partners.find(p => p.userId === editingPartner);
+    const partnerRecord = partners.find((p) => p.userId === editingPartner);
     if (partnerRecord) {
-      const { data: dbPartner } = await supabase
-        .from('partners')
-        .select('user_id')
-        .eq('id', editingPartner)
-        .maybeSingle();
+      const { data: dbPartner } = await supabase.
+      from('partners').
+      select('user_id').
+      eq('id', editingPartner).
+      maybeSingle();
 
       if (dbPartner?.user_id) {
         const profileUpdates: Record<string, unknown> = { name: name.trim() };
@@ -457,33 +457,33 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         await supabase.from('profiles').update(profileUpdates).eq('user_id', dbPartner.user_id);
       }
     }
-    
+
     resetForm();
   };
 
 
 
-  
+
   const handleDelete = async (handledBy: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const partner = partners.find(p => p.userId === handledBy);
+    const partner = partners.find((p) => p.userId === handledBy);
     if (!partner) return;
 
     // Check if this partner is linked to a user (owner-linked)
-    const { data: dbPartner } = await supabase
-      .from('partners')
-      .select('user_id')
-      .eq('id', handledBy)
-      .maybeSingle();
+    const { data: dbPartner } = await supabase.
+    from('partners').
+    select('user_id').
+    eq('id', handledBy).
+    maybeSingle();
 
-    const { data: orgMember } = dbPartner?.user_id
-      ? await supabase
-          .from('org_members')
-          .select('id')
-          .eq('user_id', dbPartner.user_id)
-          .eq('status', 'active')
-          .maybeSingle()
-      : { data: null };
+    const { data: orgMember } = dbPartner?.user_id ?
+    await supabase.
+    from('org_members').
+    select('id').
+    eq('user_id', dbPartner.user_id).
+    eq('status', 'active').
+    maybeSingle() :
+    { data: null };
 
     setIsOwnerLinkedDelete(!!orgMember);
     setDeleteConfirmPartner(partner);
@@ -506,13 +506,13 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             entity_id: partner.id,
             action: 'delete',
             proposed_changes: { name: partner.name },
-            status: 'pending',
+            status: 'pending'
           });
           if (error) throw error;
           addNotification({
             type: 'partner',
             title: 'Deletion Requested',
-            message: `${currentUserName} requested deletion of partner "${partner.name}"`,
+            message: `${currentUserName} requested deletion of partner "${partner.name}"`
           });
           toast.success('Deletion request sent for approval');
         } catch (err: any) {
@@ -520,24 +520,24 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         }
       } else {
         // Find the org_member id for this partner's user_id
-        const { data: dbPartner } = await supabase
-          .from('partners')
-          .select('user_id')
-          .eq('id', partner.id)
-          .maybeSingle();
+        const { data: dbPartner } = await supabase.
+        from('partners').
+        select('user_id').
+        eq('id', partner.id).
+        maybeSingle();
 
         if (dbPartner?.user_id) {
-          const { data: member } = await supabase
-            .from('org_members')
-            .select('id')
-            .eq('user_id', dbPartner.user_id)
-            .eq('status', 'active')
-            .maybeSingle();
+          const { data: member } = await supabase.
+          from('org_members').
+          select('id').
+          eq('user_id', dbPartner.user_id).
+          eq('status', 'active').
+          maybeSingle();
 
           if (member) {
             try {
               const { data, error } = await supabase.functions.invoke('manage-team', {
-                body: { action: 'remove_member', memberId: member.id },
+                body: { action: 'remove_member', memberId: member.id }
               });
               if (error) throw error;
               if (data?.error) throw new Error(data.error);
@@ -562,13 +562,13 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             entity_id: partner.id,
             action: 'delete',
             proposed_changes: { name: partner.name },
-            status: 'pending',
+            status: 'pending'
           });
           if (error) throw error;
           addNotification({
             type: 'partner',
             title: 'Deletion Requested',
-            message: `${currentUserName} requested deletion of partner "${partner.name}"`,
+            message: `${currentUserName} requested deletion of partner "${partner.name}"`
           });
           toast.success('Deletion request sent for approval');
         } catch (err: any) {
@@ -579,24 +579,24 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       }
     }
   };
-  
+
   const handleEditClick = (handledBy: string, e: React.MouseEvent) => {
     e.stopPropagation();
     handleEdit(handledBy);
   };
-  
+
   const openPartnerDetail = (balanceData: typeof partnerBalances[0]) => {
     setSelectedPartner(balanceData.partner);
     setIsDetailOpen(true);
   };
-  
+
   const filterLabel = useMemo(() => {
     return getTimeFilterLabel(timeFilter, customStartDate, customEndDate);
   }, [timeFilter, customStartDate, customEndDate]);
-  
-  const selectedBalanceData = selectedPartner 
-    ? partnerBalances.find(b => b.partner.id === selectedPartner.id) || null
-    : null;
+
+  const selectedBalanceData = selectedPartner ?
+  partnerBalances.find((b) => b.partner.id === selectedPartner.id) || null :
+  null;
 
   const triggerUpload = () => fileInputRef.current?.click();
 
@@ -608,9 +608,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     avatarUrl, isUploading,
     onTriggerUpload: triggerUpload,
     fileInputRef,
-    onFileChange: handleAvatarUpload,
+    onFileChange: handleAvatarUpload
   };
-  
+
   return (
     <div className="min-h-screen pb-24">
       <div className="p-4 safe-top">
@@ -618,17 +618,17 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
             <ArrowLeft size={20} />
           </button>
-          <h1 className="text-2xl font-bold">Partners</h1>
+          <h1 className="text-2xl font-bold">Financial Holdings - Team</h1>
         </div>
-        <p className="text-sm text-muted-foreground mt-1 ml-8">
-          Track money held by each partner
+        <p className="text-sm text-muted-foreground mt-1 ml-8">Track money held by each team member
+
         </p>
       </div>
       
       {/* All-time Total Holdings Summary */}
-      {partners.length > 0 && (
-        <TotalHoldingsCard partners={partners} getPartnerBalancesForPeriod={getPartnerBalancesForPeriod} />
-      )}
+      {partners.length > 0 &&
+      <TotalHoldingsCard partners={partners} getPartnerBalancesForPeriod={getPartnerBalancesForPeriod} />
+      }
 
       {/* Explanatory Info Box */}
       <div className="px-4 mb-4">
@@ -647,12 +647,12 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       </div>
       
       {/* Unassigned Entries Warning Card */}
-      {unassignedStats.count > 0 && (
-        <div className="px-4 mb-4">
+      {unassignedStats.count > 0 &&
+      <div className="px-4 mb-4">
           <button
-            onClick={() => setShowUnassignedSheet(true)}
-            className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-left hover:bg-amber-500/15 transition-colors"
-          >
+          onClick={() => setShowUnassignedSheet(true)}
+          className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 text-left hover:bg-amber-500/15 transition-colors">
+          
             <div className="flex items-start gap-2">
               <AlertTriangle size={16} className="text-amber-500 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
@@ -681,7 +681,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             </div>
           </button>
         </div>
-      )}
+      }
       
       <div className="px-4 mb-4">
         <TimeFrameSelector
@@ -690,8 +690,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
           customStartDate={customStartDate}
           customEndDate={customEndDate}
           onCustomStartDateChange={setCustomStartDate}
-          onCustomEndDateChange={setCustomEndDate}
-        />
+          onCustomEndDateChange={setCustomEndDate} />
+        
       </div>
       
       {/* Period Label */}
@@ -703,64 +703,64 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       
       {/* Partner List */}
       <div className="px-4 space-y-3">
-        {partnerBalances.length === 0 ? (
-          <div className="text-center py-12">
+        {partnerBalances.length === 0 ?
+        <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <Users size={24} className="text-muted-foreground" />
             </div>
             <p className="text-muted-foreground">No partners added yet</p>
             <p className="text-sm text-muted-foreground mt-1">Add partners to track who holds the money</p>
-          </div>
-        ) : (
-          partnerBalances.map((balanceData) => {
-            const { 
-              partner, 
-              closingCashBalance,
-              closingOnlineBalance,
-              periodCashTxnCount,
-              periodOnlineTxnCount,
-            } = balanceData;
-            
-            const totalTxnCount = periodCashTxnCount + periodOnlineTxnCount;
-            const totalClosing = closingCashBalance + closingOnlineBalance;
-            
-            return (
-              <motion.div
-                key={partner.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                onClick={() => editingPartner !== partner.id && openPartnerDetail(balanceData)}
-                className={cn(
-                  "bg-card rounded-2xl p-4 border border-border transition-colors",
-                  editingPartner !== partner.id && "cursor-pointer hover:border-primary/50 active:bg-muted/30"
-                )}
-              >
-                {editingPartner === partner.id ? (
-                  <div className="space-y-3">
+          </div> :
+
+        partnerBalances.map((balanceData) => {
+          const {
+            partner,
+            closingCashBalance,
+            closingOnlineBalance,
+            periodCashTxnCount,
+            periodOnlineTxnCount
+          } = balanceData;
+
+          const totalTxnCount = periodCashTxnCount + periodOnlineTxnCount;
+          const totalClosing = closingCashBalance + closingOnlineBalance;
+
+          return (
+            <motion.div
+              key={partner.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => editingPartner !== partner.id && openPartnerDetail(balanceData)}
+              className={cn(
+                "bg-card rounded-2xl p-4 border border-border transition-colors",
+                editingPartner !== partner.id && "cursor-pointer hover:border-primary/50 active:bg-muted/30"
+              )}>
+              
+                {editingPartner === partner.id ?
+              <div className="space-y-3">
                     <PartnerForm {...formProps} isEdit onSubmit={handleUpdate} />
                     <Button variant="outline" onClick={resetForm} className="w-full">
                       Cancel
                     </Button>
-                  </div>
-                ) : (
-                  <>
+                  </div> :
+
+              <>
                     {/* Header Row */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {partner.avatarUrl ? (
-                          <img 
-                            src={partner.avatarUrl} 
-                            alt={partner.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                        ) : (
-                          <div 
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                            style={{ backgroundColor: partner.color }}
-                          >
+                        {partner.avatarUrl ?
+                    <img
+                      src={partner.avatarUrl}
+                      alt={partner.name}
+                      className="w-10 h-10 rounded-full object-cover" /> :
+
+
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: partner.color }}>
+                      
                             {partner.name.charAt(0).toUpperCase()}
                           </div>
-                        )}
+                    }
                         <div>
                           <span className="font-semibold">{partner.name}</span>
                           <p className="text-xs text-muted-foreground">
@@ -769,16 +769,16 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <button 
-                          onClick={(e) => handleEditClick(partner.id, e)}
-                          className="p-2 rounded-full hover:bg-muted"
-                        >
+                        <button
+                      onClick={(e) => handleEditClick(partner.id, e)}
+                      className="p-2 rounded-full hover:bg-muted">
+                      
                           <Edit2 size={16} className="text-muted-foreground" />
                         </button>
-                        <button 
-                          onClick={(e) => handleDelete(partner.id, e)}
-                          className="p-2 rounded-full hover:bg-destructive/10"
-                        >
+                        <button
+                      onClick={(e) => handleDelete(partner.id, e)}
+                      className="p-2 rounded-full hover:bg-destructive/10">
+                      
                           <Trash2 size={16} className="text-destructive" />
                         </button>
                         <ChevronRight size={18} className="text-muted-foreground ml-1" />
@@ -790,9 +790,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                       <div className="flex items-center gap-2">
                         <Banknote size={14} className="text-muted-foreground" />
                         <span className={cn(
-                          "font-semibold",
-                          closingCashBalance >= 0 ? "text-success" : "text-destructive"
-                        )}>
+                      "font-semibold",
+                      closingCashBalance >= 0 ? "text-success" : "text-destructive"
+                    )}>
                           {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -802,9 +802,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                       <div className="flex items-center gap-2">
                         <CreditCard size={14} className="text-muted-foreground" />
                         <span className={cn(
-                          "font-semibold",
-                          closingOnlineBalance >= 0 ? "text-success" : "text-destructive"
-                        )}>
+                      "font-semibold",
+                      closingOnlineBalance >= 0 ? "text-success" : "text-destructive"
+                    )}>
                           {closingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingOnlineBalance).toLocaleString()}
                         </span>
                         <span className="text-xs text-muted-foreground">
@@ -813,27 +813,27 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                       </div>
                     </div>
                   </>
-                )}
-              </motion.div>
-            );
-          })
-        )}
+              }
+              </motion.div>);
+
+        })
+        }
       </div>
       
       {/* Transfer Between Team Button */}
-      {partners.length >= 2 && (
-        <div className="px-4 mt-4">
+      {partners.length >= 2 &&
+      <div className="px-4 mt-4">
           <Button
-            variant="outline"
-            className="w-full"
-            size="lg"
-            onClick={() => setShowTransferSheet(true)}
-          >
+          variant="outline"
+          className="w-full"
+          size="lg"
+          onClick={() => setShowTransferSheet(true)}>
+          
             <ArrowLeftRight size={18} className="mr-2" />
             Transfer Between Team
           </Button>
         </div>
-      )}
+      }
       
       {/* Add Partner Button */}
       <div className="px-4 mt-4">
@@ -860,24 +860,24 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
       <PartnerTransferSheet
         isOpen={showTransferSheet}
         onClose={() => setShowTransferSheet(false)}
-        userId={userId}
-      />
+        userId={userId} />
+      
       
       {/* Partner Detail Sheet */}
-      {selectedPartner && selectedBalanceData && (
-        <PartnerDetailSheet
-          isOpen={isDetailOpen}
-          onClose={() => {
-            setIsDetailOpen(false);
-            setSelectedPartner(null);
-          }}
-          partner={selectedPartner}
-          balanceData={selectedBalanceData}
-          dateRange={dateRange}
-          periodLabel={filterLabel}
-          userId={userId}
-        />
-      )}
+      {selectedPartner && selectedBalanceData &&
+      <PartnerDetailSheet
+        isOpen={isDetailOpen}
+        onClose={() => {
+          setIsDetailOpen(false);
+          setSelectedPartner(null);
+        }}
+        partner={selectedPartner}
+        balanceData={selectedBalanceData}
+        dateRange={dateRange}
+        periodLabel={filterLabel}
+        userId={userId} />
+
+      }
       
       {/* Unassigned Transactions Sheet */}
       <UnassignedTransactionsSheet
@@ -885,8 +885,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         onClose={() => setShowUnassignedSheet(false)}
         startDate={dateRange.start}
         endDate={dateRange.end}
-        userId={userId}
-      />
+        userId={userId} />
+      
 
       {/* Critical Delete Warning Dialog */}
       <AlertDialog open={!!deleteConfirmPartner} onOpenChange={(open) => !open && setDeleteConfirmPartner(null)}>
@@ -897,26 +897,26 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
               Delete {deleteConfirmPartner?.name}?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-sm">
-              {isOwnerLinkedDelete ? (
-                <>This will <strong>permanently remove</strong> this member across the entire app — their <strong>profile, partner record, team membership, transaction assignments, and login</strong> will all be deleted. This action cannot be undone.</>
-              ) : (
-                <>Delete this partner? Their transactions will be unassigned.</>
-              )}
+              {isOwnerLinkedDelete ?
+              <>This will <strong>permanently remove</strong> this member across the entire app — their <strong>profile, partner record, team membership, transaction assignments, and login</strong> will all be deleted. This action cannot be undone.</> :
+
+              <>Delete this partner? Their transactions will be unassigned.</>
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isOwnerLinkedDelete
-                ? (otherOwners.length > 0 ? 'Request Removal' : 'Remove Permanently')
-                : (otherOwners.length > 0 ? 'Request Deletion' : 'Delete')}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              
+              {isOwnerLinkedDelete ?
+              otherOwners.length > 0 ? 'Request Removal' : 'Remove Permanently' :
+              otherOwners.length > 0 ? 'Request Deletion' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  );
+    </div>);
+
 };
