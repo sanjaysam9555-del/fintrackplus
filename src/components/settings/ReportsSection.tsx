@@ -128,7 +128,7 @@ export const ReportsSection = ({ onBack }: ReportsSectionProps) => {
     addNotification({
       type: 'export',
       title: 'CSV Exported',
-      message: `${filteredTransactions.length} transactions exported`,
+      message: `${userProfile.name || 'Unknown'} exported ${filteredTransactions.length} transactions as CSV`,
       details: [
         { field: 'Period', from: '', to: `${format(dateRange.start, 'MMM dd, yyyy')} – ${format(dateRange.end, 'MMM dd, yyyy')}` },
         { field: 'Transactions', from: '', to: `${filteredTransactions.length}` },
