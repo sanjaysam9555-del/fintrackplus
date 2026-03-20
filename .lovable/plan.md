@@ -1,60 +1,100 @@
 
 
-## Route Transaction Edits/Deletes Through Approval When Entry Belongs to Another Owner
+## Backup & Restore Feature
 
-### Problem
-When an owner/partner edits or deletes a transaction that was created or handled by another owner/partner, the change applies immediately — bypassing the approval system entirely. The approval flow only exists for partner/team member deletions today.
+### Overview
+Create an automated backup system that snapshots all org data twice daily, with a "Restore" section in Settings allowing owners to view and restore any backup.
 
-### Solution
-Add approval checks in two places:
-1. **Edit** — in `EditTransactionSheet.tsx`, before calling `updateTransaction`, check if the transaction's `handledBy` (or `userId`) belongs to a different owner. If so, insert a `change_approvals` row instead of applying the edit.
-2. **Delete** — in `TransactionDetailSheet.tsx`, before calling `deleteTransaction`, same check. Route to approval if it belongs to another owner.
+### Database Changes
 
-### Logic
-- Fetch `otherOwners` from `org_members` (same pattern used in `PartnersSection`)
-- A transaction "belongs to another owner" if `transaction.handledBy !== currentUser.id` AND `transaction.handledBy` is an owner's `user_id` (i.e., exists in `org_members` with role `owner`)
-- If there are other owners and the transaction belongs to one of them, create a `change_approvals` entry targeting that owner
-- If the transaction belongs to the current user, or there's only one owner, apply directly as today
+**1. New `backups` table** (migration):
+```sql
+CREATE TABLE public.backups (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id uuid NOT NULL,
+  created_by uuid NOT NULL,
+  snapshot jsonb NOT NULL DEFAULT '{}',
+  label text NOT NULL DEFAULT '',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.backups ENABLE ROW LEVEL SECURITY;
 
-### Files to modify
-
-| File | Change |
-|---|---|
-| `src/components/EditTransactionSheet.tsx` | In `handleSubmit`, check if transaction belongs to another owner. If yes, insert `change_approvals` with `action: 'edit'`, `entity_type: 'transaction'`, and `proposed_changes` containing the updates. Show toast "Edit request sent for approval" and close sheet. |
-| `src/components/TransactionDetailSheet.tsx` | In `handleDelete`, check if transaction belongs to another owner. If yes, insert `change_approvals` with `action: 'delete'`, `entity_type: 'transaction'`. Show toast "Delete request sent for approval" and close sheet. Skip the undo toast in this case. |
-| `src/components/settings/ChangeApprovalPage.tsx` | Already handles `edit` and `delete` for `transaction` entity type in `handleApproval` — no changes needed. |
-
-### Approval check pattern (used in both files)
-```typescript
-// Fetch other owners in the org
-const { data: owners } = await supabase
-  .from('org_members')
-  .select('user_id')
-  .eq('org_id', orgId)
-  .eq('role', 'owner')
-  .eq('status', 'active');
-
-const otherOwners = (owners || []).filter(o => o.user_id !== user.id);
-const txnOwnerUserId = transaction.handledBy || transaction.userId;
-const belongsToAnotherOwner = otherOwners.some(o => o.user_id === txnOwnerUserId);
-
-if (belongsToAnotherOwner && otherOwners.length > 0) {
-  // Route to approval
-  await supabase.from('change_approvals').insert({
-    org_id: orgId,
-    requester_user_id: user.id,
-    target_user_id: txnOwnerUserId,
-    entity_type: 'transaction',
-    entity_id: transaction.id,
-    action: 'edit', // or 'delete'
-    proposed_changes: { ...updates, name: transaction.title || transaction.vendor },
-    status: 'pending'
-  });
-  toast.success('Edit request sent for approval');
-  onClose();
-  return;
-}
+-- Only owners can view/create/delete backups
+CREATE POLICY "Org owners can view backups" ON public.backups FOR SELECT TO authenticated
+  USING (org_id = get_user_org_id(auth.uid()) AND get_user_role(auth.uid()) = 'owner');
+CREATE POLICY "Org owners can insert backups" ON public.backups FOR INSERT TO authenticated
+  WITH CHECK (org_id = get_user_org_id(auth.uid()) AND get_user_role(auth.uid()) = 'owner');
+CREATE POLICY "Org owners can delete backups" ON public.backups FOR DELETE TO authenticated
+  USING (org_id = get_user_org_id(auth.uid()) AND get_user_role(auth.uid()) = 'owner');
 ```
 
-Both components already import `useAuth`/`useUserRole` or can access `userId`. They'll need `supabase` import and `orgId` from `useUserRole()`.
+**2. Scheduled edge function** for automatic twice-daily backups (morning 6 AM, evening 6 PM IST) via pg_cron + pg_net.
+
+### Edge Function: `create-backup`
+
+New `supabase/functions/create-backup/index.ts`:
+- Accepts POST with optional `label` param
+- Uses service role key to fetch ALL org data: transactions, categories, vendors, projects, partners, project_labels, profiles, org_members, notifications
+- Stores everything as a single JSON snapshot in `backups.snapshot`
+- Auto-labels: "Morning Backup — Mar 20, 2026 6:00 AM" or "Evening Backup — Mar 20, 2026 6:00 PM"
+- Can also be triggered manually from the UI
+
+Config in `supabase/config.toml`:
+```toml
+[functions.create-backup]
+verify_jwt = false
+```
+
+### Edge Function: `restore-backup`
+
+New `supabase/functions/restore-backup/index.ts`:
+- Accepts POST with `backup_id`
+- Verifies caller is an owner
+- Reads the snapshot JSON
+- In a transaction-like sequence: deletes all current org data (transactions, categories, vendors, projects, partners, project_labels) then re-inserts everything from the snapshot
+- Preserves auth users and org_members (team structure stays intact)
+- Returns success/failure
+
+Config:
+```toml
+[functions.restore-backup]
+verify_jwt = false
+```
+
+### UI: New Settings Section
+
+**`src/components/settings/BackupRestoreSection.tsx`** — New component:
+- Header with back arrow, title "Backup & Restore"
+- **Create Backup** button at top — triggers manual backup via edge function
+- **Backup List** — fetches from `backups` table, shows each backup as a card:
+  - Label (e.g. "Morning Backup — Mar 20, 2026 6:00 AM")
+  - Timestamp ("2 hours ago")
+  - Summary counts: "142 transactions, 8 categories, 5 vendors, 12 projects, 3 partners, 4 labels"
+  - "Restore" button with confirmation dialog warning that all current data will be replaced
+- Loading/empty states
+
+**`src/components/SettingsPage.tsx`** — Changes:
+- Add "Backup & Restore" to `menuItems` under a new "Backup" section (owner-only)
+- Add `activeSection === 'backup'` routing to render `BackupRestoreSection`
+- Import `DatabaseBackup` icon from lucide-react
+
+### Scheduled Backup (pg_cron)
+
+Enable `pg_cron` and `pg_net` extensions, then schedule:
+- `0 0 * * *` (6 AM IST = 00:30 UTC) — "Morning Backup"
+- `0 12 * * *` (6 PM IST = 12:30 UTC) — "Evening Backup"
+
+Each cron job calls the `create-backup` edge function with appropriate label.
+
+### Files to create/modify
+
+| File | Action |
+|---|---|
+| Migration | Create `backups` table with RLS |
+| `supabase/functions/create-backup/index.ts` | New — snapshot all org data |
+| `supabase/functions/restore-backup/index.ts` | New — restore from snapshot |
+| `supabase/config.toml` | Add function configs |
+| `src/components/settings/BackupRestoreSection.tsx` | New — UI for backup list + restore |
+| `src/components/SettingsPage.tsx` | Add Backup & Restore menu item + routing |
+| pg_cron SQL (via insert tool) | Schedule twice-daily automatic backups |
 
