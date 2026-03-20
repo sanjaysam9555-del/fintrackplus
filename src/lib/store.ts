@@ -569,10 +569,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }
         
         // Notifications
+        const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'partner',
           title: 'Partner Transfer',
-          message: `₹${params.amount.toLocaleString()} transferred between partners`,
+          message: `${userName} transferred ₹${params.amount.toLocaleString()} from ${params.fromPartnerName} to ${params.toPartnerName}`,
           entityType: 'transaction',
           entityId: expenseId,
           details: [
