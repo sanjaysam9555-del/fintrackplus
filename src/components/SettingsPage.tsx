@@ -775,6 +775,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         isOpen={showProfileEdit}
         onClose={() => setShowProfileEdit(false)}
       />
+      
+      {/* Org Edit Sheet */}
+      <OrgEditSheet
+        isOpen={showOrgEdit}
+        onClose={() => setShowOrgEdit(false)}
+      />
     </div>
   );
 };
