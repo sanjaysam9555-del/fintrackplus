@@ -1663,10 +1663,11 @@ export const useFinanceStore = create<FinanceStore>()(
         }));
 
         if (label) {
+          const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
             type: 'delete',
             title: 'Label Deleted',
-            message: `#${label.name}`,
+            message: `${userName} deleted label '#${label.name}'`,
             details: [
               { field: 'Name', from: label.name, to: 'Deleted' },
               { field: 'Color', from: label.color, to: 'Deleted' },
