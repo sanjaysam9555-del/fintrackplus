@@ -316,8 +316,8 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           {[
             { key: 'categories', icon: Grid3X3, label: 'Categories', color: 'bg-accent', iconColor: 'text-accent-foreground' },
             { key: 'vendors', icon: Store, label: 'Vendors', color: 'bg-success/10', iconColor: 'text-success' },
-            { key: 'logs', icon: ScrollText, label: 'Logs', color: 'bg-amber-500/10', iconColor: 'text-amber-500 dark:text-amber-400' },
-            { key: 'reports', icon: FileBarChart, label: 'Reports', color: 'bg-purple-500/10', iconColor: 'text-purple-500 dark:text-purple-400' },
+            ...(!isEmployee ? [{ key: 'logs', icon: ScrollText, label: 'Logs', color: 'bg-amber-500/10', iconColor: 'text-amber-500 dark:text-amber-400' }] : []),
+            ...(!isEmployee ? [{ key: 'reports', icon: FileBarChart, label: 'Reports', color: 'bg-purple-500/10', iconColor: 'text-purple-500 dark:text-purple-400' }] : []),
           ].map((item, index) => (
             <motion.button
               key={item.key}

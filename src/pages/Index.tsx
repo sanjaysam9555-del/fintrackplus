@@ -201,6 +201,7 @@ const Index = () => {
       setViewMode('settings');
       setSettingsSection(null);
     } else if (section === 'ai') {
+      if (isEmployee) return;
       setViewMode('ai');
     } else if (section === 'search') {
       setIsSearchOpen(true);
@@ -347,6 +348,7 @@ const Index = () => {
           onTabChange={handleTabChange}
           onAddClick={handleOpenAddSheet}
           onNavigate={handleNavigate}
+          isEmployee={isEmployee}
         />
         
         {/* Main Content Area */}

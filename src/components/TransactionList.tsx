@@ -60,9 +60,9 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
       });
   }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter, isEmployee, userId]);
   
-  const total = type === 'income' 
-    ? getTotalIncome(dateRange.start, dateRange.end)
-    : getTotalExpense(dateRange.start, dateRange.end);
+  const total = useMemo(() => {
+    return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
+  }, [filteredTransactions]);
   
   const sortedTransactions = useMemo(() => {
     const sorted = [...filteredTransactions];

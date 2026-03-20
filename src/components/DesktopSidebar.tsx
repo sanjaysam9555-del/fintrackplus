@@ -27,6 +27,7 @@ interface DesktopSidebarProps {
   onTabChange: (tab: TabId) => void;
   onAddClick: () => void;
   onNavigate: (section: string) => void;
+  isEmployee?: boolean;
 }
 
 const navItems = [
@@ -41,7 +42,8 @@ export const DesktopSidebar = ({
   viewMode, 
   onTabChange, 
   onAddClick,
-  onNavigate 
+  onNavigate,
+  isEmployee = false
 }: DesktopSidebarProps) => {
   const { userProfile } = useFinanceStore();
   const { signOut, user } = useAuth();
@@ -151,7 +153,7 @@ export const DesktopSidebar = ({
           )}
           <div className={cn("space-y-1", isCollapsed && "mt-4")}>
             {[
-              { id: 'ai', icon: Sparkles, label: 'AI Summary' },
+              ...(!isEmployee ? [{ id: 'ai', icon: Sparkles, label: 'AI Summary' }] : []),
               { id: 'settings', icon: Settings, label: 'Settings' },
             ].map((item) => {
               const isActive = viewMode === item.id;
