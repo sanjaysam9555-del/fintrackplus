@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User, AlertTriangle, HelpCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -244,6 +245,64 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
             <ArrowLeft size={20} />
           </button>
           <h1 className="text-2xl font-bold">Team</h1>
+
+          <Dialog>
+            <DialogTrigger asChild>
+              <button className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                <HelpCircle size={18} />
+              </button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="text-lg">Role Permissions Guide</DialogTitle>
+              </DialogHeader>
+              <div className="mt-2">
+                <div className="grid grid-cols-[1fr_60px_60px_60px] gap-1 mb-2 px-2">
+                  <span className="text-xs text-muted-foreground font-medium">Permission</span>
+                  <span className="text-[10px] font-semibold text-center px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-400">Owner</span>
+                  <span className="text-[10px] font-semibold text-center px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-400">Admin</span>
+                  <span className="text-[10px] font-semibold text-center px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">Employee</span>
+                </div>
+                {[
+                  { label: 'View Dashboard & Summaries', owner: true, admin: true, employee: false },
+                  { label: 'Add Income / Expense', owner: true, admin: true, employee: true, note: 'own only' },
+                  { label: 'Edit / Delete Transactions', owner: true, admin: true, employee: false },
+                  { label: 'Manage Categories & Vendors', owner: true, admin: true, employee: false },
+                  { label: 'Manage Projects', owner: true, admin: true, employee: false },
+                  { label: 'View Reports', owner: true, admin: true, employee: false },
+                  { label: 'View Partner Balances', owner: true, admin: false, employee: false },
+                  { label: 'Manage Team Members', owner: true, admin: false, employee: false },
+                  { label: 'View Activity Logs', owner: true, admin: false, employee: false },
+                  { label: 'Backup & Restore', owner: true, admin: false, employee: false },
+                  { label: 'Cashflow & AI Insights', owner: true, admin: true, employee: false },
+                  { label: 'View Only Own Transactions', owner: false, admin: false, employee: true },
+                ].map((row, i) => (
+                  <div
+                    key={row.label}
+                    className={cn(
+                      "grid grid-cols-[1fr_60px_60px_60px] gap-1 px-2 py-2 rounded-lg items-center",
+                      i % 2 === 0 ? 'bg-muted/40' : ''
+                    )}
+                  >
+                    <span className="text-xs">
+                      {row.label}
+                      {row.note && <span className="text-[10px] text-muted-foreground ml-1">({row.note})</span>}
+                    </span>
+                    {[row.owner, row.admin, row.employee].map((allowed, j) => (
+                      <span key={j} className="flex justify-center">
+                        {allowed ? (
+                          <CheckCircle2 size={15} className="text-emerald-500" />
+                        ) : (
+                          <XCircle size={15} className="text-muted-foreground/40" />
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </DialogContent>
+          </Dialog>
+
           <span className="ml-auto text-sm text-muted-foreground">
             {members.length}/{maxMembers} seats
           </span>
