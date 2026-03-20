@@ -127,21 +127,21 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                 {/* Transfer Visual */}
                 <div className="flex items-center justify-center gap-3 py-4">
                   <div className="flex flex-col items-center gap-2">
-                    {fromPartner ?
-                  {fromPartner.avatarUrl ? (
-                    <img src={fromPartner.avatarUrl} alt={fromPartner.name} className="w-12 h-12 rounded-full object-cover" />
-                  ) : (
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
-                    style={{ backgroundColor: fromPartner.color }}>
-                        {fromPartner.name.charAt(0).toUpperCase()}
-                      </div>
-                  )}
-
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    {fromPartner ? (
+                      fromPartner.avatarUrl ? (
+                        <img src={fromPartner.avatarUrl} alt={fromPartner.name} className="w-12 h-12 rounded-full object-cover" />
+                      ) : (
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold"
+                          style={{ backgroundColor: fromPartner.color }}>
+                          {fromPartner.name.charAt(0).toUpperCase()}
+                        </div>
+                      )
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                         <Users size={20} className="text-muted-foreground" />
                       </div>
-                  }
+                    )}
                     <span className="text-xs text-muted-foreground">From</span>
                   </div>
                   
