@@ -29,7 +29,7 @@ interface DashboardProps {
 }
 
 export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange, isEmployee = false }: DashboardProps) => {
-  const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt, defaultTimeFilter } = useFinanceStore();
+  const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt, defaultTimeFilter, orgName, orgLogoUrl } = useFinanceStore();
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
@@ -150,6 +150,14 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 )}
               </motion.div>
               <div>
+                {orgName && (
+                  <div className="flex items-center gap-1 mb-0.5">
+                    {orgLogoUrl ? (
+                      <img src={orgLogoUrl} alt="" className="w-4 h-4 rounded object-cover" />
+                    ) : null}
+                    <span className="text-[10px] text-muted-foreground font-medium truncate max-w-[120px]">{orgName}</span>
+                  </div>
+                )}
                 <p className="text-[11px] text-muted-foreground">{greeting},</p>
                 <h1 className="text-sm font-bold leading-tight">{userProfile.name}</h1>
               </div>
@@ -207,6 +215,14 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 )}
               </motion.div>
               <div>
+                {orgName && (
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    {orgLogoUrl ? (
+                      <img src={orgLogoUrl} alt="" className="w-4 h-4 rounded object-cover" />
+                    ) : null}
+                    <span className="text-xs text-muted-foreground font-medium">{orgName}</span>
+                  </div>
+                )}
                 <p className="text-sm text-muted-foreground">{greeting},</p>
                 <h1 className="text-lg font-bold">{userProfile.name}</h1>
               </div>

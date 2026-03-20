@@ -119,6 +119,23 @@ export const useSyncEngine = () => {
 
       setCloudDataRef.current(data);
       setLastSyncedAtRef.current(new Date().toISOString());
+
+      // Fetch org info (name + logo)
+      try {
+        const { data: orgData } = await supabase.rpc('get_user_org_id', { _user_id: user.id });
+        if (orgData) {
+          const { data: org } = await supabase
+            .from('organizations')
+            .select('name, logo_url')
+            .eq('id', orgData)
+            .maybeSingle();
+          if (org) {
+            useFinanceStore.getState().setOrgInfo(org.name, (org as any).logo_url || null);
+          }
+        }
+      } catch (e) {
+        console.error('[SyncEngine] Org info fetch failed:', e);
+      }
       
       refreshPendingCount();
       setSyncStatusRef.current('synced');
