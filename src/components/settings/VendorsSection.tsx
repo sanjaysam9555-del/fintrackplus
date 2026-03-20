@@ -378,9 +378,11 @@ export const VendorsSection = ({ onBack, userId, isEmployee }: VendorsSectionPro
           </button>
           <h1 className="text-xl font-bold">Vendors</h1>
         </div>
-        <Button size="sm" onClick={() => { setShowAddForm(true); setName(''); setSelectedColor(VENDOR_COLORS[0]); setSelectedIcon('Store'); }}>
-          <Plus size={16} className="mr-1" /> Add
-        </Button>
+        {!isEmployee && (
+          <Button size="sm" onClick={() => { setShowAddForm(true); setName(''); setSelectedColor(VENDOR_COLORS[0]); setSelectedIcon('Store'); }}>
+            <Plus size={16} className="mr-1" /> Add
+          </Button>
+        )}
       </div>
 
       <div className="p-4 space-y-3">
