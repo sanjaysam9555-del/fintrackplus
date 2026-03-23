@@ -72,7 +72,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     setNotes(transaction.notes || "");
     setReceiptUrl(transaction.receiptUrl);
     setIsGst(transaction.isGst || false);
-  }, [transaction]);
+  }, [transaction.id]);
   
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
