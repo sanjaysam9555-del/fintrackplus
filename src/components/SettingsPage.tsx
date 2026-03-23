@@ -42,6 +42,7 @@ import { AppFeaturesGuide } from "./settings/AppFeaturesGuide";
 import { TeamSection } from "./settings/TeamSection";
 import { ChangeApprovalPage } from "./settings/ChangeApprovalPage";
 import { BackupRestoreSection } from "./settings/BackupRestoreSection";
+import { RecurringSection } from "./settings/RecurringSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
@@ -229,7 +230,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -320,6 +321,14 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         onClick: () => handleSectionChange('labels')
       }
     );
+    
+    const recurringCount = transactions.filter(t => t.isRecurring && t.recurringFrequency).length;
+    dataItems.push({
+      icon: RefreshCw,
+      label: "Recurring",
+      sublabel: `${recurringCount} active`,
+      onClick: () => handleSectionChange('recurring')
+    });
   }
   
   if (canViewReports) {
@@ -392,6 +401,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   }
   if (activeSection === 'approvals') {
     return <ChangeApprovalPage onBack={handleBack} />;
+  }
+  if (activeSection === 'recurring') {
+    return <RecurringSection onBack={handleBack} userId={user?.id} />;
   }
   if (activeSection === 'backup') {
     return <BackupRestoreSection onBack={handleBack} />;
