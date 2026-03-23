@@ -1,43 +1,50 @@
 
 
-## Enhance Approval Notifications and Animations
+## Fix: Enable Automatic Backups via pg_cron
 
-### 1. More Prominent "Submitted for Approval" Toast
+### Problem
+The `trigger_all_org_backups` DB function exists and works, but no cron job was ever scheduled to invoke it. The twice-daily automatic backups (6 AM / 6 PM IST) are not running.
 
-**`src/components/EditTransactionSheet.tsx`** (line 161) — Replace the plain `toast.success` with a custom styled toast that is more prominent and informative:
+### Fix
+1. **Enable extensions** — Ensure `pg_cron` and `pg_net` are enabled via a migration.
 
-```typescript
-toast('Sent for Approval', {
-  description: 'This entry is handled by another partner. Your changes will apply once they approve.',
-  icon: <Clock size={18} className="text-amber-500" />,
-  duration: 4000,
-  className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
-});
+2. **Schedule two cron jobs** — Use the database insert tool (not migration, since it contains project-specific URLs/keys) to create:
+   - `auto-backup-morning`: runs at 6:00 AM IST (0:30 UTC) daily
+   - `auto-backup-evening`: runs at 6:00 PM IST (12:30 UTC) daily
+
+   Each job calls `trigger_all_org_backups()` with an appropriate label like `"Auto Backup — Morning 6 AM"`.
+
+3. **Fix the function's HTTP call** — The current function uses `extensions.http_post` which is from the `http` extension, not `pg_net`. Need to verify which extension is available and use the correct function (`net.http_post` for pg_net).
+
+### Implementation Detail
+
+**Migration** — Enable extensions:
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 ```
 
-Import `Clock` from lucide-react (already used elsewhere). This gives it an amber/warning visual treatment that stands out from regular success toasts.
+**SQL insert (non-migration)** — Schedule the cron jobs:
+```sql
+SELECT cron.schedule(
+  'auto-backup-morning',
+  '30 0 * * *',
+  $$SELECT public.trigger_all_org_backups('Auto Backup — Morning 6 AM')$$
+);
 
-Also apply the same treatment to `TransactionDetailSheet.tsx` (delete approval toast) and `PartnersSection.tsx` / `TeamSection.tsx` approval toasts.
+SELECT cron.schedule(
+  'auto-backup-evening',
+  '30 12 * * *',
+  $$SELECT public.trigger_all_org_backups('Auto Backup — Evening 6 PM')$$
+);
+```
 
-### 2. Animated Approval Action on ChangeApprovalPage
-
-**`src/components/settings/ChangeApprovalPage.tsx`** — After approve/reject:
-
-- Instead of immediately refetching (which causes a jarring list jump), animate the card out first:
-  - Track a `resolvingId` + `resolvedStatus` state
-  - When approved: flash the card border green, show a checkmark overlay, then animate it out (`opacity: 0, height: 0, scale: 0.95`) over ~500ms
-  - When rejected: flash red, X overlay, same exit animation
-  - After the exit animation completes, refetch the list
-
-- Add `layout` prop to the `motion.div` cards and wrap the list in `AnimatePresence` with `exit` variants so remaining cards smoothly reflow.
+**Update `trigger_all_org_backups`** — Replace `extensions.http_post` with `net.http_post` (pg_net's correct function signature) to ensure the HTTP call actually fires.
 
 ### Files to modify
-
 | File | Change |
 |---|---|
-| `src/components/EditTransactionSheet.tsx` | Prominent amber-styled approval toast with icon and description |
-| `src/components/TransactionDetailSheet.tsx` | Same prominent toast for delete approval |
-| `src/components/settings/PartnersSection.tsx` | Same prominent toast for partner deletion approval |
-| `src/components/settings/TeamSection.tsx` | Same prominent toast for team member removal approval |
-| `src/components/settings/ChangeApprovalPage.tsx` | Animated approve/reject with green/red flash, overlay icon, exit animation before refetch |
+| Migration SQL | Enable `pg_cron` and `pg_net` extensions |
+| SQL insert (non-migration) | Schedule two daily cron jobs |
+| Migration SQL | Update `trigger_all_org_backups` to use `net.http_post` instead of `extensions.http_post` |
 
