@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, X, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -37,6 +37,8 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
   const [approvals, setApprovals] = useState<ChangeApproval[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserName, setCurrentUserName] = useState('');
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolvedStatus, setResolvedStatus] = useState<'approved' | 'rejected' | null>(null);
 
   const fetchCurrentUserName = async () => {
     if (!user) return;
@@ -103,6 +105,10 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
       const approval = approvals.find(a => a.id === approvalId);
       if (!approval) return;
 
+      // Show resolving animation
+      setResolvingId(approvalId);
+      setResolvedStatus(status);
+
       // Update approval status
       const { error } = await supabase
         .from('change_approvals')
@@ -116,7 +122,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
         if (approval.action === 'delete' && approval.entity_type === 'transaction') {
           await supabase.from('transactions').delete().eq('id', approval.entity_id);
         } else if (approval.action === 'edit' && approval.entity_type === 'transaction') {
-          // Map camelCase form keys to snake_case DB columns
           const keyMap: Record<string, string> = {
             categoryId: 'category_id',
             projectId: 'project_id',
@@ -134,7 +139,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           }
           await supabase.from('transactions').update(dbChanges).eq('id', approval.entity_id);
         } else if (approval.action === 'delete' && approval.entity_type === 'partner') {
-          // Unassign transactions handled by this partner's user_id
           const { data: partnerData } = await supabase.from('partners').select('user_id').eq('id', approval.entity_id).maybeSingle();
           if (partnerData?.user_id) {
             await supabase
@@ -144,7 +148,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           }
           await supabase.from('partners').delete().eq('id', approval.entity_id);
         } else if (approval.action === 'delete' && approval.entity_type === 'team_member') {
-          // Invoke edge function to remove team member
           await supabase.functions.invoke('manage-team', {
             body: { action: 'remove_member', memberId: approval.entity_id },
           });
@@ -155,7 +158,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
       const actionLabel = status === 'approved' ? 'approved' : 'rejected';
       const entityName = (approval.proposed_changes?.name as string) || entityLabel;
 
-      // Log notification with names
       addNotification({
         type: 'settings',
         title: `Deletion ${status === 'approved' ? 'Approved' : 'Rejected'}`,
@@ -163,8 +165,16 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
       });
 
       toast.success(status === 'approved' ? 'Change approved' : 'Change rejected');
-      fetchApprovals();
+
+      // Wait for exit animation, then refetch
+      setTimeout(() => {
+        setResolvingId(null);
+        setResolvedStatus(null);
+        fetchApprovals();
+      }, 600);
     } catch (err: any) {
+      setResolvingId(null);
+      setResolvedStatus(null);
       toast.error(err.message || 'Failed to process approval');
     }
   };
@@ -182,14 +192,45 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
   const renderApprovalCard = (approval: ChangeApproval, showActions: boolean) => {
     const isSelfRequest = approval.requester_user_id === user?.id;
     const canAct = showActions && !isSelfRequest;
+    const isResolving = resolvingId === approval.id;
+    const isApproved = isResolving && resolvedStatus === 'approved';
+    const isRejected = isResolving && resolvedStatus === 'rejected';
 
     return (
       <motion.div
         key={approval.id}
+        layout
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card rounded-2xl p-4 border border-border"
+        animate={{ 
+          opacity: isResolving ? 0 : 1, 
+          y: isResolving ? -10 : 0,
+          scale: isResolving ? 0.95 : 1,
+          height: isResolving ? 0 : 'auto',
+        }}
+        transition={{ duration: isResolving ? 0.5 : 0.3 }}
+        className={cn(
+          "bg-card rounded-2xl p-4 border-2 relative overflow-hidden transition-colors duration-300",
+          isApproved ? 'border-emerald-500' : isRejected ? 'border-destructive' : 'border-border',
+        )}
       >
+        {/* Resolved overlay */}
+        <AnimatePresence>
+          {isResolving && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl"
+              style={{ backgroundColor: isApproved ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)' }}
+            >
+              {isApproved ? (
+                <CheckCircle2 size={40} className="text-emerald-500" />
+              ) : (
+                <XCircle size={40} className="text-destructive" />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -226,7 +267,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           </div>
         </div>
 
-        {/* Show proposed changes / entity name */}
         {approval.proposed_changes && Object.keys(approval.proposed_changes).length > 0 && (
           <div className="bg-muted/50 rounded-lg p-3 mb-3 space-y-1">
             {Object.entries(approval.proposed_changes).map(([key, value]) => (
@@ -238,8 +278,7 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           </div>
         )}
 
-        {/* Actions: only for pending items not requested by current user */}
-        {canAct && (
+        {canAct && !isResolving && (
           <div className="flex gap-2">
             <Button
               size="sm"

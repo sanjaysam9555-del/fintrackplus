@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User, AlertTriangle, HelpCircle, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User, AlertTriangle, HelpCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog';
 import { Button } from '../ui/button';
@@ -179,7 +179,12 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           message: `${currentUserName} requested removal of team member "${memberName}"`,
         });
 
-        toast.success('Removal request sent for approval');
+        toast('Sent for Approval', {
+          description: 'This member is an owner. Your removal request will apply once they approve.',
+          icon: <Clock size={18} className="text-amber-500" />,
+          duration: 4000,
+          className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
+        });
       } catch (err: any) {
         toast.error(err.message || 'Failed to create approval request');
       }

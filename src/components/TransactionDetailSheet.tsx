@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, StickyNote, Paperclip, Users, RefreshCw, Share2 } from "lucide-react";
+import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, StickyNote, Paperclip, Users, RefreshCw, Share2, Clock } from "lucide-react";
 import { Transaction } from "@/lib/types";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
@@ -67,7 +67,12 @@ export const TransactionDetailSheet = ({
             proposed_changes: { name: transaction.title || transaction.vendor, amount: transaction.amount },
             status: 'pending',
           });
-          toast.success('Delete request sent for approval');
+          toast('Sent for Approval', {
+            description: 'This entry is handled by another partner. Your delete request will apply once they approve.',
+            icon: <Clock size={18} className="text-amber-500" />,
+            duration: 4000,
+            className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
+          });
           onClose();
           return;
         }
