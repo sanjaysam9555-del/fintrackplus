@@ -34,7 +34,7 @@ const frequencyColor: Record<string, string> = {
 };
 
 export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
-  const { transactions, categories, syncTransactions } = useFinanceStore();
+  const { transactions, categories, updateTransaction } = useFinanceStore();
   const { getNextOccurrence } = useRecurringTransactions();
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -63,7 +63,7 @@ export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
     }
 
     setTimeout(() => {
-      syncTransactions?.();
+      updateTransaction(t.id, { isRecurring: false, recurringFrequency: undefined }, userId);
       setRemovingId(null);
       toast.success(`"${t.title || t.vendor}" is no longer recurring`);
     }, 400);
@@ -91,20 +91,18 @@ export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
         }
         className="bg-card border border-border rounded-xl p-4 flex items-center gap-3 overflow-hidden"
       >
-        {/* Icon */}
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 cursor-pointer"
           onClick={() => setEditTransaction(t)}
           style={{ backgroundColor: category?.color ? `${category.color}20` : undefined }}
         >
           {category ? (
-            <CategoryIcon icon={category.icon} color={category.color} size={18} />
+            <CategoryIcon icon={category.icon} color={category.color} size="sm" />
           ) : (
             <RefreshCw size={18} className="text-muted-foreground" />
           )}
         </div>
 
-        {/* Info */}
         <div className="flex-1 min-w-0 cursor-pointer" onClick={() => setEditTransaction(t)}>
           <p className="font-medium text-sm truncate">{t.title || t.vendor}</p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -123,7 +121,6 @@ export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
           </div>
         </div>
 
-        {/* Amount */}
         <div className="text-right shrink-0">
           <p className={cn(
             "font-semibold text-sm",
@@ -133,16 +130,13 @@ export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
           </p>
         </div>
 
-        {/* Remove button */}
-        {!isEmployee && (
-          <button
-            onClick={(e) => { e.stopPropagation(); handleRemoveRecurring(t); }}
-            className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
-            title="Remove recurring"
-          >
-            <Trash2 size={14} />
-          </button>
-        )}
+        <button
+          onClick={(e) => { e.stopPropagation(); handleRemoveRecurring(t); }}
+          className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+          title="Remove recurring"
+        >
+          <Trash2 size={14} />
+        </button>
       </motion.div>
     );
   };
@@ -208,7 +202,6 @@ export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
         </Tabs>
       </div>
 
-      {/* Edit Transaction Sheet */}
       {editTransaction && (
         <Suspense fallback={null}>
           <EditTransactionSheet
@@ -216,7 +209,6 @@ export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
             isOpen={!!editTransaction}
             onClose={() => setEditTransaction(null)}
             userId={userId}
-            isEmployee={isEmployee}
           />
         </Suspense>
       )}
