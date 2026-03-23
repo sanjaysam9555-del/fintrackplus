@@ -62,9 +62,8 @@ export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
       return;
     }
 
-    // Wait for animation then refresh
     setTimeout(() => {
-      refreshData?.();
+      syncTransactions?.();
       setRemovingId(null);
       toast.success(`"${t.title || t.vendor}" is no longer recurring`);
     }, 400);
