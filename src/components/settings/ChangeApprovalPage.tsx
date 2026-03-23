@@ -192,14 +192,45 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
   const renderApprovalCard = (approval: ChangeApproval, showActions: boolean) => {
     const isSelfRequest = approval.requester_user_id === user?.id;
     const canAct = showActions && !isSelfRequest;
+    const isResolving = resolvingId === approval.id;
+    const isApproved = isResolving && resolvedStatus === 'approved';
+    const isRejected = isResolving && resolvedStatus === 'rejected';
 
     return (
       <motion.div
         key={approval.id}
+        layout
         initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-card rounded-2xl p-4 border border-border"
+        animate={{ 
+          opacity: isResolving ? 0 : 1, 
+          y: isResolving ? -10 : 0,
+          scale: isResolving ? 0.95 : 1,
+          height: isResolving ? 0 : 'auto',
+        }}
+        transition={{ duration: isResolving ? 0.5 : 0.3 }}
+        className={cn(
+          "bg-card rounded-2xl p-4 border-2 relative overflow-hidden transition-colors duration-300",
+          isApproved ? 'border-emerald-500' : isRejected ? 'border-destructive' : 'border-border',
+        )}
       >
+        {/* Resolved overlay */}
+        <AnimatePresence>
+          {isResolving && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl"
+              style={{ backgroundColor: isApproved ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)' }}
+            >
+              {isApproved ? (
+                <CheckCircle2 size={40} className="text-emerald-500" />
+              ) : (
+                <XCircle size={40} className="text-destructive" />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -236,7 +267,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           </div>
         </div>
 
-        {/* Show proposed changes / entity name */}
         {approval.proposed_changes && Object.keys(approval.proposed_changes).length > 0 && (
           <div className="bg-muted/50 rounded-lg p-3 mb-3 space-y-1">
             {Object.entries(approval.proposed_changes).map(([key, value]) => (
@@ -248,8 +278,7 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           </div>
         )}
 
-        {/* Actions: only for pending items not requested by current user */}
-        {canAct && (
+        {canAct && !isResolving && (
           <div className="flex gap-2">
             <Button
               size="sm"
