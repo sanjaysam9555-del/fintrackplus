@@ -321,6 +321,14 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         onClick: () => handleSectionChange('labels')
       }
     );
+    
+    const recurringCount = transactions.filter(t => t.isRecurring && t.recurringFrequency).length;
+    dataItems.push({
+      icon: RefreshCw,
+      label: "Recurring",
+      sublabel: `${recurringCount} active`,
+      onClick: () => handleSectionChange('recurring')
+    });
   }
   
   if (canViewReports) {
