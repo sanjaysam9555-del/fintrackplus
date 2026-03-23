@@ -514,7 +514,12 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             title: 'Deletion Requested',
             message: `${currentUserName} requested deletion of partner '${partner.name}'`
           });
-          toast.success('Deletion request sent for approval');
+          toast('Sent for Approval', {
+            description: 'This partner is an owner. Your deletion request will apply once they approve.',
+            icon: <Clock size={18} className="text-amber-500" />,
+            duration: 4000,
+            className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
+          });
         } catch (err: any) {
           toast.error(err.message || 'Failed to create approval request');
         }
