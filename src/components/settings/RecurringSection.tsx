@@ -33,8 +33,8 @@ const frequencyColor: Record<string, string> = {
   yearly: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
 };
 
-export const RecurringSection = ({ onBack, userId, isEmployee }: RecurringSectionProps) => {
-  const { transactions, categories, refreshData } = useFinanceStore();
+export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
+  const { transactions, categories, syncTransactions } = useFinanceStore();
   const { getNextOccurrence } = useRecurringTransactions();
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
