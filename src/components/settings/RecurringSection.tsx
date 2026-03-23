@@ -97,7 +97,7 @@ export const RecurringSection = ({ onBack, userId }: RecurringSectionProps) => {
           style={{ backgroundColor: category?.color ? `${category.color}20` : undefined }}
         >
           {category ? (
-            <CategoryIcon icon={category.icon} color={category.color} size="sm" />
+            <CategoryIcon iconName={category.icon} colorClass={category.color} size="sm" />
           ) : (
             <RefreshCw size={18} className="text-muted-foreground" />
           )}
