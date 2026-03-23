@@ -37,6 +37,8 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
   const [approvals, setApprovals] = useState<ChangeApproval[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserName, setCurrentUserName] = useState('');
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+  const [resolvedStatus, setResolvedStatus] = useState<'approved' | 'rejected' | null>(null);
 
   const fetchCurrentUserName = async () => {
     if (!user) return;
