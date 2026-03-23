@@ -1,50 +1,29 @@
 
 
-## Fix: Enable Automatic Backups via pg_cron
+## Add Recurring Transactions Management Page in Settings
 
-### Problem
-The `trigger_all_org_backups` DB function exists and works, but no cron job was ever scheduled to invoke it. The twice-daily automatic backups (6 AM / 6 PM IST) are not running.
+### What
+Add a new "Recurring" section in Settings where users can view all recurring transactions (both income and expenses), see their frequency and next occurrence, and edit or remove the recurring flag from any entry.
 
-### Fix
-1. **Enable extensions** — Ensure `pg_cron` and `pg_net` are enabled via a migration.
+### UI Design
+- New menu item in Settings under "Data Management": icon `RefreshCw`, label "Recurring", sublabel showing count (e.g., "3 active")
+- Section page with two tabs: "Expenses" and "Income"
+- Each item shows: title/vendor, amount, frequency badge (Daily/Weekly/Monthly/Yearly), next occurrence date
+- Tapping an item opens the existing `EditTransactionSheet` to edit the transaction
+- A toggle or button to remove the recurring status from a transaction directly
 
-2. **Schedule two cron jobs** — Use the database insert tool (not migration, since it contains project-specific URLs/keys) to create:
-   - `auto-backup-morning`: runs at 6:00 AM IST (0:30 UTC) daily
-   - `auto-backup-evening`: runs at 6:00 PM IST (12:30 UTC) daily
+### Files to create/modify
 
-   Each job calls `trigger_all_org_backups()` with an appropriate label like `"Auto Backup — Morning 6 AM"`.
-
-3. **Fix the function's HTTP call** — The current function uses `extensions.http_post` which is from the `http` extension, not `pg_net`. Need to verify which extension is available and use the correct function (`net.http_post` for pg_net).
-
-### Implementation Detail
-
-**Migration** — Enable extensions:
-```sql
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
-```
-
-**SQL insert (non-migration)** — Schedule the cron jobs:
-```sql
-SELECT cron.schedule(
-  'auto-backup-morning',
-  '30 0 * * *',
-  $$SELECT public.trigger_all_org_backups('Auto Backup — Morning 6 AM')$$
-);
-
-SELECT cron.schedule(
-  'auto-backup-evening',
-  '30 12 * * *',
-  $$SELECT public.trigger_all_org_backups('Auto Backup — Evening 6 PM')$$
-);
-```
-
-**Update `trigger_all_org_backups`** — Replace `extensions.http_post` with `net.http_post` (pg_net's correct function signature) to ensure the HTTP call actually fires.
-
-### Files to modify
 | File | Change |
 |---|---|
-| Migration SQL | Enable `pg_cron` and `pg_net` extensions |
-| SQL insert (non-migration) | Schedule two daily cron jobs |
-| Migration SQL | Update `trigger_all_org_backups` to use `net.http_post` instead of `extensions.http_post` |
+| `src/components/settings/RecurringSection.tsx` | **New file** — Recurring transactions management page with tabs for income/expenses, list of recurring items, edit and remove-recurring actions |
+| `src/components/SettingsPage.tsx` | Add "Recurring" menu item to dataItems, add section routing for `activeSection === 'recurring'`, import the new component |
+| `src/pages/Index.tsx` | Add `'recurring'` to the `SettingsSection` type union |
+
+### Behavior
+- Uses `useFinanceStore` to get all transactions, filters for `isRecurring === true`
+- Uses `useRecurringTransactions` hook for next occurrence calculation
+- Edit: opens `EditTransactionSheet` with the selected transaction
+- Remove recurring: updates the transaction in DB setting `is_recurring = false` and `recurring_frequency = null`, then refreshes local store
+- Accessible to owners and admins only (same as other data management items)
 
