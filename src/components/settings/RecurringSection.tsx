@@ -17,7 +17,6 @@ const EditTransactionSheet = lazy(() => import("@/components/EditTransactionShee
 interface RecurringSectionProps {
   onBack: () => void;
   userId?: string;
-  isEmployee?: boolean;
 }
 
 const frequencyLabel: Record<string, string> = {
