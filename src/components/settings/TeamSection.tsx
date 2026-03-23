@@ -179,7 +179,12 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           message: `${currentUserName} requested removal of team member "${memberName}"`,
         });
 
-        toast.success('Removal request sent for approval');
+        toast('Sent for Approval', {
+          description: 'This member is an owner. Your removal request will apply once they approve.',
+          icon: <Clock size={18} className="text-amber-500" />,
+          duration: 4000,
+          className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
+        });
       } catch (err: any) {
         toast.error(err.message || 'Failed to create approval request');
       }

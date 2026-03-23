@@ -158,7 +158,12 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             proposed_changes: { ...updates, name: transaction.title || transaction.vendor },
             status: 'pending',
           });
-          toast.success('Edit request sent for approval');
+          toast('Sent for Approval', {
+            description: 'This entry is handled by another partner. Your changes will apply once they approve.',
+            icon: <Clock size={18} className="text-amber-500" />,
+            duration: 4000,
+            className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
+          });
           onClose();
           return;
         }
