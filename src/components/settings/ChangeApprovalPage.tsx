@@ -116,7 +116,23 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
         if (approval.action === 'delete' && approval.entity_type === 'transaction') {
           await supabase.from('transactions').delete().eq('id', approval.entity_id);
         } else if (approval.action === 'edit' && approval.entity_type === 'transaction') {
-          await supabase.from('transactions').update(approval.proposed_changes).eq('id', approval.entity_id);
+          // Map camelCase form keys to snake_case DB columns
+          const keyMap: Record<string, string> = {
+            categoryId: 'category_id',
+            projectId: 'project_id',
+            handledBy: 'handled_by',
+            paymentMethod: 'payment_method',
+            receiptUrl: 'receipt_url',
+            isGst: 'is_gst',
+          };
+          const displayOnlyKeys = new Set(['name']);
+          const dbChanges: Record<string, unknown> = {};
+          for (const [key, value] of Object.entries(approval.proposed_changes)) {
+            if (displayOnlyKeys.has(key)) continue;
+            const dbKey = keyMap[key] || key;
+            dbChanges[dbKey] = value;
+          }
+          await supabase.from('transactions').update(dbChanges).eq('id', approval.entity_id);
         } else if (approval.action === 'delete' && approval.entity_type === 'partner') {
           // Unassign transactions handled by this partner's user_id
           const { data: partnerData } = await supabase.from('partners').select('user_id').eq('id', approval.entity_id).maybeSingle();
