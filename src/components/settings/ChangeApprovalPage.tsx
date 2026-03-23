@@ -105,6 +105,10 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
       const approval = approvals.find(a => a.id === approvalId);
       if (!approval) return;
 
+      // Show resolving animation
+      setResolvingId(approvalId);
+      setResolvedStatus(status);
+
       // Update approval status
       const { error } = await supabase
         .from('change_approvals')
@@ -118,7 +122,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
         if (approval.action === 'delete' && approval.entity_type === 'transaction') {
           await supabase.from('transactions').delete().eq('id', approval.entity_id);
         } else if (approval.action === 'edit' && approval.entity_type === 'transaction') {
-          // Map camelCase form keys to snake_case DB columns
           const keyMap: Record<string, string> = {
             categoryId: 'category_id',
             projectId: 'project_id',
@@ -136,7 +139,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           }
           await supabase.from('transactions').update(dbChanges).eq('id', approval.entity_id);
         } else if (approval.action === 'delete' && approval.entity_type === 'partner') {
-          // Unassign transactions handled by this partner's user_id
           const { data: partnerData } = await supabase.from('partners').select('user_id').eq('id', approval.entity_id).maybeSingle();
           if (partnerData?.user_id) {
             await supabase
@@ -146,7 +148,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           }
           await supabase.from('partners').delete().eq('id', approval.entity_id);
         } else if (approval.action === 'delete' && approval.entity_type === 'team_member') {
-          // Invoke edge function to remove team member
           await supabase.functions.invoke('manage-team', {
             body: { action: 'remove_member', memberId: approval.entity_id },
           });
@@ -157,7 +158,6 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
       const actionLabel = status === 'approved' ? 'approved' : 'rejected';
       const entityName = (approval.proposed_changes?.name as string) || entityLabel;
 
-      // Log notification with names
       addNotification({
         type: 'settings',
         title: `Deletion ${status === 'approved' ? 'Approved' : 'Rejected'}`,
@@ -165,8 +165,16 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
       });
 
       toast.success(status === 'approved' ? 'Change approved' : 'Change rejected');
-      fetchApprovals();
+
+      // Wait for exit animation, then refetch
+      setTimeout(() => {
+        setResolvingId(null);
+        setResolvedStatus(null);
+        fetchApprovals();
+      }, 600);
     } catch (err: any) {
+      setResolvingId(null);
+      setResolvedStatus(null);
       toast.error(err.message || 'Failed to process approval');
     }
   };
