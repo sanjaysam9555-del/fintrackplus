@@ -831,12 +831,8 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
             </motion.button>
           </div>
 
-          {/* Data Management Menu */}
-          {menuItems.filter(s => s.section === "Data Management").map((section, sectionIndex) => (
-            <div key={section.section} className="px-4 mb-6">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                {section.section}
-              </p>
+
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
