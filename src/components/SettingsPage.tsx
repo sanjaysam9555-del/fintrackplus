@@ -456,64 +456,64 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         </div>
       </div>
       
-      {/* Profile Card */}
-      <div className="px-4 mb-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          onClick={() => setShowProfileEdit(true)}
-          className="bg-card rounded-2xl p-3 shadow-card border border-border cursor-pointer hover:bg-muted/50 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center">
-              {userProfile.avatar ? (
-                <img 
-                  src={userProfile.avatar} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-xl font-bold text-primary">
-                  {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
-                </span>
-              )}
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-bold">{userProfile.name}</h2>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              <p className="text-xs text-success mt-1">Cloud Sync Enabled</p>
-            </div>
-            <ChevronRight size={18} className="text-muted-foreground" />
-          </div>
-        </motion.div>
-      </div>
-
-      {/* Learn App Features */}
-      <div className="px-4 mb-6">
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          onClick={() => handleSectionChange('features')}
-          className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors"
-        >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
-            <Sparkles size={20} className="text-primary" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="font-medium">Learn App Features</p>
-            <p className="text-sm text-muted-foreground">Discover what you can do</p>
-          </div>
-          <ChevronRight size={18} className="text-muted-foreground" />
-        </motion.button>
-      </div>
-      
       {/* Two-column grid on desktop */}
       <div className="md:grid md:grid-cols-2 md:gap-6">
-        {/* Left Column */}
+        {/* Left Column: Profile, Features, Data Management */}
         <div>
-          {/* Menu Sections */}
-          {menuItems.map((section, sectionIndex) => (
+          {/* Profile Card */}
+          <div className="px-4 mb-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => setShowProfileEdit(true)}
+              className="bg-card rounded-2xl p-3 shadow-card border border-border cursor-pointer hover:bg-muted/50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center">
+                  {userProfile.avatar ? (
+                    <img 
+                      src={userProfile.avatar} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xl font-bold text-primary">
+                      {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-lg font-bold">{userProfile.name}</h2>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  <p className="text-xs text-success mt-1">Cloud Sync Enabled</p>
+                </div>
+                <ChevronRight size={18} className="text-muted-foreground" />
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Learn App Features */}
+          <div className="px-4 mb-6">
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.05 }}
+              onClick={() => handleSectionChange('features')}
+              className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
+                <Sparkles size={20} className="text-primary" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">Learn App Features</p>
+                <p className="text-sm text-muted-foreground">Discover what you can do</p>
+              </div>
+              <ChevronRight size={18} className="text-muted-foreground" />
+            </motion.button>
+          </div>
+
+          {/* Data Management Menu */}
+          {menuItems.filter(s => s.section === "Data Management").map((section, sectionIndex) => (
             <div key={section.section} className="px-4 mb-6">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
                 {section.section}
@@ -547,8 +547,42 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           ))}
         </div>
 
-        {/* Right Column */}
+        {/* Right Column: Team, Backup, Preferences, Theme */}
         <div>
+          {/* Team & Approvals + Backup Menu Sections */}
+          {menuItems.filter(s => s.section !== "Data Management").map((section, sectionIndex) => (
+            <div key={section.section} className="px-4 mb-6">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                {section.section}
+              </p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: sectionIndex * 0.1 }}
+                className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
+              >
+                {section.items.map((item, index) => (
+                  <button
+                    key={item.label}
+                    onClick={item.onClick}
+                    className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${
+                      index !== section.items.length - 1 ? 'border-b border-border' : ''
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted">
+                      <item.icon size={20} className="text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-sm text-muted-foreground">{item.sublabel}</p>
+                    </div>
+                    <ChevronRight size={18} className="text-muted-foreground" />
+                  </button>
+                ))}
+              </motion.div>
+            </div>
+          ))}
+
           {/* Default Time Frame */}
           <div className="px-4 mb-6">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
@@ -702,42 +736,41 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
               </p>
             </motion.div>
           </div>
-          
-          {/* Install App */}
-          <div className="px-4 mb-6">
-            <motion.button
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              onClick={() => navigate(appPath('/install'))}
-              className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors"
-            >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10">
-                <Download size={20} className="text-blue-500" />
-              </div>
-              <div className="flex-1 text-left">
-                <p className="font-medium">Install App</p>
-                <p className="text-sm text-muted-foreground">
-                  {isInstalled ? '✓ Already installed' : 'Add to home screen'}
-                </p>
-              </div>
-              <ChevronRight size={18} className="text-muted-foreground" />
-            </motion.button>
-          </div>
-
-          {/* Logout Button */}
-          <div className="px-4 mb-6">
-            <Button 
-              variant="outline" 
-              className="w-full text-destructive border-destructive/20 hover:bg-destructive/10"
-              onClick={handleLogout}
-            >
-              <LogOut size={18} className="mr-2" />
-              Sign Out
-            </Button>
-          </div>
         </div>
       </div>
+
+      {/* Install App & Sign Out — full-width footer */}
+      <div className="px-4 mb-6 md:flex md:gap-4">
+        <motion.button
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          onClick={() => navigate(appPath('/install'))}
+          className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors mb-4 md:mb-0 md:flex-1"
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10">
+            <Download size={20} className="text-blue-500" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-medium">Install App</p>
+            <p className="text-sm text-muted-foreground">
+              {isInstalled ? '✓ Already installed' : 'Add to home screen'}
+            </p>
+          </div>
+          <ChevronRight size={18} className="text-muted-foreground" />
+        </motion.button>
+
+        <Button 
+          variant="outline" 
+          className="w-full text-destructive border-destructive/20 hover:bg-destructive/10 md:flex-1 h-auto py-4 rounded-2xl"
+          onClick={handleLogout}
+        >
+          <LogOut size={18} className="mr-2" />
+          Sign Out
+        </Button>
+      </div>
+
+
 
       {/* Saffron Events Branding */}
       <div className="px-4 mb-4 flex items-center justify-center gap-2">
