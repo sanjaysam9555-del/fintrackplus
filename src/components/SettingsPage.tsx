@@ -456,10 +456,329 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         </div>
       </div>
       
-      {/* Two-column grid on desktop */}
-      <div className="md:grid md:grid-cols-2 md:gap-6">
-        {/* Left Column: Profile, Features, Data Management */}
-        <div>
+      {/* Desktop: Structured paired-row layout */}
+      <div className="hidden md:block">
+        {/* Row 1: Profile + Learn App Features */}
+        <div className="grid grid-cols-2 gap-6 px-4 mb-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => setShowProfileEdit(true)}
+            className="bg-card rounded-2xl p-3 shadow-card border border-border cursor-pointer hover:bg-muted/50 transition-colors h-full flex items-center"
+          >
+            <div className="flex items-center gap-3 w-full">
+              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center shrink-0">
+                {userProfile.avatar ? (
+                  <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold text-primary">
+                    {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold truncate">{userProfile.name}</h2>
+                <p className="text-sm text-muted-foreground truncate">{user?.email}</p>
+                <p className="text-xs text-success mt-1">Cloud Sync Enabled</p>
+              </div>
+              <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+            </div>
+          </motion.div>
+
+          <motion.button
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            onClick={() => handleSectionChange('features')}
+            className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors h-full"
+          >
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10 shrink-0">
+              <Sparkles size={20} className="text-primary" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-medium">Learn App Features</p>
+              <p className="text-sm text-muted-foreground">Discover what you can do</p>
+            </div>
+            <ChevronRight size={18} className="text-muted-foreground shrink-0" />
+          </motion.button>
+        </div>
+
+        {/* Row 2: Data Management + Team/Backup/Sync */}
+        <div className="grid grid-cols-2 gap-6 px-4 mb-6">
+          <div>
+            {menuItems.filter(s => s.section === "Data Management").map((section, sectionIndex) => (
+              <div key={section.section}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: sectionIndex * 0.1 }}
+                  className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
+                >
+                  {section.items.map((item, index) => (
+                    <button key={item.label} onClick={item.onClick}
+                      className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
+                      <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
+                      <ChevronRight size={18} className="text-muted-foreground" />
+                    </button>
+                  ))}
+                </motion.div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-6">
+            {menuItems.filter(s => s.section !== "Data Management").map((section, sectionIndex) => (
+              <div key={section.section}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: sectionIndex * 0.1 }}
+                  className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
+                >
+                  {section.items.map((item, index) => (
+                    <button key={item.label} onClick={item.onClick}
+                      className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
+                      <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
+                      <ChevronRight size={18} className="text-muted-foreground" />
+                    </button>
+                  ))}
+                </motion.div>
+              </div>
+            ))}
+
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sync</p>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+                className="bg-card rounded-2xl p-4 shadow-card border border-border">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center",
+                      !isOnline ? "bg-amber-500/10" : syncStatus === 'error' ? "bg-destructive/10" : "bg-success/10")}>
+                      {!isOnline ? <WifiOff size={20} className="text-amber-500" /> :
+                       syncStatus === 'syncing' || isRefreshing ? <Loader2 size={20} className="text-primary animate-spin" /> :
+                       syncStatus === 'error' ? <CloudOff size={20} className="text-destructive" /> :
+                       <Cloud size={20} className="text-success" />}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{!isOnline ? 'Offline' : syncStatus === 'syncing' || isRefreshing ? 'Syncing...' : syncStatus === 'error' ? 'Sync Error' : 'Synced'}</p>
+                      <p className="text-xs text-muted-foreground">{pendingCount > 0 ? `${pendingCount} pending changes` : lastSyncedAt ? `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}` : 'Up to date'}</p>
+                    </div>
+                  </div>
+                  {onRefresh && (
+                    <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing || !isOnline} className="gap-1.5">
+                      <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} /> Sync
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* Row 3: Time Frame + Appearance */}
+        <div className="grid grid-cols-2 gap-6 px-4 mb-6">
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="bg-card rounded-2xl p-4 shadow-card border border-border h-full">
+              <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
+              <div className="grid grid-cols-5 gap-2">
+                {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
+                  const isActive = defaultTimeFilter === option.value;
+                  return (
+                    <button key={option.value} onClick={() => setDefaultTimeFilter(option.value)}
+                      className={cn("py-2 rounded-xl text-sm font-medium transition-all",
+                        isActive ? "bg-accent border-2 border-primary text-accent-foreground" : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground")}>
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Appearance</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="bg-card rounded-2xl p-4 shadow-card border border-border h-full">
+              <div className="grid grid-cols-4 gap-2">
+                {themeOptions.map((option) => {
+                  const isActive = mode === option.value;
+                  return (
+                    <button key={option.value} onClick={() => {
+                      const oldMode = mode;
+                      setTheme(option.value);
+                      if (oldMode !== option.value) {
+                        const userName = useFinanceStore.getState().userProfile.name || 'Unknown';
+                        useFinanceStore.getState().addNotification({ type: 'settings', title: 'Theme Changed', message: `${userName} changed theme to ${option.label}`, details: [{ field: 'Theme', from: oldMode.charAt(0).toUpperCase() + oldMode.slice(1), to: option.label }] });
+                      }
+                    }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
+                      isActive ? "bg-accent border-2 border-primary" : "bg-muted/50 border-2 border-transparent hover:bg-muted")}>
+                      <option.icon size={20} className={isActive ? "text-accent-foreground" : "text-muted-foreground"} />
+                      <span className={cn("text-xs font-medium", isActive ? "text-accent-foreground" : "text-muted-foreground")}>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                {isOled ? 'OLED mode saves battery on AMOLED screens' : mode === 'system' ? 'Following your system preference' : isDark ? 'Dark mode is easier on the eyes at night' : 'Light mode is best for bright environments'}
+              </p>
+            </motion.div>
+          </div>
+        </div>
+
+        {/* Sign Out */}
+        <div className="px-4 mb-6">
+          <Button variant="outline" className="w-full text-destructive border-destructive/20 hover:bg-destructive/10 h-auto py-4 rounded-2xl" onClick={handleLogout}>
+            <LogOut size={18} className="mr-2" /> Sign Out
+          </Button>
+        </div>
+      </div>
+
+      {/* Mobile: Single column layout */}
+      <div className="md:hidden">
+        <div className="px-4 mb-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} onClick={() => setShowProfileEdit(true)}
+            className="bg-card rounded-2xl p-3 shadow-card border border-border cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center">
+                {userProfile.avatar ? <img src={userProfile.avatar} alt="Profile" className="w-full h-full object-cover" /> :
+                  <span className="text-xl font-bold text-primary">{userProfile.name?.charAt(0)?.toUpperCase() || 'U'}</span>}
+              </div>
+              <div className="flex-1">
+                <h2 className="text-lg font-bold">{userProfile.name}</h2>
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+                <p className="text-xs text-success mt-1">Cloud Sync Enabled</p>
+              </div>
+              <ChevronRight size={18} className="text-muted-foreground" />
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="px-4 mb-6">
+          <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+            onClick={() => handleSectionChange('features')}
+            className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10"><Sparkles size={20} className="text-primary" /></div>
+            <div className="flex-1 text-left"><p className="font-medium">Learn App Features</p><p className="text-sm text-muted-foreground">Discover what you can do</p></div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </motion.button>
+        </div>
+
+        {menuItems.map((section, sectionIndex) => (
+          <div key={section.section} className="px-4 mb-6">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: sectionIndex * 0.1 }}
+              className="bg-card rounded-2xl shadow-card border border-border overflow-hidden">
+              {section.items.map((item, index) => (
+                <button key={item.label} onClick={item.onClick}
+                  className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
+                  <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
+                  <ChevronRight size={18} className="text-muted-foreground" />
+                </button>
+              ))}
+            </motion.div>
+          </div>
+        ))}
+
+        <div className="px-4 mb-6">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+            className="bg-card rounded-2xl p-4 shadow-card border border-border">
+            <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
+            <div className="grid grid-cols-5 gap-2">
+              {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
+                const isActive = defaultTimeFilter === option.value;
+                return (
+                  <button key={option.value} onClick={() => setDefaultTimeFilter(option.value)}
+                    className={cn("py-2 rounded-xl text-sm font-medium transition-all",
+                      isActive ? "bg-accent border-2 border-primary text-accent-foreground" : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground")}>
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="px-4 mb-6">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sync</p>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+            className="bg-card rounded-2xl p-4 shadow-card border border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center",
+                  !isOnline ? "bg-amber-500/10" : syncStatus === 'error' ? "bg-destructive/10" : "bg-success/10")}>
+                  {!isOnline ? <WifiOff size={20} className="text-amber-500" /> :
+                   syncStatus === 'syncing' || isRefreshing ? <Loader2 size={20} className="text-primary animate-spin" /> :
+                   syncStatus === 'error' ? <CloudOff size={20} className="text-destructive" /> :
+                   <Cloud size={20} className="text-success" />}
+                </div>
+                <div>
+                  <p className="font-medium text-sm">{!isOnline ? 'Offline' : syncStatus === 'syncing' || isRefreshing ? 'Syncing...' : syncStatus === 'error' ? 'Sync Error' : 'Synced'}</p>
+                  <p className="text-xs text-muted-foreground">{pendingCount > 0 ? `${pendingCount} pending changes` : lastSyncedAt ? `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}` : 'Up to date'}</p>
+                </div>
+              </div>
+              {onRefresh && (
+                <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing || !isOnline} className="gap-1.5">
+                  <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} /> Sync
+                </Button>
+              )}
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="px-4 mb-6">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Appearance</p>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="bg-card rounded-2xl p-4 shadow-card border border-border">
+            <div className="grid grid-cols-4 gap-2">
+              {themeOptions.map((option) => {
+                const isActive = mode === option.value;
+                return (
+                  <button key={option.value} onClick={() => {
+                    const oldMode = mode;
+                    setTheme(option.value);
+                    if (oldMode !== option.value) {
+                      const userName = useFinanceStore.getState().userProfile.name || 'Unknown';
+                      useFinanceStore.getState().addNotification({ type: 'settings', title: 'Theme Changed', message: `${userName} changed theme to ${option.label}`, details: [{ field: 'Theme', from: oldMode.charAt(0).toUpperCase() + oldMode.slice(1), to: option.label }] });
+                    }
+                  }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
+                    isActive ? "bg-accent border-2 border-primary" : "bg-muted/50 border-2 border-transparent hover:bg-muted")}>
+                    <option.icon size={20} className={isActive ? "text-accent-foreground" : "text-muted-foreground"} />
+                    <span className={cn("text-xs font-medium", isActive ? "text-accent-foreground" : "text-muted-foreground")}>{option.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              {isOled ? 'OLED mode saves battery on AMOLED screens' : mode === 'system' ? 'Following your system preference' : isDark ? 'Dark mode is easier on the eyes at night' : 'Light mode is best for bright environments'}
+            </p>
+          </motion.div>
+        </div>
+
+        <div className="px-4 mb-4">
+          <motion.button initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+            onClick={() => navigate(appPath('/install'))}
+            className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10"><Download size={20} className="text-blue-500" /></div>
+            <div className="flex-1 text-left"><p className="font-medium">Install App</p><p className="text-sm text-muted-foreground">{isInstalled ? '✓ Already installed' : 'Add to home screen'}</p></div>
+            <ChevronRight size={18} className="text-muted-foreground" />
+          </motion.button>
+        </div>
+
+        <div className="px-4 mb-6">
+          <Button variant="outline" className="w-full text-destructive border-destructive/20 hover:bg-destructive/10 h-auto py-4 rounded-2xl" onClick={handleLogout}>
+            <LogOut size={18} className="mr-2" /> Sign Out
+          </Button>
+        </div>
+      </div>
+
           {/* Profile Card */}
           <div className="px-4 mb-6">
             <motion.div
