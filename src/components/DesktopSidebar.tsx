@@ -61,7 +61,8 @@ export const DesktopSidebar = ({
       initial={false}
       animate={{ width: isCollapsed ? 72 : 256 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className="hidden md:flex flex-col h-dvh bg-card border-r border-border sticky top-0 overflow-hidden safe-top"
+      className="hidden md:flex flex-col h-dvh bg-card border-r border-border sticky top-0 overflow-hidden"
+    >
         {/* Add Transaction Button */}
         <div className={cn("p-4 safe-top", isCollapsed && "p-2 safe-top")}>
           <motion.button
