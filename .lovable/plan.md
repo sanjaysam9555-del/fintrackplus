@@ -1,21 +1,28 @@
 
 
-## Remove Profile Section from Desktop Sidebar
+## Fix Desktop Settings Layout: Balance Columns & Reposition Buttons
 
 ### Problem
-The profile section (avatar, name, email) at the top of the desktop sidebar is redundant — the same information is already displayed in the right-side content area with a greeting. It takes up valuable space.
+The two-column layout is unbalanced — the left column has all the menu sections (Data Management, Team & Approvals, Backup) while the right column has smaller preference cards. The Install App and Sign Out buttons sit awkwardly at the bottom of the right column only.
 
 ### Fix
 
-**`src/components/DesktopSidebar.tsx`**:
-1. **Remove the entire Profile Section** (lines 68–99) — the `div` containing the avatar, name, and email
-2. **Move the "Add Transaction" button to the very top** of the sidebar, adding a small top padding to account for safe-area insets
-3. Remove the now-unused imports: `userProfile` from `useFinanceStore`, `user` from `useAuth` (keep `signOut` since it's used for logout)
+**`src/components/SettingsPage.tsx`** — Restructure the two-column grid:
 
-The sidebar will now start directly with the Add Transaction button, followed by Navigation, then Tools, then Collapse/Sign Out at the bottom.
+1. **Move Install App and Sign Out outside the grid** — Place them in a full-width row below the two-column grid, side by side on desktop (like a footer bar). This removes the odd placement from the right column.
+
+2. **Redistribute content for balanced columns**:
+   - **Left column**: Profile Card, Learn App Features, Data Management menu section
+   - **Right column**: Team & Approvals, Backup, Default Time Frame, Sync, Appearance (Theme)
+   
+   Move the Profile Card and Learn App Features *inside* the grid's left column (above menu sections) instead of being full-width above the grid. This fills out the left column and balances the heights.
+
+3. **Install App + Sign Out footer**: Render as a `md:flex md:gap-4` row below the grid — Install App as a compact button, Sign Out next to it. On mobile, keep them stacked vertically as-is.
+
+4. **Branding stays full-width** below the footer buttons.
 
 ### Files to modify
 | File | Change |
 |---|---|
-| `src/components/DesktopSidebar.tsx` | Remove profile section, move Add Transaction button to top, clean up unused imports |
+| `src/components/SettingsPage.tsx` | Restructure grid: move profile/features into left column, split menu sections across columns, move Install/SignOut to full-width footer row |
 
