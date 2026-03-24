@@ -62,42 +62,8 @@ export const DesktopSidebar = ({
       animate={{ width: isCollapsed ? 72 : 256 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       className="hidden md:flex flex-col h-dvh bg-card border-r border-border sticky top-0 overflow-hidden safe-top"
-    >
-        {/* Profile Section */}
-        <div className={cn(
-          "p-4 border-b border-border",
-          isCollapsed && "px-3"
-        )}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-primary bg-primary/10 flex items-center justify-center shrink-0">
-              {userProfile.avatar ? (
-                <img 
-                  src={userProfile.avatar} 
-                  alt="Profile" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-sm font-bold text-primary">
-                  {userProfile.name?.charAt(0)?.toUpperCase() || 'U'}
-                </span>
-              )}
-            </div>
-            {!isCollapsed && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex-1 min-w-0"
-              >
-                <p className="font-semibold text-sm truncate">{userProfile.name}</p>
-                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
-              </motion.div>
-            )}
-          </div>
-        </div>
-        
         {/* Add Transaction Button */}
-        <div className={cn("p-4", isCollapsed && "p-2")}>
+        <div className={cn("p-4 safe-top", isCollapsed && "p-2 safe-top")}>
           <motion.button
             onClick={onAddClick}
             whileHover={{ scale: isCollapsed ? 1.05 : 1.02 }}
