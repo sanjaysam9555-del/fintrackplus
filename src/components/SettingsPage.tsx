@@ -508,226 +508,235 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
         </motion.button>
       </div>
       
-      {/* Menu Sections */}
-      {menuItems.map((section, sectionIndex) => (
-        <div key={section.section} className="px-4 mb-6">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-            {section.section}
-          </p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: sectionIndex * 0.1 }}
-            className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
-          >
-            {section.items.map((item, index) => (
-              <button
-                key={item.label}
-                onClick={item.onClick}
-                className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${
-                  index !== section.items.length - 1 ? 'border-b border-border' : ''
-                }`}
+      {/* Two-column grid on desktop */}
+      <div className="md:grid md:grid-cols-2 md:gap-6">
+        {/* Left Column */}
+        <div>
+          {/* Menu Sections */}
+          {menuItems.map((section, sectionIndex) => (
+            <div key={section.section} className="px-4 mb-6">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+                {section.section}
+              </p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: sectionIndex * 0.1 }}
+                className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
               >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted">
-                  <item.icon size={20} className="text-muted-foreground" />
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="font-medium">{item.label}</p>
-                  <p className="text-sm text-muted-foreground">{item.sublabel}</p>
-                </div>
-                <ChevronRight size={18} className="text-muted-foreground" />
-              </button>
-            ))}
-          </motion.div>
+                {section.items.map((item, index) => (
+                  <button
+                    key={item.label}
+                    onClick={item.onClick}
+                    className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${
+                      index !== section.items.length - 1 ? 'border-b border-border' : ''
+                    }`}
+                  >
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted">
+                      <item.icon size={20} className="text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium">{item.label}</p>
+                      <p className="text-sm text-muted-foreground">{item.sublabel}</p>
+                    </div>
+                    <ChevronRight size={18} className="text-muted-foreground" />
+                  </button>
+                ))}
+              </motion.div>
+            </div>
+          ))}
         </div>
-      ))}
-      
-      {/* Default Time Frame */}
-      <div className="px-4 mb-6">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-          Default Time Frame
-        </p>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="bg-card rounded-2xl p-4 shadow-card border border-border"
-        >
-          <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
-          <div className="grid grid-cols-5 gap-2">
-            {([
-              { value: 'week' as const, label: 'Week' },
-              { value: 'month' as const, label: 'Month' },
-              { value: 'year' as const, label: 'Year' },
-              { value: 'fy' as const, label: 'FY' },
-              { value: 'all' as const, label: 'All' },
-            ]).map((option) => {
-              const isActive = defaultTimeFilter === option.value;
-              return (
-                <button
-                  key={option.value}
-                  onClick={() => setDefaultTimeFilter(option.value)}
-                  className={cn(
-                    "py-2 rounded-xl text-sm font-medium transition-all",
-                    isActive
-                      ? "bg-accent border-2 border-primary text-accent-foreground"
-                      : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground"
-                  )}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        </motion.div>
-      </div>
 
-      {/* Sync */}
-      <div className="px-4 mb-6">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-          Sync
-        </p>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
-          className="bg-card rounded-2xl p-4 shadow-card border border-border"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center",
-                !isOnline ? "bg-amber-500/10" : syncStatus === 'error' ? "bg-destructive/10" : "bg-success/10"
-              )}>
-                {!isOnline ? (
-                  <WifiOff size={20} className="text-amber-500" />
-                ) : syncStatus === 'syncing' || isRefreshing ? (
-                  <Loader2 size={20} className="text-primary animate-spin" />
-                ) : syncStatus === 'error' ? (
-                  <CloudOff size={20} className="text-destructive" />
-                ) : (
-                  <Cloud size={20} className="text-success" />
+        {/* Right Column */}
+        <div>
+          {/* Default Time Frame */}
+          <div className="px-4 mb-6">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Default Time Frame
+            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-card rounded-2xl p-4 shadow-card border border-border"
+            >
+              <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
+              <div className="grid grid-cols-5 gap-2">
+                {([
+                  { value: 'week' as const, label: 'Week' },
+                  { value: 'month' as const, label: 'Month' },
+                  { value: 'year' as const, label: 'Year' },
+                  { value: 'fy' as const, label: 'FY' },
+                  { value: 'all' as const, label: 'All' },
+                ]).map((option) => {
+                  const isActive = defaultTimeFilter === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => setDefaultTimeFilter(option.value)}
+                      className={cn(
+                        "py-2 rounded-xl text-sm font-medium transition-all",
+                        isActive
+                          ? "bg-accent border-2 border-primary text-accent-foreground"
+                          : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground"
+                      )}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Sync */}
+          <div className="px-4 mb-6">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Sync
+            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18 }}
+              className="bg-card rounded-2xl p-4 shadow-card border border-border"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl flex items-center justify-center",
+                    !isOnline ? "bg-amber-500/10" : syncStatus === 'error' ? "bg-destructive/10" : "bg-success/10"
+                  )}>
+                    {!isOnline ? (
+                      <WifiOff size={20} className="text-amber-500" />
+                    ) : syncStatus === 'syncing' || isRefreshing ? (
+                      <Loader2 size={20} className="text-primary animate-spin" />
+                    ) : syncStatus === 'error' ? (
+                      <CloudOff size={20} className="text-destructive" />
+                    ) : (
+                      <Cloud size={20} className="text-success" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-sm">
+                      {!isOnline ? 'Offline' : syncStatus === 'syncing' || isRefreshing ? 'Syncing...' : syncStatus === 'error' ? 'Sync Error' : 'Synced'}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {pendingCount > 0 ? `${pendingCount} pending changes` : 
+                       lastSyncedAt ? `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}` : 
+                       'Up to date'}
+                    </p>
+                  </div>
+                </div>
+                {onRefresh && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onRefresh}
+                    disabled={isRefreshing || !isOnline}
+                    className="gap-1.5"
+                  >
+                    <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} />
+                    Sync
+                  </Button>
                 )}
               </div>
-              <div>
-                <p className="font-medium text-sm">
-                  {!isOnline ? 'Offline' : syncStatus === 'syncing' || isRefreshing ? 'Syncing...' : syncStatus === 'error' ? 'Sync Error' : 'Synced'}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {pendingCount > 0 ? `${pendingCount} pending changes` : 
-                   lastSyncedAt ? `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}` : 
-                   'Up to date'}
+            </motion.div>
+          </div>
+
+          {/* Theme Selector */}
+          <div className="px-4 mb-6">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
+              Appearance
+            </p>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-card rounded-2xl p-4 shadow-card border border-border"
+            >
+              <div className="grid grid-cols-4 gap-2">
+                {themeOptions.map((option) => {
+                  const isActive = mode === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => {
+                        const oldMode = mode;
+                        setTheme(option.value);
+                        if (oldMode !== option.value) {
+                          const userName = useFinanceStore.getState().userProfile.name || 'Unknown';
+                          useFinanceStore.getState().addNotification({
+                            type: 'settings',
+                            title: 'Theme Changed',
+                            message: `${userName} changed theme to ${option.label}`,
+                            details: [{ field: 'Theme', from: oldMode.charAt(0).toUpperCase() + oldMode.slice(1), to: option.label }],
+                          });
+                        }
+                      }}
+                      className={cn(
+                        "flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
+                        isActive 
+                          ? "bg-accent border-2 border-primary" 
+                          : "bg-muted/50 border-2 border-transparent hover:bg-muted"
+                      )}
+                    >
+                      <option.icon 
+                        size={20} 
+                        className={isActive ? "text-accent-foreground" : "text-muted-foreground"} 
+                      />
+                      <span className={cn(
+                        "text-xs font-medium",
+                        isActive ? "text-accent-foreground" : "text-muted-foreground"
+                      )}>
+                        {option.label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground text-center mt-3">
+                {isOled ? 'OLED mode saves battery on AMOLED screens' : 
+                 mode === 'system' ? 'Following your system preference' :
+                 isDark ? 'Dark mode is easier on the eyes at night' : 
+                 'Light mode is best for bright environments'}
+              </p>
+            </motion.div>
+          </div>
+          
+          {/* Install App */}
+          <div className="px-4 mb-6">
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              onClick={() => navigate(appPath('/install'))}
+              className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10">
+                <Download size={20} className="text-blue-500" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-medium">Install App</p>
+                <p className="text-sm text-muted-foreground">
+                  {isInstalled ? '✓ Already installed' : 'Add to home screen'}
                 </p>
               </div>
-            </div>
-            {onRefresh && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onRefresh}
-                disabled={isRefreshing || !isOnline}
-                className="gap-1.5"
-              >
-                <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} />
-                Sync
-              </Button>
-            )}
+              <ChevronRight size={18} className="text-muted-foreground" />
+            </motion.button>
           </div>
-        </motion.div>
-      </div>
 
-      {/* Theme Selector */}
-      <div className="px-4 mb-6">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-          Appearance
-        </p>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="bg-card rounded-2xl p-4 shadow-card border border-border"
-        >
-          <div className="grid grid-cols-4 gap-2">
-            {themeOptions.map((option) => {
-              const isActive = mode === option.value;
-              return (
-                <button
-                  key={option.value}
-                  onClick={() => {
-                    const oldMode = mode;
-                    setTheme(option.value);
-                    if (oldMode !== option.value) {
-                      const userName = useFinanceStore.getState().userProfile.name || 'Unknown';
-                      useFinanceStore.getState().addNotification({
-                        type: 'settings',
-                        title: 'Theme Changed',
-                        message: `${userName} changed theme to ${option.label}`,
-                        details: [{ field: 'Theme', from: oldMode.charAt(0).toUpperCase() + oldMode.slice(1), to: option.label }],
-                      });
-                    }
-                  }}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
-                    isActive 
-                      ? "bg-accent border-2 border-primary" 
-                      : "bg-muted/50 border-2 border-transparent hover:bg-muted"
-                  )}
-                >
-                  <option.icon 
-                    size={20} 
-                    className={isActive ? "text-accent-foreground" : "text-muted-foreground"} 
-                  />
-                  <span className={cn(
-                    "text-xs font-medium",
-                    isActive ? "text-accent-foreground" : "text-muted-foreground"
-                  )}>
-                    {option.label}
-                  </span>
-                </button>
-              );
-            })}
+          {/* Logout Button */}
+          <div className="px-4 mb-6">
+            <Button 
+              variant="outline" 
+              className="w-full text-destructive border-destructive/20 hover:bg-destructive/10"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} className="mr-2" />
+              Sign Out
+            </Button>
           </div>
-          <p className="text-xs text-muted-foreground text-center mt-3">
-            {isOled ? 'OLED mode saves battery on AMOLED screens' : 
-             mode === 'system' ? 'Following your system preference' :
-             isDark ? 'Dark mode is easier on the eyes at night' : 
-             'Light mode is best for bright environments'}
-          </p>
-        </motion.div>
-      </div>
-      
-      {/* Install App */}
-      <div className="px-4 mb-6">
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          onClick={() => navigate(appPath('/install'))}
-          className="w-full bg-card rounded-2xl p-4 shadow-card border border-border flex items-center gap-3 hover:bg-muted/50 transition-colors"
-        >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10">
-            <Download size={20} className="text-blue-500" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="font-medium">Install App</p>
-            <p className="text-sm text-muted-foreground">
-              {isInstalled ? '✓ Already installed' : 'Add to home screen'}
-            </p>
-          </div>
-          <ChevronRight size={18} className="text-muted-foreground" />
-        </motion.button>
-      </div>
-
-      {/* Logout Button */}
-      <div className="px-4 mb-6">
-        <Button 
-          variant="outline" 
-          className="w-full text-destructive border-destructive/20 hover:bg-destructive/10"
-          onClick={handleLogout}
-        >
-          <LogOut size={18} className="mr-2" />
-          Sign Out
-        </Button>
+        </div>
       </div>
 
       {/* Saffron Events Branding */}
