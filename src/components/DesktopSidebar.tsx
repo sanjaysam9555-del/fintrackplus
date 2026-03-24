@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import saffronLogo from '@/assets/saffron-logo.png';
-import { useFinanceStore } from '@/lib/store';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
