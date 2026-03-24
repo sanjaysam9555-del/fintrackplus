@@ -443,7 +443,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   }
   
   return (
-    <div className="min-h-screen pb-24 md:pb-8 md:px-6 md:max-w-4xl">
+    <div className="min-h-screen pb-24 md:pb-8 md:px-6">
       {/* Header */}
       <div className="p-4 safe-top">
         <div className="flex items-center gap-3">
