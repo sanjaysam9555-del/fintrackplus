@@ -92,7 +92,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     return projects.filter(p => !p.archived);
   }, [projects, isEmployee, userId]);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.userId === handledBy || p.id === handledBy);
+  const selectedPartner = findPartnerByHandledBy(partners, handledBy);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
