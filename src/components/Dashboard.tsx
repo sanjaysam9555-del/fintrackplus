@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useCallback } from "react";
+import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { useFinanceStore } from "@/lib/store";
 import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
