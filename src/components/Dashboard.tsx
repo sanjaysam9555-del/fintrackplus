@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useCallback, useEffect } from "react";
+import { useMemo, useState, useRef, useCallback } from "react";
 import { useFinanceStore } from "@/lib/store";
 import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
@@ -6,7 +6,6 @@ import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { InstallmentDueReminder } from "./InstallmentDueReminder";
 import { TimeFrameSelector, computeDateRange } from "./TimeFrameSelector";
-import type { TimeFilter } from "./TimeFrameSelector";
 
 import { motion } from "framer-motion";
 import { Grid3X3, Store, ScrollText, FileBarChart, Settings, Sparkles, Search, ArrowUpDown } from "lucide-react";
@@ -29,15 +28,14 @@ interface DashboardProps {
 }
 
 export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange, isEmployee = false }: DashboardProps) => {
-  const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt, defaultTimeFilter } = useFinanceStore();
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt, activeTimeFilter, activeCustomStartDate, activeCustomEndDate, setActiveTimeFilter, setActiveCustomDateRange } = useFinanceStore();
+  const timeFilter = activeTimeFilter;
+  const customStartDate = activeCustomStartDate ? new Date(activeCustomStartDate) : undefined;
+  const customEndDate = activeCustomEndDate ? new Date(activeCustomEndDate) : undefined;
+  const setTimeFilter = setActiveTimeFilter;
+  const setCustomStartDate = (date: Date | undefined) => setActiveCustomDateRange(date ? date.toISOString() : null, activeCustomEndDate);
+  const setCustomEndDate = (date: Date | undefined) => setActiveCustomDateRange(activeCustomStartDate, date ? date.toISOString() : null);
   const [sortBy, setSortBy] = useState<string>('recent');
-  
-  useEffect(() => {
-    setTimeFilter(defaultTimeFilter);
-  }, [defaultTimeFilter]);
   
   const today = new Date();
   

@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+type GlobalTimeFilter = 'week' | 'month' | 'year' | 'fy' | 'all' | 'custom';
 
 interface PartnerBalance {
   partner: Partner;
@@ -49,9 +50,14 @@ interface FinanceStore extends FinanceState {
   userProfile: UserProfile;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
   
-  // Default time filter preference
+  // Global time filter state
   defaultTimeFilter: 'week' | 'month' | 'year' | 'fy' | 'all';
+  activeTimeFilter: GlobalTimeFilter;
+  activeCustomStartDate: string | null;
+  activeCustomEndDate: string | null;
   setDefaultTimeFilter: (filter: 'week' | 'month' | 'year' | 'fy' | 'all') => void;
+  setActiveTimeFilter: (filter: GlobalTimeFilter) => void;
+  setActiveCustomDateRange: (start: string | null, end: string | null) => void;
   
   // Notifications
   notifications: Notification[];
@@ -156,9 +162,17 @@ export const useFinanceStore = create<FinanceStore>()(
       userProfile: { name: 'User' },
       notifications: [],
       defaultTimeFilter: 'fy',
+      activeTimeFilter: 'fy',
+      activeCustomStartDate: null,
+      activeCustomEndDate: null,
       setDefaultTimeFilter: (filter) => {
         const oldFilter = get().defaultTimeFilter;
-        set({ defaultTimeFilter: filter });
+        set({ 
+          defaultTimeFilter: filter,
+          activeTimeFilter: filter,
+          activeCustomStartDate: null,
+          activeCustomEndDate: null,
+        });
         if (oldFilter !== filter) {
           const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
@@ -169,6 +183,13 @@ export const useFinanceStore = create<FinanceStore>()(
           });
         }
       },
+      setActiveTimeFilter: (filter) => set((state) => ({
+        activeTimeFilter: filter,
+        ...(filter !== 'custom'
+          ? { activeCustomStartDate: null, activeCustomEndDate: null }
+          : {}),
+      })),
+      setActiveCustomDateRange: (start, end) => set({ activeCustomStartDate: start, activeCustomEndDate: end }),
       syncStatus: 'idle',
       lastSyncedAt: null,
       pendingCount: 0,
@@ -2023,6 +2044,9 @@ export const useFinanceStore = create<FinanceStore>()(
         notifications: state.notifications,
         lastSyncedAt: state.lastSyncedAt,
         defaultTimeFilter: state.defaultTimeFilter,
+        activeTimeFilter: state.activeTimeFilter,
+        activeCustomStartDate: state.activeCustomStartDate,
+        activeCustomEndDate: state.activeCustomEndDate,
       }),
     }
   )
