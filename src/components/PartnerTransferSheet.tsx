@@ -35,8 +35,9 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   const [showToPartners, setShowToPartners] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const fromPartner = partners.find((p) => (p.userId || p.id) === fromPartnerId);
-  const toPartner = partners.find((p) => (p.userId || p.id) === toPartnerId);
+  const getPartnerKey = (p: typeof partners[0]) => p.isCompanyAccount ? p.id : (p.userId || p.id);
+  const fromPartner = partners.find((p) => getPartnerKey(p) === fromPartnerId);
+  const toPartner = partners.find((p) => getPartnerKey(p) === toPartnerId);
 
   // Find real persisted categories for transfers - prefer "Not Specified"
   const expenseCategory = categories.find((c) => c.name === 'Not Specified' && c.type === 'expense') ||
