@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight } from "lucide-react";
+import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight, Landmark } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -105,7 +105,11 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                     )}
                   >
                     <div className="flex items-center gap-3 mb-3">
-                      {partner.avatarUrl ? (
+                      {partner.isCompanyAccount ? (
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Landmark size={16} className="text-primary" />
+                        </div>
+                      ) : partner.avatarUrl ? (
                         <img src={partner.avatarUrl} alt={partner.name} className="w-8 h-8 rounded-full object-cover" />
                       ) : (
                         <div 
@@ -115,29 +119,36 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                           {partner.name.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="font-medium">{partner.name}</span>
+                      <div>
+                        <span className="font-medium">{partner.name}</span>
+                        {partner.isCompanyAccount && (
+                          <p className="text-[10px] text-muted-foreground">Company Account</p>
+                        )}
+                      </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-muted/50 rounded-xl p-3">
-                        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                          <Banknote size={12} />
-                          <span className="text-[10px] uppercase tracking-wide">Cash</span>
-                          <span className="text-[10px] text-muted-foreground ml-auto">
-                            {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
-                          </span>
+                    <div className={cn("grid gap-3", partner.isCompanyAccount ? "grid-cols-1" : "grid-cols-2")}>
+                      {!partner.isCompanyAccount && (
+                        <div className="bg-muted/50 rounded-xl p-3">
+                          <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                            <Banknote size={12} />
+                            <span className="text-[10px] uppercase tracking-wide">Cash</span>
+                            <span className="text-[10px] text-muted-foreground ml-auto">
+                              {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <p className={cn(
+                            "text-base font-bold",
+                            closingCashBalance >= 0 ? "text-foreground" : "text-destructive"
+                          )}>
+                            {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
+                          </p>
                         </div>
-                        <p className={cn(
-                          "text-base font-bold",
-                          closingCashBalance >= 0 ? "text-foreground" : "text-destructive"
-                        )}>
-                          {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
-                        </p>
-                      </div>
+                      )}
                       <div className="bg-muted/50 rounded-xl p-3">
                         <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
                           <CreditCard size={12} />
-                          <span className="text-[10px] uppercase tracking-wide">Online</span>
+                          <span className="text-[10px] uppercase tracking-wide">{partner.isCompanyAccount ? 'Bank Balance' : 'Online'}</span>
                           <span className="text-[10px] text-muted-foreground ml-auto">
                             {periodOnlineTxnCount} txn{periodOnlineTxnCount !== 1 ? 's' : ''}
                           </span>

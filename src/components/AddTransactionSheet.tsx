@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Repeat, Users, SplitSquareHorizontal, Plus, Search } from "lucide-react";
+import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Repeat, Users, SplitSquareHorizontal, Plus, Search, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -707,7 +707,11 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                           {selectedPartner ? (
                             <div className="flex items-center gap-2">
-                              {selectedPartner.avatarUrl ? (
+                              {selectedPartner.isCompanyAccount ? (
+                                <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                                  <Landmark size={14} className="text-primary" />
+                                </div>
+                              ) : selectedPartner.avatarUrl ? (
                                 <img src={selectedPartner.avatarUrl} alt={selectedPartner.name} className="w-6 h-6 rounded-full object-cover" />
                               ) : (
                                 <div 
@@ -749,13 +753,21 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               onClick={() => {
                                 setHandledBy(p.userId || p.id);
                                 setShowPartners(false);
+                                // Auto-switch to online if company account selected
+                                if (p.isCompanyAccount) {
+                                  setPaymentMethod('online');
+                                }
                               }}
                               className={cn(
                                 "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
                                 handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
                               )}
                             >
-                              {p.avatarUrl ? (
+                              {p.isCompanyAccount ? (
+                                <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                                  <Landmark size={14} className="text-primary" />
+                                </div>
+                              ) : p.avatarUrl ? (
                                 <img src={p.avatarUrl} alt={p.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
                               ) : (
                                 <div 
@@ -766,6 +778,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 </div>
                               )}
                               <span className="flex-1">{p.name}</span>
+                              {p.isCompanyAccount && <span className="text-[10px] text-muted-foreground">Online only</span>}
                               <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
                             </button>
                           ))}

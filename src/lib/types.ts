@@ -43,6 +43,7 @@ export interface Partner {
   avatarUrl?: string;
   userId?: string;
   role?: string;
+  isCompanyAccount?: boolean;
   createdAt: string;
 }
 
