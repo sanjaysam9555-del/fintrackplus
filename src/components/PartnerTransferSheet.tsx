@@ -276,7 +276,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           partner.id === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
-                            {partner.avatarUrl ? (
+                            {partner.isCompanyAccount ? (
+                              <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                                <Landmark size={14} className="text-primary" />
+                              </div>
+                            ) : partner.avatarUrl ? (
                               <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
                             ) : (
                             <div
