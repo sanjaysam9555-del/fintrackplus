@@ -445,7 +445,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   };
 
   const handleEdit = (handledBy: string) => {
-    const partner = partners.find((p) => p.userId === handledBy);
+    const partner = partners.find((p) => p.userId === handledBy || p.id === handledBy);
     if (!partner) return;
 
     setName(partner.name);
