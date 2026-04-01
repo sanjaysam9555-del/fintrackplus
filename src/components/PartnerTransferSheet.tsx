@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
 import { PaymentMethod } from "@/lib/types";
+import { getPartnerId, findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { format } from "date-fns";
@@ -35,8 +36,8 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   const [showToPartners, setShowToPartners] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const fromPartner = partners.find((p) => p.userId === fromPartnerId || p.id === fromPartnerId);
-  const toPartner = partners.find((p) => p.userId === toPartnerId || p.id === toPartnerId);
+  const fromPartner = findPartnerByHandledBy(partners, fromPartnerId);
+  const toPartner = findPartnerByHandledBy(partners, toPartnerId);
 
   // Find real persisted categories for transfers - prefer "Not Specified"
   const expenseCategory = categories.find((c) => c.name === 'Not Specified' && c.type === 'expense') ||
@@ -209,15 +210,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          const pid = partner.isCompanyAccount ? partner.id : (partner.userId || partner.id);
+                          const pid = getPartnerId(partner);
                           setFromPartnerId(pid);
                           setShowFromPartners(false);
                         }}
-                        disabled={(partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === toPartnerId}
+                        disabled={getPartnerId(partner) === toPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          fromPartnerId === (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) ? "bg-primary/10" : "hover:bg-muted",
-                          (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === toPartnerId && "opacity-50 cursor-not-allowed"
+                          fromPartnerId === getPartnerId(partner) ? "bg-primary/10" : "hover:bg-muted",
+                          getPartnerId(partner) === toPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
                             {partner.isCompanyAccount ? (
@@ -275,15 +276,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          const pid = partner.isCompanyAccount ? partner.id : (partner.userId || partner.id);
+                          const pid = getPartnerId(partner);
                           setToPartnerId(pid);
                           setShowToPartners(false);
                         }}
-                        disabled={(partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === fromPartnerId}
+                        disabled={getPartnerId(partner) === fromPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          toPartnerId === (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) ? "bg-primary/10" : "hover:bg-muted",
-                          (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === fromPartnerId && "opacity-50 cursor-not-allowed"
+                          toPartnerId === getPartnerId(partner) ? "bg-primary/10" : "hover:bg-muted",
+                          getPartnerId(partner) === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
                             {partner.isCompanyAccount ? (

@@ -5,6 +5,7 @@ import { useFinanceStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { TransactionType } from '@/lib/types';
+import { findPartnerByHandledBy } from '@/lib/partnerUtils';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { format, parseISO } from 'date-fns';
 
@@ -87,7 +88,7 @@ export const UpcomingRecurringBanner = ({ type }: UpcomingRecurringBannerProps) 
           {/* List */}
           <div className="space-y-2 overflow-y-auto max-h-[calc(70vh-180px)]">
             {items.map((item) => {
-              const partner = partners.find(p => p.userId === item.baseTransaction.handledBy || p.id === item.baseTransaction.handledBy);
+              const partner = findPartnerByHandledBy(partners, item.baseTransaction.handledBy);
               const category = categories.find(c => c.id === item.baseTransaction.categoryId);
               
               return (

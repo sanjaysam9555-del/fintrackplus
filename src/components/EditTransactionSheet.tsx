@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
 import { Transaction, TransactionType, PaymentMethod } from "@/lib/types";
+import { getPartnerId, findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { renderCategoryIcon, renderVendorIcon } from "@/lib/iconUtils";
@@ -77,7 +78,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.userId === handledBy || p.id === handledBy);
+  const selectedPartner = findPartnerByHandledBy(partners, handledBy);
   const availableProjects = useMemo(() => {
     if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
     return projects.filter(p => !p.archived);
@@ -714,7 +715,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                               <button
                                 key={p.id}
                                 onClick={() => {
-                                  setHandledBy(p.isCompanyAccount ? p.id : (p.userId || p.id));
+                                  setHandledBy(getPartnerId(p));
                                   setShowPartners(false);
                                   if (p.isCompanyAccount) {
                                     setPaymentMethod('online');
@@ -722,7 +723,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                 }}
                                 className={cn(
                                   "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-2",
-                                  handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
+                                  handledBy === getPartnerId(p) ? "bg-primary/10" : "hover:bg-muted"
                                 )}
                               >
                                 {p.isCompanyAccount ? (
@@ -741,7 +742,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                 )}
                                 <span className="font-medium flex-1">{p.name}</span>
                                 {p.isCompanyAccount && <span className="text-[10px] text-muted-foreground">Online only</span>}
-                                <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
+                                <Check size={14} className={cn("text-primary shrink-0", handledBy === getPartnerId(p) ? "opacity-100" : "opacity-0")} />
                               </button>
                             ))}
                           </div>

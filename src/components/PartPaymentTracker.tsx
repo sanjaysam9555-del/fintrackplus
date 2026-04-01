@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SplitSquareHorizontal, Plus, ChevronRight, TrendingUp, TrendingDown, Check, Pencil } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Transaction, PlannedInstallment, PaymentMethod } from "@/lib/types";
+import { findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -71,7 +72,7 @@ export const PartPaymentTracker = ({ onAddNextPayment, onEditPayment }: PartPaym
       {groupedPayments.map((group) => {
         const category = categories.find(c => c.id === group.parent.categoryId);
         const project = projects.find(p => p.id === group.parent.projectId);
-        const partner = partners.find(p => p.userId === group.parent.handledBy || p.id === group.parent.handledBy);
+        const partner = findPartnerByHandledBy(partners, group.parent.handledBy);
         const isExpanded = expandedId === group.parent.id;
         const isComplete = group.remaining === 0;
         

@@ -5,6 +5,7 @@ import { useFinanceStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { findPartnerByHandledBy } from '@/lib/partnerUtils';
 
 interface UpcomingRecurringCardProps {
   onViewAll?: () => void;
@@ -57,7 +58,7 @@ export const UpcomingRecurringCard = ({ onViewAll }: UpcomingRecurringCardProps)
 
       <div className="space-y-2">
         {displayItems.map((item) => {
-          const partner = partners.find(p => p.userId === item.baseTransaction.handledBy || p.id === item.baseTransaction.handledBy);
+          const partner = findPartnerByHandledBy(partners, item.baseTransaction.handledBy);
           return (
             <div
               key={`${item.baseTransaction.id}-${item.nextDate}`}

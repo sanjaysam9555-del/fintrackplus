@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Transaction, Category, Project, ProjectLabel, FinanceState, TransactionType, PaymentMethod, UserProfile, Notification, Vendor, Partner, NotificationChange } from './types';
+import { getPartnerId, findPartnerByHandledBy } from './partnerUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
@@ -596,7 +597,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const getProjectName = (projId?: string) => 
           projects.find(p => p.id === projId)?.name || 'None';
         const getPartnerName = (handledBy?: string) => 
-          partners.find(p => p.userId === handledBy || p.id === handledBy)?.name || 'None';
+          findPartnerByHandledBy(partners, handledBy)?.name || 'None';
         
         // Build change details before update
         const changes: NotificationChange[] = [];
@@ -1712,11 +1713,11 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          const partnerTxns = transactions.filter(t => 
-            partner.isCompanyAccount 
-              ? t.handledBy === partner.id 
-              : (t.handledBy === partner.userId || t.handledBy === partner.id)
-          );
+          const pid = getPartnerId(partner);
+          const partnerTxns = transactions.filter(t => {
+            if (partner.isCompanyAccount) return t.handledBy === pid;
+            return t.handledBy === partner.userId || t.handledBy === partner.id;
+          });
           
           const cashTxns = partnerTxns.filter(t => t.paymentMethod === 'cash');
           const onlineTxns = partnerTxns.filter(t => t.paymentMethod === 'online');
@@ -1753,9 +1754,10 @@ export const useFinanceStore = create<FinanceStore>()(
         
         return partners.map(partner => {
           // Opening balance = initialBalance + all transactions BEFORE startDate
+          const pid = getPartnerId(partner);
           const matchesPartner = (t: Transaction) => 
             partner.isCompanyAccount 
-              ? t.handledBy === partner.id 
+              ? t.handledBy === pid 
               : (t.handledBy === partner.userId || t.handledBy === partner.id);
           
           const txnsBeforePeriod = transactions.filter(t => matchesPartner(t) && t.date < startDate);
