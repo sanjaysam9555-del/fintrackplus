@@ -2064,6 +2064,8 @@ export const useFinanceStore = create<FinanceStore>()(
         partners: state.partners,
         projectLabels: state.projectLabels,
         userProfile: state.userProfile,
+        orgName: state.orgName,
+        orgLogoUrl: state.orgLogoUrl,
         notifications: state.notifications,
         lastSyncedAt: state.lastSyncedAt,
         defaultTimeFilter: state.defaultTimeFilter,
