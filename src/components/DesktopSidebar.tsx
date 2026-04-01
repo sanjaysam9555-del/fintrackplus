@@ -47,6 +47,7 @@ export const DesktopSidebar = ({
   isEmployee = false
 }: DesktopSidebarProps) => {
   const { signOut } = useAuth();
+  const { orgName, orgLogoUrl } = useFinanceStore();
   const [isCollapsed, setIsCollapsed] = useState(false);
   
   const handleLogout = async () => {
