@@ -466,9 +466,12 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
     const cloudProjects = projectsResult.data || [];
     const cloudPartners = partnersResult.data || [];
     const cloudProjectLabels = projectLabelsResult.data || [];
+    const orgData = orgResult.data;
     const result: { data: CloudData; error: null } = {
       data: {
         profile: profile ? { name: profile.name, avatar: profile.avatar_url } : undefined,
+        orgName: orgData?.name || undefined,
+        orgLogoUrl: orgData?.logo_url || undefined,
         categories: cloudCategories.map(c => ({
           id: c.id,
           name: c.name,
