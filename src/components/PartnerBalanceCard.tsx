@@ -163,6 +163,7 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                         )}>
                           {closingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingOnlineBalance).toLocaleString()}
                         </p>
+                      </div>
                     </div>
                     
                     {/* Self Transfer Button */}
