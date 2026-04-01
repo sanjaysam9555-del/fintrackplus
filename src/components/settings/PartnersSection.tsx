@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle, Clock, Landmark } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, ArrowUpDown, AlertTriangle, Clock, Landmark } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
