@@ -2044,6 +2044,9 @@ export const useFinanceStore = create<FinanceStore>()(
         notifications: state.notifications,
         lastSyncedAt: state.lastSyncedAt,
         defaultTimeFilter: state.defaultTimeFilter,
+        activeTimeFilter: state.activeTimeFilter,
+        activeCustomStartDate: state.activeCustomStartDate,
+        activeCustomEndDate: state.activeCustomEndDate,
       }),
     }
   )
