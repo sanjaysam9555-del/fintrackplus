@@ -742,9 +742,9 @@ export const useFinanceStore = create<FinanceStore>()(
         const transaction = get().transactions.find(t => t.id === id);
         const { categories, projects, partners } = get();
         
-        // Cascade delete for linked partner transfers
+        // Cascade delete for linked partner/self transfers
         let linkedTransaction: typeof transaction | undefined;
-        if (transaction?.vendor === 'Partner Transfer' && transaction.linkedTransactionId) {
+        if ((transaction?.vendor === 'Partner Transfer' || transaction?.vendor === 'Self Transfer') && transaction.linkedTransactionId) {
           linkedTransaction = get().transactions.find(t => t.id === transaction.linkedTransactionId);
         }
         
