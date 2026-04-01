@@ -128,7 +128,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                 <div className="flex items-center justify-center gap-3 py-4">
                   <div className="flex flex-col items-center gap-2">
                     {fromPartner ? (
-                      fromPartner.avatarUrl ? (
+                      fromPartner.isCompanyAccount ? (
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Landmark size={24} className="text-primary" />
+                        </div>
+                      ) : fromPartner.avatarUrl ? (
                         <img src={fromPartner.avatarUrl} alt={fromPartner.name} className="w-12 h-12 rounded-full object-cover" />
                       ) : (
                         <div
@@ -149,7 +153,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                   
                   <div className="flex flex-col items-center gap-2">
                     {toPartner ? (
-                      toPartner.avatarUrl ? (
+                      toPartner.isCompanyAccount ? (
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Landmark size={24} className="text-primary" />
+                        </div>
+                      ) : toPartner.avatarUrl ? (
                         <img src={toPartner.avatarUrl} alt={toPartner.name} className="w-12 h-12 rounded-full object-cover" />
                       ) : (
                         <div
