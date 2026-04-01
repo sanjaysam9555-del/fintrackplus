@@ -84,6 +84,7 @@ const AvatarUploadButton = ({ avatarUrl, isUploading, onTriggerUpload, fileInput
 
 interface PartnerFormProps {
   isEdit?: boolean;
+  isCompanyAccount?: boolean;
   name: string;
   setName: (v: string) => void;
   color: string;
