@@ -4,6 +4,7 @@ import { Transaction, Category, Project, ProjectLabel, FinanceState, Transaction
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
+import { findPartnerByHandledBy, getInternalTransferVendor, isInternalTransferVendor } from './partnerIdentity';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 type GlobalTimeFilter = 'week' | 'month' | 'year' | 'fy' | 'all' | 'custom';
@@ -491,7 +492,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const { categories, projects, partners } = get();
         const getCategoryName = (catId?: string) => categories.find(c => c.id === catId)?.name || 'None';
         const getProjectName = (projId?: string) => projects.find(p => p.id === projId)?.name || 'None';
-        const getPartnerName = (pId?: string) => partners.find(p => p.id === pId)?.name || 'None';
+        const getPartnerName = (handledBy?: string) => findPartnerByHandledBy(partners, handledBy)?.name || 'None';
         
         const addDetails: NotificationChange[] = [
           { field: 'Title', from: 'New', to: transaction.title || transaction.vendor },
@@ -520,16 +521,23 @@ export const useFinanceStore = create<FinanceStore>()(
         const expenseId = uuidv4();
         const incomeId = uuidv4();
         const now = new Date().toISOString();
+        const partners = get().partners;
+        const fromPartner = findPartnerByHandledBy(partners, params.fromPartnerId);
+        const toPartner = findPartnerByHandledBy(partners, params.toPartnerId);
+        const transferVendor = getInternalTransferVendor(fromPartner, toPartner);
+        const paymentMethod: PaymentMethod = fromPartner?.isCompanyAccount || toPartner?.isCompanyAccount
+          ? 'online'
+          : params.paymentMethod;
         
         const expenseTxn: Transaction = {
           id: expenseId,
           type: 'expense',
           amount: params.amount,
           title: `Transfer to ${params.toPartnerName}`,
-          vendor: 'Partner Transfer',
+          vendor: transferVendor,
           categoryId: params.expenseCategoryId,
           handledBy: params.fromPartnerId,
-          paymentMethod: params.paymentMethod,
+          paymentMethod,
           date: params.date,
           time: params.time,
           notes: params.notes || `Transfer to ${params.toPartnerName}`,
@@ -542,10 +550,10 @@ export const useFinanceStore = create<FinanceStore>()(
           type: 'income',
           amount: params.amount,
           title: `Transfer from ${params.fromPartnerName}`,
-          vendor: 'Partner Transfer',
+          vendor: transferVendor,
           categoryId: params.incomeCategoryId,
           handledBy: params.toPartnerId,
-          paymentMethod: params.paymentMethod,
+          paymentMethod,
           date: params.date,
           time: params.time,
           notes: params.notes || `Transfer from ${params.fromPartnerName}`,
@@ -604,15 +612,16 @@ export const useFinanceStore = create<FinanceStore>()(
         const userName = get().userProfile.name || 'Unknown';
         get().addNotification({
           type: 'partner',
-          title: 'Partner Transfer',
-          message: `${userName} transferred ₹${params.amount.toLocaleString()} from ${params.fromPartnerName} to ${params.toPartnerName}`,
+          title: transferVendor,
+          message: `${userName} moved ₹${params.amount.toLocaleString()} from ${params.fromPartnerName} to ${params.toPartnerName}`,
           entityType: 'transaction',
           entityId: expenseId,
           details: [
             { field: 'Amount', from: '', to: `₹${params.amount.toLocaleString()}` },
+            { field: 'Transfer Type', from: '', to: transferVendor },
             { field: 'From', from: '', to: params.fromPartnerName },
             { field: 'To', from: '', to: params.toPartnerName },
-            { field: 'Payment Mode', from: '', to: params.paymentMethod === 'cash' ? 'Cash' : 'Online' },
+            { field: 'Payment Mode', from: '', to: paymentMethod === 'cash' ? 'Cash' : 'Online' },
             { field: 'Date', from: '', to: params.date },
           ],
         });
@@ -628,19 +637,20 @@ export const useFinanceStore = create<FinanceStore>()(
         const expenseMethod: PaymentMethod = params.direction === 'deposit' ? 'cash' : 'online';
         const incomeMethod: PaymentMethod = params.direction === 'deposit' ? 'online' : 'cash';
         const dirLabel = params.direction === 'deposit' ? 'Deposit' : 'Withdrawal';
+        const routeLabel = params.direction === 'deposit' ? 'Cash → Online' : 'Online → Cash';
         
         const expenseTxn: Transaction = {
           id: expenseId,
           type: 'expense',
           amount: params.amount,
-          title: `${dirLabel} by ${params.partnerName}`,
+          title: `Self Transfer • ${routeLabel}`,
           vendor: 'Self Transfer',
           categoryId: params.expenseCategoryId,
           handledBy: params.partnerId,
           paymentMethod: expenseMethod,
           date: params.date,
           time: params.time,
-          notes: params.notes || `${dirLabel} — Cash ↔ Online`,
+          notes: params.notes || routeLabel,
           linkedTransactionId: incomeId,
           createdAt: now,
         };
@@ -649,14 +659,14 @@ export const useFinanceStore = create<FinanceStore>()(
           id: incomeId,
           type: 'income',
           amount: params.amount,
-          title: `${dirLabel} by ${params.partnerName}`,
+          title: `Self Transfer • ${routeLabel}`,
           vendor: 'Self Transfer',
           categoryId: params.incomeCategoryId,
           handledBy: params.partnerId,
           paymentMethod: incomeMethod,
           date: params.date,
           time: params.time,
-          notes: params.notes || `${dirLabel} — Cash ↔ Online`,
+          notes: params.notes || routeLabel,
           linkedTransactionId: expenseId,
           createdAt: now,
         };
@@ -707,12 +717,13 @@ export const useFinanceStore = create<FinanceStore>()(
         get().addNotification({
           type: 'partner',
           title: `Self Transfer — ${dirLabel}`,
-          message: `${userName} moved ₹${params.amount.toLocaleString()} (${dirLabel}) for ${params.partnerName}`,
+          message: `${userName} moved ₹${params.amount.toLocaleString()} for ${params.partnerName} via ${routeLabel}`,
           entityType: 'transaction',
           entityId: expenseId,
           details: [
             { field: 'Amount', from: '', to: `₹${params.amount.toLocaleString()}` },
             { field: 'Direction', from: '', to: dirLabel },
+            { field: 'Route', from: '', to: routeLabel },
             { field: 'Partner', from: '', to: params.partnerName },
             { field: 'Date', from: '', to: params.date },
           ],
@@ -729,7 +740,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const getProjectName = (projId?: string) => 
           projects.find(p => p.id === projId)?.name || 'None';
         const getPartnerName = (handledBy?: string) => 
-          partners.find(p => p.userId === handledBy)?.name || 'None';
+          findPartnerByHandledBy(partners, handledBy)?.name || 'None';
         
         // Build change details before update
         const changes: NotificationChange[] = [];
@@ -865,7 +876,7 @@ export const useFinanceStore = create<FinanceStore>()(
         
         // Cascade delete for linked partner transfers
         let linkedTransaction: typeof transaction | undefined;
-        if (transaction?.vendor === 'Partner Transfer' && transaction.linkedTransactionId) {
+        if (transaction?.linkedTransactionId && isInternalTransferVendor(transaction.vendor)) {
           linkedTransaction = get().transactions.find(t => t.id === transaction.linkedTransactionId);
         }
         
@@ -875,7 +886,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const getProjectName = (projId?: string) => 
           projects.find(p => p.id === projId)?.name || 'None';
         const getPartnerName = (handledBy?: string) => 
-          partners.find(p => p.userId === handledBy)?.name || 'None';
+          findPartnerByHandledBy(partners, handledBy)?.name || 'None';
         
         // Capture details before deletion
         const details: NotificationChange[] = transaction ? [
@@ -2010,7 +2021,7 @@ export const useFinanceStore = create<FinanceStore>()(
           .reduce((sum, t) => sum + t.amount, 0),
       
       getTotalIncome: (startDate, endDate) => {
-        let transactions = get().transactions.filter((t) => t.type === 'income' && t.vendor !== 'Partner Transfer' && t.vendor !== 'Self Transfer');
+        let transactions = get().transactions.filter((t) => t.type === 'income' && !isInternalTransferVendor(t.vendor));
         if (startDate && endDate) {
           transactions = transactions.filter((t) => t.date >= startDate && t.date <= endDate);
         }
@@ -2018,7 +2029,7 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       getTotalExpense: (startDate, endDate) => {
-        let transactions = get().transactions.filter((t) => t.type === 'expense' && t.vendor !== 'Partner Transfer' && t.vendor !== 'Self Transfer');
+        let transactions = get().transactions.filter((t) => t.type === 'expense' && !isInternalTransferVendor(t.vendor));
         if (startDate && endDate) {
           transactions = transactions.filter((t) => t.date >= startDate && t.date <= endDate);
         }

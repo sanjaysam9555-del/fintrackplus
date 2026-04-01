@@ -23,6 +23,7 @@ import { GstToggle } from "./GstToggle";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { isInternalTransferVendor } from "@/lib/partnerIdentity";
 
 interface EditTransactionSheetProps {
   isOpen: boolean;
@@ -105,13 +106,13 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     return allVendors.find(v => v.name.toLowerCase() === vendor.toLowerCase());
   }, [allVendors, vendor]);
   
-  const isPartnerTransfer = transaction.vendor === 'Partner Transfer';
+  const isInternalTransfer = isInternalTransferVendor(transaction.vendor);
 
   const handleSubmit = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!amount || !categoryId) return;
     
-    if (isPartnerTransfer) {
+    if (isInternalTransfer) {
       toast.error('Transfer entries cannot be edited', {
         description: 'Please delete and re-create the transfer instead.',
         duration: 4000,
@@ -211,9 +212,9 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             <div className="flex items-center justify-between p-4 border-b border-border">
               <h2 className="text-xl font-bold">Edit Transaction</h2>
               <div className="flex items-center gap-2">
-                {isPartnerTransfer ? (
+                {isInternalTransfer ? (
                   <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs">
-                    Transfer (read-only)
+                    Internal transfer (read-only)
                   </Badge>
                 ) : (
                   <Button
