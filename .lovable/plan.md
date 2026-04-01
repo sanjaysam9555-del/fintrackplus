@@ -1,33 +1,49 @@
 
 
-## Fix: Team Transfer Partner Selection Bug (Company Account Collision)
+## Fix: Centralize Partner ID Resolution to Eliminate All Collision Bugs
 
-### Root Cause
-Same `userId` collision pattern in `PartnerTransferSheet.tsx`. When clicking "Sanjay Singh":
+### Problem
+The company bank account and its owner share the same `userId`. Every place that resolves a partner from a `handledBy` value uses `p.userId === id || p.id === id`, which can match either record nondeterministically. Similarly, every place that computes the "identifier" for a partner uses `p.userId || p.id`, which produces the same value for both.
 
-1. **Line 212**: `setFromPartnerId(partner.userId || partner.id)` — for the company account, `partner.userId` is Sanjay's auth ID, so both Sanjay and the company account resolve to the same value
-2. **Line 277**: Same issue for `setToPartnerId`
-3. **Lines 38-39**: `partners.find((p) => (p.userId || p.id) === fromPartnerId)` — finds the company account first (or vice versa) since both share the same `userId`
-4. **Lines 215, 280**: `disabled={partner.id === toPartnerId}` — compares `partner.id` to a `userId` value, so the disable check never matches correctly
+We have been patching individual files one at a time, but the same bug pattern exists in **12+ locations** across the codebase. A centralized fix is needed.
 
-### Fix
-Apply the same pattern used in AddTransactionSheet/EditTransactionSheet: for company accounts, always use `partner.id` as the identifier.
+### Solution
+Create two helper functions in `src/lib/types.ts` (or a new `src/lib/partnerUtils.ts`):
 
-**`src/components/PartnerTransferSheet.tsx`** — 6 changes:
+```text
+getPartnerId(partner)
+  → company account: partner.id
+  → regular partner: partner.userId || partner.id
 
-| Line | Current | Fixed |
-|---|---|---|
-| 38 | `partners.find((p) => (p.userId \|\| p.id) === fromPartnerId)` | `partners.find((p) => p.userId === fromPartnerId \|\| p.id === fromPartnerId)` |
-| 39 | Same pattern for `toPartnerId` | Same fix |
-| 212 | `setFromPartnerId(partner.userId \|\| partner.id)` | `setFromPartnerId(partner.isCompanyAccount ? partner.id : (partner.userId \|\| partner.id))` |
-| 215 | `disabled={partner.id === toPartnerId}` | `disabled={(partner.isCompanyAccount ? partner.id : (partner.userId \|\| partner.id)) === toPartnerId}` |
-| 218 | highlight check `fromPartnerId === (partner.userId \|\| partner.id)` | Same fix using company account check |
-| 277 | `setToPartnerId(partner.userId \|\| partner.id)` | Same company account fix |
-| 280 | `disabled={partner.id === fromPartnerId}` | Same fix |
-| 283 | highlight check | Same fix |
+findPartnerByHandledBy(partners, handledBy)
+  → First try exact match on partner.id
+  → Then try match on partner.userId (but skip company accounts)
+```
 
-### File to modify
-| File | Change |
+Then replace every inline occurrence across all files.
+
+### Files to modify
+
+| File | What changes |
 |---|---|
-| `src/components/PartnerTransferSheet.tsx` | Use `partner.id` for company accounts in all selection, lookup, highlight, and disable logic |
+| `src/lib/partnerUtils.ts` | **New file** — `getPartnerId()` and `findPartnerByHandledBy()` helpers |
+| `src/components/AddTransactionSheet.tsx` | Use helpers for `selectedPartner` lookup (line 95), highlight check (lines 763, 782), and `setHandledBy` (line 754) |
+| `src/components/EditTransactionSheet.tsx` | Use helpers for `selectedPartner` lookup (line 80), highlight check (lines 725, 744), and `setHandledBy` (line 717) |
+| `src/components/PartnerTransferSheet.tsx` | Use helpers for `fromPartner`/`toPartner` lookups (lines 38-39) — already partially fixed but should use centralized helper |
+| `src/components/TransactionItem.tsx` | Use `findPartnerByHandledBy` for partner lookup (line 29) |
+| `src/components/TransactionDetailSheet.tsx` | Same partner lookup fix (line 42) |
+| `src/components/UpcomingRecurringCard.tsx` | Same partner lookup fix (line 60) |
+| `src/components/UpcomingRecurringBanner.tsx` | Same partner lookup fix (line 90) |
+| `src/components/PartPaymentTracker.tsx` | Same partner lookup fix (line 74) |
+| `src/components/settings/ReportsSection.tsx` | Same partner lookup fix (lines 96, 267) |
+| `src/lib/store.ts` | Use helper in `getPartnerName` (line 598-599), `getPartnerBalances` (lines 1715-1718), `getPartnerBalancesForPeriod` (lines 1756-1759) — already partially fixed but should use centralized helper |
+
+### How the helpers work
+
+The key insight: when storing `handledBy`, company accounts use `partner.id` (UUID) and regular partners use `partner.userId` (auth ID). So when looking up:
+
+1. **Exact `id` match always wins** — this catches company accounts and any partner matched by their record ID
+2. **`userId` match as fallback, but skip company accounts** — this catches regular partners matched by their auth user ID without accidentally matching the company account
+
+This eliminates the collision completely and prevents future regressions.
 
