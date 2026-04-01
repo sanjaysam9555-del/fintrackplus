@@ -1,65 +1,28 @@
 
 
-## Optimize Desktop Settings Layout for Better Visual Balance
+## Fix: Default Time Frame Not Applied Across Tabs
 
-### What I found
-The current desktop layout is still visually uneven because it uses two long vertical stacks with very different content heights:
+### Problem
+When you change the "Default Time Frame" in Settings, the individual tabs (Dashboard, Expenses, Income, Partners) don't update. This happens because each component uses `useState(defaultTimeFilter)` — React's `useState` only reads its initial value **once on mount** and ignores subsequent changes.
 
-- **Left column**: Profile + Learn Features + large Data Management card
-- **Right column**: smaller utility cards + footer buttons
+### Fix
 
-That creates:
-- mismatched column lengths
-- awkward empty space
-- an odd standalone footer area for **Install App** and **Sign Out**
+Add a `useEffect` in each affected component that resets `timeFilter` whenever `defaultTimeFilter` changes in the store. This ensures that when you pick a new default in Settings, all tabs sync to that choice (unless the user has manually overridden the filter in that tab).
 
-Also, **Install App** is redundant on desktop/laptop, so it should not take visual space there.
+**Files to modify:**
 
-### Plan
-
-**`src/components/SettingsPage.tsx`**
-
-1. **Rebuild the desktop layout into a more structured 2-column composition**
-   - Keep **mobile unchanged**
-   - For `md+`, replace the current “two uneven vertical stacks” with a cleaner desktop grid made of paired rows/cards so both sides feel balanced
-
-2. **Use more intentional desktop grouping**
-   - **Top row**: Profile card + Learn App Features
-   - **Main settings row**: Data Management on one side, Team/Approvals + Backup on the other
-   - **Utility rows**: Default Time Frame, Appearance, Sync, and Sign Out arranged as matched desktop cards instead of one long leftover stack
-
-   This avoids comparing two giant columns of different heights and makes the page feel more symmetrical.
-
-3. **Remove Install App on desktop**
-   - Hide/remove the **Install App** section for `md+`
-   - Keep it available on **mobile/tablet-as-app** only if needed there
-
-4. **Reposition Sign Out so it feels intentional**
-   - Remove it from the odd footer treatment
-   - Place it inside the desktop grid as a proper utility/action card or matched row item, so it aligns with the rest of the settings layout
-
-5. **Standardize spacing and card heights**
-   - Use shared wrappers/classes for desktop cards
-   - Apply consistent padding, gaps, and `h-full` where paired cards should align
-   - Ensure the grid stretches cleanly to the right edge without irregular whitespace
-
-6. **Keep role-based visibility intact**
-   - Preserve existing permission logic for Team, Backup, Reports, etc.
-   - Make sure the desktop layout still looks balanced even when some sections are hidden for different roles
-
-### Expected result
-On desktop/laptop:
-- the settings page will feel **balanced and symmetrical**
-- cards will look more intentionally arranged
-- the right side will no longer have awkward leftover spacing
-- **Install App** will be gone from desktop
-- **Sign Out** will feel properly placed instead of floating oddly below the layout
-
-### File to modify
 | File | Change |
 |---|---|
-| `src/components/SettingsPage.tsx` | Recompose desktop-only settings layout into balanced paired rows/cards, remove desktop Install App section, reposition Sign Out |
+| `src/components/Dashboard.tsx` | Add `useEffect` to sync `timeFilter` when `defaultTimeFilter` changes |
+| `src/components/TransactionList.tsx` | Same `useEffect` |
+| `src/components/settings/PartnersSection.tsx` | Same `useEffect` |
 
-### Technical note
-I would likely extract small render helpers for repeated settings cards/menu cards inside `SettingsPage.tsx` so the desktop/mobile structure can change without duplicating all the card markup.
+**The effect (same in all 3 files):**
+```tsx
+useEffect(() => {
+  setTimeFilter(defaultTimeFilter);
+}, [defaultTimeFilter]);
+```
+
+This resets the local time filter whenever the global default changes, keeping all tabs in sync with the user's Settings preference.
 
