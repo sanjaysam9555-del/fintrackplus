@@ -523,7 +523,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           recurringFrequency: t.recurring_frequency as 'weekly' | 'monthly' | undefined,
           createdAt: t.created_at || new Date().toISOString(),
         })),
-        partners: cloudPartners.map(p => {
+        partners: cloudPartners.filter(p => !(p as { is_company_account?: boolean }).is_company_account).map(p => {
           const linkedProfile = profileByUserId.get((p as { user_id?: string }).user_id);
           return {
             id: (p as { id: string }).id,
