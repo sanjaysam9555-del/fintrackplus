@@ -598,6 +598,107 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
+      addSelfTransfer: async (params, userId) => {
+        const expenseId = uuidv4();
+        const incomeId = uuidv4();
+        const now = new Date().toISOString();
+        
+        // Withdraw: expense(online) + income(cash)
+        // Deposit:  expense(cash)   + income(online)
+        const expenseMethod = params.direction === 'withdraw' ? 'online' : 'cash';
+        const incomeMethod = params.direction === 'withdraw' ? 'cash' : 'online';
+        const titleLabel = params.direction === 'withdraw' ? 'Bank Withdrawal' : 'Bank Deposit';
+        
+        const expenseTxn: Transaction = {
+          id: expenseId,
+          type: 'expense',
+          amount: params.amount,
+          title: titleLabel,
+          vendor: 'Self Transfer',
+          categoryId: params.expenseCategoryId,
+          handledBy: params.partnerId,
+          paymentMethod: expenseMethod as PaymentMethod,
+          date: params.date,
+          time: params.time,
+          notes: params.notes || titleLabel,
+          linkedTransactionId: incomeId,
+          createdAt: now,
+        };
+        
+        const incomeTxn: Transaction = {
+          id: incomeId,
+          type: 'income',
+          amount: params.amount,
+          title: titleLabel,
+          vendor: 'Self Transfer',
+          categoryId: params.incomeCategoryId,
+          handledBy: params.partnerId,
+          paymentMethod: incomeMethod as PaymentMethod,
+          date: params.date,
+          time: params.time,
+          notes: params.notes || titleLabel,
+          linkedTransactionId: expenseId,
+          createdAt: now,
+        };
+        
+        set((state) => ({
+          transactions: [incomeTxn, expenseTxn, ...state.transactions]
+        }));
+        
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+        
+        if (uid) {
+          const buildDbData = (txn: Transaction) => {
+            const validCategoryId = txn.categoryId && get().categories.some(c => c.id === txn.categoryId)
+              ? txn.categoryId
+              : null;
+            return {
+              type: txn.type,
+              amount: txn.amount,
+              title: txn.title || null,
+              vendor: txn.vendor,
+              category_id: validCategoryId,
+              project_id: null,
+              handled_by: txn.handledBy || null,
+              payment_method: txn.paymentMethod,
+              date: txn.date,
+              time: txn.time,
+              notes: txn.notes || null,
+              is_recurring: false,
+              recurring_frequency: null,
+              receipt_url: null,
+              is_gst: false,
+              is_part_payment: false,
+              total_expected_amount: null,
+              linked_transaction_id: txn.linkedTransactionId || null,
+              planned_installments: '[]',
+            };
+          };
+          
+          addToSyncQueue({ type: 'insert', entity: 'transaction', entityId: expenseId, data: buildDbData(expenseTxn), userId: uid });
+          addToSyncQueue({ type: 'insert', entity: 'transaction', entityId: incomeId, data: buildDbData(incomeTxn), userId: uid });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+        
+        const userName = get().userProfile.name || 'Unknown';
+        get().addNotification({
+          type: 'partner',
+          title: 'Self Transfer',
+          message: `${userName} ${params.direction === 'withdraw' ? 'withdrew' : 'deposited'} ₹${params.amount.toLocaleString()} — ${params.partnerName}`,
+          entityType: 'transaction',
+          entityId: expenseId,
+          details: [
+            { field: 'Amount', from: '', to: `₹${params.amount.toLocaleString()}` },
+            { field: 'Direction', from: '', to: params.direction === 'withdraw' ? 'Online → Cash' : 'Cash → Online' },
+            { field: 'Team Member', from: '', to: params.partnerName },
+            { field: 'Date', from: '', to: params.date },
+          ],
+        });
+      
       updateTransaction: async (id, updates, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
         const { categories, projects, partners } = get();
