@@ -127,26 +127,28 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-muted/50 rounded-xl p-3">
-                        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                          <Banknote size={12} />
-                          <span className="text-[10px] uppercase tracking-wide">Cash</span>
-                          <span className="text-[10px] text-muted-foreground ml-auto">
-                            {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
-                          </span>
+                    <div className={cn("grid gap-3", partner.isCompanyAccount ? "grid-cols-1" : "grid-cols-2")}>
+                      {!partner.isCompanyAccount && (
+                        <div className="bg-muted/50 rounded-xl p-3">
+                          <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                            <Banknote size={12} />
+                            <span className="text-[10px] uppercase tracking-wide">Cash</span>
+                            <span className="text-[10px] text-muted-foreground ml-auto">
+                              {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <p className={cn(
+                            "text-base font-bold",
+                            closingCashBalance >= 0 ? "text-foreground" : "text-destructive"
+                          )}>
+                            {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
+                          </p>
                         </div>
-                        <p className={cn(
-                          "text-base font-bold",
-                          closingCashBalance >= 0 ? "text-foreground" : "text-destructive"
-                        )}>
-                          {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
-                        </p>
-                      </div>
+                      )}
                       <div className="bg-muted/50 rounded-xl p-3">
                         <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
                           <CreditCard size={12} />
-                          <span className="text-[10px] uppercase tracking-wide">Online</span>
+                          <span className="text-[10px] uppercase tracking-wide">{partner.isCompanyAccount ? 'Bank Balance' : 'Online'}</span>
                           <span className="text-[10px] text-muted-foreground ml-auto">
                             {periodOnlineTxnCount} txn{periodOnlineTxnCount !== 1 ? 's' : ''}
                           </span>

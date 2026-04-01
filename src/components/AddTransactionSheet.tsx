@@ -749,13 +749,21 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               onClick={() => {
                                 setHandledBy(p.userId || p.id);
                                 setShowPartners(false);
+                                // Auto-switch to online if company account selected
+                                if (p.isCompanyAccount) {
+                                  setPaymentMethod('online');
+                                }
                               }}
                               className={cn(
                                 "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
                                 handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
                               )}
                             >
-                              {p.avatarUrl ? (
+                              {p.isCompanyAccount ? (
+                                <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+                                  <Landmark size={14} className="text-primary" />
+                                </div>
+                              ) : p.avatarUrl ? (
                                 <img src={p.avatarUrl} alt={p.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
                               ) : (
                                 <div 
@@ -766,6 +774,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 </div>
                               )}
                               <span className="flex-1">{p.name}</span>
+                              {p.isCompanyAccount && <span className="text-[10px] text-muted-foreground">Online only</span>}
                               <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
                             </button>
                           ))}
