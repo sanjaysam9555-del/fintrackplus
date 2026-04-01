@@ -20,6 +20,7 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(true);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
+  const [selfTransferPartner, setSelfTransferPartner] = useState<Partner | null>(null);
   
   // Default to current FY if no dateRange provided
   const range = useMemo(() => {
