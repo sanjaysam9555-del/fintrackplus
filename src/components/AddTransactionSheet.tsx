@@ -760,7 +760,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               }}
                               className={cn(
                                 "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
-                                handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
+                                handledBy === getPartnerId(p) ? "bg-primary/10" : "hover:bg-muted"
                               )}
                             >
                               {p.isCompanyAccount ? (
