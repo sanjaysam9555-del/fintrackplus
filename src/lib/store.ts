@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
+type GlobalTimeFilter = 'week' | 'month' | 'year' | 'fy' | 'all' | 'custom';
 
 interface PartnerBalance {
   partner: Partner;
