@@ -163,8 +163,23 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                         )}>
                           {closingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingOnlineBalance).toLocaleString()}
                         </p>
-                      </div>
                     </div>
+                    
+                    {/* Self Transfer Button */}
+                    {!partner.isCompanyAccount && (
+                      <div className="mt-2">
+                        <button
+                          onClick={() => {
+                            setSelfTransferPartner(partner);
+                            setShowSelfTransfer(true);
+                          }}
+                          className="w-full py-1.5 px-3 rounded-lg bg-muted/80 hover:bg-muted text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <ArrowDownUp size={12} />
+                          Cash ↔ Online
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 
