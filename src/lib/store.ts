@@ -53,6 +53,11 @@ interface FinanceStore extends FinanceState {
   userProfile: UserProfile;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
   
+  // Organization branding
+  orgName: string;
+  orgLogoUrl: string | null;
+  setOrgBranding: (name: string, logoUrl: string | null) => void;
+  
   // Global time filter state
   defaultTimeFilter: 'week' | 'month' | 'year' | 'fy' | 'all';
   activeTimeFilter: GlobalTimeFilter;
