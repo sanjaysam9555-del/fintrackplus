@@ -206,7 +206,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          setFromPartnerId(partner.userId || partner.id);
+                          setFromPartnerId(getPartnerKey(partner));
                           setShowFromPartners(false);
                         }}
                         disabled={(partner.userId || partner.id) === toPartnerId}
