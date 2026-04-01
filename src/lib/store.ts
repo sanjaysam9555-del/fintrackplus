@@ -75,6 +75,17 @@ interface FinanceStore extends FinanceState {
     fromPartnerName: string;
     toPartnerName: string;
   }, userId?: string) => void;
+  addSelfTransfer: (params: {
+    partnerId: string;
+    partnerName: string;
+    direction: 'withdraw' | 'deposit';
+    amount: number;
+    date: string;
+    time: string;
+    notes?: string;
+    expenseCategoryId: string;
+    incomeCategoryId: string;
+  }, userId?: string) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
   confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; handledBy?: string }) => void;
