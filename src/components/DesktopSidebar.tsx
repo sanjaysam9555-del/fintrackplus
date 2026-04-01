@@ -69,19 +69,19 @@ export const DesktopSidebar = ({
         {/* Org Branding */}
         {(orgName || orgLogoUrl) && (
           <div className={cn("px-4 pt-4 pb-2 safe-top", isCollapsed && "px-2 pt-4 pb-2")}>
-            <div className={cn(
-              "flex items-center gap-2.5",
-              isCollapsed && "justify-center"
+          <div className={cn(
+              "flex flex-col items-center gap-1.5 text-center",
+              isCollapsed && "gap-1"
             )}>
               {orgLogoUrl ? (
-                <img src={orgLogoUrl} alt={orgName} className="w-8 h-8 rounded-lg object-contain shrink-0" />
+                <img src={orgLogoUrl} alt={orgName} className="w-10 h-10 rounded-xl object-contain shrink-0" />
               ) : (
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Building2 size={16} className="text-primary" />
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Building2 size={18} className="text-primary" />
                 </div>
               )}
               {!isCollapsed && (
-                <span className="text-sm font-semibold truncate text-foreground">{orgName}</span>
+                <span className="text-xs font-bold tracking-wide uppercase text-foreground/80 font-[Inter]">{orgName}</span>
               )}
             </div>
           </div>
