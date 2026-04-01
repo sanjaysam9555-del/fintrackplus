@@ -2022,6 +2022,7 @@ export const useFinanceStore = create<FinanceStore>()(
         userProfile: state.userProfile,
         notifications: state.notifications,
         lastSyncedAt: state.lastSyncedAt,
+        defaultTimeFilter: state.defaultTimeFilter,
       }),
     }
   )
