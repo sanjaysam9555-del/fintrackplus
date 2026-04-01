@@ -93,7 +93,7 @@ export const ReportsSection = ({ onBack }: ReportsSectionProps) => {
     const rows = filteredTransactions.map(t => {
       const category = categories.find(c => c.id === t.categoryId);
       const project = projects.find(p => p.id === t.projectId);
-      const partner = partners.find(p => p.userId === t.handledBy);
+      const partner = partners.find(p => p.userId === t.handledBy || p.id === t.handledBy);
       return [
         t.date,
         t.time,
