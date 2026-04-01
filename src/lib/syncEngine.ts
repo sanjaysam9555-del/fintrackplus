@@ -524,7 +524,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
           createdAt: t.created_at || new Date().toISOString(),
         })),
         partners: cloudPartners.map(p => {
-          const linkedProfile = profileByUserId.get((p as { user_id?: string }).user_id);
+          const isCompany = (p as { is_company_account?: boolean }).is_company_account;
+          const linkedProfile = isCompany ? undefined : profileByUserId.get((p as { user_id?: string }).user_id);
           return {
             id: (p as { id: string }).id,
             name: linkedProfile?.name || (p as { name: string }).name,
