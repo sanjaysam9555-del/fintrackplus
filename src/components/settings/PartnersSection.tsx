@@ -961,6 +961,11 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         onClose={() => setShowTransferSheet(false)}
         userId={userId} />
       
+      <SelfTransferSheet
+        isOpen={!!selfTransferPartner}
+        onClose={() => setSelfTransferPartner(null)}
+        partner={selfTransferPartner}
+        userId={userId} />
       
       {/* Partner Detail Sheet */}
       {selectedPartner && selectedBalanceData &&
