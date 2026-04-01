@@ -105,7 +105,11 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                     )}
                   >
                     <div className="flex items-center gap-3 mb-3">
-                      {partner.avatarUrl ? (
+                      {partner.isCompanyAccount ? (
+                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Landmark size={16} className="text-primary" />
+                        </div>
+                      ) : partner.avatarUrl ? (
                         <img src={partner.avatarUrl} alt={partner.name} className="w-8 h-8 rounded-full object-cover" />
                       ) : (
                         <div 
@@ -115,7 +119,12 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                           {partner.name.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <span className="font-medium">{partner.name}</span>
+                      <div>
+                        <span className="font-medium">{partner.name}</span>
+                        {partner.isCompanyAccount && (
+                          <p className="text-[10px] text-muted-foreground">Company Account</p>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-3">
