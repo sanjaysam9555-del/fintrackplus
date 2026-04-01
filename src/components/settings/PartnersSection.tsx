@@ -103,6 +103,7 @@ interface PartnerFormProps {
 
 const PartnerForm = ({
   isEdit = false,
+  isCompanyAccount = false,
   name, setName,
   color, setColor,
   initialCash, setInitialCash,
@@ -112,63 +113,68 @@ const PartnerForm = ({
   onSubmit
 }: PartnerFormProps) =>
 <div className="space-y-4">
-    <AvatarUploadButton
-    avatarUrl={avatarUrl}
-    isUploading={isUploading}
-    onTriggerUpload={onTriggerUpload}
-    fileInputRef={fileInputRef}
-    onFileChange={onFileChange} />
-  
+    {!isCompanyAccount && (
+      <AvatarUploadButton
+      avatarUrl={avatarUrl}
+      isUploading={isUploading}
+      onTriggerUpload={onTriggerUpload}
+      fileInputRef={fileInputRef}
+      onFileChange={onFileChange} />
+    )}
 
     <div>
       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name</Label>
       <Input
       value={name}
       onChange={(e) => setName(e.target.value)}
-      placeholder="e.g., Partner 1"
+      placeholder={isCompanyAccount ? "e.g., Company Bank Account" : "e.g., Partner 1"}
       className="mt-1"
       autoCapitalize="words" />
     
     </div>
     
-    <div>
-      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Color</Label>
-      <div className="grid grid-cols-5 gap-2 mt-2">
-        {PARTNER_COLORS.map((c) =>
-      <button
-        key={c}
-        onClick={() => setColor(c)}
-        className={cn(
-          "w-10 h-10 rounded-full transition-all",
-          color === c && "ring-2 ring-offset-2 ring-primary"
-        )}
-        style={{ backgroundColor: c }} />
+    {!isCompanyAccount && (
+      <div>
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Color</Label>
+        <div className="grid grid-cols-5 gap-2 mt-2">
+          {PARTNER_COLORS.map((c) =>
+        <button
+          key={c}
+          onClick={() => setColor(c)}
+          className={cn(
+            "w-10 h-10 rounded-full transition-all",
+            color === c && "ring-2 ring-offset-2 ring-primary"
+          )}
+          style={{ backgroundColor: c }} />
 
-      )}
+        )}
+        </div>
       </div>
-    </div>
+    )}
+    
+    {!isCompanyAccount && (
+      <div>
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+          Starting Cash Balance
+        </Label>
+        <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
+          Amount before any recorded transactions
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
+          <Input
+          type="number"
+          value={initialCash}
+          onChange={(e) => setInitialCash(e.target.value)}
+          placeholder="0" />
+        
+        </div>
+      </div>
+    )}
     
     <div>
       <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-        Starting Cash Balance
-      </Label>
-      <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
-        Amount before any recorded transactions
-      </p>
-      <div className="flex items-center gap-2">
-        <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
-        <Input
-        type="number"
-        value={initialCash}
-        onChange={(e) => setInitialCash(e.target.value)}
-        placeholder="0" />
-      
-      </div>
-    </div>
-    
-    <div>
-      <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-        Starting Online Balance
+        {isCompanyAccount ? 'Starting Bank Balance' : 'Starting Online Balance'}
       </Label>
       <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
         Amount before any recorded transactions
@@ -189,7 +195,7 @@ const PartnerForm = ({
     disabled={!name.trim()}
     className="w-full">
     
-      {isEdit ? 'Update Partner' : 'Add Partner'}
+      {isEdit ? (isCompanyAccount ? 'Update Company Account' : 'Update Partner') : (isCompanyAccount ? 'Add Company Account' : 'Add Partner')}
     </Button>
   </div>;
 
