@@ -208,14 +208,18 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           setFromPartnerId(partner.userId || partner.id);
                           setShowFromPartners(false);
                         }}
-                        disabled={partner.id === toPartnerId}
+                        disabled={(partner.userId || partner.id) === toPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
                           fromPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
-                          partner.id === toPartnerId && "opacity-50 cursor-not-allowed"
+                          (partner.userId || partner.id) === toPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
-                            {partner.avatarUrl ? (
+                            {partner.isCompanyAccount ? (
+                              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Landmark size={12} className="text-primary" />
+                              </div>
+                            ) : partner.avatarUrl ? (
                               <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
                             ) : (
                             <div
