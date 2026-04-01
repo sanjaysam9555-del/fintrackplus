@@ -534,6 +534,7 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
             avatarUrl: linkedProfile?.avatar_url || (p as { avatar_url?: string }).avatar_url || undefined,
             userId: (p as { user_id?: string }).user_id,
             role: (p as { role?: string }).role || 'owner',
+            isCompanyAccount: (p as { is_company_account?: boolean }).is_company_account || false,
             createdAt: (p as { created_at: string }).created_at.split('T')[0]
           };
         }),

@@ -1473,6 +1473,7 @@ export const useFinanceStore = create<FinanceStore>()(
           if (updates.initialCashBalance !== undefined) dbUpdates.initial_cash_balance = updates.initialCashBalance;
           if (updates.initialOnlineBalance !== undefined) dbUpdates.initial_online_balance = updates.initialOnlineBalance;
           if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl || null;
+          if (updates.isCompanyAccount !== undefined) dbUpdates.is_company_account = updates.isCompanyAccount;
           
           addToSyncQueue({
             type: 'update',
