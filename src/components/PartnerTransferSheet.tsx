@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowRight, CreditCard, Banknote, CalendarIcon, Users } from "lucide-react";
+import { X, ArrowRight, CreditCard, Banknote, CalendarIcon, Users, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -128,7 +128,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                 <div className="flex items-center justify-center gap-3 py-4">
                   <div className="flex flex-col items-center gap-2">
                     {fromPartner ? (
-                      fromPartner.avatarUrl ? (
+                      fromPartner.isCompanyAccount ? (
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Landmark size={24} className="text-primary" />
+                        </div>
+                      ) : fromPartner.avatarUrl ? (
                         <img src={fromPartner.avatarUrl} alt={fromPartner.name} className="w-12 h-12 rounded-full object-cover" />
                       ) : (
                         <div
@@ -149,7 +153,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                   
                   <div className="flex flex-col items-center gap-2">
                     {toPartner ? (
-                      toPartner.avatarUrl ? (
+                      toPartner.isCompanyAccount ? (
+                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Landmark size={24} className="text-primary" />
+                        </div>
+                      ) : toPartner.avatarUrl ? (
                         <img src={toPartner.avatarUrl} alt={toPartner.name} className="w-12 h-12 rounded-full object-cover" />
                       ) : (
                         <div
@@ -200,14 +208,18 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           setFromPartnerId(partner.userId || partner.id);
                           setShowFromPartners(false);
                         }}
-                        disabled={partner.id === toPartnerId}
+                        disabled={(partner.userId || partner.id) === toPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
                           fromPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
-                          partner.id === toPartnerId && "opacity-50 cursor-not-allowed"
+                          (partner.userId || partner.id) === toPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
-                            {partner.avatarUrl ? (
+                            {partner.isCompanyAccount ? (
+                              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Landmark size={12} className="text-primary" />
+                              </div>
+                            ) : partner.avatarUrl ? (
                               <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
                             ) : (
                             <div
@@ -257,14 +269,18 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           setToPartnerId(partner.userId || partner.id);
                           setShowToPartners(false);
                         }}
-                        disabled={partner.id === fromPartnerId}
+                        disabled={(partner.userId || partner.id) === fromPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
                           toPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
-                          partner.id === fromPartnerId && "opacity-50 cursor-not-allowed"
+                          (partner.userId || partner.id) === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
-                            {partner.avatarUrl ? (
+                            {partner.isCompanyAccount ? (
+                              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                <Landmark size={12} className="text-primary" />
+                              </div>
+                            ) : partner.avatarUrl ? (
                               <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
                             ) : (
                             <div

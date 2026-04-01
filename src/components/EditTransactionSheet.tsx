@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users, Search, Clock } from "lucide-react";
+import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users, Search, Clock, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -77,7 +77,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.userId === handledBy);
+  const selectedPartner = partners.find(p => p.isCompanyAccount ? p.id === handledBy : p.userId === handledBy);
   const availableProjects = useMemo(() => {
     if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
     return projects.filter(p => !p.archived);
@@ -670,7 +670,11 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                         <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                           {selectedPartner ? (
                             <div className="flex items-center gap-2">
-                              {selectedPartner.avatarUrl ? (
+                              {selectedPartner.isCompanyAccount ? (
+                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <Landmark size={12} className="text-primary" />
+                                </div>
+                              ) : selectedPartner.avatarUrl ? (
                                 <img src={selectedPartner.avatarUrl} alt={selectedPartner.name} className="w-6 h-6 rounded-full object-cover" />
                               ) : (
                                 <div 
@@ -706,7 +710,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                             >
                               None
                             </button>
-                            {partners.map((p) => (
+                            {partners.filter(p => !p.isCompanyAccount).map((p) => (
                               <button
                                 key={p.id}
                                 onClick={() => {
@@ -732,6 +736,32 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                 <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
                               </button>
                             ))}
+                            {/* Company Account */}
+                            {partners.some(p => p.isCompanyAccount) && (
+                              <>
+                                <div className="border-t border-border my-1" />
+                                {partners.filter(p => p.isCompanyAccount).map((p) => (
+                                  <button
+                                    key={p.id}
+                                    onClick={() => {
+                                      setHandledBy(p.id);
+                                      setPaymentMethod('online');
+                                      setShowPartners(false);
+                                    }}
+                                    className={cn(
+                                      "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-2",
+                                      handledBy === p.id ? "bg-primary/10" : "hover:bg-muted"
+                                    )}
+                                  >
+                                    <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                      <Landmark size={12} className="text-primary" />
+                                    </div>
+                                    <span className="font-medium flex-1">{p.name}</span>
+                                    <Check size={14} className={cn("text-primary shrink-0", handledBy === p.id ? "opacity-100" : "opacity-0")} />
+                                  </button>
+                                ))}
+                              </>
+                            )}
                           </div>
                         </div>
                       </PopoverContent>

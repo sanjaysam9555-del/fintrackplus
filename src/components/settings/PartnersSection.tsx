@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle, Clock } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle, Clock, Landmark } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -326,10 +326,11 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
   // Compute unassigned/orphaned transactions
   const unassignedStats = useMemo(() => {
-    const partnerUserIds = new Set(partners.map((p) => p.userId).filter(Boolean));
+    const partnerUserIds = new Set(partners.filter(p => !p.isCompanyAccount).map((p) => p.userId).filter(Boolean));
+    const companyAccountIds = new Set(partners.filter(p => p.isCompanyAccount).map((p) => p.id));
     const unassigned = transactions.
     filter((t) => t.date >= dateRange.start && t.date <= dateRange.end).
-    filter((t) => !t.handledBy || !partnerUserIds.has(t.handledBy));
+    filter((t) => !t.handledBy || (!partnerUserIds.has(t.handledBy) && !companyAccountIds.has(t.handledBy)));
 
     let cashNet = 0;
     let onlineNet = 0;
@@ -737,6 +738,81 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
           const totalTxnCount = periodCashTxnCount + periodOnlineTxnCount;
           const totalClosing = closingCashBalance + closingOnlineBalance;
+
+          // Company Account — distinct rendering
+          if (partner.isCompanyAccount) {
+            return (
+              <motion.div
+                key={partner.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                onClick={() => editingPartner !== partner.id && openPartnerDetail(balanceData)}
+                className={cn(
+                  "bg-card rounded-2xl p-4 border border-primary/30 transition-colors",
+                  editingPartner !== partner.id && "cursor-pointer hover:border-primary/50 active:bg-muted/30"
+                )}>
+                {editingPartner === partner.id ? (
+                  <div className="space-y-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Account Name</Label>
+                      <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Company Bank Account" className="mt-1" />
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Starting Balance</Label>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">Amount before any recorded transactions</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
+                        <Input type="number" value={initialOnline} onChange={(e) => setInitialOnline(e.target.value)} placeholder="0" />
+                      </div>
+                    </div>
+                    <Button onClick={handleUpdate} disabled={!name.trim()} className="w-full">Update Account</Button>
+                    <Button variant="outline" onClick={resetForm} className="w-full">Cancel</Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Landmark size={20} className="text-primary" />
+                        </div>
+                        <div>
+                          <span className="font-semibold">{partner.name}</span>
+                          <p className="text-xs text-muted-foreground">
+                            {totalTxnCount} transaction{totalTxnCount !== 1 ? 's' : ''} • Bank Account
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setName(partner.name);
+                            setInitialOnline(partner.initialOnlineBalance.toString());
+                            setEditingPartner(partner.id);
+                          }}
+                          className="p-2 rounded-full hover:bg-muted">
+                          <Edit2 size={16} className="text-muted-foreground" />
+                        </button>
+                        <ChevronRight size={18} className="text-muted-foreground ml-1" />
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <Landmark size={14} className="text-muted-foreground" />
+                      <span className={cn(
+                        "font-semibold",
+                        closingOnlineBalance >= 0 ? "text-success" : "text-destructive"
+                      )}>
+                        {closingOnlineBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingOnlineBalance).toLocaleString()}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        ({totalTxnCount})
+                      </span>
+                    </div>
+                  </>
+                )}
+              </motion.div>
+            );
+          }
 
           return (
             <motion.div

@@ -1710,7 +1710,29 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          const partnerTxns = transactions.filter(t => t.handledBy === partner.userId);
+          // Company account matches by partner.id; regular partners by partner.userId
+          const partnerTxns = transactions.filter(t => 
+            partner.isCompanyAccount 
+              ? t.handledBy === partner.id 
+              : t.handledBy === partner.userId
+          );
+          
+          if (partner.isCompanyAccount) {
+            // Single balance pool for company account
+            const totalIncome = partnerTxns.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const totalExpense = partnerTxns.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            return {
+              partner,
+              cashBalance: 0,
+              onlineBalance: partner.initialOnlineBalance + totalIncome - totalExpense,
+              cashIncome: 0,
+              cashExpense: 0,
+              onlineIncome: totalIncome,
+              onlineExpense: totalExpense,
+              cashTransactionCount: 0,
+              onlineTransactionCount: partnerTxns.length,
+            };
+          }
           
           const cashTxns = partnerTxns.filter(t => t.paymentMethod === 'cash');
           const onlineTxns = partnerTxns.filter(t => t.paymentMethod === 'online');
@@ -1746,15 +1768,39 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          // Opening balance = initialBalance + all transactions BEFORE startDate
-          const txnsBeforePeriod = transactions.filter(t => 
-            t.handledBy === partner.userId && t.date < startDate
-          );
-          const txnsInPeriod = transactions.filter(t => 
-            t.handledBy === partner.userId && t.date >= startDate && t.date <= endDate
-          );
+          const matchFn = (t: Transaction) => 
+            partner.isCompanyAccount 
+              ? t.handledBy === partner.id 
+              : t.handledBy === partner.userId;
           
-          // Calculate opening balances (initial + all txns before period)
+          const txnsBeforePeriod = transactions.filter(t => matchFn(t) && t.date < startDate);
+          const txnsInPeriod = transactions.filter(t => matchFn(t) && t.date >= startDate && t.date <= endDate);
+          
+          if (partner.isCompanyAccount) {
+            // Single balance pool
+            const preIncome = txnsBeforePeriod.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const preExpense = txnsBeforePeriod.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            const openingBalance = partner.initialOnlineBalance + preIncome - preExpense;
+            
+            const periodIncome = txnsInPeriod.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+            const periodExpense = txnsInPeriod.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+            
+            return {
+              partner,
+              openingCashBalance: 0,
+              openingOnlineBalance: openingBalance,
+              periodCashIncome: 0,
+              periodCashExpense: 0,
+              periodOnlineIncome: periodIncome,
+              periodOnlineExpense: periodExpense,
+              closingCashBalance: 0,
+              closingOnlineBalance: openingBalance + periodIncome - periodExpense,
+              periodCashTxnCount: 0,
+              periodOnlineTxnCount: txnsInPeriod.length,
+            };
+          }
+          
+          // Regular partner - cash/online split
           const preCashIncome = txnsBeforePeriod.filter(t => t.paymentMethod === 'cash' && t.type === 'income').reduce((s, t) => s + t.amount, 0);
           const preCashExpense = txnsBeforePeriod.filter(t => t.paymentMethod === 'cash' && t.type === 'expense').reduce((s, t) => s + t.amount, 0);
           const preOnlineIncome = txnsBeforePeriod.filter(t => t.paymentMethod === 'online' && t.type === 'income').reduce((s, t) => s + t.amount, 0);
@@ -1763,7 +1809,6 @@ export const useFinanceStore = create<FinanceStore>()(
           const openingCashBalance = partner.initialCashBalance + preCashIncome - preCashExpense;
           const openingOnlineBalance = partner.initialOnlineBalance + preOnlineIncome - preOnlineExpense;
           
-          // Calculate period activity
           const periodCashTxns = txnsInPeriod.filter(t => t.paymentMethod === 'cash');
           const periodOnlineTxns = txnsInPeriod.filter(t => t.paymentMethod === 'online');
           
