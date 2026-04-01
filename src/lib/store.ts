@@ -38,6 +38,8 @@ interface PartnerPeriodBalance {
 
 interface CloudData {
   profile?: UserProfile;
+  orgName?: string;
+  orgLogoUrl?: string;
   categories: Category[];
   vendors: Vendor[];
   projects: Project[];
