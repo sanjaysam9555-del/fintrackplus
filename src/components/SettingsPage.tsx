@@ -25,7 +25,8 @@ import {
   WifiOff,
   Shield,
   ClipboardCheck,
-  Database
+  Database,
+  Building2
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,6 +43,7 @@ import { AppFeaturesGuide } from "./settings/AppFeaturesGuide";
 import { TeamSection } from "./settings/TeamSection";
 import { ChangeApprovalPage } from "./settings/ChangeApprovalPage";
 import { BackupRestoreSection } from "./settings/BackupRestoreSection";
+import { OrgBrandingSection } from "./settings/OrgBrandingSection";
 import { RecurringSection } from "./settings/RecurringSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -230,7 +232,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | 'branding' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -380,6 +382,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
       sublabel: "Manage data backups",
       onClick: () => handleSectionChange('backup'),
     });
+    backupItems.push({
+      icon: Building2,
+      label: "Organisation Branding",
+      sublabel: "Name & logo",
+      onClick: () => handleSectionChange('branding'),
+    });
   }
   
   const menuItems = [
@@ -407,6 +415,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   }
   if (activeSection === 'backup') {
     return <BackupRestoreSection onBack={handleBack} />;
+  }
+  if (activeSection === 'branding') {
+    return <OrgBrandingSection onBack={handleBack} />;
   }
   if (activeSection === 'partners') {
     return <PartnersSection onBack={handleBack} userId={user?.id} />;

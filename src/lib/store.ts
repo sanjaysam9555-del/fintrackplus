@@ -38,6 +38,8 @@ interface PartnerPeriodBalance {
 
 interface CloudData {
   profile?: UserProfile;
+  orgName?: string;
+  orgLogoUrl?: string;
   categories: Category[];
   vendors: Vendor[];
   projects: Project[];
@@ -50,6 +52,11 @@ interface FinanceStore extends FinanceState {
   // User Profile
   userProfile: UserProfile;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
+  
+  // Organization branding
+  orgName: string;
+  orgLogoUrl: string | null;
+  setOrgBranding: (name: string, logoUrl: string | null) => void;
   
   // Global time filter state
   defaultTimeFilter: 'week' | 'month' | 'year' | 'fy' | 'all';
@@ -161,6 +168,9 @@ export const useFinanceStore = create<FinanceStore>()(
       partners: [],
       projectLabels: [],
       userProfile: { name: 'User' },
+      orgName: '',
+      orgLogoUrl: null,
+      setOrgBranding: (name, logoUrl) => set({ orgName: name, orgLogoUrl: logoUrl }),
       notifications: [],
       defaultTimeFilter: 'fy',
       activeTimeFilter: 'fy',
@@ -307,6 +317,8 @@ export const useFinanceStore = create<FinanceStore>()(
         partners: mergeData(data.partners, currentState.partners, 'partner'),
         projectLabels: mergeData(data.projectLabels, currentState.projectLabels, 'project_label'),
         userProfile: data.profile || currentState.userProfile || { name: 'User' },
+        orgName: data.orgName || currentState.orgName || '',
+        orgLogoUrl: data.orgLogoUrl !== undefined ? data.orgLogoUrl : currentState.orgLogoUrl,
       });
     },
       
@@ -2052,6 +2064,8 @@ export const useFinanceStore = create<FinanceStore>()(
         partners: state.partners,
         projectLabels: state.projectLabels,
         userProfile: state.userProfile,
+        orgName: state.orgName,
+        orgLogoUrl: state.orgLogoUrl,
         notifications: state.notifications,
         lastSyncedAt: state.lastSyncedAt,
         defaultTimeFilter: state.defaultTimeFilter,
