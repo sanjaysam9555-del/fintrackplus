@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle, Clock, Landmark } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, ArrowUpDown, AlertTriangle, Clock, Landmark } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,7 @@ import {
 "@/components/ui/dialog";
 import { PartnerDetailSheet } from "./PartnerDetailSheet";
 import { PartnerTransferSheet } from "@/components/PartnerTransferSheet";
+import { SelfTransferSheet } from "@/components/SelfTransferSheet";
 import { UnassignedTransactionsSheet } from "./UnassignedTransactionsSheet";
 import { Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
@@ -303,6 +304,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
+  const [selfTransferPartner, setSelfTransferPartner] = useState<Partner | null>(null);
   const [showUnassignedSheet, setShowUnassignedSheet] = useState(false);
   const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
   const [isOwnerLinkedDelete, setIsOwnerLinkedDelete] = useState(false);
@@ -860,6 +862,13 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                       </div>
                       <div className="flex items-center gap-1">
                         <button
+                          onClick={(e) => { e.stopPropagation(); setSelfTransferPartner(partner); }}
+                          className="p-2 rounded-full hover:bg-primary/10"
+                          title="Cash ↔ Online"
+                        >
+                          <ArrowUpDown size={16} className="text-primary" />
+                        </button>
+                        <button
                       onClick={(e) => handleEditClick(partner.id, e)}
                       className="p-2 rounded-full hover:bg-muted">
                       
@@ -952,6 +961,11 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         onClose={() => setShowTransferSheet(false)}
         userId={userId} />
       
+      <SelfTransferSheet
+        isOpen={!!selfTransferPartner}
+        onClose={() => setSelfTransferPartner(null)}
+        partner={selfTransferPartner}
+        userId={userId} />
       
       {/* Partner Detail Sheet */}
       {selectedPartner && selectedBalanceData &&
