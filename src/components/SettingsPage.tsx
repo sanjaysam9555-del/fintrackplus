@@ -382,6 +382,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
       sublabel: "Manage data backups",
       onClick: () => handleSectionChange('backup'),
     });
+    backupItems.push({
+      icon: Building2,
+      label: "Organisation Branding",
+      sublabel: "Name & logo",
+      onClick: () => handleSectionChange('branding'),
+    });
   }
   
   const menuItems = [
