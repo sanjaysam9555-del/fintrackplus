@@ -270,11 +270,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                           setToPartnerId(getPartnerKey(partner));
                           setShowToPartners(false);
                         }}
-                        disabled={(partner.userId || partner.id) === fromPartnerId}
+                        disabled={getPartnerKey(partner) === fromPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          toPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
-                          (partner.userId || partner.id) === fromPartnerId && "opacity-50 cursor-not-allowed"
+                          toPartnerId === getPartnerKey(partner) ? "bg-primary/10" : "hover:bg-muted",
+                          getPartnerKey(partner) === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
                             {partner.isCompanyAccount ? (
