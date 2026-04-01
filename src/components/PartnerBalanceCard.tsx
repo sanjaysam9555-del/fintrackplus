@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight, Landmark } from "lucide-react";
+import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight, Landmark, ArrowUpDown } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { PartnerTransferSheet } from "./PartnerTransferSheet";
+import { SelfTransferSheet } from "./SelfTransferSheet";
 import { useAuth } from "@/hooks/useAuth";
+import { Partner } from "@/lib/types";
 
 interface PartnerBalanceCardProps {
   dateRange?: { start: string; end: string };
@@ -18,6 +20,7 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(true);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
+  const [selfTransferPartner, setSelfTransferPartner] = useState<Partner | null>(null);
   
   // Default to current FY if no dateRange provided
   const range = useMemo(() => {
@@ -156,7 +159,14 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                               {partner.name.charAt(0).toUpperCase()}
                             </div>
                           )}
-                          <span className="font-medium">{partner.name}</span>
+                          <span className="font-medium flex-1">{partner.name}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelfTransferPartner(partner); }}
+                            className="p-1.5 rounded-lg bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            title="Cash ↔ Online"
+                          >
+                            <ArrowUpDown size={14} />
+                          </button>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-3">
@@ -218,6 +228,12 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
       <PartnerTransferSheet
         isOpen={showTransferSheet}
         onClose={() => setShowTransferSheet(false)}
+        userId={user?.id}
+      />
+      <SelfTransferSheet
+        isOpen={!!selfTransferPartner}
+        onClose={() => setSelfTransferPartner(null)}
+        partner={selfTransferPartner}
         userId={user?.id}
       />
     </>
