@@ -20,6 +20,7 @@ import {
 "@/components/ui/dialog";
 import { PartnerDetailSheet } from "./PartnerDetailSheet";
 import { PartnerTransferSheet } from "@/components/PartnerTransferSheet";
+import { SelfTransferSheet } from "@/components/SelfTransferSheet";
 import { UnassignedTransactionsSheet } from "./UnassignedTransactionsSheet";
 import { Partner } from "@/lib/types";
 import { supabase } from "@/integrations/supabase/client";
