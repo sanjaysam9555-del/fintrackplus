@@ -696,7 +696,8 @@ export const useFinanceStore = create<FinanceStore>()(
             { field: 'Date', from: '', to: params.date },
           ],
         });
-      
+      },
+
       updateTransaction: async (id, updates, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
         const { categories, projects, partners } = get();
