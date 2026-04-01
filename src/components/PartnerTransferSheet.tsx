@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ArrowRight, CreditCard, Banknote, CalendarIcon, Users, Landmark } from "lucide-react";
@@ -14,6 +14,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
+import { findPartnerByHandledBy, getPartnerHandledByKey } from "@/lib/partnerIdentity";
 
 
 interface PartnerTransferSheetProps {
@@ -35,9 +36,9 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   const [showToPartners, setShowToPartners] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const getPartnerKey = (p: typeof partners[0]) => p.isCompanyAccount ? p.id : (p.userId || p.id);
-  const fromPartner = partners.find((p) => getPartnerKey(p) === fromPartnerId);
-  const toPartner = partners.find((p) => getPartnerKey(p) === toPartnerId);
+  const fromPartner = findPartnerByHandledBy(partners, fromPartnerId);
+  const toPartner = findPartnerByHandledBy(partners, toPartnerId);
+  const requiresOnlineTransfer = Boolean(fromPartner?.isCompanyAccount || toPartner?.isCompanyAccount);
 
   // Find real persisted categories for transfers - prefer "Not Specified"
   const expenseCategory = categories.find((c) => c.name === 'Not Specified' && c.type === 'expense') ||
@@ -53,6 +54,12 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
     setDate(new Date());
     setNotes("");
   };
+
+  useEffect(() => {
+    if (requiresOnlineTransfer && paymentMethod !== "online") {
+      setPaymentMethod("online");
+    }
+  }, [requiresOnlineTransfer, paymentMethod]);
 
   const handleSubmit = async () => {
     if (!amount || !fromPartnerId || !toPartnerId) return;
@@ -206,14 +213,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          setFromPartnerId(getPartnerKey(partner));
+                          setFromPartnerId(getPartnerHandledByKey(partner) || "");
+                          if (partner.isCompanyAccount) setPaymentMethod("online");
                           setShowFromPartners(false);
                         }}
-                        disabled={getPartnerKey(partner) === toPartnerId}
+                        disabled={getPartnerHandledByKey(partner) === toPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          fromPartnerId === getPartnerKey(partner) ? "bg-primary/10" : "hover:bg-muted",
-                          getPartnerKey(partner) === toPartnerId && "opacity-50 cursor-not-allowed"
+                          fromPartnerId === getPartnerHandledByKey(partner) ? "bg-primary/10" : "hover:bg-muted",
+                          getPartnerHandledByKey(partner) === toPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
                             {partner.isCompanyAccount ? (
@@ -267,14 +275,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          setToPartnerId(getPartnerKey(partner));
+                          setToPartnerId(getPartnerHandledByKey(partner) || "");
+                          if (partner.isCompanyAccount) setPaymentMethod("online");
                           setShowToPartners(false);
                         }}
-                        disabled={getPartnerKey(partner) === fromPartnerId}
+                        disabled={getPartnerHandledByKey(partner) === fromPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          toPartnerId === getPartnerKey(partner) ? "bg-primary/10" : "hover:bg-muted",
-                          getPartnerKey(partner) === fromPartnerId && "opacity-50 cursor-not-allowed"
+                          toPartnerId === getPartnerHandledByKey(partner) ? "bg-primary/10" : "hover:bg-muted",
+                          getPartnerHandledByKey(partner) === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
                             {partner.isCompanyAccount ? (
@@ -320,8 +329,10 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                   <div className="flex gap-2 mt-1">
                     <button
                     onClick={() => setPaymentMethod('cash')}
+                    disabled={requiresOnlineTransfer}
                     className={cn(
                       "flex-1 p-3 rounded-xl flex items-center justify-center gap-2 border-2 transition-colors",
+                      requiresOnlineTransfer && "opacity-50 cursor-not-allowed",
                       paymentMethod === 'cash' ?
                       "border-primary bg-primary/5" :
                       "border-transparent bg-muted"
@@ -343,6 +354,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <span className={cn("text-sm font-medium", paymentMethod === 'online' ? "text-foreground" : "text-muted-foreground")}>Online</span>
                     </button>
                   </div>
+                  {requiresOnlineTransfer && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Company account transfers are online-only.
+                    </p>
+                  )}
                 </div>
                 
                 {/* Date Picker */}

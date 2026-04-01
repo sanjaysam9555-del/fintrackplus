@@ -4,7 +4,7 @@ import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
-import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users, Paperclip, Receipt, Share2 } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users, Paperclip, Receipt, Share2, Landmark } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
@@ -12,6 +12,7 @@ import { EditTransactionSheet } from "./EditTransactionSheet";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { shareTransaction } from "@/lib/shareTransaction";
+import { findPartnerByHandledBy, isInternalTransferVendor } from "@/lib/partnerIdentity";
 
 interface TransactionItemProps {
   transaction: Transaction;
@@ -26,7 +27,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
   const { deleteTransaction, addTransaction, projects, partners } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
   
-  const partner = partners.find(p => p.userId === transaction.handledBy);
+  const partner = findPartnerByHandledBy(partners, transaction.handledBy);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
@@ -50,14 +51,14 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
     const deletedTransaction = { ...transaction };
     // Capture linked transfer before deletion
     const { transactions } = useFinanceStore.getState();
-    const linkedTxn = (deletedTransaction.vendor === 'Partner Transfer' && deletedTransaction.linkedTransactionId)
+    const linkedTxn = (isInternalTransferVendor(deletedTransaction.vendor) && deletedTransaction.linkedTransactionId)
       ? transactions.find(t => t.id === deletedTransaction.linkedTransactionId)
       : undefined;
     const deletedLinked = linkedTxn ? { ...linkedTxn } : undefined;
     
     deleteTransaction(transaction.id, userId);
     
-    const isTransfer = deletedTransaction.vendor === 'Partner Transfer' && deletedLinked;
+    const isTransfer = isInternalTransferVendor(deletedTransaction.vendor) && deletedLinked;
     
     toast(`${deletedTransaction.title || deletedTransaction.vendor} deleted${isTransfer ? ' (both sides)' : ''}`, {
       duration: 5000,
@@ -125,6 +126,17 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
 
   const PartnerBadge = () => {
     if (!partner) return null;
+
+    if (partner.isCompanyAccount) {
+      return (
+        <span
+          className="absolute -bottom-0.5 -right-0.5 inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary ring-1 ring-card"
+          title={partner.name}
+        >
+          <Landmark size={9} />
+        </span>
+      );
+    }
     
     if (partner.avatarUrl) {
       return (

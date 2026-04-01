@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, StickyNote, Paperclip, Users, RefreshCw, Share2, Clock } from "lucide-react";
+import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, StickyNote, Paperclip, Users, RefreshCw, Share2, Clock, Landmark } from "lucide-react";
 import { Transaction } from "@/lib/types";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
@@ -15,6 +15,7 @@ import { shareTransaction } from "@/lib/shareTransaction";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
+import { findPartnerByHandledBy, isInternalTransferVendor } from "@/lib/partnerIdentity";
 
 interface TransactionDetailSheetProps {
   transaction: Transaction | null;
@@ -39,7 +40,7 @@ export const TransactionDetailSheet = ({
 
   const category = categories.find(c => c.id === transaction.categoryId);
   const project = projects.find(p => p.id === transaction.projectId);
-  const partner = partners.find(p => p.userId === transaction.handledBy);
+  const partner = findPartnerByHandledBy(partners, transaction.handledBy);
   const isExpense = transaction.type === 'expense';
 
   const handleDelete = async () => {
@@ -81,7 +82,7 @@ export const TransactionDetailSheet = ({
 
     const deletedTransaction = { ...transaction };
     const allTransactions = useFinanceStore.getState().transactions;
-    const linkedTxn = (deletedTransaction.vendor === 'Partner Transfer' && deletedTransaction.linkedTransactionId)
+    const linkedTxn = (isInternalTransferVendor(deletedTransaction.vendor) && deletedTransaction.linkedTransactionId)
       ? allTransactions.find(t => t.id === deletedTransaction.linkedTransactionId)
       : undefined;
     const deletedLinked = linkedTxn ? { ...linkedTxn } : undefined;
@@ -89,7 +90,7 @@ export const TransactionDetailSheet = ({
     deleteTransaction(transaction.id, userId);
     onClose();
     
-    const isTransfer = deletedTransaction.vendor === 'Partner Transfer' && deletedLinked;
+    const isTransfer = isInternalTransferVendor(deletedTransaction.vendor) && deletedLinked;
     
     toast(`${deletedTransaction.title || deletedTransaction.vendor} deleted${isTransfer ? ' (both sides)' : ''}`, {
       duration: 5000,
@@ -247,12 +248,18 @@ export const TransactionDetailSheet = ({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-muted-foreground">Handled By</p>
                         <div className="flex items-center gap-2">
-                          <div 
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
-                            style={{ backgroundColor: partner.color }}
-                          >
-                            {partner.name.charAt(0)}
-                          </div>
+                          {partner.isCompanyAccount ? (
+                            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                              <Landmark size={12} className="text-primary" />
+                            </div>
+                          ) : (
+                            <div 
+                              className="w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                              style={{ backgroundColor: partner.color }}
+                            >
+                              {partner.name.charAt(0)}
+                            </div>
+                          )}
                           <p className="font-medium truncate">{partner.name}</p>
                         </div>
                       </div>
