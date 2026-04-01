@@ -172,6 +172,11 @@ const extraFeatures = [
   { icon: FileBarChart, title: "Project Documents", desc: "Attach contracts, invoices, and files directly to any project", iconBg: "bg-success/10 text-success" },
   { icon: ArrowDownUp, title: "Track from Anywhere", desc: "View transactions by project, vendor, partner, or category — all linked", iconBg: "bg-primary/10 text-primary" },
   { icon: PlusCircle, title: "Quick Add", desc: "One-tap logging with vendor, category, payment mode, and notes", iconBg: "bg-success/10 text-success" },
+  { icon: ArrowLeftRight, title: "Self-Transfers", desc: "Move funds between your own Cash and Online wallets instantly", iconBg: "bg-primary/10 text-primary" },
+  { icon: Landmark, title: "Company Transfers", desc: "Deposit to or withdraw from the shared Company Bank Account", iconBg: "bg-success/10 text-success" },
+  { icon: BellRing, title: "Installment Reminders", desc: "Get notified when upcoming installment payments are due", iconBg: "bg-destructive/10 text-destructive" },
+  { icon: Timer, title: "Default Time Frame", desc: "Set your preferred time filter once — applied everywhere automatically", iconBg: "bg-warning/10 text-warning" },
+  { icon: PanelLeft, title: "Desktop Sidebar", desc: "Full navigation sidebar on desktop for faster access to every section", iconBg: "bg-primary/10 text-primary" },
 ];
 
 export const FeaturesGrid = () => (
