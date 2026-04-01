@@ -107,7 +107,7 @@ export const OrgBrandingSection = ({ onBack }: OrgBrandingSectionProps) => {
           <div className="flex items-center gap-4">
             <div className="w-20 h-20 rounded-full border-2 border-dashed border-border flex items-center justify-center overflow-hidden bg-muted/30">
               {logoUrl ? (
-                <img src={logoUrl} alt="Org logo" className="w-full h-full object-contain p-1" />
+                <img src={logoUrl} alt="Org logo" className="w-full h-full object-cover" />
               ) : (
                 <Building2 size={32} className="text-muted-foreground" />
               )}
