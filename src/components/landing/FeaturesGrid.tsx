@@ -75,6 +75,15 @@ const showcaseFeatures = [
       { src: reports, alt: "Reports page with export options" },
     ],
   },
+  {
+    icon: ShieldCheck,
+    title: "Team & Governance",
+    badge: "New",
+    description: "Role-based access control (Owner, Admin, Employee) with mandatory approval workflows. Every edit or deletion requires approval before it goes through.",
+    screens: [
+      { src: "/placeholder.svg", alt: "Team management with role-based access" },
+    ],
+  },
 ];
 
 const remainingFeatures = [
