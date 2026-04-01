@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import JSZip from "jszip";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
+import { isInternalTransferVendor } from "@/lib/partnerIdentity";
 import { findPartnerByHandledBy } from "@/lib/partnerIdentity";
 
 interface ReportsSectionProps {
@@ -52,13 +53,14 @@ export const ReportsSection = ({ onBack }: ReportsSectionProps) => {
   }, [transactions, dateRange]);
 
   const stats = useMemo(() => {
-    const income = filteredTransactions
+    const realTransactions = filteredTransactions.filter(t => !isInternalTransferVendor(t.vendor));
+    const income = realTransactions
       .filter(t => t.type === 'income')
       .reduce((sum, t) => sum + t.amount, 0);
-    const expense = filteredTransactions
+    const expense = realTransactions
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
-    return { income, expense, balance: income - expense, count: filteredTransactions.length };
+    return { income, expense, balance: income - expense, count: filteredTransactions.length, realCount: realTransactions.length };
   }, [filteredTransactions]);
 
   const formatCurrency = (amount: number) => `${CURRENCY_SYMBOL}${amount.toLocaleString('en-IN')}`;

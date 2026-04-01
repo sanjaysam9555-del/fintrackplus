@@ -6,6 +6,7 @@ import { formatCurrency } from "@/lib/constants";
 import { motion } from "framer-motion";
 import { TrendingUp } from "lucide-react";
 import { format, differenceInDays, parseISO } from "date-fns";
+import { isInternalTransferVendor } from "@/lib/partnerIdentity";
 
 type TimeFilter = 'fy' | 'week' | 'month' | 'year' | 'all' | 'custom';
 
@@ -30,10 +31,13 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
   const chartData = useMemo(() => {
     const today = new Date();
     const dataPoints: ChartDataPoint[] = [];
+
+    // Exclude internal transfers from chart data
+    const filteredTxns = transactions.filter(t => !isInternalTransferVendor(t.vendor));
     
     // Helper to calculate income/expense for a date range
     const calcForRange = (rangeStart: Date, rangeEnd: Date): { income: number; expense: number } => {
-      const rangeTxns = transactions.filter(t => {
+      const rangeTxns = filteredTxns.filter(t => {
         const d = parseISO(t.date);
         return d >= rangeStart && d <= rangeEnd;
       });
@@ -47,7 +51,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
     if (timeFilter === 'all') {
       if (transactions.length === 0) return [];
       
-      const txDates = transactions.map(t => parseISO(t.date).getTime());
+      const txDates = filteredTxns.map(t => parseISO(t.date).getTime());
       const earliestDate = new Date(Math.min(...txDates));
       const latestDate = new Date(Math.min(Math.max(...txDates), today.getTime()));
       const realDaysDiff = differenceInDays(latestDate, earliestDate);
@@ -58,7 +62,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
           const day = new Date(earliestDate);
           day.setDate(earliestDate.getDate() + i);
           const dayStr = format(day, 'yyyy-MM-dd');
-          const dayTxns = transactions.filter(t => t.date === dayStr);
+        const dayTxns = filteredTxns.filter(t => t.date === dayStr);
           dataPoints.push({
             name: format(day, 'EEE'),
             income: dayTxns.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0),
@@ -133,7 +137,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         if (day > endDate) break;
         
         const dayStr = format(day, 'yyyy-MM-dd');
-        const dayTransactions = transactions.filter(t => t.date === dayStr);
+        const dayTransactions = filteredTxns.filter(t => t.date === dayStr);
         const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
         const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
         
@@ -197,7 +201,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
           day.setDate(startDate.getDate() + i);
           const dayStr = format(day, 'yyyy-MM-dd');
           
-          const dayTransactions = transactions.filter(t => t.date === dayStr);
+          const dayTransactions = filteredTxns.filter(t => t.date === dayStr);
           const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
           const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
           
