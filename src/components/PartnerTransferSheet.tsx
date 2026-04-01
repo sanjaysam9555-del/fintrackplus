@@ -35,8 +35,8 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   const [showToPartners, setShowToPartners] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const fromPartner = partners.find((p) => (p.userId || p.id) === fromPartnerId);
-  const toPartner = partners.find((p) => (p.userId || p.id) === toPartnerId);
+  const fromPartner = partners.find((p) => p.userId === fromPartnerId || p.id === fromPartnerId);
+  const toPartner = partners.find((p) => p.userId === toPartnerId || p.id === toPartnerId);
 
   // Find real persisted categories for transfers - prefer "Not Specified"
   const expenseCategory = categories.find((c) => c.name === 'Not Specified' && c.type === 'expense') ||
@@ -209,14 +209,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          setFromPartnerId(partner.userId || partner.id);
+                          const pid = partner.isCompanyAccount ? partner.id : (partner.userId || partner.id);
+                          setFromPartnerId(pid);
                           setShowFromPartners(false);
                         }}
-                        disabled={partner.id === toPartnerId}
+                        disabled={(partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === toPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          fromPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
-                          partner.id === toPartnerId && "opacity-50 cursor-not-allowed"
+                          fromPartnerId === (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) ? "bg-primary/10" : "hover:bg-muted",
+                          (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === toPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
                             {partner.isCompanyAccount ? (
@@ -274,14 +275,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          setToPartnerId(partner.userId || partner.id);
+                          const pid = partner.isCompanyAccount ? partner.id : (partner.userId || partner.id);
+                          setToPartnerId(pid);
                           setShowToPartners(false);
                         }}
-                        disabled={partner.id === fromPartnerId}
+                        disabled={(partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === fromPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          toPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
-                          partner.id === fromPartnerId && "opacity-50 cursor-not-allowed"
+                          toPartnerId === (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) ? "bg-primary/10" : "hover:bg-muted",
+                          (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
                             {partner.isCompanyAccount ? (
