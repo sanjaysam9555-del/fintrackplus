@@ -264,7 +264,7 @@ const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldi
 // ── Main component ───────────────────────────────────────────────────
 
 export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
-  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, defaultTimeFilter, addNotification } = useFinanceStore();
+  const { partners, transactions, addPartner, updatePartner, deletePartner, getPartnerBalancesForPeriod, activeTimeFilter, activeCustomStartDate, activeCustomEndDate, setActiveTimeFilter, setActiveCustomDateRange, addNotification } = useFinanceStore();
   const { user } = useAuth();
   const { orgId } = useUserRole();
   const [otherOwners, setOtherOwners] = useState<{user_id: string;}[]>([]);
@@ -293,13 +293,12 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   }, [user, orgId]);
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
-  
-  useEffect(() => {
-    setTimeFilter(defaultTimeFilter);
-  }, [defaultTimeFilter]);
+  const timeFilter = activeTimeFilter;
+  const customStartDate = activeCustomStartDate ? new Date(activeCustomStartDate) : undefined;
+  const customEndDate = activeCustomEndDate ? new Date(activeCustomEndDate) : undefined;
+  const setTimeFilter = setActiveTimeFilter;
+  const setCustomStartDate = (date: Date | undefined) => setActiveCustomDateRange(date ? date.toISOString() : null, activeCustomEndDate);
+  const setCustomEndDate = (date: Date | undefined) => setActiveCustomDateRange(activeCustomStartDate, date ? date.toISOString() : null);
 
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);

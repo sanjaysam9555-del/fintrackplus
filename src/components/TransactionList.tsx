@@ -25,16 +25,15 @@ interface TransactionListProps {
 }
 
 export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetChange, onSearchClick, onNavigate }: TransactionListProps) => {
-  const { transactions, categories, getTotalIncome, getTotalExpense, defaultTimeFilter } = useFinanceStore();
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
+  const { transactions, categories, getTotalIncome, getTotalExpense, activeTimeFilter, activeCustomStartDate, activeCustomEndDate, setActiveTimeFilter, setActiveCustomDateRange } = useFinanceStore();
+  const timeFilter = activeTimeFilter;
+  const customStartDate = activeCustomStartDate ? new Date(activeCustomStartDate) : undefined;
+  const customEndDate = activeCustomEndDate ? new Date(activeCustomEndDate) : undefined;
+  const setTimeFilter = setActiveTimeFilter;
+  const setCustomStartDate = (date: Date | undefined) => setActiveCustomDateRange(date ? date.toISOString() : null, activeCustomEndDate);
+  const setCustomEndDate = (date: Date | undefined) => setActiveCustomDateRange(activeCustomStartDate, date ? date.toISOString() : null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading] = useState(false);
-  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
-  
-  useEffect(() => {
-    setTimeFilter(defaultTimeFilter);
-  }, [defaultTimeFilter]);
-  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>('date-desc');
   const [uncategorizedFilter, setUncategorizedFilter] = useState<string | null>(null);
   
