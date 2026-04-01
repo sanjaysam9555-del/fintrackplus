@@ -43,6 +43,7 @@ import { AppFeaturesGuide } from "./settings/AppFeaturesGuide";
 import { TeamSection } from "./settings/TeamSection";
 import { ChangeApprovalPage } from "./settings/ChangeApprovalPage";
 import { BackupRestoreSection } from "./settings/BackupRestoreSection";
+import { OrgBrandingSection } from "./settings/OrgBrandingSection";
 import { RecurringSection } from "./settings/RecurringSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
