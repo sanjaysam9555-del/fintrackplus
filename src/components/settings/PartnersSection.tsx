@@ -429,6 +429,21 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setIsAddOpen(false);
   };
 
+  const handleAddCompanyAccount = () => {
+    if (!name.trim()) return;
+
+    addPartner({
+      name: name.trim(),
+      color: '#1665B8',
+      initialCashBalance: 0,
+      initialOnlineBalance: parseFloat(initialOnline) || 0,
+      isCompanyAccount: true,
+    }, userId);
+
+    resetForm();
+    setIsAddCompanyOpen(false);
+  };
+
   const handleEdit = (handledBy: string) => {
     const partner = partners.find((p) => p.userId === handledBy);
     if (!partner) return;
