@@ -66,8 +66,29 @@ export const DesktopSidebar = ({
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       className="hidden md:flex flex-col h-dvh bg-card border-r border-border sticky top-0 overflow-hidden"
     >
+        {/* Org Branding */}
+        {(orgName || orgLogoUrl) && (
+          <div className={cn("px-4 pt-4 pb-2 safe-top", isCollapsed && "px-2 pt-4 pb-2")}>
+            <div className={cn(
+              "flex items-center gap-2.5",
+              isCollapsed && "justify-center"
+            )}>
+              {orgLogoUrl ? (
+                <img src={orgLogoUrl} alt={orgName} className="w-8 h-8 rounded-lg object-contain shrink-0" />
+              ) : (
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Building2 size={16} className="text-primary" />
+                </div>
+              )}
+              {!isCollapsed && (
+                <span className="text-sm font-semibold truncate text-foreground">{orgName}</span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Add Transaction Button */}
-        <div className={cn("p-4 safe-top", isCollapsed && "p-2 safe-top")}>
+        <div className={cn("p-4", !orgName && !orgLogoUrl ? "safe-top" : "", isCollapsed && "p-2")}>
           <motion.button
             onClick={onAddClick}
             whileHover={{ scale: isCollapsed ? 1.05 : 1.02 }}
