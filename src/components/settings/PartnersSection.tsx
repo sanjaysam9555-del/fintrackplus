@@ -772,7 +772,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
               
                 {editingPartner === partner.id ?
               <div className="space-y-3">
-                    <PartnerForm {...formProps} isEdit onSubmit={handleUpdate} />
+                    <PartnerForm {...formProps} isEdit isCompanyAccount={partner.isCompanyAccount} onSubmit={handleUpdate} />
                     <Button variant="outline" onClick={resetForm} className="w-full">
                       Cancel
                     </Button>
@@ -782,7 +782,11 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                     {/* Header Row */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {partner.avatarUrl ?
+                        {partner.isCompanyAccount ? (
+                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Landmark size={20} className="text-primary" />
+                          </div>
+                        ) : partner.avatarUrl ?
                     <img
                       src={partner.avatarUrl}
                       alt={partner.name}
@@ -799,6 +803,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                         <div>
                           <span className="font-semibold">{partner.name}</span>
                           <p className="text-xs text-muted-foreground">
+                            {partner.isCompanyAccount ? 'Company Account • ' : ''}
                             {totalTxnCount} transaction{totalTxnCount !== 1 ? 's' : ''} this period
                           </p>
                         </div>
@@ -822,18 +827,20 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                     
                     {/* Balance Summary Row */}
                     <div className="mt-3 flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <Banknote size={14} className="text-muted-foreground" />
-                        <span className={cn(
-                      "font-semibold",
-                      closingCashBalance >= 0 ? "text-success" : "text-destructive"
-                    )}>
-                          {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          ({periodCashTxnCount})
-                        </span>
-                      </div>
+                      {!partner.isCompanyAccount && (
+                        <div className="flex items-center gap-2">
+                          <Banknote size={14} className="text-muted-foreground" />
+                          <span className={cn(
+                        "font-semibold",
+                        closingCashBalance >= 0 ? "text-success" : "text-destructive"
+                      )}>
+                            {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            ({periodCashTxnCount})
+                          </span>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
                         <CreditCard size={14} className="text-muted-foreground" />
                         <span className={cn(
