@@ -230,6 +230,12 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
         onClose={() => setShowTransferSheet(false)}
         userId={user?.id}
       />
+      <SelfTransferSheet
+        isOpen={!!selfTransferPartner}
+        onClose={() => setSelfTransferPartner(null)}
+        partner={selfTransferPartner}
+        userId={user?.id}
+      />
     </>
   );
 };
