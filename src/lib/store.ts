@@ -50,9 +50,14 @@ interface FinanceStore extends FinanceState {
   userProfile: UserProfile;
   updateUserProfile: (profile: Partial<UserProfile>) => void;
   
-  // Default time filter preference
+  // Global time filter state
   defaultTimeFilter: 'week' | 'month' | 'year' | 'fy' | 'all';
+  activeTimeFilter: GlobalTimeFilter;
+  activeCustomStartDate: string | null;
+  activeCustomEndDate: string | null;
   setDefaultTimeFilter: (filter: 'week' | 'month' | 'year' | 'fy' | 'all') => void;
+  setActiveTimeFilter: (filter: GlobalTimeFilter) => void;
+  setActiveCustomDateRange: (start: string | null, end: string | null) => void;
   
   // Notifications
   notifications: Notification[];
