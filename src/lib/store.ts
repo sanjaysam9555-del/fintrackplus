@@ -596,7 +596,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const getProjectName = (projId?: string) => 
           projects.find(p => p.id === projId)?.name || 'None';
         const getPartnerName = (handledBy?: string) => 
-          partners.find(p => p.userId === handledBy)?.name || 'None';
+          partners.find(p => p.userId === handledBy || p.id === handledBy)?.name || 'None';
         
         // Build change details before update
         const changes: NotificationChange[] = [];
