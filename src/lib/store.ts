@@ -1852,7 +1852,7 @@ export const useFinanceStore = create<FinanceStore>()(
           .reduce((sum, t) => sum + t.amount, 0),
       
       getTotalIncome: (startDate, endDate) => {
-        let transactions = get().transactions.filter((t) => t.type === 'income' && t.vendor !== 'Partner Transfer');
+        let transactions = get().transactions.filter((t) => t.type === 'income' && t.vendor !== 'Partner Transfer' && t.vendor !== 'Self Transfer');
         if (startDate && endDate) {
           transactions = transactions.filter((t) => t.date >= startDate && t.date <= endDate);
         }
@@ -1860,7 +1860,7 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       getTotalExpense: (startDate, endDate) => {
-        let transactions = get().transactions.filter((t) => t.type === 'expense' && t.vendor !== 'Partner Transfer');
+        let transactions = get().transactions.filter((t) => t.type === 'expense' && t.vendor !== 'Partner Transfer' && t.vendor !== 'Self Transfer');
         if (startDate && endDate) {
           transactions = transactions.filter((t) => t.date >= startDate && t.date <= endDate);
         }
