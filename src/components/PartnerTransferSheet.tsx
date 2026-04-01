@@ -275,15 +275,15 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          const pid = partner.isCompanyAccount ? partner.id : (partner.userId || partner.id);
+                          const pid = getPartnerId(partner);
                           setToPartnerId(pid);
                           setShowToPartners(false);
                         }}
-                        disabled={(partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === fromPartnerId}
+                        disabled={getPartnerId(partner) === fromPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          toPartnerId === (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) ? "bg-primary/10" : "hover:bg-muted",
-                          (partner.isCompanyAccount ? partner.id : (partner.userId || partner.id)) === fromPartnerId && "opacity-50 cursor-not-allowed"
+                          toPartnerId === getPartnerId(partner) ? "bg-primary/10" : "hover:bg-muted",
+                          getPartnerId(partner) === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
                             {partner.isCompanyAccount ? (

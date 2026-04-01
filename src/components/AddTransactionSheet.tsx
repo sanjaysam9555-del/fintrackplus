@@ -779,7 +779,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               )}
                               <span className="flex-1">{p.name}</span>
                               {p.isCompanyAccount && <span className="text-[10px] text-muted-foreground">Online only</span>}
-                              <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
+                              <Check size={14} className={cn("text-primary shrink-0", handledBy === getPartnerId(p) ? "opacity-100" : "opacity-0")} />
                             </button>
                           ))}
                         </div>

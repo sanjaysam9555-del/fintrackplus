@@ -57,7 +57,7 @@ export const UpcomingRecurringCard = ({ onViewAll }: UpcomingRecurringCardProps)
 
       <div className="space-y-2">
         {displayItems.map((item) => {
-          const partner = partners.find(p => p.userId === item.baseTransaction.handledBy || p.id === item.baseTransaction.handledBy);
+          const partner = findPartnerByHandledBy(partners, item.baseTransaction.handledBy);
           return (
             <div
               key={`${item.baseTransaction.id}-${item.nextDate}`}
