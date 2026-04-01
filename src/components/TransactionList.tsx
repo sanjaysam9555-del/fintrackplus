@@ -30,6 +30,10 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading] = useState(false);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
+  
+  useEffect(() => {
+    setTimeFilter(defaultTimeFilter);
+  }, [defaultTimeFilter]);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>('date-desc');
   const [uncategorizedFilter, setUncategorizedFilter] = useState<string | null>(null);
