@@ -707,7 +707,11 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                           {selectedPartner ? (
                             <div className="flex items-center gap-2">
-                              {selectedPartner.avatarUrl ? (
+                              {selectedPartner.isCompanyAccount ? (
+                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <Landmark size={12} className="text-primary" />
+                                </div>
+                              ) : selectedPartner.avatarUrl ? (
                                 <img src={selectedPartner.avatarUrl} alt={selectedPartner.name} className="w-6 h-6 rounded-full object-cover" />
                               ) : (
                                 <div 
@@ -743,7 +747,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <span className="flex-1 text-muted-foreground">None</span>
                             <Check size={14} className={cn("text-primary shrink-0", !handledBy ? "opacity-100" : "opacity-0")} />
                           </button>
-                          {partners.map((p) => (
+                          {partners.filter(p => !p.isCompanyAccount).map((p) => (
                             <button
                               key={p.id}
                               onClick={() => {
@@ -769,6 +773,32 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
                             </button>
                           ))}
+                          {/* Company Account separator and entry */}
+                          {partners.some(p => p.isCompanyAccount) && (
+                            <>
+                              <div className="border-t border-border my-1" />
+                              {partners.filter(p => p.isCompanyAccount).map((p) => (
+                                <button
+                                  key={p.id}
+                                  onClick={() => {
+                                    setHandledBy(p.id);
+                                    setPaymentMethod('online');
+                                    setShowPartners(false);
+                                  }}
+                                  className={cn(
+                                    "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
+                                    handledBy === p.id ? "bg-primary/10" : "hover:bg-muted"
+                                  )}
+                                >
+                                  <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                    <Landmark size={12} className="text-primary" />
+                                  </div>
+                                  <span className="flex-1 font-medium">{p.name}</span>
+                                  <Check size={14} className={cn("text-primary shrink-0", handledBy === p.id ? "opacity-100" : "opacity-0")} />
+                                </button>
+                              ))}
+                            </>
+                          )}
                         </div>
                       </PopoverContent>
                     </Popover>
