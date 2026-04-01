@@ -751,7 +751,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <button
                               key={p.id}
                               onClick={() => {
-                                setHandledBy(p.isCompanyAccount ? p.id : (p.userId || p.id));
+                                setHandledBy(getPartnerId(p));
                                 setShowPartners(false);
                                 // Auto-switch to online if company account selected
                                 if (p.isCompanyAccount) {
