@@ -381,6 +381,8 @@ import { Partner, ProjectLabel as ProjectLabelType } from './types';
 
 export interface CloudData {
   profile?: { name: string; avatar?: string | null };
+  orgName?: string;
+  orgLogoUrl?: string | null;
   categories: Category[];
   vendors: Vendor[];
   projects: Project[];
