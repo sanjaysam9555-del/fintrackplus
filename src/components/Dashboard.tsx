@@ -35,6 +35,10 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>('recent');
   
+  useEffect(() => {
+    setTimeFilter(defaultTimeFilter);
+  }, [defaultTimeFilter]);
+  
   const today = new Date();
   
   const dateRange = useMemo(() => {
