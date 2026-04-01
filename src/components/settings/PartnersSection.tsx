@@ -861,6 +861,13 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                       </div>
                       <div className="flex items-center gap-1">
                         <button
+                          onClick={(e) => { e.stopPropagation(); setSelfTransferPartner(partner); }}
+                          className="p-2 rounded-full hover:bg-primary/10"
+                          title="Cash ↔ Online"
+                        >
+                          <ArrowUpDown size={16} className="text-primary" />
+                        </button>
+                        <button
                       onClick={(e) => handleEditClick(partner.id, e)}
                       className="p-2 rounded-full hover:bg-muted">
                       
