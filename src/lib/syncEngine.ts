@@ -431,7 +431,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       projectsResult,
       cloudTransactions,
       partnersResult,
-      projectLabelsResult
+      projectLabelsResult,
+      orgResult
     ] = await Promise.all([
       supabase.from('profiles').select('*').eq('user_id', userId).maybeSingle(),
       supabase.from('profiles').select('user_id, name, avatar_url'),
@@ -440,7 +441,8 @@ export const fetchAllCloudData = async (userId: string): Promise<{ data: CloudDa
       supabase.from('projects').select('*'),
       fetchAllTransactions(),
       supabase.from('partners').select('*'),
-      supabase.from('project_labels').select('*')
+      supabase.from('project_labels').select('*'),
+      supabase.from('organizations').select('id, name, logo_url').limit(1).maybeSingle()
     ]);
 
     const firstError =
