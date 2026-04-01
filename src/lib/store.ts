@@ -596,7 +596,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const getProjectName = (projId?: string) => 
           projects.find(p => p.id === projId)?.name || 'None';
         const getPartnerName = (handledBy?: string) => 
-          partners.find(p => p.userId === handledBy)?.name || 'None';
+          partners.find(p => p.userId === handledBy || p.id === handledBy)?.name || 'None';
         
         // Build change details before update
         const changes: NotificationChange[] = [];
@@ -742,7 +742,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const getProjectName = (projId?: string) => 
           projects.find(p => p.id === projId)?.name || 'None';
         const getPartnerName = (handledBy?: string) => 
-          partners.find(p => p.userId === handledBy)?.name || 'None';
+          partners.find(p => p.userId === handledBy || p.id === handledBy)?.name || 'None';
         
         // Capture details before deletion
         const details: NotificationChange[] = transaction ? [
@@ -1712,7 +1712,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          const partnerTxns = transactions.filter(t => t.handledBy === partner.userId);
+          const partnerTxns = transactions.filter(t => t.handledBy === partner.userId || t.handledBy === partner.id);
           
           const cashTxns = partnerTxns.filter(t => t.paymentMethod === 'cash');
           const onlineTxns = partnerTxns.filter(t => t.paymentMethod === 'online');
@@ -1750,10 +1750,10 @@ export const useFinanceStore = create<FinanceStore>()(
         return partners.map(partner => {
           // Opening balance = initialBalance + all transactions BEFORE startDate
           const txnsBeforePeriod = transactions.filter(t => 
-            t.handledBy === partner.userId && t.date < startDate
+            (t.handledBy === partner.userId || t.handledBy === partner.id) && t.date < startDate
           );
           const txnsInPeriod = transactions.filter(t => 
-            t.handledBy === partner.userId && t.date >= startDate && t.date <= endDate
+            (t.handledBy === partner.userId || t.handledBy === partner.id) && t.date >= startDate && t.date <= endDate
           );
           
           // Calculate opening balances (initial + all txns before period)
