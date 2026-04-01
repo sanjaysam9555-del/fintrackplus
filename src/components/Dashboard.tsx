@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef, useCallback } from "react";
+import { useMemo, useState, useRef, useCallback, useEffect } from "react";
 import { useFinanceStore } from "@/lib/store";
 import { SummaryCard } from "./SummaryCard";
 import { CashFlowChart } from "./CashFlowChart";
@@ -34,6 +34,10 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
   const [sortBy, setSortBy] = useState<string>('recent');
+  
+  useEffect(() => {
+    setTimeFilter(defaultTimeFilter);
+  }, [defaultTimeFilter]);
   
   const today = new Date();
   

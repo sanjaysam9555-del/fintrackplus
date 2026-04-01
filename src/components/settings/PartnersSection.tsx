@@ -295,6 +295,10 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(defaultTimeFilter);
   const [customStartDate, setCustomStartDate] = useState<Date | undefined>(undefined);
   const [customEndDate, setCustomEndDate] = useState<Date | undefined>(undefined);
+  
+  useEffect(() => {
+    setTimeFilter(defaultTimeFilter);
+  }, [defaultTimeFilter]);
 
   const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
