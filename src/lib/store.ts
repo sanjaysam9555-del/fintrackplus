@@ -1712,7 +1712,11 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          const partnerTxns = transactions.filter(t => t.handledBy === partner.userId || t.handledBy === partner.id);
+          const partnerTxns = transactions.filter(t => 
+            partner.isCompanyAccount 
+              ? t.handledBy === partner.id 
+              : (t.handledBy === partner.userId || t.handledBy === partner.id)
+          );
           
           const cashTxns = partnerTxns.filter(t => t.paymentMethod === 'cash');
           const onlineTxns = partnerTxns.filter(t => t.paymentMethod === 'online');
@@ -1749,12 +1753,13 @@ export const useFinanceStore = create<FinanceStore>()(
         
         return partners.map(partner => {
           // Opening balance = initialBalance + all transactions BEFORE startDate
-          const txnsBeforePeriod = transactions.filter(t => 
-            (t.handledBy === partner.userId || t.handledBy === partner.id) && t.date < startDate
-          );
-          const txnsInPeriod = transactions.filter(t => 
-            (t.handledBy === partner.userId || t.handledBy === partner.id) && t.date >= startDate && t.date <= endDate
-          );
+          const matchesPartner = (t: Transaction) => 
+            partner.isCompanyAccount 
+              ? t.handledBy === partner.id 
+              : (t.handledBy === partner.userId || t.handledBy === partner.id);
+          
+          const txnsBeforePeriod = transactions.filter(t => matchesPartner(t) && t.date < startDate);
+          const txnsInPeriod = transactions.filter(t => matchesPartner(t) && t.date >= startDate && t.date <= endDate);
           
           // Calculate opening balances (initial + all txns before period)
           const preCashIncome = txnsBeforePeriod.filter(t => t.paymentMethod === 'cash' && t.type === 'income').reduce((s, t) => s + t.amount, 0);
