@@ -10,11 +10,13 @@ import {
   Sparkles,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Building2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import saffronLogo from '@/assets/saffron-logo.png';
 import { useAuth } from '@/hooks/useAuth';
+import { useFinanceStore } from '@/lib/store';
 import { toast } from 'sonner';
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
