@@ -714,7 +714,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                               <button
                                 key={p.id}
                                 onClick={() => {
-                                  setHandledBy(p.userId || p.id);
+                                  setHandledBy(p.isCompanyAccount ? p.id : (p.userId || p.id));
                                   setShowPartners(false);
                                   if (p.isCompanyAccount) {
                                     setPaymentMethod('online');

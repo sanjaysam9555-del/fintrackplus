@@ -39,7 +39,7 @@ export const TransactionDetailSheet = ({
 
   const category = categories.find(c => c.id === transaction.categoryId);
   const project = projects.find(p => p.id === transaction.projectId);
-  const partner = partners.find(p => p.userId === transaction.handledBy);
+  const partner = partners.find(p => p.userId === transaction.handledBy || p.id === transaction.handledBy);
   const isExpense = transaction.type === 'expense';
 
   const handleDelete = async () => {

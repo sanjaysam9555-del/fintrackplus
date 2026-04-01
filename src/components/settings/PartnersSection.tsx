@@ -491,7 +491,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
   const handleDelete = async (handledBy: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const partner = partners.find((p) => p.userId === handledBy);
+    const partner = partners.find((p) => p.userId === handledBy || p.id === handledBy);
     if (!partner) return;
 
     // Check if this partner is linked to a user (owner-linked)

@@ -1753,7 +1753,7 @@ export const useFinanceStore = create<FinanceStore>()(
             (t.handledBy === partner.userId || t.handledBy === partner.id) && t.date < startDate
           );
           const txnsInPeriod = transactions.filter(t => 
-            t.handledBy === partner.userId && t.date >= startDate && t.date <= endDate
+            (t.handledBy === partner.userId || t.handledBy === partner.id) && t.date >= startDate && t.date <= endDate
           );
           
           // Calculate opening balances (initial + all txns before period)
