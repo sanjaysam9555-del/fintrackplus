@@ -1750,7 +1750,7 @@ export const useFinanceStore = create<FinanceStore>()(
         return partners.map(partner => {
           // Opening balance = initialBalance + all transactions BEFORE startDate
           const txnsBeforePeriod = transactions.filter(t => 
-            t.handledBy === partner.userId && t.date < startDate
+            (t.handledBy === partner.userId || t.handledBy === partner.id) && t.date < startDate
           );
           const txnsInPeriod = transactions.filter(t => 
             t.handledBy === partner.userId && t.date >= startDate && t.date <= endDate
