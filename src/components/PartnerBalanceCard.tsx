@@ -207,6 +207,15 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
         onClose={() => setShowTransferSheet(false)}
         userId={user?.id}
       />
+      <SelfTransferSheet
+        isOpen={showSelfTransfer}
+        onClose={() => {
+          setShowSelfTransfer(false);
+          setSelfTransferPartner(undefined);
+        }}
+        userId={user?.id}
+        preselectedPartner={selfTransferPartner}
+      />
     </Collapsible>
   );
 };
