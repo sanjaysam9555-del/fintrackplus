@@ -326,10 +326,11 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
   // Compute unassigned/orphaned transactions
   const unassignedStats = useMemo(() => {
-    const partnerUserIds = new Set(partners.map((p) => p.userId).filter(Boolean));
+    const partnerUserIds = new Set(partners.filter(p => !p.isCompanyAccount).map((p) => p.userId).filter(Boolean));
+    const companyAccountIds = new Set(partners.filter(p => p.isCompanyAccount).map((p) => p.id));
     const unassigned = transactions.
     filter((t) => t.date >= dateRange.start && t.date <= dateRange.end).
-    filter((t) => !t.handledBy || !partnerUserIds.has(t.handledBy));
+    filter((t) => !t.handledBy || (!partnerUserIds.has(t.handledBy) && !companyAccountIds.has(t.handledBy)));
 
     let cashNet = 0;
     let onlineNet = 0;
