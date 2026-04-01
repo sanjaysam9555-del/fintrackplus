@@ -707,7 +707,11 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                         <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                           {selectedPartner ? (
                             <div className="flex items-center gap-2">
-                              {selectedPartner.avatarUrl ? (
+                              {selectedPartner.isCompanyAccount ? (
+                                <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
+                                  <Landmark size={14} className="text-primary" />
+                                </div>
+                              ) : selectedPartner.avatarUrl ? (
                                 <img src={selectedPartner.avatarUrl} alt={selectedPartner.name} className="w-6 h-6 rounded-full object-cover" />
                               ) : (
                                 <div 
