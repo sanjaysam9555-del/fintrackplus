@@ -39,7 +39,6 @@ const PARTNER_COLORS = [
 
 
 import { TimeFrameSelector, computeDateRange, getTimeFilterLabel } from "@/components/TimeFrameSelector";
-import type { TimeFilter } from "@/components/TimeFrameSelector";
 
 // ── Extracted stable components ──────────────────────────────────────
 

@@ -6,7 +6,6 @@ import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { InstallmentDueReminder } from "./InstallmentDueReminder";
 import { TimeFrameSelector, computeDateRange } from "./TimeFrameSelector";
-import type { TimeFilter } from "./TimeFrameSelector";
 
 import { motion } from "framer-motion";
 import { Grid3X3, Store, ScrollText, FileBarChart, Settings, Sparkles, Search, ArrowUpDown } from "lucide-react";

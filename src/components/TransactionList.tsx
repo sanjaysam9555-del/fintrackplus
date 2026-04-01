@@ -13,7 +13,6 @@ import { cn } from "@/lib/utils";
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { TimeFrameSelector, computeDateRange, getTimeFilterLabel } from "./TimeFrameSelector";
-import type { TimeFilter } from "./TimeFrameSelector";
 
 interface TransactionListProps {
   type: TransactionType;
