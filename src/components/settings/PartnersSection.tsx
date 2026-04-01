@@ -877,6 +877,32 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         </div>
       }
       
+      {/* Add Company Account Button */}
+      {!hasCompanyAccount && (
+        <div className="px-4 mt-4">
+          <Dialog open={isAddCompanyOpen} onOpenChange={(open) => {
+            setIsAddCompanyOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="w-full" size="lg">
+                <Landmark size={18} className="mr-2" />
+                Add Company Bank Account
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md bg-card">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Landmark size={20} className="text-primary" />
+                  Add Company Bank Account
+                </DialogTitle>
+              </DialogHeader>
+              <PartnerForm {...formProps} isCompanyAccount onSubmit={handleAddCompanyAccount} />
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+
       {/* Add Partner Button */}
       <div className="px-4 mt-4">
         <Dialog open={isAddOpen} onOpenChange={(open) => {
