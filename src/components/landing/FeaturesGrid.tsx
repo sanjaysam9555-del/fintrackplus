@@ -8,6 +8,8 @@ import {
   Tag, TrendingUp, Wallet, BarChart3, FileBarChart,
   Clock, Copy, Bell, ArrowDownUp, SlidersHorizontal,
   UserCircle, Cloud, WifiOff, Share2, Download, PlusCircle,
+  ShieldCheck, Landmark, ArrowLeftRight, BellRing, PanelLeft, Timer,
+  Building2, DatabaseBackup, Sparkles, LayoutDashboard,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PhoneMockup } from "./PhoneMockup";
