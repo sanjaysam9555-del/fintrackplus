@@ -1712,11 +1712,11 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          const partnerTxns = transactions.filter(t => 
-            partner.isCompanyAccount 
-              ? t.handledBy === partner.id 
-              : (t.handledBy === partner.userId || t.handledBy === partner.id)
-          );
+          const pid = getPartnerId(partner);
+          const partnerTxns = transactions.filter(t => {
+            if (partner.isCompanyAccount) return t.handledBy === pid;
+            return t.handledBy === partner.userId || t.handledBy === partner.id;
+          });
           
           const cashTxns = partnerTxns.filter(t => t.paymentMethod === 'cash');
           const onlineTxns = partnerTxns.filter(t => t.paymentMethod === 'online');
