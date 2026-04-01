@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight, Landmark } from "lucide-react";
+import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight, Landmark, ArrowUpDown } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { PartnerTransferSheet } from "./PartnerTransferSheet";
+import { SelfTransferSheet } from "./SelfTransferSheet";
 import { useAuth } from "@/hooks/useAuth";
+import { Partner } from "@/lib/types";
 
 interface PartnerBalanceCardProps {
   dateRange?: { start: string; end: string };
