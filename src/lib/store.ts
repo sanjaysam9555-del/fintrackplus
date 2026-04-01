@@ -75,6 +75,17 @@ interface FinanceStore extends FinanceState {
     fromPartnerName: string;
     toPartnerName: string;
   }, userId?: string) => void;
+  addSelfTransfer: (params: {
+    partnerId: string;
+    partnerName: string;
+    direction: 'withdraw' | 'deposit';
+    amount: number;
+    date: string;
+    time: string;
+    notes?: string;
+    expenseCategoryId: string;
+    incomeCategoryId: string;
+  }, userId?: string) => void;
   updateTransaction: (id: string, transaction: Partial<Transaction>, userId?: string) => void;
   deleteTransaction: (id: string, userId?: string) => void;
   confirmInstallment: (parentTransactionId: string, installmentId: string, userId?: string, overrides?: { paymentMethod?: PaymentMethod; handledBy?: string }) => void;
@@ -587,6 +598,108 @@ export const useFinanceStore = create<FinanceStore>()(
         });
       },
       
+      addSelfTransfer: async (params, userId) => {
+        const expenseId = uuidv4();
+        const incomeId = uuidv4();
+        const now = new Date().toISOString();
+        
+        // Withdraw: expense(online) + income(cash)
+        // Deposit:  expense(cash)   + income(online)
+        const expenseMethod = params.direction === 'withdraw' ? 'online' : 'cash';
+        const incomeMethod = params.direction === 'withdraw' ? 'cash' : 'online';
+        const titleLabel = params.direction === 'withdraw' ? 'Bank Withdrawal' : 'Bank Deposit';
+        
+        const expenseTxn: Transaction = {
+          id: expenseId,
+          type: 'expense',
+          amount: params.amount,
+          title: titleLabel,
+          vendor: 'Self Transfer',
+          categoryId: params.expenseCategoryId,
+          handledBy: params.partnerId,
+          paymentMethod: expenseMethod as PaymentMethod,
+          date: params.date,
+          time: params.time,
+          notes: params.notes || titleLabel,
+          linkedTransactionId: incomeId,
+          createdAt: now,
+        };
+        
+        const incomeTxn: Transaction = {
+          id: incomeId,
+          type: 'income',
+          amount: params.amount,
+          title: titleLabel,
+          vendor: 'Self Transfer',
+          categoryId: params.incomeCategoryId,
+          handledBy: params.partnerId,
+          paymentMethod: incomeMethod as PaymentMethod,
+          date: params.date,
+          time: params.time,
+          notes: params.notes || titleLabel,
+          linkedTransactionId: expenseId,
+          createdAt: now,
+        };
+        
+        set((state) => ({
+          transactions: [incomeTxn, expenseTxn, ...state.transactions]
+        }));
+        
+        const uid = userId ?? (await supabase.auth.getUser()).data.user?.id;
+        
+        if (uid) {
+          const buildDbData = (txn: Transaction) => {
+            const validCategoryId = txn.categoryId && get().categories.some(c => c.id === txn.categoryId)
+              ? txn.categoryId
+              : null;
+            return {
+              type: txn.type,
+              amount: txn.amount,
+              title: txn.title || null,
+              vendor: txn.vendor,
+              category_id: validCategoryId,
+              project_id: null,
+              handled_by: txn.handledBy || null,
+              payment_method: txn.paymentMethod,
+              date: txn.date,
+              time: txn.time,
+              notes: txn.notes || null,
+              is_recurring: false,
+              recurring_frequency: null,
+              receipt_url: null,
+              is_gst: false,
+              is_part_payment: false,
+              total_expected_amount: null,
+              linked_transaction_id: txn.linkedTransactionId || null,
+              planned_installments: '[]',
+            };
+          };
+          
+          addToSyncQueue({ type: 'insert', entity: 'transaction', entityId: expenseId, data: buildDbData(expenseTxn), userId: uid });
+          addToSyncQueue({ type: 'insert', entity: 'transaction', entityId: incomeId, data: buildDbData(incomeTxn), userId: uid });
+          get().updatePendingCount();
+          
+          if (navigator.onLine) {
+            processSyncQueue().then(() => get().updatePendingCount()).catch(console.error);
+          }
+        }
+        
+        const userName = get().userProfile.name || 'Unknown';
+        get().addNotification({
+          type: 'partner',
+          title: 'Self Transfer',
+          message: `${userName} ${params.direction === 'withdraw' ? 'withdrew' : 'deposited'} ₹${params.amount.toLocaleString()} — ${params.partnerName}`,
+          entityType: 'transaction',
+          entityId: expenseId,
+          details: [
+            { field: 'Amount', from: '', to: `₹${params.amount.toLocaleString()}` },
+            { field: 'Direction', from: '', to: params.direction === 'withdraw' ? 'Online → Cash' : 'Cash → Online' },
+            { field: 'Team Member', from: '', to: params.partnerName },
+            { field: 'Date', from: '', to: params.date },
+          ],
+        });
+      },
+      
       updateTransaction: async (id, updates, userId) => {
         const transaction = get().transactions.find(t => t.id === id);
         const { categories, projects, partners } = get();
@@ -731,9 +844,9 @@ export const useFinanceStore = create<FinanceStore>()(
         const transaction = get().transactions.find(t => t.id === id);
         const { categories, projects, partners } = get();
         
-        // Cascade delete for linked partner transfers
+        // Cascade delete for linked partner/self transfers
         let linkedTransaction: typeof transaction | undefined;
-        if (transaction?.vendor === 'Partner Transfer' && transaction.linkedTransactionId) {
+        if ((transaction?.vendor === 'Partner Transfer' || transaction?.vendor === 'Self Transfer') && transaction.linkedTransactionId) {
           linkedTransaction = get().transactions.find(t => t.id === transaction.linkedTransactionId);
         }
         
@@ -1841,7 +1954,7 @@ export const useFinanceStore = create<FinanceStore>()(
           .reduce((sum, t) => sum + t.amount, 0),
       
       getTotalIncome: (startDate, endDate) => {
-        let transactions = get().transactions.filter((t) => t.type === 'income' && t.vendor !== 'Partner Transfer');
+        let transactions = get().transactions.filter((t) => t.type === 'income' && t.vendor !== 'Partner Transfer' && t.vendor !== 'Self Transfer');
         if (startDate && endDate) {
           transactions = transactions.filter((t) => t.date >= startDate && t.date <= endDate);
         }
@@ -1849,7 +1962,7 @@ export const useFinanceStore = create<FinanceStore>()(
       },
       
       getTotalExpense: (startDate, endDate) => {
-        let transactions = get().transactions.filter((t) => t.type === 'expense' && t.vendor !== 'Partner Transfer');
+        let transactions = get().transactions.filter((t) => t.type === 'expense' && t.vendor !== 'Partner Transfer' && t.vendor !== 'Self Transfer');
         if (startDate && endDate) {
           transactions = transactions.filter((t) => t.date >= startDate && t.date <= endDate);
         }

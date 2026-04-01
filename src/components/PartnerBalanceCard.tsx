@@ -1,13 +1,15 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight, Landmark } from "lucide-react";
+import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight, Landmark, ArrowDownUp } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { PartnerTransferSheet } from "./PartnerTransferSheet";
+import { SelfTransferSheet } from "./SelfTransferSheet";
 import { useAuth } from "@/hooks/useAuth";
+import { Partner } from "@/lib/types";
 
 interface PartnerBalanceCardProps {
   dateRange?: { start: string; end: string };
@@ -18,6 +20,8 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(true);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
+  const [showSelfTransfer, setShowSelfTransfer] = useState(false);
+  const [selfTransferPartner, setSelfTransferPartner] = useState<Partner | undefined>(undefined);
   
   // Default to current FY if no dateRange provided
   const range = useMemo(() => {
@@ -161,6 +165,22 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                         </p>
                       </div>
                     </div>
+                    
+                    {/* Self Transfer Button */}
+                    {!partner.isCompanyAccount && (
+                      <div className="mt-2">
+                        <button
+                          onClick={() => {
+                            setSelfTransferPartner(partner);
+                            setShowSelfTransfer(true);
+                          }}
+                          className="w-full py-1.5 px-3 rounded-lg bg-muted/80 hover:bg-muted text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 transition-colors"
+                        >
+                          <ArrowDownUp size={12} />
+                          Cash ↔ Online
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 
@@ -187,6 +207,15 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
         isOpen={showTransferSheet}
         onClose={() => setShowTransferSheet(false)}
         userId={user?.id}
+      />
+      <SelfTransferSheet
+        isOpen={showSelfTransfer}
+        onClose={() => {
+          setShowSelfTransfer(false);
+          setSelfTransferPartner(undefined);
+        }}
+        userId={user?.id}
+        preselectedPartner={selfTransferPartner}
       />
     </Collapsible>
   );
