@@ -2,7 +2,6 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, StickyNote, Paperclip, Users, RefreshCw, Share2, Clock } from "lucide-react";
 import { Transaction } from "@/lib/types";
-import { findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
@@ -40,7 +39,7 @@ export const TransactionDetailSheet = ({
 
   const category = categories.find(c => c.id === transaction.categoryId);
   const project = projects.find(p => p.id === transaction.projectId);
-  const partner = findPartnerByHandledBy(partners, transaction.handledBy);
+  const partner = partners.find(p => p.userId === transaction.handledBy);
   const isExpense = transaction.type === 'expense';
 
   const handleDelete = async () => {

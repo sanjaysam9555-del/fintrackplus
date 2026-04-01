@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useFinanceStore } from "@/lib/store";
 import { Transaction, Partner } from "@/lib/types";
-import { getPartnerId } from "@/lib/partnerUtils";
 import { formatCurrency, formatDate, formatTime } from "@/lib/constants";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { cn } from "@/lib/utils";
@@ -113,7 +112,7 @@ export const UnassignedTransactionsSheet = ({
                     </SelectTrigger>
                     <SelectContent>
                       {partners.map((p) => (
-                        <SelectItem key={p.id} value={getPartnerId(p)}>
+                        <SelectItem key={p.id} value={p.userId || p.id}>
                           <div className="flex items-center gap-2">
                             <div
                               className="w-3 h-3 rounded-full flex-shrink-0"

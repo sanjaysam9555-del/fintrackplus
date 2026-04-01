@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle, Clock, Landmark } from "lucide-react";
+import { ArrowLeft, Plus, Users, Edit2, Trash2, Banknote, CreditCard, CalendarIcon, ChevronRight, Info, Camera, ArrowLeftRight, AlertTriangle, Clock } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -84,7 +84,6 @@ const AvatarUploadButton = ({ avatarUrl, isUploading, onTriggerUpload, fileInput
 
 interface PartnerFormProps {
   isEdit?: boolean;
-  isCompanyAccount?: boolean;
   name: string;
   setName: (v: string) => void;
   color: string;
@@ -103,7 +102,6 @@ interface PartnerFormProps {
 
 const PartnerForm = ({
   isEdit = false,
-  isCompanyAccount = false,
   name, setName,
   color, setColor,
   initialCash, setInitialCash,
@@ -113,68 +111,63 @@ const PartnerForm = ({
   onSubmit
 }: PartnerFormProps) =>
 <div className="space-y-4">
-    {!isCompanyAccount && (
-      <AvatarUploadButton
-      avatarUrl={avatarUrl}
-      isUploading={isUploading}
-      onTriggerUpload={onTriggerUpload}
-      fileInputRef={fileInputRef}
-      onFileChange={onFileChange} />
-    )}
+    <AvatarUploadButton
+    avatarUrl={avatarUrl}
+    isUploading={isUploading}
+    onTriggerUpload={onTriggerUpload}
+    fileInputRef={fileInputRef}
+    onFileChange={onFileChange} />
+  
 
     <div>
       <Label className="text-xs text-muted-foreground uppercase tracking-wide">Name</Label>
       <Input
       value={name}
       onChange={(e) => setName(e.target.value)}
-      placeholder={isCompanyAccount ? "e.g., Company Bank Account" : "e.g., Partner 1"}
+      placeholder="e.g., Partner 1"
       className="mt-1"
       autoCapitalize="words" />
     
     </div>
     
-    {!isCompanyAccount && (
-      <div>
-        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Color</Label>
-        <div className="grid grid-cols-5 gap-2 mt-2">
-          {PARTNER_COLORS.map((c) =>
-        <button
-          key={c}
-          onClick={() => setColor(c)}
-          className={cn(
-            "w-10 h-10 rounded-full transition-all",
-            color === c && "ring-2 ring-offset-2 ring-primary"
-          )}
-          style={{ backgroundColor: c }} />
-
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wide">Color</Label>
+      <div className="grid grid-cols-5 gap-2 mt-2">
+        {PARTNER_COLORS.map((c) =>
+      <button
+        key={c}
+        onClick={() => setColor(c)}
+        className={cn(
+          "w-10 h-10 rounded-full transition-all",
+          color === c && "ring-2 ring-offset-2 ring-primary"
         )}
-        </div>
+        style={{ backgroundColor: c }} />
+
+      )}
       </div>
-    )}
-    
-    {!isCompanyAccount && (
-      <div>
-        <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-          Starting Cash Balance
-        </Label>
-        <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
-          Amount before any recorded transactions
-        </p>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
-          <Input
-          type="number"
-          value={initialCash}
-          onChange={(e) => setInitialCash(e.target.value)}
-          placeholder="0" />
-        
-        </div>
-      </div>
-    )}
+    </div>
     
     <div>
       <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-        {isCompanyAccount ? 'Starting Bank Balance' : 'Starting Online Balance'}
+        Starting Cash Balance
+      </Label>
+      <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
+        Amount before any recorded transactions
+      </p>
+      <div className="flex items-center gap-2">
+        <span className="text-muted-foreground">{CURRENCY_SYMBOL}</span>
+        <Input
+        type="number"
+        value={initialCash}
+        onChange={(e) => setInitialCash(e.target.value)}
+        placeholder="0" />
+      
+      </div>
+    </div>
+    
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+        Starting Online Balance
       </Label>
       <p className="text-[10px] text-muted-foreground mt-0.5 mb-1">
         Amount before any recorded transactions
@@ -195,7 +188,7 @@ const PartnerForm = ({
     disabled={!name.trim()}
     className="w-full">
     
-      {isEdit ? (isCompanyAccount ? 'Update Company Account' : 'Update Partner') : (isCompanyAccount ? 'Add Company Account' : 'Add Partner')}
+      {isEdit ? 'Update Partner' : 'Add Partner'}
     </Button>
   </div>;
 
@@ -309,9 +302,6 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [showUnassignedSheet, setShowUnassignedSheet] = useState(false);
   const [deleteConfirmPartner, setDeleteConfirmPartner] = useState<Partner | null>(null);
   const [isOwnerLinkedDelete, setIsOwnerLinkedDelete] = useState(false);
-  const [isAddCompanyOpen, setIsAddCompanyOpen] = useState(false);
-
-  const hasCompanyAccount = partners.some(p => p.isCompanyAccount);
 
   // Form state
   const [name, setName] = useState("");
@@ -429,23 +419,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setIsAddOpen(false);
   };
 
-  const handleAddCompanyAccount = () => {
-    if (!name.trim()) return;
-
-    addPartner({
-      name: name.trim(),
-      color: '#1665B8',
-      initialCashBalance: 0,
-      initialOnlineBalance: parseFloat(initialOnline) || 0,
-      isCompanyAccount: true,
-    }, userId);
-
-    resetForm();
-    setIsAddCompanyOpen(false);
-  };
-
   const handleEdit = (handledBy: string) => {
-    const partner = partners.find((p) => p.userId === handledBy || p.id === handledBy);
+    const partner = partners.find((p) => p.userId === handledBy);
     if (!partner) return;
 
     setName(partner.name);
@@ -491,7 +466,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
   const handleDelete = async (handledBy: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const partner = partners.find((p) => p.userId === handledBy || p.id === handledBy);
+    const partner = partners.find((p) => p.userId === handledBy);
     if (!partner) return;
 
     // Check if this partner is linked to a user (owner-linked)
@@ -772,7 +747,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
               
                 {editingPartner === partner.id ?
               <div className="space-y-3">
-                    <PartnerForm {...formProps} isEdit isCompanyAccount={partner.isCompanyAccount} onSubmit={handleUpdate} />
+                    <PartnerForm {...formProps} isEdit onSubmit={handleUpdate} />
                     <Button variant="outline" onClick={resetForm} className="w-full">
                       Cancel
                     </Button>
@@ -782,11 +757,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                     {/* Header Row */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        {partner.isCompanyAccount ? (
-                          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <Landmark size={20} className="text-primary" />
-                          </div>
-                        ) : partner.avatarUrl ?
+                        {partner.avatarUrl ?
                     <img
                       src={partner.avatarUrl}
                       alt={partner.name}
@@ -803,7 +774,6 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                         <div>
                           <span className="font-semibold">{partner.name}</span>
                           <p className="text-xs text-muted-foreground">
-                            {partner.isCompanyAccount ? 'Company Account • ' : ''}
                             {totalTxnCount} transaction{totalTxnCount !== 1 ? 's' : ''} this period
                           </p>
                         </div>
@@ -827,20 +797,18 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
                     
                     {/* Balance Summary Row */}
                     <div className="mt-3 flex items-center gap-4">
-                      {!partner.isCompanyAccount && (
-                        <div className="flex items-center gap-2">
-                          <Banknote size={14} className="text-muted-foreground" />
-                          <span className={cn(
-                        "font-semibold",
-                        closingCashBalance >= 0 ? "text-success" : "text-destructive"
-                      )}>
-                            {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
-                          </span>
-                          <span className="text-xs text-muted-foreground">
-                            ({periodCashTxnCount})
-                          </span>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <Banknote size={14} className="text-muted-foreground" />
+                        <span className={cn(
+                      "font-semibold",
+                      closingCashBalance >= 0 ? "text-success" : "text-destructive"
+                    )}>
+                          {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          ({periodCashTxnCount})
+                        </span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <CreditCard size={14} className="text-muted-foreground" />
                         <span className={cn(
@@ -877,32 +845,6 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
         </div>
       }
       
-      {/* Add Company Account Button */}
-      {!hasCompanyAccount && (
-        <div className="px-4 mt-4">
-          <Dialog open={isAddCompanyOpen} onOpenChange={(open) => {
-            setIsAddCompanyOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="w-full" size="lg">
-                <Landmark size={18} className="mr-2" />
-                Add Company Bank Account
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md bg-card">
-              <DialogHeader>
-                <DialogTitle className="flex items-center gap-2">
-                  <Landmark size={20} className="text-primary" />
-                  Add Company Bank Account
-                </DialogTitle>
-              </DialogHeader>
-              <PartnerForm {...formProps} isCompanyAccount onSubmit={handleAddCompanyAccount} />
-            </DialogContent>
-          </Dialog>
-        </div>
-      )}
-
       {/* Add Partner Button */}
       <div className="px-4 mt-4">
         <Dialog open={isAddOpen} onOpenChange={(open) => {

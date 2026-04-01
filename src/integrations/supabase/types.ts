@@ -266,7 +266,6 @@ export type Database = {
           id: string
           initial_cash_balance: number
           initial_online_balance: number
-          is_company_account: boolean
           name: string
           org_id: string | null
           role: string | null
@@ -279,7 +278,6 @@ export type Database = {
           id?: string
           initial_cash_balance?: number
           initial_online_balance?: number
-          is_company_account?: boolean
           name: string
           org_id?: string | null
           role?: string | null
@@ -292,7 +290,6 @@ export type Database = {
           id?: string
           initial_cash_balance?: number
           initial_online_balance?: number
-          is_company_account?: boolean
           name?: string
           org_id?: string | null
           role?: string | null

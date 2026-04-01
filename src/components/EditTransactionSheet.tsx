@@ -1,14 +1,13 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users, Search, Clock, Landmark } from "lucide-react";
+import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Users, Search, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
 import { Transaction, TransactionType, PaymentMethod } from "@/lib/types";
-import { getPartnerId, findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { renderCategoryIcon, renderVendorIcon } from "@/lib/iconUtils";
@@ -78,7 +77,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = findPartnerByHandledBy(partners, handledBy);
+  const selectedPartner = partners.find(p => p.userId === handledBy);
   const availableProjects = useMemo(() => {
     if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
     return projects.filter(p => !p.archived);
@@ -671,11 +670,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                         <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                           {selectedPartner ? (
                             <div className="flex items-center gap-2">
-                              {selectedPartner.isCompanyAccount ? (
-                                <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                                  <Landmark size={14} className="text-primary" />
-                                </div>
-                              ) : selectedPartner.avatarUrl ? (
+                              {selectedPartner.avatarUrl ? (
                                 <img src={selectedPartner.avatarUrl} alt={selectedPartner.name} className="w-6 h-6 rounded-full object-cover" />
                               ) : (
                                 <div 
@@ -715,22 +710,15 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                               <button
                                 key={p.id}
                                 onClick={() => {
-                                  setHandledBy(getPartnerId(p));
+                                  setHandledBy(p.userId || p.id);
                                   setShowPartners(false);
-                                  if (p.isCompanyAccount) {
-                                    setPaymentMethod('online');
-                                  }
                                 }}
                                 className={cn(
                                   "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-2",
-                                  handledBy === getPartnerId(p) ? "bg-primary/10" : "hover:bg-muted"
+                                  handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
                                 )}
                               >
-                                {p.isCompanyAccount ? (
-                                  <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
-                                    <Landmark size={14} className="text-primary" />
-                                  </div>
-                                ) : p.avatarUrl ? (
+                                {p.avatarUrl ? (
                                   <img src={p.avatarUrl} alt={p.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
                                 ) : (
                                   <div 
@@ -741,8 +729,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                   </div>
                                 )}
                                 <span className="font-medium flex-1">{p.name}</span>
-                                {p.isCompanyAccount && <span className="text-[10px] text-muted-foreground">Online only</span>}
-                                <Check size={14} className={cn("text-primary shrink-0", handledBy === getPartnerId(p) ? "opacity-100" : "opacity-0")} />
+                                <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
                               </button>
                             ))}
                           </div>

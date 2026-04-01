@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ArrowRight, CreditCard, Banknote, CalendarIcon, Users, Landmark } from "lucide-react";
+import { X, ArrowRight, CreditCard, Banknote, CalendarIcon, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
 import { PaymentMethod } from "@/lib/types";
-import { getPartnerId, findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { format } from "date-fns";
@@ -36,8 +35,8 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
   const [showToPartners, setShowToPartners] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  const fromPartner = findPartnerByHandledBy(partners, fromPartnerId);
-  const toPartner = findPartnerByHandledBy(partners, toPartnerId);
+  const fromPartner = partners.find((p) => (p.userId || p.id) === fromPartnerId);
+  const toPartner = partners.find((p) => (p.userId || p.id) === toPartnerId);
 
   // Find real persisted categories for transfers - prefer "Not Specified"
   const expenseCategory = categories.find((c) => c.name === 'Not Specified' && c.type === 'expense') ||
@@ -129,11 +128,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                 <div className="flex items-center justify-center gap-3 py-4">
                   <div className="flex flex-col items-center gap-2">
                     {fromPartner ? (
-                      fromPartner.isCompanyAccount ? (
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <Landmark size={24} className="text-primary" />
-                        </div>
-                      ) : fromPartner.avatarUrl ? (
+                      fromPartner.avatarUrl ? (
                         <img src={fromPartner.avatarUrl} alt={fromPartner.name} className="w-12 h-12 rounded-full object-cover" />
                       ) : (
                         <div
@@ -154,11 +149,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                   
                   <div className="flex flex-col items-center gap-2">
                     {toPartner ? (
-                      toPartner.isCompanyAccount ? (
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <Landmark size={24} className="text-primary" />
-                        </div>
-                      ) : toPartner.avatarUrl ? (
+                      toPartner.avatarUrl ? (
                         <img src={toPartner.avatarUrl} alt={toPartner.name} className="w-12 h-12 rounded-full object-cover" />
                       ) : (
                         <div
@@ -184,11 +175,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                         {fromPartner ?
                       <div className="flex items-center gap-2">
-                            {fromPartner.isCompanyAccount ? (
-                              <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                                <Landmark size={14} className="text-primary" />
-                              </div>
-                            ) : fromPartner.avatarUrl ? (
+                            {fromPartner.avatarUrl ? (
                               <img src={fromPartner.avatarUrl} alt={fromPartner.name} className="w-6 h-6 rounded-full object-cover" />
                             ) : (
                             <div
@@ -210,22 +197,17 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          const pid = getPartnerId(partner);
-                          setFromPartnerId(pid);
+                          setFromPartnerId(partner.userId || partner.id);
                           setShowFromPartners(false);
                         }}
-                        disabled={getPartnerId(partner) === toPartnerId}
+                        disabled={partner.id === toPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          fromPartnerId === getPartnerId(partner) ? "bg-primary/10" : "hover:bg-muted",
-                          getPartnerId(partner) === toPartnerId && "opacity-50 cursor-not-allowed"
+                          fromPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
+                          partner.id === toPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
-                            {partner.isCompanyAccount ? (
-                              <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                                <Landmark size={14} className="text-primary" />
-                              </div>
-                            ) : partner.avatarUrl ? (
+                            {partner.avatarUrl ? (
                               <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
                             ) : (
                             <div
@@ -250,11 +232,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
                         {toPartner ?
                       <div className="flex items-center gap-2">
-                            {toPartner.isCompanyAccount ? (
-                              <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                                <Landmark size={14} className="text-primary" />
-                              </div>
-                            ) : toPartner.avatarUrl ? (
+                            {toPartner.avatarUrl ? (
                               <img src={toPartner.avatarUrl} alt={toPartner.name} className="w-6 h-6 rounded-full object-cover" />
                             ) : (
                             <div
@@ -276,22 +254,17 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       <button
                         key={partner.id}
                         onClick={() => {
-                          const pid = getPartnerId(partner);
-                          setToPartnerId(pid);
+                          setToPartnerId(partner.userId || partner.id);
                           setShowToPartners(false);
                         }}
-                        disabled={getPartnerId(partner) === fromPartnerId}
+                        disabled={partner.id === fromPartnerId}
                         className={cn(
                           "w-full px-3 py-2.5 rounded-lg flex items-center gap-3 transition-colors",
-                          toPartnerId === getPartnerId(partner) ? "bg-primary/10" : "hover:bg-muted",
-                          getPartnerId(partner) === fromPartnerId && "opacity-50 cursor-not-allowed"
+                          toPartnerId === (partner.userId || partner.id) ? "bg-primary/10" : "hover:bg-muted",
+                          partner.id === fromPartnerId && "opacity-50 cursor-not-allowed"
                         )}>
                         
-                            {partner.isCompanyAccount ? (
-                              <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center">
-                                <Landmark size={14} className="text-primary" />
-                              </div>
-                            ) : partner.avatarUrl ? (
+                            {partner.avatarUrl ? (
                               <img src={partner.avatarUrl} alt={partner.name} className="w-6 h-6 rounded-full object-cover" />
                             ) : (
                             <div

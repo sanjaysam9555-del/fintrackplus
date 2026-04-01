@@ -1,15 +1,13 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight, Landmark, ArrowDownUp } from "lucide-react";
+import { Users, ChevronDown, Banknote, CreditCard, ArrowLeftRight } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { PartnerTransferSheet } from "./PartnerTransferSheet";
-import { SelfTransferSheet } from "./SelfTransferSheet";
 import { useAuth } from "@/hooks/useAuth";
-import { Partner } from "@/lib/types";
 
 interface PartnerBalanceCardProps {
   dateRange?: { start: string; end: string };
@@ -20,8 +18,6 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(true);
   const [showTransferSheet, setShowTransferSheet] = useState(false);
-  const [showSelfTransfer, setShowSelfTransfer] = useState(false);
-  const [selfTransferPartner, setSelfTransferPartner] = useState<Partner | undefined>(undefined);
   
   // Default to current FY if no dateRange provided
   const range = useMemo(() => {
@@ -109,11 +105,7 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                     )}
                   >
                     <div className="flex items-center gap-3 mb-3">
-                      {partner.isCompanyAccount ? (
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                          <Landmark size={16} className="text-primary" />
-                        </div>
-                      ) : partner.avatarUrl ? (
+                      {partner.avatarUrl ? (
                         <img src={partner.avatarUrl} alt={partner.name} className="w-8 h-8 rounded-full object-cover" />
                       ) : (
                         <div 
@@ -123,36 +115,29 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                           {partner.name.charAt(0).toUpperCase()}
                         </div>
                       )}
-                      <div>
-                        <span className="font-medium">{partner.name}</span>
-                        {partner.isCompanyAccount && (
-                          <p className="text-[10px] text-muted-foreground">Company Account</p>
-                        )}
-                      </div>
+                      <span className="font-medium">{partner.name}</span>
                     </div>
                     
-                    <div className={cn("grid gap-3", partner.isCompanyAccount ? "grid-cols-1" : "grid-cols-2")}>
-                      {!partner.isCompanyAccount && (
-                        <div className="bg-muted/50 rounded-xl p-3">
-                          <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
-                            <Banknote size={12} />
-                            <span className="text-[10px] uppercase tracking-wide">Cash</span>
-                            <span className="text-[10px] text-muted-foreground ml-auto">
-                              {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
-                            </span>
-                          </div>
-                          <p className={cn(
-                            "text-base font-bold",
-                            closingCashBalance >= 0 ? "text-foreground" : "text-destructive"
-                          )}>
-                            {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
-                          </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-muted/50 rounded-xl p-3">
+                        <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+                          <Banknote size={12} />
+                          <span className="text-[10px] uppercase tracking-wide">Cash</span>
+                          <span className="text-[10px] text-muted-foreground ml-auto">
+                            {periodCashTxnCount} txn{periodCashTxnCount !== 1 ? 's' : ''}
+                          </span>
                         </div>
-                      )}
+                        <p className={cn(
+                          "text-base font-bold",
+                          closingCashBalance >= 0 ? "text-foreground" : "text-destructive"
+                        )}>
+                          {closingCashBalance < 0 && '-'}{CURRENCY_SYMBOL}{Math.abs(closingCashBalance).toLocaleString()}
+                        </p>
+                      </div>
                       <div className="bg-muted/50 rounded-xl p-3">
                         <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
                           <CreditCard size={12} />
-                          <span className="text-[10px] uppercase tracking-wide">{partner.isCompanyAccount ? 'Bank Balance' : 'Online'}</span>
+                          <span className="text-[10px] uppercase tracking-wide">Online</span>
                           <span className="text-[10px] text-muted-foreground ml-auto">
                             {periodOnlineTxnCount} txn{periodOnlineTxnCount !== 1 ? 's' : ''}
                           </span>
@@ -165,22 +150,6 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                         </p>
                       </div>
                     </div>
-                    
-                    {/* Self Transfer Button */}
-                    {!partner.isCompanyAccount && (
-                      <div className="mt-2">
-                        <button
-                          onClick={() => {
-                            setSelfTransferPartner(partner);
-                            setShowSelfTransfer(true);
-                          }}
-                          className="w-full py-1.5 px-3 rounded-lg bg-muted/80 hover:bg-muted text-xs text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 transition-colors"
-                        >
-                          <ArrowDownUp size={12} />
-                          Cash ↔ Online
-                        </button>
-                      </div>
-                    )}
                   </div>
                 ))}
                 
@@ -207,15 +176,6 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
         isOpen={showTransferSheet}
         onClose={() => setShowTransferSheet(false)}
         userId={user?.id}
-      />
-      <SelfTransferSheet
-        isOpen={showSelfTransfer}
-        onClose={() => {
-          setShowSelfTransfer(false);
-          setSelfTransferPartner(undefined);
-        }}
-        userId={user?.id}
-        preselectedPartner={selfTransferPartner}
       />
     </Collapsible>
   );

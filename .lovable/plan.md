@@ -1,41 +1,65 @@
 
 
-## Add Cash ↔ Online Self-Transfer (Withdraw / Deposit)
+## Optimize Desktop Settings Layout for Better Visual Balance
 
-### Concept
-Allow a partner to move money between their own cash and online balances. For example:
-- **Withdrawal**: Online → Cash (withdrew from bank)
-- **Deposit**: Cash → Online (deposited to bank)
+### What I found
+The current desktop layout is still visually uneven because it uses two long vertical stacks with very different content heights:
 
-Mechanically this creates two linked transactions on the **same partner** — an expense in one payment method and an income in the other.
+- **Left column**: Profile + Learn Features + large Data Management card
+- **Right column**: smaller utility cards + footer buttons
 
-### Implementation
+That creates:
+- mismatched column lengths
+- awkward empty space
+- an odd standalone footer area for **Install App** and **Sign Out**
 
-**1. New component: `src/components/SelfTransferSheet.tsx`**
-- Bottom sheet similar to `PartnerTransferSheet`
-- Fields: **Partner** (select team member), **Direction** (Withdraw / Deposit toggle), **Amount**, **Date**, **Notes**
-- Withdraw = expense(online) + income(cash) on same partner
-- Deposit = expense(cash) + income(online) on same partner
-- Company bank accounts only show Deposit/Withdraw with online side forced
-- Uses existing `addPartnerTransfer` store method (from and to partner are the same, but payment methods differ)
+Also, **Install App** is redundant on desktop/laptop, so it should not take visual space there.
 
-**2. Store change: `src/lib/store.ts`**
-- Add `addSelfTransfer` method that creates two linked transactions on the same `handledBy` but with opposite payment methods
-- Vendor label: `"Self Transfer"` to distinguish from team transfers
-- Title: `"Bank Withdrawal"` / `"Bank Deposit"` for clarity
+### Plan
 
-**3. UI entry point: `src/components/PartnerBalanceCard.tsx`**
-- Add a small "↔ Transfer" button on each partner's balance card that opens the self-transfer sheet pre-filled with that partner
+**`src/components/SettingsPage.tsx`**
 
-**4. Exclusion from totals**
-- Self-transfer transactions (vendor = `"Self Transfer"`) should be excluded from org-wide totals, same as partner transfers — check existing exclusion logic in `store.ts` and extend if needed
+1. **Rebuild the desktop layout into a more structured 2-column composition**
+   - Keep **mobile unchanged**
+   - For `md+`, replace the current “two uneven vertical stacks” with a cleaner desktop grid made of paired rows/cards so both sides feel balanced
 
-### Files to create/modify
+2. **Use more intentional desktop grouping**
+   - **Top row**: Profile card + Learn App Features
+   - **Main settings row**: Data Management on one side, Team/Approvals + Backup on the other
+   - **Utility rows**: Default Time Frame, Appearance, Sync, and Sign Out arranged as matched desktop cards instead of one long leftover stack
 
+   This avoids comparing two giant columns of different heights and makes the page feel more symmetrical.
+
+3. **Remove Install App on desktop**
+   - Hide/remove the **Install App** section for `md+`
+   - Keep it available on **mobile/tablet-as-app** only if needed there
+
+4. **Reposition Sign Out so it feels intentional**
+   - Remove it from the odd footer treatment
+   - Place it inside the desktop grid as a proper utility/action card or matched row item, so it aligns with the rest of the settings layout
+
+5. **Standardize spacing and card heights**
+   - Use shared wrappers/classes for desktop cards
+   - Apply consistent padding, gaps, and `h-full` where paired cards should align
+   - Ensure the grid stretches cleanly to the right edge without irregular whitespace
+
+6. **Keep role-based visibility intact**
+   - Preserve existing permission logic for Team, Backup, Reports, etc.
+   - Make sure the desktop layout still looks balanced even when some sections are hidden for different roles
+
+### Expected result
+On desktop/laptop:
+- the settings page will feel **balanced and symmetrical**
+- cards will look more intentionally arranged
+- the right side will no longer have awkward leftover spacing
+- **Install App** will be gone from desktop
+- **Sign Out** will feel properly placed instead of floating oddly below the layout
+
+### File to modify
 | File | Change |
 |---|---|
-| `src/components/SelfTransferSheet.tsx` | New — bottom sheet with partner, direction, amount, date, notes |
-| `src/lib/store.ts` | Add `addSelfTransfer` method; extend transfer exclusion filter |
-| `src/components/PartnerBalanceCard.tsx` | Add "Transfer" button per partner to open self-transfer sheet |
-| `src/components/Dashboard.tsx` | Import and render `SelfTransferSheet` |
+| `src/components/SettingsPage.tsx` | Recompose desktop-only settings layout into balanced paired rows/cards, remove desktop Install App section, reposition Sign Out |
+
+### Technical note
+I would likely extract small render helpers for repeated settings cards/menu cards inside `SettingsPage.tsx` so the desktop/mobile structure can change without duplicating all the card markup.
 

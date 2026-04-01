@@ -1,1 +1,0 @@
-ALTER TABLE public.partners ADD COLUMN is_company_account boolean NOT NULL DEFAULT false;
