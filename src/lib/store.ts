@@ -1710,7 +1710,29 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          const partnerTxns = transactions.filter(t => t.handledBy === partner.userId);
+          // Company account matches by partner.id; regular partners by partner.userId
+          const partnerTxns = transactions.filter(t => 
+            partner.isCompanyAccount 
+              ? t.handledBy === partner.id 
+              : t.handledBy === partner.userId
+          );
+          
+          if (partner.isCompanyAccount) {
+            // Single balance pool for company account
+            const totalIncome = partnerTxns.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+            const totalExpense = partnerTxns.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+            return {
+              partner,
+              cashBalance: 0,
+              onlineBalance: partner.initialOnlineBalance + totalIncome - totalExpense,
+              cashIncome: 0,
+              cashExpense: 0,
+              onlineIncome: totalIncome,
+              onlineExpense: totalExpense,
+              cashTransactionCount: 0,
+              onlineTransactionCount: partnerTxns.length,
+            };
+          }
           
           const cashTxns = partnerTxns.filter(t => t.paymentMethod === 'cash');
           const onlineTxns = partnerTxns.filter(t => t.paymentMethod === 'online');
