@@ -159,7 +159,14 @@ export const PartnerBalanceCard = ({ dateRange }: PartnerBalanceCardProps) => {
                               {partner.name.charAt(0).toUpperCase()}
                             </div>
                           )}
-                          <span className="font-medium">{partner.name}</span>
+                          <span className="font-medium flex-1">{partner.name}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setSelfTransferPartner(partner); }}
+                            className="p-1.5 rounded-lg bg-muted/50 hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors"
+                            title="Cash ↔ Online"
+                          >
+                            <ArrowUpDown size={14} />
+                          </button>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-3">
