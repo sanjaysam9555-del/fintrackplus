@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Check, X, MessageSquareWarning, TrendingDown, Users, Receipt } from "lucide-react";
+import { Check, X, MessageSquareWarning, TrendingDown, Users, Receipt, ShieldCheck, Landmark } from "lucide-react";
 
 const rows = [
   {
@@ -25,6 +25,18 @@ const rows = [
     topic: "GST & CA Fees",
     problem: "Receipts buried in gallery folders. Accountants charge extra just to untangle the books.",
     solution: 'Tag GST entries, attach receipts instantly, export a "CA-ready ZIP" in one tap.',
+  },
+  {
+    icon: ShieldCheck,
+    topic: "Team Access",
+    problem: "Anyone can edit or delete entries. One wrong tap by staff and your books are a mess.",
+    solution: "Role-based access with mandatory approval workflows for all edits and deletions.",
+  },
+  {
+    icon: Landmark,
+    topic: "Company Funds",
+    problem: "Company bank account mixed with personal partner wallets. No clear trail of deposits or withdrawals.",
+    solution: "Dedicated Company Bank Account with deposit/withdrawal tracking, separate from partner balances.",
   },
 ];
 

@@ -8,6 +8,8 @@ import {
   Tag, TrendingUp, Wallet, BarChart3, FileBarChart,
   Clock, Copy, Bell, ArrowDownUp, SlidersHorizontal,
   UserCircle, Cloud, WifiOff, Share2, Download, PlusCircle,
+  ShieldCheck, Landmark, ArrowLeftRight, BellRing, PanelLeft, Timer,
+  Building2, DatabaseBackup, Sparkles, LayoutDashboard,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { PhoneMockup } from "./PhoneMockup";
@@ -73,6 +75,15 @@ const showcaseFeatures = [
       { src: reports, alt: "Reports page with export options" },
     ],
   },
+  {
+    icon: ShieldCheck,
+    title: "Team & Governance",
+    badge: "New",
+    description: "Role-based access control (Owner, Admin, Employee) with mandatory approval workflows. Every edit or deletion requires approval before it goes through.",
+    screens: [
+      { src: "/placeholder.svg", alt: "Team management with role-based access" },
+    ],
+  },
 ];
 
 const remainingFeatures = [
@@ -113,6 +124,26 @@ const remainingFeatures = [
     iconBg: "bg-primary/10 text-primary",
     gradient: "from-primary/15 via-primary/5 to-transparent",
   },
+  {
+    icon: Landmark,
+    title: "Company Bank Account",
+    badge: "New",
+    description: "Shared organisation funds with deposit & withdrawal tracking. Keep company money separate from personal partner balances.",
+    screenshot: "/placeholder.svg",
+    screenshotAlt: "Company bank account with deposit and withdrawal tracking",
+    iconBg: "bg-success/10 text-success",
+    gradient: "from-success/15 via-success/5 to-transparent",
+  },
+  {
+    icon: LayoutDashboard,
+    title: "Financial Holdings",
+    badge: "New",
+    description: "Consolidated view of cash and online balances across all partners. See exactly where your money sits at a glance.",
+    screenshot: "/placeholder.svg",
+    screenshotAlt: "Financial holdings dashboard",
+    iconBg: "bg-warning/10 text-warning",
+    gradient: "from-warning/15 via-warning/5 to-transparent",
+  },
 ];
 
 const secondaryFeatures = [
@@ -122,6 +153,9 @@ const secondaryFeatures = [
   { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, iconBg: "bg-destructive/10 text-destructive" },
   { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, iconBg: "bg-warning/10 text-warning" },
   { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: darkModeCropped, iconBg: "bg-primary/10 text-primary" },
+  { icon: DatabaseBackup, title: "Backup & Restore", desc: "Automated twice-daily snapshots with one-tap restore — never lose your data", screenshot: "/placeholder.svg", iconBg: "bg-success/10 text-success" },
+  { icon: Building2, title: "Organisation Branding", desc: "Custom company name and logo visible across the app", screenshot: "/placeholder.svg", iconBg: "bg-warning/10 text-warning" },
+  { icon: Sparkles, title: "Guided Onboarding", desc: "Step-by-step setup wizard for new users — partners, categories, and preferences", screenshot: "/placeholder.svg", iconBg: "bg-primary/10 text-primary" },
 ];
 
 const extraFeatures = [
@@ -138,6 +172,11 @@ const extraFeatures = [
   { icon: FileBarChart, title: "Project Documents", desc: "Attach contracts, invoices, and files directly to any project", iconBg: "bg-success/10 text-success" },
   { icon: ArrowDownUp, title: "Track from Anywhere", desc: "View transactions by project, vendor, partner, or category — all linked", iconBg: "bg-primary/10 text-primary" },
   { icon: PlusCircle, title: "Quick Add", desc: "One-tap logging with vendor, category, payment mode, and notes", iconBg: "bg-success/10 text-success" },
+  { icon: ArrowLeftRight, title: "Self-Transfers", desc: "Move funds between your own Cash and Online wallets instantly", iconBg: "bg-primary/10 text-primary" },
+  { icon: Landmark, title: "Company Transfers", desc: "Deposit to or withdraw from the shared Company Bank Account", iconBg: "bg-success/10 text-success" },
+  { icon: BellRing, title: "Installment Reminders", desc: "Get notified when upcoming installment payments are due", iconBg: "bg-destructive/10 text-destructive" },
+  { icon: Timer, title: "Default Time Frame", desc: "Set your preferred time filter once — applied everywhere automatically", iconBg: "bg-warning/10 text-warning" },
+  { icon: PanelLeft, title: "Desktop Sidebar", desc: "Full navigation sidebar on desktop for faster access to every section", iconBg: "bg-primary/10 text-primary" },
 ];
 
 export const FeaturesGrid = () => (

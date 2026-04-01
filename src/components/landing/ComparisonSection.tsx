@@ -15,6 +15,11 @@ const rows = [
   { label: "Vendor spend history", without: false, with: true },
   { label: "Part payments & installments", without: false, with: true },
   { label: "AI-powered spending insights", without: false, with: true },
+  { label: "Team roles & access control", without: false, with: true },
+  { label: "Edit/delete approval workflow", without: false, with: true },
+  { label: "Company bank account tracking", without: false, with: true },
+  { label: "Automated backup & restore", without: false, with: true },
+  { label: "Internal fund transfers", without: false, with: true },
 ];
 
 export const ComparisonSection = () => (
