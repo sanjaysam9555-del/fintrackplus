@@ -1409,6 +1409,7 @@ export const useFinanceStore = create<FinanceStore>()(
               initial_cash_balance: partner.initialCashBalance,
               initial_online_balance: partner.initialOnlineBalance,
               avatar_url: partner.avatarUrl || null,
+              is_company_account: partner.isCompanyAccount || false,
             },
             userId: uid,
           });
