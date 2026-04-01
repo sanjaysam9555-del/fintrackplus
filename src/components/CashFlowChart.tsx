@@ -137,7 +137,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
         if (day > endDate) break;
         
         const dayStr = format(day, 'yyyy-MM-dd');
-        const dayTransactions = transactions.filter(t => t.date === dayStr);
+        const dayTransactions = filteredTxns.filter(t => t.date === dayStr);
         const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
         const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
         
@@ -201,7 +201,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
           day.setDate(startDate.getDate() + i);
           const dayStr = format(day, 'yyyy-MM-dd');
           
-          const dayTransactions = transactions.filter(t => t.date === dayStr);
+          const dayTransactions = filteredTxns.filter(t => t.date === dayStr);
           const income = dayTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
           const expense = dayTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
           
