@@ -1,28 +1,28 @@
 
 
-## Fix: Default Time Frame Not Applied Across Tabs
+## Remove Company Bank Account from System (Without Deleting Data)
 
 ### Problem
-When you change the "Default Time Frame" in Settings, the individual tabs (Dashboard, Expenses, Income, Partners) don't update. This happens because each component uses `useState(defaultTimeFilter)` — React's `useState` only reads its initial value **once on mount** and ignores subsequent changes.
+A partner record with `is_company_account = true` exists in the database alongside the owner's personal partner record. Both share the same `user_id`, causing the owner to appear twice in Financial Holdings with identical balances.
+
+### Approach
+Filter out company account partners during sync so they never reach the frontend. The DB record stays intact — no data deletion. This is a single-line change.
 
 ### Fix
 
-Add a `useEffect` in each affected component that resets `timeFilter` whenever `defaultTimeFilter` changes in the store. This ensures that when you pick a new default in Settings, all tabs sync to that choice (unless the user has manually overridden the filter in that tab).
+**`src/lib/syncEngine.ts`** (line ~526):
+Add a `.filter()` before `.map()` on the partners array to exclude any partner where `is_company_account` is `true`:
 
-**Files to modify:**
-
-| File | Change |
-|---|---|
-| `src/components/Dashboard.tsx` | Add `useEffect` to sync `timeFilter` when `defaultTimeFilter` changes |
-| `src/components/TransactionList.tsx` | Same `useEffect` |
-| `src/components/settings/PartnersSection.tsx` | Same `useEffect` |
-
-**The effect (same in all 3 files):**
-```tsx
-useEffect(() => {
-  setTimeFilter(defaultTimeFilter);
-}, [defaultTimeFilter]);
+```ts
+partners: cloudPartners
+  .filter(p => !(p as { is_company_account?: boolean }).is_company_account)
+  .map(p => {
+    // ... existing mapping
+  }),
 ```
 
-This resets the local time filter whenever the global default changes, keeping all tabs in sync with the user's Settings preference.
+### Files to modify
+| File | Change |
+|---|---|
+| `src/lib/syncEngine.ts` | Add filter to exclude `is_company_account = true` partners from cloud data mapping |
 
