@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { ArrowLeft, Download, FileText, CalendarDays, Package, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useFinanceStore } from "@/lib/store";
+import { findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";

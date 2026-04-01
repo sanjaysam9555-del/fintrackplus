@@ -5,6 +5,7 @@ import { useFinanceStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/constants';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { findPartnerByHandledBy } from '@/lib/partnerUtils';
 
 interface UpcomingRecurringCardProps {
   onViewAll?: () => void;

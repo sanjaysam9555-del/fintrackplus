@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useFinanceStore } from "@/lib/store";
 import { Transaction, Partner } from "@/lib/types";
+import { getPartnerId } from "@/lib/partnerUtils";
 import { formatCurrency, formatDate, formatTime } from "@/lib/constants";
 import { CategoryIcon } from "@/components/CategoryIcon";
 import { cn } from "@/lib/utils";

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { Transaction, Category } from "@/lib/types";
+import { findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
 import { cn } from "@/lib/utils";

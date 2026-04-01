@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, StickyNote, Paperclip, Users, RefreshCw, Share2, Clock } from "lucide-react";
 import { Transaction } from "@/lib/types";
+import { findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";

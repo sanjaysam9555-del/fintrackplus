@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SplitSquareHorizontal, Plus, ChevronRight, TrendingUp, TrendingDown, Check, Pencil } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Transaction, PlannedInstallment, PaymentMethod } from "@/lib/types";
+import { findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";

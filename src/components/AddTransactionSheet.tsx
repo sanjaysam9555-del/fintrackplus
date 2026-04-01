@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
 import { TransactionType, PaymentMethod, PlannedInstallment } from "@/lib/types";
+import { getPartnerId, findPartnerByHandledBy } from "@/lib/partnerUtils";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { renderCategoryIcon, renderVendorIcon } from "@/lib/iconUtils";

@@ -5,6 +5,7 @@ import { useFinanceStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { TransactionType } from '@/lib/types';
+import { findPartnerByHandledBy } from '@/lib/partnerUtils';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { format, parseISO } from 'date-fns';
 

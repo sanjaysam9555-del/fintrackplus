@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { Transaction, Category, Project, ProjectLabel, FinanceState, TransactionType, PaymentMethod, UserProfile, Notification, Vendor, Partner, NotificationChange } from './types';
+import { getPartnerId, findPartnerByHandledBy } from './partnerUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
