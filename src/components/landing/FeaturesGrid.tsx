@@ -124,6 +124,26 @@ const remainingFeatures = [
     iconBg: "bg-primary/10 text-primary",
     gradient: "from-primary/15 via-primary/5 to-transparent",
   },
+  {
+    icon: Landmark,
+    title: "Company Bank Account",
+    badge: "New",
+    description: "Shared organisation funds with deposit & withdrawal tracking. Keep company money separate from personal partner balances.",
+    screenshot: "/placeholder.svg",
+    screenshotAlt: "Company bank account with deposit and withdrawal tracking",
+    iconBg: "bg-success/10 text-success",
+    gradient: "from-success/15 via-success/5 to-transparent",
+  },
+  {
+    icon: LayoutDashboard,
+    title: "Financial Holdings",
+    badge: "New",
+    description: "Consolidated view of cash and online balances across all partners. See exactly where your money sits at a glance.",
+    screenshot: "/placeholder.svg",
+    screenshotAlt: "Financial holdings dashboard",
+    iconBg: "bg-warning/10 text-warning",
+    gradient: "from-warning/15 via-warning/5 to-transparent",
+  },
 ];
 
 const secondaryFeatures = [
