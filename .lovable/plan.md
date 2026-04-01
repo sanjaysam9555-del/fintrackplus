@@ -1,86 +1,40 @@
 
 
-## Properly Integrate Company Bank Account into Financial Holdings
+## Add Self-Transfer (Cash ↔ Online) Within a Partner
 
-### The Real Problem
-
-The company bank account partner record shares the same `user_id` as the owner. The balance calculation (`t.handledBy === partner.userId`) matches transactions to BOTH the owner's personal record and the company account — causing duplicated balances. The previous "fix" just hid the company account entirely, which doesn't solve the tracking need.
-
-### Core Design Decision
-
-The company bank account needs its **own identity** for transaction attribution. When a transaction is done on the company bank account, `handledBy` must store the **company account's `partner.id`** (not the owner's `user_id`). This cleanly separates company account transactions from personal partner transactions.
+### What
+Add a "Deposit / Withdraw" option per partner in Financial Holdings so they can move money between their own Cash and Online balances without affecting org totals.
 
 ### How It Works
+A self-transfer creates a **linked pair of transactions** on the same partner:
+- **Deposit** (Cash → Online): expense with `payment_method='cash'` + income with `payment_method='online'`  
+- **Withdraw** (Online → Cash): expense with `payment_method='online'` + income with `payment_method='cash'`
 
-```text
-┌──────────────────────────────────────────────────┐
-│  Transaction Form — "Handled By" dropdown        │
-│                                                  │
-│  ● Ajay (Owner)         ← userId: abc-123       │
-│  ● Priya (Admin)        ← userId: def-456       │
-│  ● 🏦 Company Account   ← partnerId: xyz-789    │
-│                                                  │
-│  handledBy stores:                               │
-│    partners → partner.userId                     │
-│    company acct → partner.id (the partner row)   │
-└──────────────────────────────────────────────────┘
-
-Balance Matching:
-  Regular partner:  t.handledBy === partner.userId
-  Company account:  t.handledBy === partner.id
-```
-
-**Transfers**: Partner → Company Account (deposit into bank) or Company Account → Partner (withdrawal from bank) work exactly like existing team transfers. The company account appears in the transfer sheet as a selectable entity with a bank icon.
-
-**Single balance**: The company account shows ONE combined balance (no cash/online split) since it's a bank account. Uses `initialOnlineBalance` as the starting balance.
+Both tagged with vendor `"Self Transfer"` and linked via `linkedTransactionId`. Excluded from org totals (like Partner Transfers).
 
 ### Changes
 
-**1. `src/lib/types.ts`**
-- Add `isCompanyAccount?: boolean` to `Partner` interface
+**1. `src/lib/store.ts`**
+- Add `addSelfTransfer` action that creates the linked pair with the same `handledBy` but opposite payment methods
+- Vendor = `"Self Transfer"` to distinguish from Partner Transfers
+- Update total calculations to exclude `"Self Transfer"` vendor (alongside existing `"Partner Transfer"` exclusion)
 
-**2. `src/lib/syncEngine.ts`**
-- Remove the `.filter()` that excludes `is_company_account`
-- Map `is_company_account` → `isCompanyAccount` in partner mapping
+**2. `src/components/PartnerBalanceCard.tsx`**
+- Add a small `ArrowUpDown` / swap icon button per partner row (next to the partner name or between Cash/Online boxes)
+- Clicking opens a lightweight self-transfer dialog/sheet
 
-**3. `src/lib/store.ts`**
-- `getPartnerBalancesForPeriod`: For company accounts, match `t.handledBy === partner.id` (not `partner.userId`). Combine cash+online into a single balance using `initialOnlineBalance` as the starting point
-- `getPartnerBalances`: Same matching logic change
-- `getPartnerName` helpers: Also check `partner.id` match for company accounts
+**3. New: `src/components/SelfTransferSheet.tsx`**
+- Bottom sheet with: partner name (read-only), direction toggle (Deposit/Withdraw), amount input, date picker, optional notes
+- Calls `addSelfTransfer` on submit
+- Simpler than PartnerTransferSheet since from/to is the same partner
 
-**4. `src/components/AddTransactionSheet.tsx`**
-- In "Handled By" dropdown: show company account with a bank icon, visually distinct
-- When selected, set `handledBy = partner.id` (not `partner.userId`) for the company account
-- Force `paymentMethod = 'online'` when company account is selected (it's a bank account)
+**4. `src/lib/store.ts` — balance exclusion**
+- In `getPartnerBalancesForPeriod` and anywhere org totals are computed, also exclude `vendor === 'Self Transfer'` from org-wide income/expense (it's an internal rebalance, not real income/expense)
 
-**5. `src/components/EditTransactionSheet.tsx`**
-- Same changes as AddTransactionSheet for the Handled By dropdown
-- Correctly resolve selected partner for company accounts
-
-**6. `src/components/PartnerBalanceCard.tsx`**
-- Render company account as a separate card at the top with a `Landmark`/bank icon
-- Show single "Bank Balance" instead of cash/online split
-- Show transaction count
-- Regular partners render below as before
-
-**7. `src/components/PartnerTransferSheet.tsx`**
-- Include company account in From/To partner lists with bank icon styling
-- When company account is selected, lock payment method to `online`
-
-**8. `src/components/settings/PartnersSection.tsx`**
-- Show company account with distinct bank styling
-- Allow editing starting balance (maps to `initialOnlineBalance`)
-- Prevent deletion of company account record
-
-### Files to modify
+### Files
 | File | Change |
 |---|---|
-| `src/lib/types.ts` | Add `isCompanyAccount` to Partner |
-| `src/lib/syncEngine.ts` | Remove filter, map `is_company_account` |
-| `src/lib/store.ts` | Fix balance matching for company accounts |
-| `src/components/AddTransactionSheet.tsx` | Company account in Handled By dropdown |
-| `src/components/EditTransactionSheet.tsx` | Same dropdown changes |
-| `src/components/PartnerBalanceCard.tsx` | Distinct bank card at top |
-| `src/components/PartnerTransferSheet.tsx` | Include company account in transfers |
-| `src/components/settings/PartnersSection.tsx` | Bank account management UI |
+| `src/lib/store.ts` | Add `addSelfTransfer` action + exclude from org totals |
+| `src/components/SelfTransferSheet.tsx` | New lightweight sheet for cash↔online self-transfer |
+| `src/components/PartnerBalanceCard.tsx` | Add per-partner swap button that opens SelfTransferSheet |
 
