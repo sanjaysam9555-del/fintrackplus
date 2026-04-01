@@ -162,9 +162,17 @@ export const useFinanceStore = create<FinanceStore>()(
       userProfile: { name: 'User' },
       notifications: [],
       defaultTimeFilter: 'fy',
+      activeTimeFilter: 'fy',
+      activeCustomStartDate: null,
+      activeCustomEndDate: null,
       setDefaultTimeFilter: (filter) => {
         const oldFilter = get().defaultTimeFilter;
-        set({ defaultTimeFilter: filter });
+        set({ 
+          defaultTimeFilter: filter,
+          activeTimeFilter: filter,
+          activeCustomStartDate: null,
+          activeCustomEndDate: null,
+        });
         if (oldFilter !== filter) {
           const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
@@ -175,6 +183,13 @@ export const useFinanceStore = create<FinanceStore>()(
           });
         }
       },
+      setActiveTimeFilter: (filter) => set((state) => ({
+        activeTimeFilter: filter,
+        ...(filter !== 'custom'
+          ? { activeCustomStartDate: null, activeCustomEndDate: null }
+          : {}),
+      })),
+      setActiveCustomDateRange: (start, end) => set({ activeCustomStartDate: start, activeCustomEndDate: end }),
       syncStatus: 'idle',
       lastSyncedAt: null,
       pendingCount: 0,
