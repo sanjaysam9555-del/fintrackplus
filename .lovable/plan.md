@@ -1,46 +1,48 @@
 
 
-## All Documents Section in Settings
+## Fix Document Viewing — Fresh Signed URLs
 
-### Summary
-Create a new "All Documents" section in Settings that aggregates project documents and transaction receipts into one unified view, with project-based grouping, an unassigned section, and a toggle for flat grid view.
+### Problem
+Documents fail to open because:
+1. Stored signed URLs have expired or are invalid
+2. Direct Supabase storage URLs are blocked by the browser
+3. The `AllDocumentsSection` uses stored `file_url`/`receipt_url` values directly as `<a href>` links
 
-### Data Sources
-1. **Project Documents** — from `project_documents` table (uploaded via ProjectDetailSheet)
-2. **Transaction Receipts** — from `transactions` table where `receipt_url` is not null
+### Solution
+Generate fresh signed URLs on demand when a user clicks a document, instead of linking directly to stored URLs.
 
-### New File: `src/components/settings/AllDocumentsSection.tsx`
+### Plan
 
-This component will:
+#### 1. Update `AllDocumentsSection.tsx` — add on-click URL generation
 
-1. **Fetch all project documents** from `project_documents` table (org-scoped via RLS)
-2. **Fetch all transactions with receipts** — query `transactions` where `receipt_url IS NOT NULL`
-3. **Group by project**:
-   - For each project, show a collapsible section with project name/color
-   - Inside: project documents + receipts from transactions assigned to that project
-   - Each item shows thumbnail (image preview for images, file icon for others), file name, date, size
-4. **Unassigned section**:
-   - Receipts from transactions with no `project_id`
-   - Project documents with no matching project (edge case)
-5. **Toggle: "Show All"** — a switch at the top that flattens everything into a single thumbnail grid (no sections/grouping), sorted by date descending
-6. **Thumbnail grid**: 3-4 columns on mobile, 5-6 on desktop. For image types (jpg/png/webp), show the image as thumbnail. For PDFs/other files, show a file-type icon with the filename below.
+- Extract the **storage path** from stored URLs (both project docs and receipts)
+- Replace the `<a href>` direct link with an `onClick` handler that:
+  1. Determines the bucket (`project-documents` for docs, `receipts` for receipts)
+  2. Extracts the file path from the stored URL
+  3. Calls `supabase.storage.from(bucket).createSignedUrl(path, 3600)` to get a fresh 1-hour signed URL
+  4. Opens the signed URL in a new tab via `window.open()`
+- Add a small loading indicator while the URL is being generated
+- Store the original storage path alongside each document item (parse it from the URL during fetch)
 
-### Integration into SettingsPage
+#### 2. Helper: extract storage path from URL
 
-- Add `'documents'` to the `SettingsSection` type union
-- Add a menu item under "Data Management" with `FileText` icon, label "All Documents", sublabel showing total count
-- Add the section render block like other sections
-- Visible to owners and admins only
+Create a utility function that extracts the storage path from various URL formats:
+- Signed URLs: parse the path between `/object/sign/<bucket>/` and `?token=`
+- Public URLs: parse the path after `/object/public/<bucket>/`
+- If URL doesn't match Supabase patterns (external URL), open it directly
+
+#### 3. Update `useProjectDocuments.ts` — store file path, not just URL
+
+When uploading, also store the raw `filePath` in the DB record so we don't need to reverse-engineer it from the URL. For existing records, we parse the path from the stored URL.
 
 ### Files Changed
 | File | Change |
 |---|---|
-| `src/components/settings/AllDocumentsSection.tsx` | New component — full documents hub |
-| `src/components/SettingsPage.tsx` | Add 'documents' section type, menu item, and render block |
+| `src/components/settings/AllDocumentsSection.tsx` | Replace `<a href>` with onClick handler that generates fresh signed URLs |
+| `src/hooks/useProjectDocuments.ts` | Minor: ensure upload stores the storage path for future reference |
 
-### Technical Details
-- Queries use existing RLS policies (org-scoped) — no migrations needed
-- Receipts are in the private `receipts` bucket; project docs in `project-documents` bucket — both use signed URLs already stored in DB
-- The toggle switch uses the existing `Switch` UI component
-- Thumbnails: for `image/*` types, render `<img>` with `object-cover`; for others, render a styled icon based on file extension
+### Technical Notes
+- No database migration needed — we parse paths from existing URLs
+- Signed URLs generated on click with 1-hour expiry (short-lived, secure)
+- Falls back to opening the stored URL directly if path extraction fails
 
