@@ -83,41 +83,39 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
 
       const items: DocItem[] = [];
 
-      (projDocs || []).forEach((d: any) => {
+      // Process project documents
+      for (const d of (projDocs || [])) {
         const bucket = 'project-documents';
+        const path = extractStoragePath(d.file_url, bucket);
+        let displayUrl = d.file_url;
+        if (path) {
+          const { data: signedData } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+          if (signedData?.signedUrl) displayUrl = signedData.signedUrl;
+        }
         items.push({
-          id: d.id,
-          fileName: d.file_name,
-          fileUrl: d.file_url,
-          storagePath: extractStoragePath(d.file_url, bucket),
-          bucket,
-          fileType: d.file_type,
-          fileSize: d.file_size,
-          date: d.uploaded_at,
-          projectId: d.project_id,
-          source: 'document',
+          id: d.id, fileName: d.file_name, fileUrl: displayUrl, storagePath: path, bucket,
+          fileType: d.file_type, fileSize: d.file_size, date: d.uploaded_at, projectId: d.project_id, source: 'document',
         });
-      });
+      }
 
-      (receiptTxns || []).forEach((t: any) => {
+      // Process receipt transactions
+      for (const t of (receiptTxns || [])) {
         const url = t.receipt_url as string;
         const name = t.title || t.vendor || 'Receipt';
         const ext = url.split('.').pop()?.split('?')[0] || '';
         const mimeGuess = isImageType(ext) ? `image/${ext}` : 'application/octet-stream';
         const bucket = 'receipts';
+        const path = extractStoragePath(url, bucket);
+        let displayUrl = url;
+        if (path) {
+          const { data: signedData } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+          if (signedData?.signedUrl) displayUrl = signedData.signedUrl;
+        }
         items.push({
-          id: `receipt-${t.id}`,
-          fileName: `${name}.${ext || 'file'}`,
-          fileUrl: url,
-          storagePath: extractStoragePath(url, bucket),
-          bucket,
-          fileType: mimeGuess,
-          fileSize: 0,
-          date: t.date,
-          projectId: t.project_id,
-          source: 'receipt',
+          id: `receipt-${t.id}`, fileName: `${name}.${ext || 'file'}`, fileUrl: displayUrl, storagePath: path, bucket,
+          fileType: mimeGuess, fileSize: 0, date: t.date, projectId: t.project_id, source: 'receipt',
         });
-      });
+      }
 
       setDocs(items);
       setLoading(false);
