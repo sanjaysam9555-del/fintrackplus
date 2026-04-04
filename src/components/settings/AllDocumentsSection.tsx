@@ -212,7 +212,7 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
             {item.source === 'receipt' ? 'Receipt' : 'Doc'}
           </span>
         </div>
-      </a>
+      </button>
     );
   };
 
