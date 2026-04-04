@@ -19,12 +19,34 @@ interface DocItem {
   id: string;
   fileName: string;
   fileUrl: string;
+  storagePath: string | null;
+  bucket: string;
   fileType: string;
   fileSize: number;
   date: string;
   projectId: string | null;
   source: 'document' | 'receipt';
 }
+
+const extractStoragePath = (url: string, bucket: string): string | null => {
+  try {
+    // Match signed URL pattern: /object/sign/<bucket>/<path>?token=...
+    const signedMatch = url.match(new RegExp(`/object/sign/${bucket}/(.+?)\\?`));
+    if (signedMatch) return decodeURIComponent(signedMatch[1]);
+
+    // Match public URL pattern: /object/public/<bucket>/<path>
+    const publicMatch = url.match(new RegExp(`/object/public/${bucket}/(.+?)($|\\?)`));
+    if (publicMatch) return decodeURIComponent(publicMatch[1]);
+
+    // Match storage path pattern: /storage/v1/object/.../<bucket>/<path>
+    const storageMatch = url.match(new RegExp(`/storage/v1/object/(?:sign|public|authenticated)/${bucket}/(.+?)(?:\\?|$)`));
+    if (storageMatch) return decodeURIComponent(storageMatch[1]);
+
+    return null;
+  } catch {
+    return null;
+  }
+};
 
 const isImageType = (type: string) =>
   type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(type);
