@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { motion } from "framer-motion";
-import { ArrowLeft, FileText, FileImage, File, FileSpreadsheet, Eye, Download, FolderOpen, Grid3X3, List, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, FileText, FileImage, File, FileSpreadsheet, Eye, Download, FolderOpen, Share2, X, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinanceStore } from "@/lib/store";
@@ -30,18 +30,12 @@ interface DocItem {
 
 const extractStoragePath = (url: string, bucket: string): string | null => {
   try {
-    // Match signed URL pattern: /object/sign/<bucket>/<path>?token=...
     const signedMatch = url.match(new RegExp(`/object/sign/${bucket}/(.+?)\\?`));
     if (signedMatch) return decodeURIComponent(signedMatch[1]);
-
-    // Match public URL pattern: /object/public/<bucket>/<path>
     const publicMatch = url.match(new RegExp(`/object/public/${bucket}/(.+?)($|\\?)`));
     if (publicMatch) return decodeURIComponent(publicMatch[1]);
-
-    // Match storage path pattern: /storage/v1/object/.../<bucket>/<path>
     const storageMatch = url.match(new RegExp(`/storage/v1/object/(?:sign|public|authenticated)/${bucket}/(.+?)(?:\\?|$)`));
     if (storageMatch) return decodeURIComponent(storageMatch[1]);
-
     return null;
   } catch {
     return null;
@@ -51,9 +45,12 @@ const extractStoragePath = (url: string, bucket: string): string | null => {
 const isImageType = (type: string) =>
   type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(type);
 
+const isPdfType = (type: string) =>
+  type.includes('pdf') || type.endsWith('.pdf');
+
 const getFileIcon = (type: string) => {
   if (isImageType(type)) return FileImage;
-  if (type.includes('pdf')) return FileText;
+  if (isPdfType(type)) return FileText;
   if (type.includes('sheet') || type.includes('csv') || type.includes('excel')) return FileSpreadsheet;
   return File;
 };
@@ -72,6 +69,13 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
 
+  // Preview state
+  const [previewDoc, setPreviewDoc] = useState<DocItem | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
   useEffect(() => {
     if (!user) return;
     const fetchAll = async () => {
@@ -83,7 +87,6 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
 
       const items: DocItem[] = [];
 
-      // Process project documents
       for (const d of (projDocs || [])) {
         const bucket = 'project-documents';
         const path = extractStoragePath(d.file_url, bucket);
@@ -98,12 +101,11 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
         });
       }
 
-      // Process receipt transactions
       for (const t of (receiptTxns || [])) {
         const url = t.receipt_url as string;
         const name = t.title || t.vendor || 'Receipt';
         const ext = url.split('.').pop()?.split('?')[0] || '';
-        const mimeGuess = isImageType(ext) ? `image/${ext}` : 'application/octet-stream';
+        const mimeGuess = isImageType(ext) ? `image/${ext}` : isPdfType(ext) ? 'application/pdf' : 'application/octet-stream';
         const bucket = 'receipts';
         const path = extractStoragePath(url, bucket);
         let displayUrl = url;
@@ -143,52 +145,99 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
     return { groups, unassigned };
   }, [docs, projectMap]);
 
-  const [openingId, setOpeningId] = useState<string | null>(null);
+  // Clean up object URLs on unmount or when preview changes
+  useEffect(() => {
+    return () => {
+      if (previewUrl && previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
-  const handleOpenDocument = useCallback(async (item: DocItem) => {
-    if (openingId) return;
-    setOpeningId(item.id);
+  const handleOpenPreview = useCallback(async (item: DocItem) => {
+    setPreviewDoc(item);
+    setPreviewLoading(true);
+    setPreviewError(null);
+    setPreviewUrl(null);
+    setPreviewBlob(null);
+
     try {
       if (item.storagePath) {
         const { data, error } = await supabase.storage
           .from(item.bucket)
-          .createSignedUrl(item.storagePath, 3600);
+          .download(item.storagePath);
         if (error) throw error;
-        if (data?.signedUrl) {
-          window.open(data.signedUrl, '_blank');
-          setOpeningId(null);
+        if (data) {
+          const objectUrl = URL.createObjectURL(data);
+          setPreviewUrl(objectUrl);
+          setPreviewBlob(data);
+          setPreviewLoading(false);
           return;
         }
       }
-      // Fallback: open stored URL directly
-      window.open(item.fileUrl, '_blank');
+      // Fallback: try using the stored URL directly
+      setPreviewUrl(item.fileUrl);
+      setPreviewLoading(false);
     } catch (err: any) {
-      console.error('Failed to open document:', err);
-      toast.error("Could not open document");
-    } finally {
-      setOpeningId(null);
+      console.error('Failed to load document:', err);
+      setPreviewError("Could not load document. The file may have been moved or deleted.");
+      setPreviewLoading(false);
     }
-  }, [openingId]);
+  }, []);
+
+  const handleClosePreview = useCallback(() => {
+    if (previewUrl && previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewDoc(null);
+    setPreviewUrl(null);
+    setPreviewBlob(null);
+    setPreviewError(null);
+  }, [previewUrl]);
+
+  const handleDownload = useCallback(() => {
+    if (!previewUrl || !previewDoc) return;
+    const a = document.createElement('a');
+    a.href = previewUrl;
+    a.download = previewDoc.fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast.success("Download started");
+  }, [previewUrl, previewDoc]);
+
+  const handleShare = useCallback(async () => {
+    if (!previewDoc) return;
+    try {
+      if (navigator.share && previewBlob) {
+        const file = new window.File([previewBlob], previewDoc.fileName, { type: previewBlob.type || previewDoc.fileType });
+        await navigator.share({ files: [file], title: previewDoc.fileName });
+      } else if (navigator.share) {
+        await navigator.share({ title: previewDoc.fileName, text: `Sharing: ${previewDoc.fileName}` });
+      } else {
+        // Fallback: trigger download
+        handleDownload();
+        toast.info("Share not supported on this device — downloaded instead");
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        toast.error("Could not share document");
+      }
+    }
+  }, [previewDoc, previewBlob, handleDownload]);
 
   const ThumbnailCard = ({ item }: { item: DocItem }) => {
     const Icon = getFileIcon(item.fileType);
     const isImg = isImageType(item.fileType);
-    const isOpening = openingId === item.id;
 
     return (
       <button
-        onClick={() => handleOpenDocument(item)}
-        disabled={isOpening}
+        onClick={() => handleOpenPreview(item)}
         className="group relative rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors text-left w-full"
       >
         <div className="aspect-square flex items-center justify-center bg-muted/50 overflow-hidden relative">
-          {isOpening && (
-            <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
-              <Loader2 size={20} className="animate-spin text-primary" />
-            </div>
-          )}
           {isImg ? (
-            <img src={item.fileUrl} alt={item.fileName} className="w-full h-full object-cover" loading="lazy" />
+            <img src={item.fileUrl} alt={item.fileName} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           ) : (
             <Icon size={32} className="text-muted-foreground" />
           )}
@@ -233,6 +282,8 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
     );
   };
 
+  const canPreview = previewDoc && (isImageType(previewDoc.fileType) || isPdfType(previewDoc.fileType));
+
   return (
     <div className="min-h-screen pb-24">
       <div className="p-4 safe-top">
@@ -243,7 +294,6 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
           <h1 className="text-2xl font-bold flex-1">All Documents</h1>
         </div>
 
-        {/* Toggle */}
         <div className="flex items-center justify-between mt-4 px-1">
           <span className="text-sm text-muted-foreground">{docs.length} document{docs.length !== 1 ? 's' : ''}</span>
           <div className="flex items-center gap-2">
@@ -267,7 +317,6 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
             <p className="text-sm text-muted-foreground mt-1">Upload receipts or project documents to see them here</p>
           </div>
         ) : showAll ? (
-          /* Flat grid */
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -278,7 +327,6 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
             ))}
           </motion.div>
         ) : (
-          /* Grouped view */
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
             {Object.entries(grouped.groups).map(([pid, items]) => (
               <ProjectGroup key={pid} projectId={pid} items={items} />
@@ -298,6 +346,84 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
           </motion.div>
         )}
       </div>
+
+      {/* In-app preview overlay */}
+      <AnimatePresence>
+        {previewDoc && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-background flex flex-col"
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border safe-top">
+              <button onClick={handleClosePreview} className="p-2 -ml-2 rounded-full hover:bg-muted">
+                <X size={20} />
+              </button>
+              <h2 className="text-sm font-medium truncate flex-1 mx-3 text-center">{previewDoc.fileName}</h2>
+              <div className="flex items-center gap-1">
+                <button onClick={handleShare} className="p-2 rounded-full hover:bg-muted" title="Share">
+                  <Share2 size={18} />
+                </button>
+                <button onClick={handleDownload} disabled={!previewUrl} className="p-2 rounded-full hover:bg-muted disabled:opacity-40" title="Download">
+                  <Download size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+              {previewLoading ? (
+                <div className="flex flex-col items-center gap-3">
+                  <Loader2 size={32} className="animate-spin text-primary" />
+                  <p className="text-sm text-muted-foreground">Loading document…</p>
+                </div>
+              ) : previewError ? (
+                <div className="text-center max-w-xs">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+                    <File size={24} className="text-destructive" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">{previewError}</p>
+                </div>
+              ) : previewUrl && canPreview ? (
+                isImageType(previewDoc.fileType) ? (
+                  <img src={previewUrl} alt={previewDoc.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
+                ) : (
+                  <iframe src={previewUrl} className="w-full h-full rounded-lg border-0" title={previewDoc.fileName} />
+                )
+              ) : (
+                <div className="text-center max-w-xs">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                    {(() => { const Icon = getFileIcon(previewDoc.fileType); return <Icon size={32} className="text-muted-foreground" />; })()}
+                  </div>
+                  <p className="font-medium text-sm mb-1">{previewDoc.fileName}</p>
+                  <p className="text-xs text-muted-foreground mb-4">This file type cannot be previewed in-app</p>
+                  <button
+                    onClick={handleDownload}
+                    disabled={!previewUrl}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
+                  >
+                    <Download size={16} /> Download
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Footer info */}
+            <div className="p-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+              <span>{previewDoc.date ? format(new Date(previewDoc.date), 'dd MMM yyyy') : ''}</span>
+              <span className={cn(
+                "font-semibold uppercase px-1.5 py-0.5 rounded-full",
+                previewDoc.source === 'receipt' ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" : "bg-blue-500/15 text-blue-600 dark:text-blue-400"
+              )}>
+                {previewDoc.source === 'receipt' ? 'Receipt' : 'Document'}
+              </span>
+              {previewDoc.fileSize > 0 && <span>{formatFileSize(previewDoc.fileSize)}</span>}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
