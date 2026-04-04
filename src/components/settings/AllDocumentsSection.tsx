@@ -145,18 +145,50 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
     return { groups, unassigned };
   }, [docs, projectMap]);
 
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  const handleOpenDocument = useCallback(async (item: DocItem) => {
+    if (openingId) return;
+    setOpeningId(item.id);
+    try {
+      if (item.storagePath) {
+        const { data, error } = await supabase.storage
+          .from(item.bucket)
+          .createSignedUrl(item.storagePath, 3600);
+        if (error) throw error;
+        if (data?.signedUrl) {
+          window.open(data.signedUrl, '_blank');
+          setOpeningId(null);
+          return;
+        }
+      }
+      // Fallback: open stored URL directly
+      window.open(item.fileUrl, '_blank');
+    } catch (err: any) {
+      console.error('Failed to open document:', err);
+      toast.error("Could not open document");
+    } finally {
+      setOpeningId(null);
+    }
+  }, [openingId]);
+
   const ThumbnailCard = ({ item }: { item: DocItem }) => {
     const Icon = getFileIcon(item.fileType);
     const isImg = isImageType(item.fileType);
+    const isOpening = openingId === item.id;
 
     return (
-      <a
-        href={item.fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group relative rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors"
+      <button
+        onClick={() => handleOpenDocument(item)}
+        disabled={isOpening}
+        className="group relative rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors text-left w-full"
       >
-        <div className="aspect-square flex items-center justify-center bg-muted/50 overflow-hidden">
+        <div className="aspect-square flex items-center justify-center bg-muted/50 overflow-hidden relative">
+          {isOpening && (
+            <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
+              <Loader2 size={20} className="animate-spin text-primary" />
+            </div>
+          )}
           {isImg ? (
             <img src={item.fileUrl} alt={item.fileName} className="w-full h-full object-cover" loading="lazy" />
           ) : (
