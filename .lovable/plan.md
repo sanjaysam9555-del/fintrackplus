@@ -1,51 +1,38 @@
 
-Implement a more reliable in-app document viewer instead of opening storage links in a new tab.
 
-1. Fix document access in `src/components/settings/AllDocumentsSection.tsx`
-- Stop relying on `window.open()` and signed URL navigation.
-- Add a stronger file resolver that can handle:
-  - `project-documents` signed/public/authenticated URLs
-  - `receipts` URLs currently stored from upload flow
-  - direct bucket-relative paths when possible
-- When a user taps a document, use the storage API to fetch the file as a blob (`download`) and create a local object URL for preview. This avoids blocked backend domains and stale signed links.
+## Fix Future Document Uploads — Store Storage Path Instead of URL
 
-2. Add an in-app preview overlay
-- Reuse the existing full-screen preview pattern already used in `ProjectDetailSheet` / `ReportsSection`.
-- Add preview state such as:
-  - selected document
-  - resolved preview URL
-  - loading/error state
-- Show:
-  - images with `<img>`
-  - PDFs with `<iframe>`
-  - non-previewable files with a fallback card and actions only
-- Keep the experience inside the app, full-screen on mobile.
+### Problem
+Both upload flows (project documents and receipts) currently store a full signed/public URL in the database. These URLs expire or get blocked, making documents inaccessible later. The `AllDocumentsSection` then has to reverse-engineer the storage path from the URL, which is fragile.
 
-3. Add download + share actions in the preview header
-- Download button: download the fetched blob via an object URL and filename.
-- Share button: use the Web Share API with a `File` when supported; otherwise fall back to download/copy message.
-- This should work consistently for private files because the app is sharing/downloading the already fetched blob, not the remote storage URL.
+### Solution
+Store the **raw storage path** (e.g. `userId/projectId/timestamp_file.jpg`) in the `file_url` / `receipt_url` column instead of the full URL. Then always generate fresh signed URLs on demand when viewing.
 
-4. Improve thumbnail loading behavior
-- Keep thumbnail previews for images, but do not depend on them for opening documents.
-- If thumbnail resolution fails for some files, show a file icon while still allowing open/download/share from the preview flow.
+### Changes
 
-5. Optional consistency cleanup
-- Update `src/hooks/useProjectDocuments.ts` and `src/components/ReceiptUpload.tsx` in a follow-up pass so future records store values in a more storage-friendly format instead of long-lived/public-style URLs from private buckets.
-- This is not required for the immediate fix, but it will reduce future path-parsing edge cases.
+#### 1. `src/hooks/useProjectDocuments.ts`
+- Stop generating a signed/public URL after upload
+- Store the raw `filePath` string (e.g. `userId/projectId/1234_doc.pdf`) as `file_url` in the database
+- This makes path extraction trivial in AllDocumentsSection — the stored value IS the path
 
-Technical details
-- Root issue: current code still depends on navigable storage URLs, and receipts appear to be stored using a public URL pattern even though `receipts` is a private bucket.
-- Safer approach:
-  ```text
-  tap document
-    -> resolve bucket + storage path
-    -> storage.download(path)
-    -> URL.createObjectURL(blob)
-    -> preview inside app
-    -> download/share from blob
-  ```
-- Files to update:
-  - `src/components/settings/AllDocumentsSection.tsx` — main fix
-  - `src/hooks/useProjectDocuments.ts` — optional normalization follow-up
-  - `src/components/ReceiptUpload.tsx` — optional normalization follow-up
+#### 2. `src/components/ReceiptUpload.tsx`
+- Stop calling `getPublicUrl()` after upload
+- Store the raw storage path (e.g. `userId/transactionId.jpg`) as `receipt_url` in the transaction
+- For the inline preview after upload, generate a temporary signed URL or use a local object URL from the file itself (no need to hit storage again)
+
+#### 3. `src/components/settings/AllDocumentsSection.tsx`
+- Update `extractStoragePath` to detect when the stored value is already a plain path (no `http` prefix) and use it directly
+- This makes new uploads work reliably while keeping backward compatibility with old URL-based records
+
+### Files Changed
+| File | Change |
+|---|---|
+| `src/hooks/useProjectDocuments.ts` | Store raw `filePath` instead of signed URL |
+| `src/components/ReceiptUpload.tsx` | Store raw storage path, use local blob for preview |
+| `src/components/settings/AllDocumentsSection.tsx` | Detect plain paths vs URLs in `extractStoragePath` |
+
+### Technical Notes
+- No database migration needed — the `file_url` and `receipt_url` columns are plain `text`; a path like `userId/projectId/file.pdf` is valid
+- Old documents with full URLs continue to work via the existing URL-parsing logic
+- New documents will always resolve correctly because the stored value is the exact storage path needed for `supabase.storage.download(path)`
+
