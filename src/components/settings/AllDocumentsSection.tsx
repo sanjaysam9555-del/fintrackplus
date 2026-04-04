@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileText, FileImage, File, FileSpreadsheet, Eye, Download, FolderOpen, Grid3X3, List } from "lucide-react";
+import { ArrowLeft, FileText, FileImage, File, FileSpreadsheet, Eye, Download, FolderOpen, Grid3X3, List, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinanceStore } from "@/lib/store";
@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface AllDocumentsSectionProps {
   onBack: () => void;
@@ -18,12 +19,34 @@ interface DocItem {
   id: string;
   fileName: string;
   fileUrl: string;
+  storagePath: string | null;
+  bucket: string;
   fileType: string;
   fileSize: number;
   date: string;
   projectId: string | null;
   source: 'document' | 'receipt';
 }
+
+const extractStoragePath = (url: string, bucket: string): string | null => {
+  try {
+    // Match signed URL pattern: /object/sign/<bucket>/<path>?token=...
+    const signedMatch = url.match(new RegExp(`/object/sign/${bucket}/(.+?)\\?`));
+    if (signedMatch) return decodeURIComponent(signedMatch[1]);
+
+    // Match public URL pattern: /object/public/<bucket>/<path>
+    const publicMatch = url.match(new RegExp(`/object/public/${bucket}/(.+?)($|\\?)`));
+    if (publicMatch) return decodeURIComponent(publicMatch[1]);
+
+    // Match storage path pattern: /storage/v1/object/.../<bucket>/<path>
+    const storageMatch = url.match(new RegExp(`/storage/v1/object/(?:sign|public|authenticated)/${bucket}/(.+?)(?:\\?|$)`));
+    if (storageMatch) return decodeURIComponent(storageMatch[1]);
+
+    return null;
+  } catch {
+    return null;
+  }
+};
 
 const isImageType = (type: string) =>
   type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(type);
@@ -60,35 +83,39 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
 
       const items: DocItem[] = [];
 
-      (projDocs || []).forEach((d: any) => {
+      // Process project documents
+      for (const d of (projDocs || [])) {
+        const bucket = 'project-documents';
+        const path = extractStoragePath(d.file_url, bucket);
+        let displayUrl = d.file_url;
+        if (path) {
+          const { data: signedData } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+          if (signedData?.signedUrl) displayUrl = signedData.signedUrl;
+        }
         items.push({
-          id: d.id,
-          fileName: d.file_name,
-          fileUrl: d.file_url,
-          fileType: d.file_type,
-          fileSize: d.file_size,
-          date: d.uploaded_at,
-          projectId: d.project_id,
-          source: 'document',
+          id: d.id, fileName: d.file_name, fileUrl: displayUrl, storagePath: path, bucket,
+          fileType: d.file_type, fileSize: d.file_size, date: d.uploaded_at, projectId: d.project_id, source: 'document',
         });
-      });
+      }
 
-      (receiptTxns || []).forEach((t: any) => {
+      // Process receipt transactions
+      for (const t of (receiptTxns || [])) {
         const url = t.receipt_url as string;
         const name = t.title || t.vendor || 'Receipt';
         const ext = url.split('.').pop()?.split('?')[0] || '';
         const mimeGuess = isImageType(ext) ? `image/${ext}` : 'application/octet-stream';
+        const bucket = 'receipts';
+        const path = extractStoragePath(url, bucket);
+        let displayUrl = url;
+        if (path) {
+          const { data: signedData } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+          if (signedData?.signedUrl) displayUrl = signedData.signedUrl;
+        }
         items.push({
-          id: `receipt-${t.id}`,
-          fileName: `${name}.${ext || 'file'}`,
-          fileUrl: url,
-          fileType: mimeGuess,
-          fileSize: 0,
-          date: t.date,
-          projectId: t.project_id,
-          source: 'receipt',
+          id: `receipt-${t.id}`, fileName: `${name}.${ext || 'file'}`, fileUrl: displayUrl, storagePath: path, bucket,
+          fileType: mimeGuess, fileSize: 0, date: t.date, projectId: t.project_id, source: 'receipt',
         });
-      });
+      }
 
       setDocs(items);
       setLoading(false);
@@ -116,18 +143,50 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
     return { groups, unassigned };
   }, [docs, projectMap]);
 
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  const handleOpenDocument = useCallback(async (item: DocItem) => {
+    if (openingId) return;
+    setOpeningId(item.id);
+    try {
+      if (item.storagePath) {
+        const { data, error } = await supabase.storage
+          .from(item.bucket)
+          .createSignedUrl(item.storagePath, 3600);
+        if (error) throw error;
+        if (data?.signedUrl) {
+          window.open(data.signedUrl, '_blank');
+          setOpeningId(null);
+          return;
+        }
+      }
+      // Fallback: open stored URL directly
+      window.open(item.fileUrl, '_blank');
+    } catch (err: any) {
+      console.error('Failed to open document:', err);
+      toast.error("Could not open document");
+    } finally {
+      setOpeningId(null);
+    }
+  }, [openingId]);
+
   const ThumbnailCard = ({ item }: { item: DocItem }) => {
     const Icon = getFileIcon(item.fileType);
     const isImg = isImageType(item.fileType);
+    const isOpening = openingId === item.id;
 
     return (
-      <a
-        href={item.fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group relative rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors"
+      <button
+        onClick={() => handleOpenDocument(item)}
+        disabled={isOpening}
+        className="group relative rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors text-left w-full"
       >
-        <div className="aspect-square flex items-center justify-center bg-muted/50 overflow-hidden">
+        <div className="aspect-square flex items-center justify-center bg-muted/50 overflow-hidden relative">
+          {isOpening && (
+            <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-10">
+              <Loader2 size={20} className="animate-spin text-primary" />
+            </div>
+          )}
           {isImg ? (
             <img src={item.fileUrl} alt={item.fileName} className="w-full h-full object-cover" loading="lazy" />
           ) : (
@@ -151,7 +210,7 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
             {item.source === 'receipt' ? 'Receipt' : 'Doc'}
           </span>
         </div>
-      </a>
+      </button>
     );
   };
 
