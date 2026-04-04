@@ -104,10 +104,13 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
         const name = t.title || t.vendor || 'Receipt';
         const ext = url.split('.').pop()?.split('?')[0] || '';
         const mimeGuess = isImageType(ext) ? `image/${ext}` : 'application/octet-stream';
+        const bucket = 'receipts';
         items.push({
           id: `receipt-${t.id}`,
           fileName: `${name}.${ext || 'file'}`,
           fileUrl: url,
+          storagePath: extractStoragePath(url, bucket),
+          bucket,
           fileType: mimeGuess,
           fileSize: 0,
           date: t.date,
