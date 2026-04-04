@@ -26,7 +26,8 @@ import {
   Shield,
   ClipboardCheck,
   Database,
-  Building2
+  Building2,
+  FileText
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,6 +45,7 @@ import { TeamSection } from "./settings/TeamSection";
 import { ChangeApprovalPage } from "./settings/ChangeApprovalPage";
 import { BackupRestoreSection } from "./settings/BackupRestoreSection";
 import { OrgBrandingSection } from "./settings/OrgBrandingSection";
+import { AllDocumentsSection } from "./settings/AllDocumentsSection";
 import { RecurringSection } from "./settings/RecurringSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
@@ -232,7 +234,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | 'branding' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | 'branding' | 'documents' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -388,6 +390,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
       sublabel: "Name & logo",
       onClick: () => handleSectionChange('branding'),
     });
+    backupItems.push({
+      icon: FileText,
+      label: "All Documents",
+      sublabel: "Receipts & project files",
+      onClick: () => handleSectionChange('documents'),
+    });
   }
   
   const menuItems = [
@@ -418,6 +426,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   }
   if (activeSection === 'branding') {
     return <OrgBrandingSection onBack={handleBack} />;
+  }
+  if (activeSection === 'documents') {
+    return <AllDocumentsSection onBack={handleBack} />;
   }
   if (activeSection === 'partners') {
     return <PartnersSection onBack={handleBack} userId={user?.id} />;
