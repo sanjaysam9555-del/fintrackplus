@@ -1,68 +1,46 @@
 
 
-## Add Missing Features to Landing Page
+## All Documents Section in Settings
 
 ### Summary
-Update the landing page to showcase all features built over the past month that are currently missing. This involves updating existing sections and adding new content across 4 files.
+Create a new "All Documents" section in Settings that aggregates project documents and transaction receipts into one unified view, with project-based grouping, an unassigned section, and a toggle for flat grid view.
 
-### Missing Features to Add
+### Data Sources
+1. **Project Documents** — from `project_documents` table (uploaded via ProjectDetailSheet)
+2. **Transaction Receipts** — from `transactions` table where `receipt_url` is not null
 
-1. **Organisation Branding** -- custom name/logo
-2. **Self-Transfers** (Cash to Online within same partner)
-3. **Company Bank Account** (shared org funds)
-4. **Partner/Company Transfers** (deposit/withdraw from company account)
-5. **Team Management** (roles, access control)
-6. **Change Approval Workflow** (edit/delete approvals)
-7. **Onboarding Flow** (guided setup)
-8. **Backup & Restore** (automated snapshots)
-9. **Financial Holdings** (consolidated view)
-10. **Installment & Recurring Reminders** (notifications/alerts)
-11. **Desktop Sidebar Layout**
-12. **Default Time Frame** (user preference)
+### New File: `src/components/settings/AllDocumentsSection.tsx`
 
-### Plan
+This component will:
 
-#### 1. Update `ComparisonSection.tsx` -- add new rows
-Add these rows to the spreadsheet comparison table:
-- Team roles & access control
-- Edit/delete approval workflow
-- Company bank account tracking
-- Automated backup & restore
-- Internal fund transfers (self/partner)
+1. **Fetch all project documents** from `project_documents` table (org-scoped via RLS)
+2. **Fetch all transactions with receipts** — query `transactions` where `receipt_url IS NOT NULL`
+3. **Group by project**:
+   - For each project, show a collapsible section with project name/color
+   - Inside: project documents + receipts from transactions assigned to that project
+   - Each item shows thumbnail (image preview for images, file icon for others), file name, date, size
+4. **Unassigned section**:
+   - Receipts from transactions with no `project_id`
+   - Project documents with no matching project (edge case)
+5. **Toggle: "Show All"** — a switch at the top that flattens everything into a single thumbnail grid (no sections/grouping), sorted by date descending
+6. **Thumbnail grid**: 3-4 columns on mobile, 5-6 on desktop. For image types (jpg/png/webp), show the image as thumbnail. For PDFs/other files, show a file-type icon with the filename below.
 
-#### 2. Update `ChaosToClarity.tsx` -- add 2 new before/after rows
-- **Team Access**: "Anyone can edit or delete entries..." vs "Role-based access with mandatory approvals for edits/deletes"
-- **Company Funds**: "Company bank account mixed with personal..." vs "Dedicated Company Bank Account with deposit/withdrawal tracking"
+### Integration into SettingsPage
 
-#### 3. Update `FeaturesGrid.tsx` -- add to existing grids
-
-**Add to `showcaseFeatures`** (big phone-mockup showcase):
-- **Team & Governance**: Team roles + change approval workflow. Use placeholder image.
-
-**Add to `remainingFeatures`** (card grid with screenshots):
-- **Company Bank Account**: Shared org funds with deposit/withdrawal tracking. Placeholder image.
-- **Financial Holdings**: Consolidated cash/online balances across all partners. Placeholder image.
-
-**Add to `secondaryFeatures`** (medium cards with screenshots):
-- **Backup & Restore**: Automated twice-daily snapshots with one-tap restore. Placeholder image.
-- **Organisation Branding**: Custom name and logo across the app. Placeholder image.
-- **Onboarding Flow**: Guided setup wizard for new users. Placeholder image.
-
-**Add to `extraFeatures`** (compact icon-only cards):
-- Self-Transfers (Cash to Online)
-- Partner/Company Transfers
-- Installment Reminders
-- Default Time Frame setting
-- Desktop Sidebar
-
-#### 4. Add placeholder image
-Create a simple placeholder file at `src/assets/landing/real/placeholder-feature.png` -- use the existing `public/placeholder.svg` as the import for now until real screenshots are provided.
+- Add `'documents'` to the `SettingsSection` type union
+- Add a menu item under "Data Management" with `FileText` icon, label "All Documents", sublabel showing total count
+- Add the section render block like other sections
+- Visible to owners and admins only
 
 ### Files Changed
 | File | Change |
 |---|---|
-| `src/components/landing/ComparisonSection.tsx` | Add 5 new comparison rows |
-| `src/components/landing/ChaosToClarity.tsx` | Add 2 new before/after rows |
-| `src/components/landing/FeaturesGrid.tsx` | Add features to all 4 feature arrays + import placeholder |
-| No new files needed | Use `/placeholder.svg` for missing screenshots |
+| `src/components/settings/AllDocumentsSection.tsx` | New component — full documents hub |
+| `src/components/SettingsPage.tsx` | Add 'documents' section type, menu item, and render block |
+
+### Technical Details
+- Queries use existing RLS policies (org-scoped) — no migrations needed
+- Receipts are in the private `receipts` bucket; project docs in `project-documents` bucket — both use signed URLs already stored in DB
+- The toggle switch uses the existing `Switch` UI component
+- Thumbnails: for `image/*` types, render `<img>` with `object-cover`; for others, render a styled icon based on file extension
 
