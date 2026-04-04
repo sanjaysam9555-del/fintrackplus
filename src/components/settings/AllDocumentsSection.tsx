@@ -84,10 +84,13 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
       const items: DocItem[] = [];
 
       (projDocs || []).forEach((d: any) => {
+        const bucket = 'project-documents';
         items.push({
           id: d.id,
           fileName: d.file_name,
           fileUrl: d.file_url,
+          storagePath: extractStoragePath(d.file_url, bucket),
+          bucket,
           fileType: d.file_type,
           fileSize: d.file_size,
           date: d.uploaded_at,
