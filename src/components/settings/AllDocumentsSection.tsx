@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileText, FileImage, File, FileSpreadsheet, Eye, Download, FolderOpen, Grid3X3, List } from "lucide-react";
+import { ArrowLeft, FileText, FileImage, File, FileSpreadsheet, Eye, Download, FolderOpen, Grid3X3, List, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinanceStore } from "@/lib/store";
@@ -9,6 +9,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 interface AllDocumentsSectionProps {
   onBack: () => void;
