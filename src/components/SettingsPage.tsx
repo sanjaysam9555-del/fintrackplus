@@ -26,7 +26,8 @@ import {
   Shield,
   ClipboardCheck,
   Database,
-  Building2
+  Building2,
+  FileText
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
