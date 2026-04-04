@@ -427,6 +427,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   if (activeSection === 'branding') {
     return <OrgBrandingSection onBack={handleBack} />;
   }
+  if (activeSection === 'documents') {
+    return <AllDocumentsSection onBack={handleBack} />;
+  }
   if (activeSection === 'partners') {
     return <PartnersSection onBack={handleBack} userId={user?.id} />;
   }
