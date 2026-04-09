@@ -601,10 +601,30 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                 </div>
               </motion.div>
             </div>
+
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                className="bg-card rounded-2xl p-4 shadow-card border border-border">
+                <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
+                    const isActive = defaultTimeFilter === option.value;
+                    return (
+                      <button key={option.value} onClick={() => setDefaultTimeFilter(option.value)}
+                        className={cn("py-2 rounded-xl text-sm font-medium transition-all",
+                          isActive ? "bg-accent border-2 border-primary text-accent-foreground" : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground")}>
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </div>
           </div>
         </div>
 
-        {/* Row 3: Appearance + Time Frame */}
+        {/* Row 3: Appearance */}
         <div className="grid grid-cols-2 gap-6 px-4 mb-6">
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Appearance</p>
@@ -634,26 +654,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
               </p>
             </motion.div>
           </div>
-
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-              className="bg-card rounded-2xl p-4 shadow-card border border-border">
-              <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
-              <div className="grid grid-cols-5 gap-2">
-                {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
-                  const isActive = defaultTimeFilter === option.value;
-                  return (
-                    <button key={option.value} onClick={() => setDefaultTimeFilter(option.value)}
-                      className={cn("py-2 rounded-xl text-sm font-medium transition-all",
-                        isActive ? "bg-accent border-2 border-primary text-accent-foreground" : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground")}>
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </div>
+          <div />
         </div>
 
         {/* Sign Out */}
