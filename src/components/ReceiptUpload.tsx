@@ -90,16 +90,10 @@ export const ReceiptUpload = ({ value, onChange, userId, transactionId }: Receip
 
       if (uploadError) throw uploadError;
 
-      // Get the public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('receipts')
-        .getPublicUrl(fileName);
-
-      // Add cache-buster to URL
-      const finalUrl = `${publicUrl}?t=${Date.now()}`;
-      
-      setPreviewUrl(finalUrl);
-      onChange(finalUrl);
+      // Store raw storage path in DB, use local blob for preview
+      const localPreview = URL.createObjectURL(compressedBlob);
+      setPreviewUrl(localPreview);
+      onChange(fileName);
       toast.success('Receipt uploaded');
     } catch (error) {
       console.error('Upload error:', error);
