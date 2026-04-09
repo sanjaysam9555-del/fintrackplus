@@ -62,17 +62,8 @@ export const useProjectDocuments = (projectId: string | undefined, userId: strin
 
       if (uploadError) throw uploadError;
 
-      // Get download URL
-      const { data: urlData } = supabase.storage
-        .from('project-documents')
-        .getPublicUrl(filePath);
-
-      // For private bucket, use signed URL
-      const { data: signedData } = await supabase.storage
-        .from('project-documents')
-        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
-
-      const fileUrl = signedData?.signedUrl || urlData.publicUrl;
+      // Store the raw storage path — not a URL
+      const fileUrl = filePath;
 
       const { data: docData, error: insertError } = await supabase
         .from('project_documents')

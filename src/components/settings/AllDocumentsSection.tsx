@@ -30,6 +30,8 @@ interface DocItem {
 
 const extractStoragePath = (url: string, bucket: string): string | null => {
   try {
+    // If value doesn't start with http, it's already a raw storage path (new format)
+    if (!url.startsWith('http')) return url;
     const signedMatch = url.match(new RegExp(`/object/sign/${bucket}/(.+?)\\?`));
     if (signedMatch) return decodeURIComponent(signedMatch[1]);
     const publicMatch = url.match(new RegExp(`/object/public/${bucket}/(.+?)($|\\?)`));
