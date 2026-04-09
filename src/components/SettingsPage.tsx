@@ -606,7 +606,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-              className="bg-card rounded-2xl p-4 shadow-card border border-border h-full">
+              className="bg-card rounded-2xl p-4 shadow-card border border-border">
               <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
               <div className="grid grid-cols-5 gap-2">
                 {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
@@ -626,7 +626,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           <div>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Appearance</p>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              className="bg-card rounded-2xl p-4 shadow-card border border-border h-full">
+              className="bg-card rounded-2xl p-4 shadow-card border border-border">
               <div className="grid grid-cols-4 gap-2">
                 {themeOptions.map((option) => {
                   const isActive = mode === option.value;
