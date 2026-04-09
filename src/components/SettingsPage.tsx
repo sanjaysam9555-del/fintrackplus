@@ -390,12 +390,6 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
       sublabel: "Name & logo",
       onClick: () => handleSectionChange('branding'),
     });
-    backupItems.push({
-      icon: FileText,
-      label: "All Documents",
-      sublabel: "Receipts & project files",
-      onClick: () => handleSectionChange('documents'),
-    });
   }
   
   const menuItems = [
