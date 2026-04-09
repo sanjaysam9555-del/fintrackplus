@@ -353,6 +353,15 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
     });
   }
 
+  if (isOwner) {
+    dataItems.push({
+      icon: FileText,
+      label: "All Documents",
+      sublabel: "Receipts & project files",
+      onClick: () => handleSectionChange('documents'),
+    });
+  }
+
   // Team management section (owner only)
   const teamItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
   
