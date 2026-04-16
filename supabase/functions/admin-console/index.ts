@@ -42,7 +42,7 @@ Deno.serve(async (req) => {
     // ---------- LIST ORGS ----------
     if (action === 'list_orgs') {
       const [{ data: orgs }, { data: subs }, { data: members }, { data: profiles }] = await Promise.all([
-        admin.from('organizations').select('id, name, owner_id, logo_url, created_at').order('created_at', { ascending: false }),
+        admin.from('organizations').select('id, name, owner_id, logo_url, created_at, is_personal').order('created_at', { ascending: false }),
         admin.from('subscriptions').select('*'),
         admin.from('org_members').select('id, org_id, user_id, role, status'),
         admin.from('profiles').select('user_id, name, avatar_url'),
@@ -99,8 +99,10 @@ Deno.serve(async (req) => {
           const lastActivity = lastActivityByOrg.get(o.id) || null;
           const ownerOtherOrgs = (orgsByUser.get(o.owner_id) || []).filter((id) => id !== o.id);
 
-          let health: 'active' | 'idle' | 'empty' | 'orphan-duplicate' = 'empty';
-          if (ownerOtherOrgs.length > 0 && txCount === 0) {
+          let health: 'active' | 'idle' | 'empty' | 'orphan-duplicate' | 'personal' = 'empty';
+          if (o.is_personal) {
+            health = 'personal';
+          } else if (ownerOtherOrgs.length > 0 && txCount === 0) {
             health = 'orphan-duplicate';
           } else if (txCount === 0 && orgMembers.filter((m: any) => m.status === 'active').length <= 1) {
             health = 'empty';
@@ -174,7 +176,7 @@ Deno.serve(async (req) => {
     // ---------- STATS ----------
     if (action === 'stats') {
       const [{ data: orgs }, { data: subs }, { data: members }] = await Promise.all([
-        admin.from('organizations').select('id, owner_id'),
+        admin.from('organizations').select('id, owner_id, is_personal'),
         admin.from('subscriptions').select('status, is_comped, comped_until, trial_end'),
         admin.from('org_members').select('user_id, org_id, status'),
       ]);
@@ -194,11 +196,12 @@ Deno.serve(async (req) => {
         orgsByUser.get(m.user_id)!.push(m.org_id);
       });
 
-      let real = 0, empty = 0, orphan = 0;
+      let real = 0, empty = 0, orphan = 0, personal = 0;
       for (const o of orgs || []) {
         const txCount = txByOrg.get(o.id) || 0;
         const ownerOther = (orgsByUser.get(o.owner_id) || []).filter((id) => id !== o.id);
-        if (ownerOther.length > 0 && txCount === 0) orphan++;
+        if ((o as any).is_personal) personal++;
+        else if (ownerOther.length > 0 && txCount === 0) orphan++;
         else if (txCount === 0) empty++;
         else real++;
       }
@@ -222,6 +225,7 @@ Deno.serve(async (req) => {
           orgs_real: real,
           orgs_empty: empty,
           orgs_orphan: orphan,
+          orgs_personal: personal,
           users_total: usersList?.users?.length || 0,
           users_never_logged_in: (usersList?.users || []).filter((u: any) => !u.last_sign_in_at).length,
           subscriptions: subStats,

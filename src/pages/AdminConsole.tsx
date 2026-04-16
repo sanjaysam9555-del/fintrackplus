@@ -20,7 +20,7 @@ import { ChevronDown, Search, Trash2, Loader2, AlertTriangle } from "lucide-reac
 
 const SUPER_ADMIN_USER_IDS = ['0f2f00e4-47c0-4c4d-8263-77b7f9a2f336'];
 
-type Health = 'active' | 'idle' | 'empty' | 'orphan-duplicate';
+type Health = 'active' | 'idle' | 'empty' | 'orphan-duplicate' | 'personal';
 
 interface OrgRow {
   id: string;
@@ -28,6 +28,7 @@ interface OrgRow {
   owner_id: string;
   logo_url: string | null;
   created_at: string;
+  is_personal?: boolean;
   owner_email: string | null;
   owner_name: string | null;
   owner_avatar_url: string | null;
@@ -56,6 +57,7 @@ interface Stats {
   orgs_real: number;
   orgs_empty: number;
   orgs_orphan: number;
+  orgs_personal?: number;
   users_total: number;
   users_never_logged_in: number;
   subscriptions: { active: number; trialing: number; comped: number; none: number; cancelled: number };
@@ -66,12 +68,14 @@ const healthLabel: Record<Health, string> = {
   idle: 'Idle',
   empty: 'Empty',
   'orphan-duplicate': 'Orphan',
+  personal: 'Personal',
 };
 const healthClass: Record<Health, string> = {
   active: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30',
   idle: 'bg-amber-500/15 text-amber-500 border-amber-500/30',
   empty: 'bg-muted text-muted-foreground border-border',
   'orphan-duplicate': 'bg-destructive/15 text-destructive border-destructive/30',
+  personal: 'bg-sky-500/10 text-sky-500 border-sky-500/30',
 };
 
 function planSummary(sub: any | null): string {
@@ -171,7 +175,7 @@ export default function AdminConsole() {
   }, [orgs, filter, search]);
 
   const counts = useMemo(() => {
-    const c = { all: orgs.length, active: 0, idle: 0, empty: 0, 'orphan-duplicate': 0 } as any;
+    const c = { all: orgs.length, active: 0, idle: 0, empty: 0, 'orphan-duplicate': 0, personal: 0 } as any;
     orgs.forEach((o) => { c[o.health]++; });
     return c;
   }, [orgs]);
@@ -212,13 +216,15 @@ export default function AdminConsole() {
               <span>{counts.empty} empty</span>
               <span>·</span>
               <span>{counts['orphan-duplicate']} orphan</span>
+              <span>·</span>
+              <span>{counts.personal} personal</span>
               <Button variant="ghost" size="sm" className="ml-auto" onClick={loadOrgs} disabled={loadingOrgs}>
                 {loadingOrgs ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Refresh'}
               </Button>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {(['all', 'active', 'idle', 'empty', 'orphan-duplicate'] as const).map((f) => (
+              {(['all', 'active', 'idle', 'empty', 'orphan-duplicate', 'personal'] as const).map((f) => (
                 <Button
                   key={f}
                   size="sm"
@@ -283,6 +289,7 @@ export default function AdminConsole() {
                 <StatCard label="Real Orgs" value={stats.orgs_real} tone="positive" />
                 <StatCard label="Empty Orgs" value={stats.orgs_empty} tone="muted" />
                 <StatCard label="Orphan Orgs" value={stats.orgs_orphan} tone="negative" />
+                <StatCard label="Personal Orgs" value={stats.orgs_personal ?? 0} tone="muted" />
                 <StatCard label="Total Users" value={stats.users_total} />
                 <StatCard label="Never Logged In" value={stats.users_never_logged_in} tone="muted" />
                 <StatCard label="Active Subs" value={stats.subscriptions.active} tone="positive" />
