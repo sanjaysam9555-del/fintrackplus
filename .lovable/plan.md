@@ -1,52 +1,36 @@
 
-The user has comped access (`is_comped: true`, `comped_until: null` = permanent) but the subscription row also has `status: "created"` and `razorpay_subscription_id: "sub_SeFwOqO8cyCtHP"` (a stale Razorpay subscription from before they were comped).
+Problem is likely not the complimentary-access check anymore. The stronger signal is this:
 
-Looking at `useSubscription.ts`:
+- You are currently ending up on `/billing`
+- Session replay shows login succeeds, then Billing renders with “Subscription active” and “Go to App”
+- In `App.tsx`, when logged out, protected routes render `<AuthPage />` directly instead of redirecting to `/auth`
 
-```ts
-const isActive =
-  isComped ||
-  subscription?.status === "active" ||
-  (subscription?.status === "trialing" && trialEndMs > now);
+That means if the current URL is `/billing` while logged out, you see the login form there. After sign-in, the URL is still `/billing`, so the app simply renders the Billing page again.
 
-const needsMandateAuth =
-  subscription?.status === "created" && !!subscription?.razorpay_subscription_id;
-```
+Plan:
+1. Fix unauthenticated routing in `src/App.tsx`
+   - Replace the logged-out fallbacks that render `<AuthPage />` on protected paths with redirects to the explicit auth route instead:
+   - app domain: `* -> /auth`
+   - landing domain app routes: `/application/* -> /application/auth`
+   - default routing: protected paths should redirect to the matching auth route, not render auth in place
 
-So `isActive = true` (good — PaywallGate lets them through). But `needsMandateAuth = true` regardless, because it only checks `status === "created"` and ignores the comped flag. The `Billing.tsx` page (or whatever auto-redirects/shows the verification banner) is using `needsMandateAuth` to force the user onto the billing page and show the "Payment method verification incomplete" CTA.
+2. Add a defensive post-login redirect in `src/pages/Auth.tsx`
+   - After successful sign-in, navigate to the app root (`appPath("/")`) so login always lands on dashboard even if the auth screen was reached from a protected URL
 
-I need to confirm this by reading `Billing.tsx` and finding what triggers the auto-redirect to `/billing` on every login despite `isActive` being true.
+3. Keep billing accessible only when intentionally opened
+   - No auto-bounce out of Billing for valid active users, so Settings → Subscription still works normally
+   - Only fix the accidental “login happened on /billing” case
 
-## Root cause (hypothesis, will verify)
+4. Verify related flows
+   - Check both `/auth` and `/application/auth`
+   - Check login from a stale `/billing` URL
+   - Check complimentary-access login specifically
+   - Confirm mobile and desktop behavior remain correct
 
-`needsMandateAuth` doesn't account for `isComped`. When an org is comped, the leftover Razorpay `created` subscription is irrelevant — they don't need to authenticate any mandate because they're not paying.
+Files to update:
+- `src/App.tsx`
+- `src/pages/Auth.tsx`
 
-Additionally, somewhere (likely in `Billing.tsx` or a top-level effect) `needsMandateAuth` is being used to force navigation to `/billing` and show the incomplete-verification card.
-
-## Fix
-
-### 1. `src/hooks/useSubscription.ts`
-Make `needsMandateAuth` respect comped state:
-```ts
-const needsMandateAuth =
-  !isComped &&
-  subscription?.status === "created" &&
-  !!subscription?.razorpay_subscription_id;
-```
-
-### 2. `src/pages/Billing.tsx`
-- Hide the "Payment method verification incomplete" card when `isComped` is true.
-- Remove/skip any auto-redirect-to-billing effect when `isComped` is true.
-- Show the existing Complimentary Access card as the primary state.
-
-### 3. Investigate other call sites
-Search for `needsMandateAuth` and any redirect-to-`/billing` logic to make sure no other component pushes comped users to billing. Likely candidates: `App.tsx`, `Index.tsx`, or a banner in a layout component.
-
-## Files to read before editing (verification step in default mode)
-- `src/pages/Billing.tsx` — find the verification card + any redirect effect
-- Search `needsMandateAuth` across `src/`
-- Search for `navigate.*billing` / `Navigate.*billing` to find any forced redirects
-
-## Out of scope
-- Razorpay webhook / cleaning up the stale `created` subscription record (data fix; not needed once UI respects `isComped`)
-- PaywallGate (already correct — uses `isActive` which includes comped)
+Expected result:
+- If you sign in from a stale `/billing` URL, you’ll be taken to the dashboard instead of staying on Billing
+- Billing will only appear when you explicitly open it from inside the app
