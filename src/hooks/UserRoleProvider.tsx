@@ -49,6 +49,8 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchRole = useCallback(async () => {
+    setLoading(true);
+
     if (!user) {
       setRole(null);
       setOrgId(null);
@@ -69,7 +71,9 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
       if (error) {
         console.error('[UserRoleProvider] Error fetching role:', error);
         setRole('owner');
+        setOrgId(null);
         setMustChangePassword(false);
+        setMemberId(null);
       } else if (data) {
         setRole(data.role as AppRole);
         setOrgId(data.org_id);
@@ -77,11 +81,16 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
         setMemberId(data.id);
       } else {
         setRole('owner');
+        setOrgId(null);
         setMustChangePassword(false);
+        setMemberId(null);
       }
     } catch (err) {
       console.error('[UserRoleProvider] Unexpected error:', err);
       setRole('owner');
+      setOrgId(null);
+      setMustChangePassword(false);
+      setMemberId(null);
     } finally {
       setLoading(false);
     }
