@@ -10,6 +10,7 @@ import { useStatusBar } from "@/hooks/useStatusBar";
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
 import { isLandingDomain, isAppDomain, isPWA, appPath } from "@/lib/domainUtils";
+import { PaywallGate } from "@/components/PaywallGate";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -21,6 +22,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Refund = lazy(() => import("./pages/Refund"));
+const Billing = lazy(() => import("./pages/Billing"));
 
 // Prefetch critical routes during idle time so they load instantly when needed
 if (typeof window !== 'undefined') {
