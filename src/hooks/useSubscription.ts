@@ -91,21 +91,31 @@ export const useSubscription = () => {
     : Infinity;
   const isComped = !!subscription?.is_comped && compedUntilMs > now;
 
-  // NOTE: status === "created" is intentionally EXCLUDED. Razorpay sets "created" before
-  // mandate authentication. We only grant access once the webhook flips it to "trialing"
-  // (subscription.authenticated event) or "active" (subscription.charged).
+  // Access rule: comped, paid active, or trialing with valid trial_end.
+  // NOTE: "created" status (Razorpay mandate not yet authenticated) does NOT
+  // grant access by itself — the user must complete mandate auth first.
   const isActive =
     isComped ||
     subscription?.status === "active" ||
     (subscription?.status === "trialing" && trialEndMs > now);
 
-  // Subscription was created in Razorpay but mandate not yet authenticated (₹1–₹5 auth pending)
-  // Comped orgs never need mandate auth — even if a stale Razorpay "created"
-  // subscription exists from before they were comped.
+  // Mandate auth pending → show mandate auth UI on billing page (not a hard block).
+  // Comped orgs never need mandate auth.
   const needsMandateAuth =
     !isComped &&
     subscription?.status === "created" &&
     !!subscription?.razorpay_subscription_id;
+
+  // Stale/broken subscription: row exists but status indicates payment never
+  // completed AND there's no active Razorpay sub to resume. Owner should be
+  // routed to billing to start fresh, but we mark this so callers can show a
+  // clearer message instead of "payment incomplete forever".
+  const isStale =
+    !isComped &&
+    !!subscription &&
+    (subscription.status === "expired" ||
+      subscription.status === "cancelled" ||
+      (subscription.status === "created" && !subscription.razorpay_subscription_id));
 
   const trialDaysLeft = trialActive
     ? Math.max(0, Math.ceil((trialEndMs - now) / (24 * 60 * 60 * 1000)))
@@ -119,6 +129,7 @@ export const useSubscription = () => {
     trialActive,
     trialDaysLeft,
     needsMandateAuth,
+    isStale,
     refetch: fetch,
   };
 };

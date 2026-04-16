@@ -1,5 +1,10 @@
 // Creates a Razorpay customer + subscription for the org's owner.
 // Owner-only. Returns subscription ID for Razorpay Checkout.
+//
+// Reconciliation logic: if an existing subscription row points to a Razorpay
+// subscription, we re-verify its real status with Razorpay before reusing it.
+// Stale/dead rows are reset so the owner can start a clean attempt instead of
+// being trapped on the billing page.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.0";
 
@@ -29,8 +34,28 @@ async function rzp(path: string, init: RequestInit = {}) {
   const text = await res.text();
   let data: any;
   try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  if (!res.ok) throw new Error(`Razorpay ${res.status}: ${JSON.stringify(data)}`);
+  if (!res.ok) {
+    const err: any = new Error(`Razorpay ${res.status}: ${JSON.stringify(data)}`);
+    err.status = res.status;
+    err.body = data;
+    throw err;
+  }
   return data;
+}
+
+// Map Razorpay subscription status → our DB status.
+function mapRzpStatus(rzpStatus: string): string | null {
+  switch (rzpStatus) {
+    case "created": return "created";
+    case "authenticated":
+    case "active": return "active";
+    case "pending": return "past_due";
+    case "halted": return "halted";
+    case "cancelled":
+    case "completed":
+    case "expired": return "expired";
+    default: return null;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -74,20 +99,55 @@ Deno.serve(async (req) => {
     const customerBusinessName = (body.customer_business_name as string) || null;
     const customerAddress = (body.customer_address as string) || null;
     const customerStateCode = (body.customer_state_code as string) || null;
+    const forceNew = body.force_new === true;
 
-    // Get or create subscription row
+    // Get current subscription row
     let { data: sub } = await admin
       .from("subscriptions")
       .select("*")
       .eq("org_id", orgId)
       .maybeSingle();
 
-    // If active subscription exists, do nothing
-    if (sub?.razorpay_subscription_id && ["active", "trialing", "created"].includes(sub.status)) {
-      // Re-fetch from Razorpay to confirm
+    // Comped orgs don't need a Razorpay subscription at all.
+    if (sub?.is_comped && (!sub.comped_until || new Date(sub.comped_until).getTime() > Date.now())) {
+      return new Response(
+        JSON.stringify({ already_active: true, comped: true }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // If we have an existing Razorpay subscription, reconcile with Razorpay's truth.
+    if (!forceNew && sub?.razorpay_subscription_id) {
       try {
         const fresh = await rzp(`/subscriptions/${sub.razorpay_subscription_id}`);
-        if (["created", "authenticated", "active", "pending"].includes(fresh.status)) {
+        const mapped = mapRzpStatus(fresh.status);
+        const reconciledUpdates: Record<string, any> = {};
+
+        if (mapped && mapped !== sub.status) {
+          reconciledUpdates.status = mapped;
+        }
+        if (fresh.current_start) {
+          reconciledUpdates.current_period_start = new Date(fresh.current_start * 1000).toISOString();
+        }
+        if (fresh.current_end) {
+          reconciledUpdates.current_period_end = new Date(fresh.current_end * 1000).toISOString();
+        }
+        if (Object.keys(reconciledUpdates).length > 0) {
+          await admin.from("subscriptions").update(reconciledUpdates).eq("id", sub.id);
+          sub = { ...sub, ...reconciledUpdates };
+        }
+
+        // Razorpay says it's already authenticated/active → caller already has access.
+        if (fresh.status === "authenticated" || fresh.status === "active") {
+          return new Response(
+            JSON.stringify({ already_active: true, status: sub.status }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Still in `created` and the trial start hasn't passed → resume same checkout.
+        // (Mandate auth window is still open.)
+        if (fresh.status === "created") {
           return new Response(
             JSON.stringify({
               subscription_id: sub.razorpay_subscription_id,
@@ -97,7 +157,18 @@ Deno.serve(async (req) => {
             { headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
-      } catch (_) { /* fall through to create new */ }
+
+        // pending / halted / cancelled / completed / expired → row is dead.
+        // Fall through and create a fresh subscription on the same customer.
+      } catch (e: any) {
+        // If Razorpay can't find it (404), the row is stale. Reset and create new.
+        console.error("[create-subscription] reconcile failed:", e?.message);
+        await admin
+          .from("subscriptions")
+          .update({ status: "expired", razorpay_subscription_id: null })
+          .eq("id", sub.id);
+        sub = { ...sub, status: "expired", razorpay_subscription_id: null };
+      }
     }
 
     // Create or reuse Razorpay customer
