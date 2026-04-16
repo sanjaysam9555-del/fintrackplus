@@ -295,127 +295,69 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   const unreadNotifications = notifications.filter(n => !n.read).length;
   
   // Build menu items based on role
+  // Data Management — taxonomy/configuration
   const dataItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
-  
+  // Insights & Records — reports, logs, documents
+  const insightsItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
+  // Members & Holdings — financial holdings
+  const holdingsItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
+
   if (canViewPartners) {
-    dataItems.push({ 
-      icon: Users, 
-      label: "Financial Holdings", 
+    holdingsItems.push({
+      icon: Users,
+      label: "Financial Holdings",
       sublabel: `${partners?.length || 0} member${(partners?.length || 0) !== 1 ? 's' : ''}`,
       onClick: () => handleSectionChange('partners')
     });
   }
-  
+
   if (!isEmployee) {
     dataItems.push(
-      { 
-        icon: Grid3X3, 
-        label: "Categories", 
-        sublabel: `${categories.length} categories`,
-        onClick: () => handleSectionChange('categories')
-      },
-      { 
-        icon: Store, 
-        label: "Vendors", 
-        sublabel: `${vendorCount} vendors`,
-        onClick: () => handleSectionChange('vendors')
-      },
-      { 
-        icon: Tag, 
-        label: "Labels", 
-        sublabel: `${projectLabels.length} label${projectLabels.length !== 1 ? 's' : ''}`,
-        onClick: () => handleSectionChange('labels')
-      }
+      { icon: Grid3X3, label: "Categories", sublabel: `${categories.length} categories`, onClick: () => handleSectionChange('categories') },
+      { icon: Store, label: "Vendors", sublabel: `${vendorCount} vendors`, onClick: () => handleSectionChange('vendors') },
+      { icon: Tag, label: "Labels", sublabel: `${projectLabels.length} label${projectLabels.length !== 1 ? 's' : ''}`, onClick: () => handleSectionChange('labels') }
     );
-    
     const recurringCount = transactions.filter(t => t.isRecurring && t.recurringFrequency).length;
-    dataItems.push({
-      icon: RefreshCw,
-      label: "Recurring",
-      sublabel: `${recurringCount} active`,
-      onClick: () => handleSectionChange('recurring')
-    });
-  }
-  
-  if (canViewReports) {
-    dataItems.push({ 
-      icon: FileBarChart, 
-      label: "Reports", 
-      sublabel: "View & export",
-      onClick: () => handleSectionChange('reports')
-    });
-  }
-  
-  if (canViewLogs) {
-    dataItems.push({ 
-      icon: ScrollText, 
-      label: "Logs", 
-      sublabel: "Activity history",
-      onClick: () => handleSectionChange('logs')
-    });
+    dataItems.push({ icon: RefreshCw, label: "Recurring", sublabel: `${recurringCount} active`, onClick: () => handleSectionChange('recurring') });
   }
 
+  if (canViewReports) {
+    insightsItems.push({ icon: FileBarChart, label: "Reports", sublabel: "View & export", onClick: () => handleSectionChange('reports') });
+  }
+  if (canViewLogs) {
+    insightsItems.push({ icon: ScrollText, label: "Logs", sublabel: "Activity history", onClick: () => handleSectionChange('logs') });
+  }
   if (isOwner) {
-    dataItems.push({
-      icon: FileText,
-      label: "All Documents",
-      sublabel: "Receipts & project files",
-      onClick: () => handleSectionChange('documents'),
-    });
+    insightsItems.push({ icon: FileText, label: "All Documents", sublabel: "Receipts & project files", onClick: () => handleSectionChange('documents') });
   }
 
   // Team management section (owner only)
   const teamItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
-  
   if (canManageTeam) {
-    teamItems.push({ 
-      icon: Shield, 
-      label: "Team", 
-      sublabel: "Manage members",
-      onClick: () => handleSectionChange('team')
-    });
+    teamItems.push({ icon: Shield, label: "Team", sublabel: "Manage members", onClick: () => handleSectionChange('team') });
   }
-  
-  // Change approval (owners only)
   if (isOwner) {
-    teamItems.push({ 
-      icon: ClipboardCheck, 
-      label: "Change Approval", 
-      sublabel: "Pending requests",
-      onClick: () => handleSectionChange('approvals')
-    });
+    teamItems.push({ icon: ClipboardCheck, label: "Change Approval", sublabel: "Pending requests", onClick: () => handleSectionChange('approvals') });
   }
-  
-  // Owner-only sections (each rendered as its own card)
-  const backupItem = {
-    icon: Database,
-    label: "Backup & Restore",
-    sublabel: "Manage data backups",
-    onClick: () => handleSectionChange('backup'),
-  };
-  const brandingItem = {
-    icon: Building2,
-    label: "Organisation Branding",
-    sublabel: "Name & logo",
-    onClick: () => handleSectionChange('branding'),
-  };
-  const subscriptionItem = {
-    icon: CreditCard,
-    label: "Subscription",
-    sublabel: "Plan, billing & invoices",
-    onClick: () => handleSectionChange('subscription'),
-  };
+
+  // Owner-only standalone cards
+  const backupItem = { icon: Database, label: "Backup & Restore", sublabel: "Manage data backups", onClick: () => handleSectionChange('backup') };
+  const brandingItem = { icon: Building2, label: "Organisation Branding", sublabel: "Name & logo", onClick: () => handleSectionChange('branding') };
+  const subscriptionItem = { icon: CreditCard, label: "Subscription", sublabel: "Plan, billing & invoices", onClick: () => handleSectionChange('subscription') };
 
   const menuItems = [
     ...(dataItems.length > 0 ? [{ section: "Data Management", items: dataItems }] : []),
+    ...(insightsItems.length > 0 ? [{ section: "Insights & Records", items: insightsItems }] : []),
+    ...(holdingsItems.length > 0 ? [{ section: "Members & Holdings", items: holdingsItems }] : []),
     ...(teamItems.length > 0 ? [{ section: "Team & Approvals", items: teamItems }] : []),
     ...(isOwner ? [{ section: "Backup & Restore", items: [backupItem] }] : []),
     ...(isOwner ? [{ section: "Organisation Branding", items: [brandingItem] }] : []),
     ...(isOwner ? [{ section: "Subscription", items: [subscriptionItem] }] : []),
   ];
 
-  const LEFT_SECTIONS = ["Data Management", "Backup & Restore"];
-  const RIGHT_SECTIONS = ["Team & Approvals", "Subscription", "Organisation Branding"];
+  const COL1_SECTIONS = ["Data Management"];
+  const COL2_SECTIONS = ["Insights & Records", "Members & Holdings", "Subscription"];
+  const COL3_SECTIONS = ["Team & Approvals", "Backup & Restore", "Organisation Branding"];
   
   const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
     { value: 'light', label: 'Light', icon: Sun, description: 'Light theme' },
