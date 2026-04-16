@@ -564,6 +564,26 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                 </motion.div>
               </div>
             ))}
+
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+                className="bg-card rounded-2xl p-4 shadow-card border border-border">
+                <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
+                <div className="grid grid-cols-5 gap-2">
+                  {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
+                    const isActive = defaultTimeFilter === option.value;
+                    return (
+                      <button key={option.value} onClick={() => setDefaultTimeFilter(option.value)}
+                        className={cn("py-2 rounded-xl text-sm font-medium transition-all",
+                          isActive ? "bg-accent border-2 border-primary text-accent-foreground" : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground")}>
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </div>
           </div>
 
           <div className="space-y-6">
@@ -614,63 +634,40 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                 </div>
               </motion.div>
             </div>
+          </div>
+        </div>
 
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                className="bg-card rounded-2xl p-4 shadow-card border border-border">
-                <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
-                <div className="grid grid-cols-5 gap-2">
-                  {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
-                    const isActive = defaultTimeFilter === option.value;
-                    return (
-                      <button key={option.value} onClick={() => setDefaultTimeFilter(option.value)}
-                        className={cn("py-2 rounded-xl text-sm font-medium transition-all",
-                          isActive ? "bg-accent border-2 border-primary text-accent-foreground" : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground")}>
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
+        {/* Appearance: full width below the parallel columns */}
+        <div className="px-4 mb-6">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Appearance</p>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+            className="bg-card rounded-2xl p-4 shadow-card border border-border">
+            <div className="grid grid-cols-4 gap-2">
+              {themeOptions.map((option) => {
+                const isActive = mode === option.value;
+                return (
+                  <button key={option.value} onClick={() => {
+                    const oldMode = mode;
+                    setTheme(option.value);
+                    if (oldMode !== option.value) {
+                      const userName = useFinanceStore.getState().userProfile.name || 'Unknown';
+                      useFinanceStore.getState().addNotification({ type: 'settings', title: 'Theme Changed', message: `${userName} changed theme to ${option.label}`, details: [{ field: 'Theme', from: oldMode.charAt(0).toUpperCase() + oldMode.slice(1), to: option.label }] });
+                    }
+                  }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
+                    isActive ? "bg-accent border-2 border-primary" : "bg-muted/50 border-2 border-transparent hover:bg-muted")}>
+                    <option.icon size={20} className={isActive ? "text-accent-foreground" : "text-muted-foreground"} />
+                    <span className={cn("text-xs font-medium", isActive ? "text-accent-foreground" : "text-muted-foreground")}>{option.label}</span>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+            <p className="text-xs text-muted-foreground text-center mt-3">
+              {isOled ? 'OLED mode saves battery on AMOLED screens' : mode === 'system' ? 'Following your system preference' : isDark ? 'Dark mode is easier on the eyes at night' : 'Light mode is best for bright environments'}
+            </p>
+          </motion.div>
         </div>
 
-        {/* Row 3: Appearance */}
-        <div className="grid grid-cols-2 gap-6 px-4 mb-6">
-          <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Appearance</p>
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              className="bg-card rounded-2xl p-4 shadow-card border border-border">
-              <div className="grid grid-cols-4 gap-2">
-                {themeOptions.map((option) => {
-                  const isActive = mode === option.value;
-                  return (
-                    <button key={option.value} onClick={() => {
-                      const oldMode = mode;
-                      setTheme(option.value);
-                      if (oldMode !== option.value) {
-                        const userName = useFinanceStore.getState().userProfile.name || 'Unknown';
-                        useFinanceStore.getState().addNotification({ type: 'settings', title: 'Theme Changed', message: `${userName} changed theme to ${option.label}`, details: [{ field: 'Theme', from: oldMode.charAt(0).toUpperCase() + oldMode.slice(1), to: option.label }] });
-                      }
-                    }} className={cn("flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
-                      isActive ? "bg-accent border-2 border-primary" : "bg-muted/50 border-2 border-transparent hover:bg-muted")}>
-                      <option.icon size={20} className={isActive ? "text-accent-foreground" : "text-muted-foreground"} />
-                      <span className={cn("text-xs font-medium", isActive ? "text-accent-foreground" : "text-muted-foreground")}>{option.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-xs text-muted-foreground text-center mt-3">
-                {isOled ? 'OLED mode saves battery on AMOLED screens' : mode === 'system' ? 'Following your system preference' : isDark ? 'Dark mode is easier on the eyes at night' : 'Light mode is best for bright environments'}
-              </p>
-            </motion.div>
-          </div>
-          <div />
-        </div>
-
-        {/* Sign Out */}
+        {/* Sign Out: full width */}
         <div className="px-4 mb-6">
           <Button variant="outline" className="w-full text-destructive border-destructive/20 hover:bg-destructive/10 h-auto py-4 rounded-2xl" onClick={handleLogout}>
             <LogOut size={18} className="mr-2" /> Sign Out
