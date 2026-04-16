@@ -1,46 +1,42 @@
 
 ## Problem
-On the Settings page (desktop), the third group is currently labeled **"Backup & Branding"** and bundles Backup & Restore, Organisation Branding, and Subscription into one card. The user wants:
-1. **Subscription** as its own section.
-2. **Backup & Restore** as its own section.
-3. **Organisation Branding** as its own section.
-4. The two desktop columns to be **parallel in height**.
+On iPad, clicking Sign Out shows the success toast but the app stays on the current screen instead of navigating to the login page.
 
-## Where to change
-Only `src/components/SettingsPage.tsx`.
+## Root cause
+`signOut()` in `useAuth.tsx` calls `supabase.auth.signOut()` and relies on the `onAuthStateChange('SIGNED_OUT')` listener to clear `user`/`session` state. The route guard in `App.tsx` only redirects to `/auth` when `user` becomes `null`.
 
-### 1. Split the menu groups
-Replace the single `backupItems` group with three separate one-item groups in the `menuItems` builder (around lines 389–416):
+On iPad Safari (and sometimes iPadOS WebViews/PWAs), the `SIGNED_OUT` event is unreliable — it can be delayed, swallowed by ITP/storage partitioning, or fail to propagate when the tab is in a PWA standalone mode. The `await supabase.auth.signOut()` still resolves (so the toast fires), but the React `user` state never becomes `null`, so no re-render → no redirect happens.
 
-```ts
-const menuItems = [
-  ...(dataItems.length > 0 ? [{ section: "Data Management", items: dataItems }] : []),
-  ...(teamItems.length > 0 ? [{ section: "Team & Approvals", items: teamItems }] : []),
-  ...(isOwner ? [{ section: "Backup & Restore", items: [backupItem] }] : []),
-  ...(isOwner ? [{ section: "Organisation Branding", items: [brandingItem] }] : []),
-  ...(isOwner ? [{ section: "Subscription", items: [subscriptionItem] }] : []),
-];
-```
+A second contributing risk: even if state did update, we depend purely on the `Navigate` element being re-evaluated. An explicit programmatic navigation is safer for the post-logout flow.
 
-This automatically renders them as separate cards on both mobile (single column) and desktop (right column, since they're filtered by `section !== "Data Management"`).
+## Fix
+Make sign-out deterministic instead of event-driven, and force a navigation.
 
-### 2. Balance the two desktop columns
-Currently the **left column** only holds Data Management while the **right column** stacks Team & Approvals + (now 3) Backup-family sections + Sync + Default Time Frame, making the right column much taller.
+### 1. `src/hooks/useAuth.tsx` — clear state immediately in `signOut`
+Inside the `signOut` function:
+- Set `intentionalSignOut.current = true`
+- Call `await supabase.auth.signOut()` (wrapped in try/catch so iPad failures don't block)
+- **Immediately** `setSession(null)` and `setUser(null)` regardless of whether the auth event fires
 
-Redistribute on desktop (lines 542–636) so heights are visually parallel:
+This guarantees React state matches reality the moment `signOut()` resolves, instead of waiting on a listener that may never fire on iPad.
 
-- **Left column**: Data Management + Backup & Restore + Organisation Branding
-- **Right column**: Team & Approvals + Subscription + Sync + Default Time Frame
+### 2. `src/components/SettingsPage.tsx` and `src/components/DesktopSidebar.tsx` — force navigation after logout
+After `await signOut()`:
+- Use `window.location.href` to navigate to the correct auth path based on domain:
+  - `isLandingDomain()` → `/application/auth`
+  - otherwise → `/auth`
+- A hard navigation (`window.location.href`) is intentional here — it also flushes any in-memory caches (Zustand store, React Query) that may still hold the previous user's data, which is good hygiene on logout.
 
-Implement by filtering the desktop column rendering by explicit section names rather than the current `=== "Data Management"` / `!== "Data Management"` split. Mobile stays unchanged (single stacked column in original order).
+Show the toast *before* the navigation kicks off so the user still sees confirmation.
 
-### 3. Appearance row
-Already a 2-col grid with empty right cell — leaves room for the Sign Out button to optionally move there later. No change needed now.
-
-## Files touched
-- `src/components/SettingsPage.tsx` (menu builder + desktop column distribution)
+## Files to update
+- `src/hooks/useAuth.tsx` — clear state synchronously inside `signOut`, wrap supabase call in try/catch
+- `src/components/SettingsPage.tsx` — force-navigate to auth path after logout
+- `src/components/DesktopSidebar.tsx` — same force-navigate fix
 
 ## Out of scope
-- Mobile layout (already single-column, will naturally show 3 separate cards)
-- The actual section sub-pages (BackupRestoreSection, OrgBrandingSection, SubscriptionSection) — already separate components
-- Memory update for `mem://style/settings-page-layout-desktop` — will refresh after implementation to reflect the new column distribution
+- Login flow, session restore, or splash logic — unchanged
+- Other auth events (TOKEN_REFRESHED, SIGNED_IN) — unchanged
+
+## Expected result
+On iPad (Safari, PWA, and WebView), clicking Sign Out shows the toast and immediately lands the user on the login page, regardless of whether the Supabase `SIGNED_OUT` event fires.
