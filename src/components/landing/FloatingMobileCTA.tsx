@@ -24,7 +24,7 @@ export const FloatingMobileCTA = () => {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 80, opacity: 0 }}
           transition={{ type: "spring", stiffness: 200, damping: 24 }}
-          className="md:hidden fixed bottom-6 inset-x-0 z-50 flex justify-center pointer-events-none"
+          className="fixed bottom-6 inset-x-0 z-50 flex justify-center pointer-events-none"
         >
           <button
             className="pointer-events-auto relative flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-full text-primary-foreground bg-gradient-to-r from-primary to-primary/80 backdrop-blur-md shadow-[0_8px_32px_rgba(25,102,205,0.3)] hover:shadow-[0_8px_40px_rgba(25,102,205,0.4)] transition-shadow"

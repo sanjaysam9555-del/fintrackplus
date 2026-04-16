@@ -40,7 +40,7 @@ const faqs = [
   },
   {
     q: "How much does it cost?",
-    a: "Launch price is ₹499/month (regular ₹799). That's roughly ₹17/day. Credit card required at signup. Cancel anytime, no hidden fees.",
+    a: "Launch price is ₹599/month including GST (regular ₹799). That's roughly ₹20/day. Credit card required at signup. Cancel anytime, no hidden fees.",
   },
   {
     q: "What payment methods do you accept?",
