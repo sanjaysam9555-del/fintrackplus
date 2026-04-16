@@ -146,7 +146,20 @@ const Billing = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10 safe-top pb-12">
       <div className="max-w-2xl mx-auto p-4">
         <button
-          onClick={() => navigate(appPath("/"))}
+          onClick={() => {
+            // Smart back: prefer browser history if we have an in-app entry,
+            // otherwise deep-link into Settings → Subscription.
+            const hasInAppHistory =
+              typeof window !== "undefined" &&
+              window.history.length > 1 &&
+              document.referrer &&
+              document.referrer.includes(window.location.host);
+            if (hasInAppHistory) {
+              navigate(-1);
+            } else {
+              navigate(appPath("/"), { state: { openSettings: "subscription" } });
+            }
+          }}
           className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6"
         >
           <ArrowLeft size={16} /> Back
