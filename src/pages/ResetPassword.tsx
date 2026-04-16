@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Lock, CheckCircle2, Sparkles } from 'lucide-react';
+import { Eye, EyeOff, Lock, CheckCircle2, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { appPath } from '@/lib/domainUtils';
+import { supabase } from '@/integrations/supabase/client';
+
+type VerifyState = 'verifying' | 'ready' | 'invalid';
 
 export const ResetPasswordPage = () => {
   const [password, setPassword] = useState('');
@@ -15,8 +18,74 @@ export const ResetPasswordPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [verifyState, setVerifyState] = useState<VerifyState>('verifying');
+  const [verifyError, setVerifyError] = useState<string>('');
   const { updatePassword } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const establishSession = async () => {
+      try {
+        // Try implicit flow first (hash tokens from generateLink)
+        const hash = window.location.hash.startsWith('#')
+          ? window.location.hash.substring(1)
+          : window.location.hash;
+        const hashParams = new URLSearchParams(hash);
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+        const hashError = hashParams.get('error_description') || hashParams.get('error');
+
+        if (hashError) {
+          setVerifyError(decodeURIComponent(hashError.replace(/\+/g, ' ')));
+          setVerifyState('invalid');
+          return;
+        }
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
+          if (error) {
+            setVerifyError(error.message);
+            setVerifyState('invalid');
+            return;
+          }
+          setVerifyState('ready');
+          return;
+        }
+
+        // PKCE fallback (?code=)
+        const queryParams = new URLSearchParams(window.location.search);
+        const code = queryParams.get('code');
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            setVerifyError(error.message);
+            setVerifyState('invalid');
+            return;
+          }
+          setVerifyState('ready');
+          return;
+        }
+
+        // No tokens — check if there's already an active session (e.g. detectSessionInUrl ran)
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setVerifyState('ready');
+          return;
+        }
+
+        setVerifyError('No reset token found in the link.');
+        setVerifyState('invalid');
+      } catch (err: any) {
+        setVerifyError(err?.message || 'Failed to verify reset link');
+        setVerifyState('invalid');
+      }
+    };
+
+    establishSession();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +103,10 @@ export const ResetPasswordPage = () => {
     if (error) {
       toast.error(error.message);
     } else {
+      // Clear URL hash so a refresh doesn't re-trigger flow
+      if (window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname);
+      }
       setSuccess(true);
     }
   };
@@ -57,7 +130,39 @@ export const ResetPasswordPage = () => {
           </p>
         </div>
 
-        {success ? (
+        {verifyState === 'verifying' ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-border/50 text-center space-y-5"
+          >
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+              <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Verifying link…</h2>
+            <p className="text-sm text-muted-foreground">Just a moment while we confirm your reset request.</p>
+          </motion.div>
+        ) : verifyState === 'invalid' ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-border/50 text-center space-y-5"
+          >
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto">
+              <AlertCircle className="w-8 h-8 text-destructive" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground">Link Expired or Invalid</h2>
+            <p className="text-sm text-muted-foreground">
+              {verifyError || 'This password reset link is no longer valid. Please request a new one.'}
+            </p>
+            <Button
+              className="w-full h-12 rounded-xl text-base font-semibold"
+              onClick={() => navigate(appPath('/auth'))}
+            >
+              Request New Link
+            </Button>
+          </motion.div>
+        ) : success ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
