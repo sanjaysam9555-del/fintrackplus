@@ -284,6 +284,24 @@ Deno.serve(async (req) => {
       const { org_id } = body;
       if (!org_id) return json({ error: 'org_id required' }, 400);
 
+      // DATA RETENTION POLICY: block deletion if org was active within last 1 year
+      const { data: lastActivityData, error: laErr } = await admin.rpc('org_last_activity_at', { _org_id: org_id });
+      if (laErr) {
+        console.error('[delete_org] org_last_activity_at error:', laErr);
+        return json({ error: 'Could not verify retention policy: ' + laErr.message }, 500);
+      }
+      const lastActivity = lastActivityData ? new Date(lastActivityData as string) : null;
+      if (lastActivity) {
+        const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+        const ageMs = Date.now() - lastActivity.getTime();
+        if (ageMs < ONE_YEAR_MS) {
+          const daysRemaining = Math.ceil((ONE_YEAR_MS - ageMs) / (24 * 60 * 60 * 1000));
+          return json({
+            error: `Data retention policy blocks deletion. Organization was active on ${lastActivity.toISOString().slice(0, 10)}. Data must be retained for at least 1 year from last activity (${daysRemaining} day(s) remaining).`,
+          }, 403);
+        }
+      }
+
       // Collect user_ids that belong to this org (for profile cleanup decisions)
       const { data: orgMembers } = await admin.from('org_members').select('user_id').eq('org_id', org_id);
       const userIds = (orgMembers || []).map((m: any) => m.user_id);
