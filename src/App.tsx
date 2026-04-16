@@ -152,7 +152,8 @@ const AppRoutes = () => {
             <Route path="*" element={<AuthPage />} />
           ) : (
             <>
-              <Route path="/" element={<Index />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/" element={<PaywallGate><Index /></PaywallGate>} />
               <Route path="*" element={<NotFound />} />
             </>
           )}
@@ -178,7 +179,8 @@ const AppRoutes = () => {
           <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
           {user ? (
             <>
-              <Route path="/application" element={<Index />} />
+              <Route path="/application/billing" element={<Billing />} />
+              <Route path="/application" element={<PaywallGate><Index /></PaywallGate>} />
               <Route path="/application/*" element={<NotFound />} />
             </>
           ) : (
@@ -213,8 +215,10 @@ const AppRoutes = () => {
           <Route path="*" element={<AuthPage />} />
         ) : (
           <>
-            <Route path="/" element={<Index />} />
-            <Route path="/application" element={<Index />} />
+            <Route path="/billing" element={<Billing />} />
+            <Route path="/application/billing" element={<Billing />} />
+            <Route path="/" element={<PaywallGate><Index /></PaywallGate>} />
+            <Route path="/application" element={<PaywallGate><Index /></PaywallGate>} />
             <Route path="*" element={<NotFound />} />
           </>
         )}
