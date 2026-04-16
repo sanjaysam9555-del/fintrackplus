@@ -23,6 +23,8 @@ import reports from "@/assets/landing/real/reports.png";
 import activityLog from "@/assets/landing/real/activity-log.png";
 import categories from "@/assets/landing/real/categories.png";
 import team from "@/assets/landing/real/team.png";
+import companyBank from "@/assets/landing/real/company-bank.png";
+import financialHoldings from "@/assets/landing/real/financial-holdings.png";
 
 // Cropped feature images
 import aiInsightsCropped from "@/assets/landing/real/ai-insights-cropped.png";
@@ -130,8 +132,7 @@ const remainingFeatures = [
     title: "Company Bank Account",
     badge: "New",
     description: "Shared organisation funds with deposit & withdrawal tracking. Keep company money separate from personal partner balances.",
-    screenshot: "/placeholder.svg",
-    screenshotAlt: "Company bank account with deposit and withdrawal tracking",
+    screenshot: companyBank,
     iconBg: "bg-success/10 text-success",
     gradient: "from-success/15 via-success/5 to-transparent",
   },
@@ -140,8 +141,7 @@ const remainingFeatures = [
     title: "Financial Holdings",
     badge: "New",
     description: "Consolidated view of cash and online balances across all partners. See exactly where your money sits at a glance.",
-    screenshot: "/placeholder.svg",
-    screenshotAlt: "Financial holdings dashboard",
+    screenshot: financialHoldings,
     iconBg: "bg-warning/10 text-warning",
     gradient: "from-warning/15 via-warning/5 to-transparent",
   },
