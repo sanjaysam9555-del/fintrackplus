@@ -371,6 +371,16 @@ export const AuthPage = () => {
           <ForgotPasswordScreen onBack={() => setView('login')} />
         )}
 
+        {(view === 'account_exists' || view === 'invited_pending') && (
+          <AccountExistsScreen
+            email={verificationEmail}
+            variant={view === 'invited_pending' ? 'invited_pending' : 'exists'}
+            onLogin={() => { setEmail(verificationEmail); setView('login'); }}
+            onForgot={() => { setEmail(verificationEmail); setView('forgot'); }}
+            onBack={() => setView('signup')}
+          />
+        )}
+
         {(view === 'login' || view === 'signup') && (
           <>
             <motion.form
