@@ -243,7 +243,16 @@ export const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
+
+  // If user becomes authenticated while on /auth (e.g. after sign-in from a stale
+  // protected URL like /billing), force-redirect to the app root.
+  useEffect(() => {
+    if (user) {
+      navigate(appPath('/'), { replace: true });
+    }
+  }, [user, navigate]);
 
   const isLogin = view === 'login';
 
