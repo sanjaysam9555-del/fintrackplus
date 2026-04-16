@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Check, Sparkles, Shield, Receipt, Calendar, ArrowLeft } from "lucide-react";
+import { Loader2, Check, Sparkles, Shield, Receipt, Calendar, ArrowLeft, Info, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -35,7 +35,7 @@ const loadRazorpayScript = (): Promise<boolean> =>
 const Billing = () => {
   const { user } = useAuth();
   const { isOwner, loading: roleLoading } = useUserRole();
-  const { subscription, isActive, trialActive, trialDaysLeft, refetch } = useSubscription();
+  const { subscription, isActive, trialActive, trialDaysLeft, needsMandateAuth, refetch } = useSubscription();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [businessName, setBusinessName] = useState("");
@@ -87,20 +87,44 @@ const Billing = () => {
         key: razorpay_key_id,
         subscription_id,
         name: "FinTrack+",
-        description: "Monthly subscription (incl. 18% GST)",
+        description: "Mandate setup (₹1–₹5, refundable). Trial billing starts after 7 days.",
         theme: { color: "#1665B8" },
         prefill: { email: user?.email },
         handler: async () => {
-          toast.success("Payment authorized! Trial starts now — you'll be charged after 7 days.");
-          await refetch();
-          setTimeout(() => navigate(appPath("/")), 1200);
+          toast.success("Payment method verified! Activating your trial…");
+          // Poll for webhook to flip status to 'trialing'
+          const start = Date.now();
+          let activated = false;
+          while (Date.now() - start < 15000) {
+            await new Promise((r) => setTimeout(r, 1500));
+            await refetch();
+            const { data: fresh } = await supabase
+              .from("subscriptions")
+              .select("status")
+              .eq("razorpay_subscription_id", subscription_id)
+              .maybeSingle();
+            if (fresh && (fresh.status === "trialing" || fresh.status === "active")) {
+              activated = true;
+              break;
+            }
+          }
+          if (activated) {
+            toast.success("Trial activated! 7 days of full access.");
+            setTimeout(() => navigate(appPath("/")), 1000);
+          } else {
+            toast.message("Verification received. Trial will activate within a minute.");
+          }
+          setSubmitting(false);
         },
         modal: {
-          ondismiss: () => setSubmitting(false),
+          ondismiss: () => {
+            toast.error("Payment method verification cancelled. Trial not started.");
+            setSubmitting(false);
+          },
         },
       });
       rzp.on("payment.failed", (resp: any) => {
-        toast.error(resp.error?.description || "Payment failed");
+        toast.error(resp.error?.description || "Payment verification failed. Trial not started.");
         setSubmitting(false);
       });
       rzp.open();
@@ -144,7 +168,25 @@ const Billing = () => {
           </motion.div>
         )}
 
-        {!isActive && (
+        {needsMandateAuth && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3"
+          >
+            <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                Payment method verification incomplete
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your trial hasn't started yet. Complete the ₹1–₹5 refundable verification below to activate it.
+              </p>
+            </div>
+          </motion.div>
+        )}
+
+        {!isActive && !needsMandateAuth && !trialActive && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -154,6 +196,27 @@ const Billing = () => {
             <p className="text-xs text-muted-foreground mt-0.5">
               Subscribe below to regain full access to FinTrack+.
             </p>
+          </motion.div>
+        )}
+
+        {/* RBI Mandate explainer — shown before user starts trial */}
+        {isOwner && !isActive && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex gap-3"
+          >
+            <Info size={18} className="text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                About the ₹1–₹5 verification charge
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Per RBI guidelines for recurring payments, Razorpay charges a small refundable amount
+                (₹1–₹5) to verify your payment method. This is <strong>auto-refunded within 5–7 business days</strong>.
+                Your trial starts only after this verification succeeds. Your first ₹599 charge happens after the 7-day trial.
+              </p>
+            </div>
           </motion.div>
         )}
 
@@ -252,6 +315,19 @@ const Billing = () => {
                   Only your organization owner can manage billing. Please ask them to subscribe.
                 </p>
               </div>
+            ) : needsMandateAuth ? (
+              <Button
+                onClick={handleSubscribe}
+                disabled={submitting}
+                size="lg"
+                className="w-full h-12 rounded-xl text-base font-semibold"
+              >
+                {submitting ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
+                ) : (
+                  "Complete Verification to Start Trial"
+                )}
+              </Button>
             ) : subscription?.razorpay_subscription_id && isActive ? (
               <div className="text-center space-y-2">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-sm font-medium">

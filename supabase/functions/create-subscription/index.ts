@@ -126,7 +126,10 @@ Deno.serve(async (req) => {
         quantity: 1,
         start_at: startAt,
         customer_notify: 1,
-        notes: { org_id: orgId },
+        notes: {
+          org_id: orgId,
+          description: "FinTrack+ subscription — refundable mandate authorization (₹1–₹5)",
+        },
       }),
     });
 
