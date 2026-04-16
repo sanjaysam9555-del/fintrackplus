@@ -25,9 +25,10 @@ export const useGlobalSearch = () => {
   const { transactions, categories, projects, vendors } = useFinanceStore();
 
   const results = useMemo((): SearchResult[] => {
-    if (!query.trim()) return [];
+    const trimmed = query.trim();
+    if (!trimmed) return [];
 
-    const searchTerm = query.toLowerCase().trim();
+    const searchTerm = trimmed.toLowerCase();
     const results: SearchResult[] = [];
 
     // Search transactions - check each field individually for better matching

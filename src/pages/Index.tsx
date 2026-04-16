@@ -10,7 +10,6 @@ import { useSyncEngine } from "@/hooks/useSyncEngine";
 import { useTheme } from "@/hooks/useTheme";
 import { useUserRole } from "@/hooks/useUserRole";
 import { motion, AnimatePresence } from "framer-motion";
-import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
@@ -23,6 +22,7 @@ const AddTransactionSheet = lazy(() => import("@/components/AddTransactionSheet"
 const ProjectOverviewPage = lazy(() => import("@/components/ProjectOverviewPage").then(m => ({ default: m.ProjectOverviewPage })));
 const AISummaryPage = lazy(() => import("@/components/AISummaryPage").then(m => ({ default: m.AISummaryPage })));
 const OnboardingFlow = lazy(() => import("@/components/OnboardingFlow").then(m => ({ default: m.OnboardingFlow })));
+const GlobalSearchDialog = lazy(() => import("@/components/GlobalSearchDialog").then(m => ({ default: m.GlobalSearchDialog })));
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
 type ViewMode = TabId | 'settings' | 'ai';
@@ -414,13 +414,17 @@ const Index = () => {
         </Suspense>
       )}
       
-      {/* Global Search Dialog */}
-      <GlobalSearchDialog
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        onNavigate={handleNavigate}
-        userId={user?.id}
-      />
+      {/* Global Search Dialog — only mounted when open to avoid running search hook on every store change */}
+      {isSearchOpen && (
+        <Suspense fallback={null}>
+          <GlobalSearchDialog
+            isOpen={isSearchOpen}
+            onClose={() => setIsSearchOpen(false)}
+            onNavigate={handleNavigate}
+            userId={user?.id}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

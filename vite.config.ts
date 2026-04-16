@@ -111,7 +111,11 @@ export default defineConfig(({ mode }) => ({
           // Vendor chunks - rarely change, cache well
           'vendor-react': ['react', 'react-dom'],
           'vendor-router': ['react-router-dom'],
-          'vendor-ui': ['framer-motion', 'sonner', 'recharts'],
+          'vendor-motion': ['framer-motion'],
+          'vendor-charts': ['recharts'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-dates': ['date-fns'],
+          'vendor-toast': ['sonner'],
           'vendor-supabase': ['@supabase/supabase-js'],
           'vendor-query': ['@tanstack/react-query'],
         },
@@ -133,6 +137,9 @@ export default defineConfig(({ mode }) => ({
       '@supabase/supabase-js',
       'framer-motion',
       'zustand',
+      'date-fns',
+      'lucide-react',
+      'sonner',
     ],
   },
 }));

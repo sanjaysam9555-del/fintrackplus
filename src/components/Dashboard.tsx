@@ -58,25 +58,43 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
     };
   }, [dateRange]);
   
-  const currentIncome = getTotalIncome(dateRange.start, dateRange.end);
-  const currentExpense = getTotalExpense(dateRange.start, dateRange.end);
-  const previousIncome = getTotalIncome(previousDateRange.start, previousDateRange.end);
-  const previousExpense = getTotalExpense(previousDateRange.start, previousDateRange.end);
-  
-  const incomeChange = previousIncome > 0 
-    ? ((currentIncome - previousIncome) / previousIncome) * 100 
+  const currentIncome = useMemo(
+    () => getTotalIncome(dateRange.start, dateRange.end),
+    [getTotalIncome, dateRange, transactions]
+  );
+  const currentExpense = useMemo(
+    () => getTotalExpense(dateRange.start, dateRange.end),
+    [getTotalExpense, dateRange, transactions]
+  );
+  const previousIncome = useMemo(
+    () => getTotalIncome(previousDateRange.start, previousDateRange.end),
+    [getTotalIncome, previousDateRange, transactions]
+  );
+  const previousExpense = useMemo(
+    () => getTotalExpense(previousDateRange.start, previousDateRange.end),
+    [getTotalExpense, previousDateRange, transactions]
+  );
+
+  const incomeChange = previousIncome > 0
+    ? ((currentIncome - previousIncome) / previousIncome) * 100
     : 0;
-  const expenseChange = previousExpense > 0 
-    ? ((currentExpense - previousExpense) / previousExpense) * 100 
+  const expenseChange = previousExpense > 0
+    ? ((currentExpense - previousExpense) / previousExpense) * 100
     : 0;
-  
+
   const netBalance = currentIncome - currentExpense;
-  
+
   const totalHoldings = useMemo(() => {
     if (partners.length === 0) return 0;
     const initialBalances = partners.reduce((sum, p) => sum + (p.initialCashBalance || 0) + (p.initialOnlineBalance || 0), 0);
     return netBalance + initialBalances;
   }, [partners, netBalance]);
+
+  // Pre-filter transactions for the chart once (avoid re-filtering on every render)
+  const chartTransactions = useMemo(
+    () => transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end),
+    [transactions, dateRange]
+  );
   
   // Filter transactions based on selected date range
   const filteredTransactions = useMemo(() => {
@@ -301,7 +319,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
       {!isEmployee && (
         <div className="px-4 lg:px-0 mb-6">
           <CashFlowChart 
-            transactions={transactions.filter(t => t.date >= dateRange.start && t.date <= dateRange.end)} 
+            transactions={chartTransactions} 
             timeFilter={timeFilter}
             dateRange={dateRange}
           />
