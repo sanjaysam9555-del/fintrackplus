@@ -427,6 +427,12 @@ function OrgCard({ org, onChanged }: { org: OrgRow; onChanged: () => void }) {
           <span className="ml-auto">{planSummary(org.subscription)}</span>
         </div>
 
+        {org.health === 'personal' && org.owner_active_org_name && (
+          <div className="rounded-md border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-xs text-sky-600 dark:text-sky-400">
+            Stale solo signup — owner is now active in: <span className="font-medium">{org.owner_active_org_name}</span>
+          </div>
+        )}
+
         <Collapsible open={open} onOpenChange={setOpen}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" size="sm" className="w-full justify-between">
