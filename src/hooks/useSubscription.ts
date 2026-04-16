@@ -95,8 +95,12 @@ export const useSubscription = () => {
     (subscription?.status === "trialing" && trialEndMs > now);
 
   // Subscription was created in Razorpay but mandate not yet authenticated (₹1–₹5 auth pending)
+  // Comped orgs never need mandate auth — even if a stale Razorpay "created"
+  // subscription exists from before they were comped.
   const needsMandateAuth =
-    subscription?.status === "created" && !!subscription?.razorpay_subscription_id;
+    !isComped &&
+    subscription?.status === "created" &&
+    !!subscription?.razorpay_subscription_id;
 
   const trialDaysLeft = trialActive
     ? Math.max(0, Math.ceil((trialEndMs - now) / (24 * 60 * 60 * 1000)))
