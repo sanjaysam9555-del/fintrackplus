@@ -141,8 +141,9 @@ const AppRoutes = () => {
         <Routes>
           <Route path="/install" element={<InstallPage />} />
           <Route path="/landing" element={<Landing />} />
-          <Route path="/privacy" element={<Privacy />} />
+         <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/refund" element={<Refund />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
           {!user ? (
@@ -167,6 +168,7 @@ const AppRoutes = () => {
           <Route path="/landing" element={<Landing />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/refund" element={<Refund />} />
 
           {/* App routes under /application (backward compat) */}
           <Route path="/application/install" element={<InstallPage />} />
@@ -196,6 +198,7 @@ const AppRoutes = () => {
         <Route path="/landing" element={<Landing />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/refund" element={<Refund />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
 
