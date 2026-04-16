@@ -171,6 +171,7 @@ export default function AdminConsole() {
 
   const filtered = useMemo(() => {
     return orgs.filter((o) => {
+      if (hidePersonal && o.health === 'personal' && filter !== 'personal') return false;
       if (filter !== 'all' && o.health !== filter) return false;
       if (search) {
         const q = search.toLowerCase();
@@ -183,7 +184,7 @@ export default function AdminConsole() {
       }
       return true;
     });
-  }, [orgs, filter, search]);
+  }, [orgs, filter, search, hidePersonal]);
 
   const counts = useMemo(() => {
     const c = { all: orgs.length, active: 0, idle: 0, empty: 0, 'orphan-duplicate': 0, personal: 0 } as any;
