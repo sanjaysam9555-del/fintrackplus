@@ -505,42 +505,154 @@ function OrgCard({ org, onChanged }: { org: OrgRow; onChanged: () => void }) {
   );
 }
 
-function UserRowCard({ user }: { user: UserRow }) {
+function UserRowCard({ user, onChanged }: { user: UserRow; onChanged: () => void }) {
+  const [open, setOpen] = useState(false);
   const active = user.memberships.filter((m) => m.status === 'active');
+  const inactive = user.memberships.filter((m) => m.status !== 'active');
+  const hasComp = (user.comped_org_ids?.length ?? 0) > 0;
+
   return (
     <Card>
-      <CardContent className="p-3 flex items-start gap-3">
-        <Avatar className="h-9 w-9">
-          {user.avatar_url && <AvatarImage src={user.avatar_url} />}
-          <AvatarFallback className="text-xs">{(user.name || user.email || '?').slice(0, 2).toUpperCase()}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-sm">{user.name || 'Unnamed'}</span>
-            <span className="text-xs text-muted-foreground truncate">{user.email}</span>
-            {user.owns_multiple_orgs && (
-              <Badge variant="outline" className="text-[10px] bg-amber-500/15 text-amber-500 border-amber-500/30">
-                In {active.length} orgs
-              </Badge>
-            )}
-            {user.never_logged_in && (
-              <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">Never logged in</Badge>
-            )}
+      <CardContent className="p-3 space-y-2">
+        <div className="flex items-start gap-3">
+          <Avatar className="h-9 w-9">
+            {user.avatar_url && <AvatarImage src={user.avatar_url} />}
+            <AvatarFallback className="text-xs">{(user.name || user.email || '?').slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium text-sm">{user.name || 'Unnamed'}</span>
+              <span className="text-xs text-muted-foreground truncate">{user.email}</span>
+              {hasComp && (
+                <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">Comped</Badge>
+              )}
+              {user.owns_multiple_orgs && (
+                <Badge variant="outline" className="text-[10px] bg-amber-500/15 text-amber-500 border-amber-500/30">
+                  In {active.length} orgs
+                </Badge>
+              )}
+              {user.never_logged_in && (
+                <Badge variant="outline" className="text-[10px] bg-muted text-muted-foreground">Never logged in</Badge>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {active.map((m) => (
+                <span key={m.org_id} className="text-[11px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
+                  {m.org_name} <span className="text-muted-foreground">· {m.role}</span>
+                </span>
+              ))}
+              {active.length === 0 && <span className="text-[11px] text-muted-foreground">No active org</span>}
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Joined {format(new Date(user.created_at), 'd MMM yyyy')}
+              {user.last_sign_in_at && ` · last seen ${formatDistanceToNow(new Date(user.last_sign_in_at), { addSuffix: true })}`}
+            </p>
           </div>
-          <div className="flex flex-wrap gap-1">
-            {active.map((m) => (
-              <span key={m.org_id} className="text-[11px] px-1.5 py-0.5 rounded bg-secondary text-secondary-foreground">
-                {m.org_name} <span className="text-muted-foreground">· {m.role}</span>
-              </span>
-            ))}
-            {active.length === 0 && <span className="text-[11px] text-muted-foreground">No active org</span>}
-          </div>
-          <p className="text-[11px] text-muted-foreground">
-            Joined {format(new Date(user.created_at), 'd MMM yyyy')}
-            {user.last_sign_in_at && ` · last seen ${formatDistanceToNow(new Date(user.last_sign_in_at), { addSuffix: true })}`}
-          </p>
         </div>
+
+        <Collapsible open={open} onOpenChange={setOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between h-8">
+              {open ? 'Hide details' : 'Manage subscription & details'}
+              <ChevronDown className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3 space-y-3 border-t">
+            <div className="text-xs text-muted-foreground space-y-0.5 pt-1">
+              <p>User ID: <span className="font-mono">{user.id.slice(0, 8)}…</span></p>
+              <p>Email: {user.email}</p>
+              <p>Account created: {format(new Date(user.created_at), 'd MMM yyyy, HH:mm')}</p>
+              <p>Last sign-in: {user.last_sign_in_at ? format(new Date(user.last_sign_in_at), 'd MMM yyyy, HH:mm') : 'Never'}</p>
+            </div>
+
+            {active.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-foreground">Active memberships — comp per org</p>
+                {active.map((m) => (
+                  <UserOrgCompBlock key={m.org_id} membership={m} onChanged={onChanged} />
+                ))}
+              </div>
+            )}
+
+            {inactive.length > 0 && (
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-foreground">Inactive memberships</p>
+                {inactive.map((m) => (
+                  <div key={m.org_id} className="text-[11px] text-muted-foreground">
+                    {m.org_name} · {m.role} · {m.status}
+                  </div>
+                ))}
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
+  );
+}
+
+function UserOrgCompBlock({ membership, onChanged }: { membership: Membership; onChanged: () => void }) {
+  const sub = membership.subscription;
+  const [isComped, setIsComped] = useState(!!sub?.is_comped);
+  const [reason, setReason] = useState(sub?.comped_reason || '');
+  const [until, setUntil] = useState(sub?.comped_until ? sub.comped_until.slice(0, 10) : '');
+  const [saving, setSaving] = useState(false);
+
+  const compActive = !!sub?.is_comped && (!sub.comped_until || new Date(sub.comped_until).getTime() > Date.now());
+
+  const save = async () => {
+    setSaving(true);
+    const { data, error } = await supabase.functions.invoke('admin-console', {
+      body: {
+        action: 'update_comp',
+        org_id: membership.org_id,
+        is_comped: isComped,
+        comped_reason: reason || null,
+        comped_until: until ? new Date(until).toISOString() : null,
+      },
+    });
+    setSaving(false);
+    if (error || data?.error) {
+      toast.error(data?.error || error?.message || 'Failed to save');
+      return;
+    }
+    toast.success(`Comp updated for ${membership.org_name}`);
+    onChanged();
+  };
+
+  return (
+    <div className="rounded-md border bg-muted/30 p-2.5 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <p className="text-xs font-medium truncate">{membership.org_name}</p>
+          <p className="text-[10px] text-muted-foreground">{membership.role} · {planSummary(sub)}</p>
+        </div>
+        {compActive && (
+          <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/30">Comped</Badge>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-[11px]">Complimentary access</Label>
+        <Switch checked={isComped} onCheckedChange={setIsComped} />
+      </div>
+      <Input
+        value={reason}
+        onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason (e.g. Beta tester)"
+        disabled={!isComped}
+        className="h-8 text-xs"
+      />
+      <Input
+        type="date"
+        value={until}
+        onChange={(e) => setUntil(e.target.value)}
+        disabled={!isComped}
+        className="h-8 text-xs"
+      />
+      <Button onClick={save} disabled={saving} size="sm" className="w-full h-8 text-xs">
+        {saving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+        Save
+      </Button>
+    </div>
   );
 }
