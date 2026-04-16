@@ -193,7 +193,7 @@ const AppRoutes = () => {
               <Route path="/application/*" element={<NotFound />} />
             </>
           ) : (
-            <Route path="/application/*" element={<AuthPage />} />
+            <Route path="/application/*" element={<Navigate to="/application/auth" replace />} />
           )}
 
           {/* Everything else → landing (PWA users go straight to app) */}
