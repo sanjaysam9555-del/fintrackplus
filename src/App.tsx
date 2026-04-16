@@ -23,7 +23,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Refund = lazy(() => import("./pages/Refund"));
 const Billing = lazy(() => import("./pages/Billing"));
-const AdminComp = lazy(() => import("./pages/AdminComp"));
+const AdminConsole = lazy(() => import("./pages/AdminConsole"));
 
 // Prefetch critical routes during idle time so they load instantly when needed
 if (typeof window !== 'undefined') {
