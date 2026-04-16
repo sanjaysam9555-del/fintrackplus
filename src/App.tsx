@@ -175,6 +175,9 @@ const AppRoutes = () => {
           <Route path="/terms" element={<Terms />} />
           <Route path="/refund" element={<Refund />} />
 
+          {/* Hidden super-admin route — works on root domain too */}
+          <Route path="/admin/comp" element={<AdminComp />} />
+
           {/* App routes under /application (backward compat) */}
           <Route path="/application/install" element={<InstallPage />} />
           <Route path="/application/admin/comp" element={<AdminComp />} />

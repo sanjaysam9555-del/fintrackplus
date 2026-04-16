@@ -53,15 +53,32 @@ Deno.serve(async (req) => {
 
       const subMap = new Map((subs || []).map((s: any) => [s.org_id, s]));
 
-      // Fetch owner emails
+      // Fetch owner emails + profile names
       const enriched = await Promise.all(
         (orgs || []).map(async (o: any) => {
-          let email = null;
+          let email: string | null = null;
+          let owner_name: string | null = null;
+          let owner_avatar_url: string | null = null;
           try {
             const { data } = await admin.auth.admin.getUserById(o.owner_id);
             email = data?.user?.email ?? null;
           } catch (_) {}
-          return { ...o, owner_email: email, subscription: subMap.get(o.id) ?? null };
+          try {
+            const { data: prof } = await admin
+              .from('profiles')
+              .select('name, avatar_url')
+              .eq('user_id', o.owner_id)
+              .maybeSingle();
+            owner_name = prof?.name ?? null;
+            owner_avatar_url = prof?.avatar_url ?? null;
+          } catch (_) {}
+          return {
+            ...o,
+            owner_email: email,
+            owner_name,
+            owner_avatar_url,
+            subscription: subMap.get(o.id) ?? null,
+          };
         })
       );
 
