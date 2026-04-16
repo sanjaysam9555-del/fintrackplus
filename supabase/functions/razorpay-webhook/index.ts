@@ -40,23 +40,33 @@ Deno.serve(async (req) => {
     const subEntity = event.payload?.subscription?.entity;
     const paymentEntity = event.payload?.payment?.entity;
     const subscriptionId = subEntity?.id || paymentEntity?.subscription_id;
+    const customerId = subEntity?.customer_id || paymentEntity?.customer_id;
 
-    if (!subscriptionId) {
-      console.log("[razorpay-webhook] No subscription_id, skipping");
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Resolve our subscription row. Try by subscription_id first, then fall back
+    // to customer_id (handles payment.failed events that arrive without a sub_id).
+    let sub: any = null;
+    if (subscriptionId) {
+      const { data } = await admin
+        .from("subscriptions")
+        .select("*")
+        .eq("razorpay_subscription_id", subscriptionId)
+        .maybeSingle();
+      sub = data;
+    }
+    if (!sub && customerId) {
+      const { data } = await admin
+        .from("subscriptions")
+        .select("*")
+        .eq("razorpay_customer_id", customerId)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      sub = data;
     }
 
-    const { data: sub } = await admin
-      .from("subscriptions")
-      .select("*")
-      .eq("razorpay_subscription_id", subscriptionId)
-      .maybeSingle();
-
     if (!sub) {
-      console.log("[razorpay-webhook] Subscription not in DB:", subscriptionId);
-      return new Response(JSON.stringify({ ok: true }), {
+      console.log("[razorpay-webhook] No matching subscription row. sub_id:", subscriptionId, "cust_id:", customerId, "event:", eventType);
+      return new Response(JSON.stringify({ ok: true, matched: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -117,15 +127,27 @@ Deno.serve(async (req) => {
         updates.status = "halted";
         break;
       }
-      case "subscription.pending":
-      case "payment.failed": {
+      case "subscription.pending": {
         updates.status = "past_due";
+        break;
+      }
+      case "payment.failed": {
+        // Mandate auth or charge failed. If subscription is still in `created`
+        // (mandate never authenticated), reset to `expired` so create-subscription
+        // will allow a fresh attempt instead of reusing the stale row.
+        if (sub.status === "created") {
+          updates.status = "expired";
+          console.log("[razorpay-webhook] Resetting stale created row to expired for org:", sub.org_id);
+        } else if (sub.status === "active" || sub.status === "trialing") {
+          updates.status = "past_due";
+        }
         break;
       }
     }
 
     if (Object.keys(updates).length > 0) {
       await admin.from("subscriptions").update(updates).eq("id", sub.id);
+      console.log("[razorpay-webhook] Updated sub", sub.id, "→", updates);
     }
 
     return new Response(JSON.stringify({ ok: true }), {
