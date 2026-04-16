@@ -1,55 +1,63 @@
 
 
-## Plan: Fix admin comp route + improve UX
+User confirms Part B only, plus explicitly wants comp add/remove capability retained inside the new console.
 
-### Issue 1 — 404 on `/admin/comp`
-On `fintrackplus.com` (landing domain), only `/application/admin/comp` is registered. Plain `/admin/comp` falls through to the Landing component → looks like 404.
+## Plan: Admin Console (Part B + Comp management)
 
-**Fix:** In `src/App.tsx`, inside the `isLandingDomain()` branch, register `/admin/comp` to render `<AdminComp />` directly (bypass landing). Keep `/application/admin/comp` as backward-compat alias. Per user's choice (Root domain only), do NOT add it to `app.fintrackplus.com`.
+### Edge function — `admin-console` (replaces `admin-comp`)
+Super-admin gated (existing allowlist). Actions:
 
-### Issue 2 — UI is too technical
-Current cards show: org name, owner email, raw UUID. Missing the **owner's actual name** and clearer plan info. Also the React `forwardRef` warning on `Badge` is just a noise warning (Badge already uses forwardRef — actually it's the lazy wrapper warning, harmless), but we'll polish layout regardless.
+| Action | Purpose |
+|---|---|
+| `list_orgs` | All orgs enriched with: owner profile (name/avatar/email), `member_count`, `transaction_count`, `last_activity_at`, `health` (`active`/`idle`/`empty`/`orphan-duplicate`), full subscription block |
+| `list_users` | All auth users with: profile, list of org memberships (org_id + name + role + status), flags `owns_multiple_orgs`, `never_logged_in` |
+| `stats` | Totals by health, user counts, subscription mix |
+| `update_comp` | Toggle `is_comped` / `comped_reason` / `comped_until` (same as today) |
+| `delete_org` | Cascading delete: transactions, partners, categories, vendors, projects, project_labels, project_documents, notifications, change_approvals, subscriptions, backups, org_members, profiles (only if user has no other org), then organization |
 
-**Edge function change** (`supabase/functions/admin-comp/index.ts`):
-- Also fetch `profiles` (name, avatar_url) for each owner_id, and join into the response as `owner_name` and `owner_avatar_url`.
-- Include `created_at` of org so we can show "Joined X ago".
+Health rules:
+- `active` — has txns in last 30d
+- `idle` — has txns, none last 30d
+- `empty` — zero txns, only owner as member
+- `orphan-duplicate` — owner is also active member of a different org
 
-**Page change** (`src/pages/AdminComp.tsx`):
-Redesigned card layout:
+### New page — `src/pages/AdminConsole.tsx`
+Tabs (shadcn Tabs): **Organizations** | **Users** | **Stats**
 
-```text
-┌─────────────────────────────────────────────────┐
-│ [Avatar]  Saffron Events            [Comped]   │
-│           Sanjay Singh · sanjay@…              │
-│           Joined 2 months ago                  │
-│                                                 │
-│ Plan: Trialing · Trial ends Apr 30             │
-│ ─────────────────────────────────────           │
-│ [✓] Complimentary access                       │
-│ Reason: [Founder         ]                     │
-│ Until:  [empty = permanent]                    │
-│                                  [Save]        │
-└─────────────────────────────────────────────────┘
-```
+**Organizations tab**
+- Top: stats strip ("10 orgs · 3 active · 2 idle · 5 empty/orphan") + filter chips `All / Active / Idle / Empty / Orphan` + search
+- Card per org:
+  - Header: org name + logo + health badge
+  - Owner row: avatar, name, email
+  - Activity: "127 txns · last activity 2d ago · 3 members"
+  - Plan summary in plain English + Comped badge if active
+  - Expandable footer with:
+    - **Comp toggle** (add/remove comp), reason input, until date input, Save button
+    - **Delete org** button (red, opens confirm dialog showing cascade preview: "Will delete X txns, Y projects, Z documents…")
 
-Improvements:
-- Owner avatar (circle, fallback to initials) on the left
-- **Owner name** as the secondary line (bold-ish), email muted below
-- Org UUID hidden behind a small "ID" copy button (cleaner, copy-on-click)
-- Plan summary written in plain English: "Trial ends 30 Apr 2026", "Active until 15 May 2026", "Complimentary — permanent" / "Complimentary until 31 Dec 2026", "No subscription"
-- Search hint updated: "Search by org or owner name…"
-- Comped badge gets a subtle gradient
+**Users tab**
+- Row per auth user: avatar, name, email, joined date
+- Org membership chips: "Saffron Events (Owner)" "My Organization (Owner – orphan)"
+- Issue chips: "Owns 2 orgs" / "Never logged in"
+- Read-only (merge/delete deferred to Part A)
 
-### Files touched
+**Stats tab**
+- Plain cards: Total orgs, Real orgs, Empty/Orphan orgs, Total users, Active subs, Comped, Trialing
+
+### Routing — `src/App.tsx`
+- `/admin` → `<AdminConsole />` (root domain, primary)
+- `/admin/comp` → `<AdminConsole />` (alias — backward compat)
+- `/application/admin` and `/application/admin/comp` → also alias
+
+### Files
 | File | Change |
 |---|---|
-| `src/App.tsx` | Add `/admin/comp` route on landing domain |
-| `supabase/functions/admin-comp/index.ts` | Enrich list with owner profile name + avatar |
-| `src/pages/AdminComp.tsx` | New friendlier card layout with avatar, owner name, plain-English plan status, copyable org ID |
+| `supabase/functions/admin-console/index.ts` | New — multi-action API with health/stats + comp + delete |
+| `supabase/functions/admin-comp/` | Delete |
+| `src/pages/AdminConsole.tsx` | New tabbed console (Orgs / Users / Stats) with comp + delete controls |
+| `src/pages/AdminComp.tsx` | Delete |
+| `src/App.tsx` | Route updates |
 
-### Access after fix
-- `https://fintrackplus.com/admin/comp` ✅ (primary)
-- `https://fintrackplus.com/application/admin/comp` ✅ (alias)
-
-Anyone not in `SUPER_ADMIN_USER_IDS` still sees the 404 screen.
+### Out of scope (Part A — later)
+Trigger fixes, smart invite migration, auto-healing orphans, user merge/delete actions.
 
