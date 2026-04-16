@@ -180,7 +180,7 @@ export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
                   </p>
                 </div>
               </div>
-              <Button size="sm" onClick={() => navigate(appPath("/billing"))} className="w-full">
+              <Button size="sm" onClick={() => navigate(appPath("/billing"), { state: { from: "settings:subscription" } })} className="w-full">
                 Complete Verification
               </Button>
             </div>
