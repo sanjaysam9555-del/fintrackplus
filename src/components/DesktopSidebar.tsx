@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import saffronLogo from '@/assets/saffron-logo.png';
 import { useAuth } from '@/hooks/useAuth';
 import { useFinanceStore } from '@/lib/store';
+import { isLandingDomain } from '@/lib/domainUtils';
 import { toast } from 'sonner';
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
@@ -51,8 +52,10 @@ export const DesktopSidebar = ({
   const [isCollapsed, setIsCollapsed] = useState(false);
   
   const handleLogout = async () => {
-    await signOut();
     toast.success('Logged out successfully');
+    await signOut();
+    const target = isLandingDomain() ? '/application/auth' : '/auth';
+    window.location.href = target;
   };
 
   const toggleCollapse = () => {

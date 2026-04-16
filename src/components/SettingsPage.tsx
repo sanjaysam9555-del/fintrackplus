@@ -263,8 +263,10 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
   
   const handleLogout = async () => {
-    await signOut();
     toast.success('Logged out successfully');
+    await signOut();
+    const target = isLandingDomain() ? '/application/auth' : '/auth';
+    window.location.href = target;
   };
   
   useEffect(() => {
