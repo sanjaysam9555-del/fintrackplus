@@ -19,6 +19,9 @@ export interface Subscription {
   current_period_end: string | null;
   current_period_start: string | null;
   cancel_at_period_end: boolean;
+  is_comped?: boolean;
+  comped_reason?: string | null;
+  comped_until?: string | null;
   razorpay_subscription_id: string | null;
   razorpay_customer_id: string | null;
   customer_gstin: string | null;
@@ -75,10 +78,19 @@ export const useSubscription = () => {
   const now = Date.now();
   const trialEndMs = subscription?.trial_end ? new Date(subscription.trial_end).getTime() : 0;
   const trialActive = subscription?.status === "trialing" && trialEndMs > now;
+
+  // Complimentary access: org granted free use (e.g. founder, beta tester).
+  // Permanent if comped_until is null, otherwise until that timestamp.
+  const compedUntilMs = subscription?.comped_until
+    ? new Date(subscription.comped_until).getTime()
+    : Infinity;
+  const isComped = !!subscription?.is_comped && compedUntilMs > now;
+
   // NOTE: status === "created" is intentionally EXCLUDED. Razorpay sets "created" before
   // mandate authentication. We only grant access once the webhook flips it to "trialing"
   // (subscription.authenticated event) or "active" (subscription.charged).
   const isActive =
+    isComped ||
     subscription?.status === "active" ||
     (subscription?.status === "trialing" && trialEndMs > now);
 
@@ -94,6 +106,7 @@ export const useSubscription = () => {
     subscription,
     loading: loading || roleLoading,
     isActive,
+    isComped,
     trialActive,
     trialDaysLeft,
     needsMandateAuth,
