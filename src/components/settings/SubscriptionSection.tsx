@@ -146,9 +146,9 @@ export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card rounded-2xl border border-border p-5 shadow-card"
+          className="bg-card rounded-2xl border border-border p-5 shadow-card space-y-4"
         >
-          <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Current Plan</p>
               <h2 className="text-xl font-bold mt-1">FinTrack+ Pro</h2>
