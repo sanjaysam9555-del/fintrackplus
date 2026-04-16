@@ -140,6 +140,105 @@ export type Database = {
           },
         ]
       }
+      invoice_counters: {
+        Row: {
+          fy: string
+          last_number: number
+        }
+        Insert: {
+          fy: string
+          last_number?: number
+        }
+        Update: {
+          fy?: string
+          last_number?: number
+        }
+        Relationships: []
+      }
+      invoices: {
+        Row: {
+          amount_net: number
+          amount_total: number
+          cgst_amount: number
+          created_at: string
+          customer_address: string | null
+          customer_business_name: string | null
+          customer_gstin: string | null
+          gst_amount: number
+          gst_rate: number
+          gst_type: string
+          id: string
+          igst_amount: number
+          invoice_number: string
+          org_id: string
+          paid_at: string
+          pdf_path: string | null
+          razorpay_invoice_id: string | null
+          razorpay_payment_id: string | null
+          sgst_amount: number
+          subscription_id: string | null
+        }
+        Insert: {
+          amount_net: number
+          amount_total: number
+          cgst_amount?: number
+          created_at?: string
+          customer_address?: string | null
+          customer_business_name?: string | null
+          customer_gstin?: string | null
+          gst_amount: number
+          gst_rate?: number
+          gst_type: string
+          id?: string
+          igst_amount?: number
+          invoice_number: string
+          org_id: string
+          paid_at?: string
+          pdf_path?: string | null
+          razorpay_invoice_id?: string | null
+          razorpay_payment_id?: string | null
+          sgst_amount?: number
+          subscription_id?: string | null
+        }
+        Update: {
+          amount_net?: number
+          amount_total?: number
+          cgst_amount?: number
+          created_at?: string
+          customer_address?: string | null
+          customer_business_name?: string | null
+          customer_gstin?: string | null
+          gst_amount?: number
+          gst_rate?: number
+          gst_type?: string
+          id?: string
+          igst_amount?: number
+          invoice_number?: string
+          org_id?: string
+          paid_at?: string
+          pdf_path?: string | null
+          razorpay_invoice_id?: string | null
+          razorpay_payment_id?: string | null
+          sgst_amount?: number
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           actor_name: string | null
@@ -503,6 +602,74 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          customer_address: string | null
+          customer_business_name: string | null
+          customer_gstin: string | null
+          customer_state_code: string | null
+          id: string
+          org_id: string
+          plan_id: string | null
+          razorpay_customer_id: string | null
+          razorpay_subscription_id: string | null
+          status: string
+          trial_end: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          customer_address?: string | null
+          customer_business_name?: string | null
+          customer_gstin?: string | null
+          customer_state_code?: string | null
+          id?: string
+          org_id: string
+          plan_id?: string | null
+          razorpay_customer_id?: string | null
+          razorpay_subscription_id?: string | null
+          status?: string
+          trial_end?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          customer_address?: string | null
+          customer_business_name?: string | null
+          customer_gstin?: string | null
+          customer_state_code?: string | null
+          id?: string
+          org_id?: string
+          plan_id?: string | null
+          razorpay_customer_id?: string | null
+          razorpay_subscription_id?: string | null
+          status?: string
+          trial_end?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -652,6 +819,11 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      next_invoice_number: { Args: never; Returns: string }
+      org_has_active_subscription: {
+        Args: { _org_id: string }
+        Returns: boolean
       }
       trigger_all_org_backups: {
         Args: { backup_label: string }
