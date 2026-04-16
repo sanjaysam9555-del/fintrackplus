@@ -107,7 +107,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     intentionalSignOut.current = true;
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('[useAuth] signOut error (ignored):', err);
+    }
+    // Deterministically clear state — iPad Safari/PWA may not fire SIGNED_OUT reliably
+    setSession(null);
+    setUser(null);
   };
 
   const resetPassword = async (email: string) => {
