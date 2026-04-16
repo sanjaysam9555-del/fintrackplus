@@ -25,6 +25,8 @@ import categories from "@/assets/landing/real/categories.png";
 import team from "@/assets/landing/real/team.png";
 import companyBank from "@/assets/landing/real/company-bank.png";
 import financialHoldings from "@/assets/landing/real/financial-holdings.png";
+import backupRestore from "@/assets/landing/real/backup-restore.png";
+import orgBranding from "@/assets/landing/real/org-branding.png";
 
 // Cropped feature images
 import aiInsightsCropped from "@/assets/landing/real/ai-insights-cropped.png";
@@ -156,8 +158,8 @@ const secondaryFeatures = [
   { icon: Undo2, title: "Undo Delete", desc: "5-second undo toast — no accidental data loss", screenshot: activityLog, iconBg: "bg-destructive/10 text-destructive" },
   { icon: Palette, title: "Custom Categories", desc: "Icons & colors for Décor, Catering, Venue, Photography…", screenshot: categories, iconBg: "bg-warning/10 text-warning" },
   { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: darkModeCropped, iconBg: "bg-primary/10 text-primary" },
-  { icon: DatabaseBackup, title: "Backup & Restore", desc: "Automated twice-daily snapshots with one-tap restore — never lose your data", screenshot: "/placeholder.svg", iconBg: "bg-success/10 text-success" },
-  { icon: Building2, title: "Organisation Branding", desc: "Custom company name and logo visible across the app", screenshot: "/placeholder.svg", iconBg: "bg-warning/10 text-warning" },
+  { icon: DatabaseBackup, title: "Backup & Restore", desc: "Automated twice-daily snapshots with one-tap restore — never lose your data", screenshot: backupRestore, iconBg: "bg-success/10 text-success" },
+  { icon: Building2, title: "Organisation Branding", desc: "Custom company name and logo visible across the app", screenshot: orgBranding, iconBg: "bg-warning/10 text-warning" },
   { icon: Sparkles, title: "Guided Onboarding", desc: "Step-by-step setup wizard for new users — partners, categories, and preferences", screenshot: "/placeholder.svg", iconBg: "bg-primary/10 text-primary" },
 ];
 
