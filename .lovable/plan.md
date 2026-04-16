@@ -1,55 +1,52 @@
 
-The user wants a hard data-retention guarantee: **no user/org data may be deleted for at least 1 year from their last activity**, regardless of subscription status (unpaid, cancelled, comped expired, etc.).
+The user has comped access (`is_comped: true`, `comped_until: null` = permanent) but the subscription row also has `status: "created"` and `razorpay_subscription_id: "sub_SeFwOqO8cyCtHP"` (a stale Razorpay subscription from before they were comped).
 
-Let me think through where deletions can currently happen:
+Looking at `useSubscription.ts`:
 
-1. **`admin-console` edge function** — `delete_org` action cascades deletes across all org tables. This is the main risk.
-2. **`manage-team`** — likely deletes members (need to check, but member deletion ≠ org deletion; user said "user or organisation").
-3. **Subscription-driven deletion** — checking the codebase, there's no automatic cron that deletes orgs on subscription lapse. PaywallGate just blocks access. Good.
-4. **Razorpay webhook / cancel-subscription** — should not delete data; just flag status.
+```ts
+const isActive =
+  isComped ||
+  subscription?.status === "active" ||
+  (subscription?.status === "trialing" && trialEndMs > now);
 
-The cleanest enforcement point is a **server-side guard** based on "last activity" (latest `transactions.created_at`, `notifications.created_at`, or `auth.users.last_sign_in_at` for the org's members — whichever is most recent). If `now - last_activity < 1 year`, deletion is blocked.
+const needsMandateAuth =
+  subscription?.status === "created" && !!subscription?.razorpay_subscription_id;
+```
 
-## Plan
+So `isActive = true` (good — PaywallGate lets them through). But `needsMandateAuth = true` regardless, because it only checks `status === "created"` and ignores the comped flag. The `Billing.tsx` page (or whatever auto-redirects/shows the verification banner) is using `needsMandateAuth` to force the user onto the billing page and show the "Payment method verification incomplete" CTA.
 
-### 1. Define "last activity" for an org
-Max of:
-- Latest `transactions.created_at` for the org
-- Latest `notifications.created_at` for the org
-- Latest `auth.users.last_sign_in_at` across all org members
-- Org `created_at` (fallback so brand-new orgs are also protected)
+I need to confirm this by reading `Billing.tsx` and finding what triggers the auto-redirect to `/billing` on every login despite `isActive` being true.
 
-### 2. Add a SQL helper function
-Create `public.org_last_activity_at(_org_id uuid) returns timestamptz` (SECURITY DEFINER) that returns the max of the above. Used by both edge functions and any future cleanup logic.
+## Root cause (hypothesis, will verify)
 
-### 3. Guard `admin-console` `delete_org`
-Before cascading delete, call `org_last_activity_at`. If `now() - last_activity < interval '1 year'`, return `403` with a clear message:  
-*"Cannot delete: organization was active within the last 1 year (last activity: <date>). Data retention policy requires 1 year of inactivity."*
+`needsMandateAuth` doesn't account for `isComped`. When an org is comped, the leftover Razorpay `created` subscription is irrelevant — they don't need to authenticate any mandate because they're not paying.
 
-Add an explicit `force: true` override flag — but **only** allow it if last activity is >1 year ago anyway (so it's just a confirmation flag, never a true bypass). This keeps the policy absolute.
+Additionally, somewhere (likely in `Billing.tsx` or a top-level effect) `needsMandateAuth` is being used to force navigation to `/billing` and show the incomplete-verification card.
 
-### 4. Guard `manage-team` member removal (if applicable)
-Quick check of `manage-team/index.ts` — if it deletes user records, ensure profile/auth deletion only happens when the user has been inactive for >1 year. Otherwise, just remove org membership (`org_members.status = 'removed'`) without touching `auth.users` or `profiles`.
+## Fix
 
-### 5. Document the policy
-Add a memory: `mem://policy/data-retention` — "Org and user data is retained for a minimum of 1 year from last activity, regardless of subscription status. Enforced server-side in admin-console.delete_org and manage-team via org_last_activity_at()."
+### 1. `src/hooks/useSubscription.ts`
+Make `needsMandateAuth` respect comped state:
+```ts
+const needsMandateAuth =
+  !isComped &&
+  subscription?.status === "created" &&
+  !!subscription?.razorpay_subscription_id;
+```
 
-### 6. UI surface (Admin Console)
-In `src/pages/AdminConsole.tsx`, when delete is blocked, surface the server error message in the toast so the super-admin sees why.
+### 2. `src/pages/Billing.tsx`
+- Hide the "Payment method verification incomplete" card when `isComped` is true.
+- Remove/skip any auto-redirect-to-billing effect when `isComped` is true.
+- Show the existing Complimentary Access card as the primary state.
 
-### Files to touch
-- **New migration**: `org_last_activity_at()` function
-- **`supabase/functions/admin-console/index.ts`**: guard in `delete_org`
-- **`supabase/functions/manage-team/index.ts`**: guard member hard-deletion (verify after read)
-- **`src/pages/AdminConsole.tsx`**: surface blocked-deletion error
-- **`mem://policy/data-retention`** + index update
+### 3. Investigate other call sites
+Search for `needsMandateAuth` and any redirect-to-`/billing` logic to make sure no other component pushes comped users to billing. Likely candidates: `App.tsx`, `Index.tsx`, or a banner in a layout component.
 
-### Out of scope (no changes)
-- PaywallGate behavior (already non-destructive)
-- Backups (additive, never auto-purged here)
-- Razorpay webhook (status flags only)
+## Files to read before editing (verification step in default mode)
+- `src/pages/Billing.tsx` — find the verification card + any redirect effect
+- Search `needsMandateAuth` across `src/`
+- Search for `navigate.*billing` / `Navigate.*billing` to find any forced redirects
 
-### Edge cases
-- Org with zero transactions but recent member sign-in → protected (sign-in counts).
-- Org with no members ever signing in but created <1 year ago → protected via `created_at` fallback.
-- Comped expiry / cancelled subscription → irrelevant; data stays.
+## Out of scope
+- Razorpay webhook / cleaning up the stale `created` subscription record (data fix; not needed once UI respects `isComped`)
+- PaywallGate (already correct — uses `isActive` which includes comped)
