@@ -124,6 +124,19 @@ const Index = () => {
   const { user } = useAuth();
   const { isEmployee, isOwner, mustChangePassword, memberId, loading: roleLoading, refetch: refetchRole } = useUserRole();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  // Honor deep-link state (e.g. from Billing back button) to open a Settings section
+  useEffect(() => {
+    const state = location.state as { openSettings?: SettingsSection } | null;
+    if (state?.openSettings !== undefined) {
+      setViewMode('settings');
+      setSettingsSection(state.openSettings);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   
   // Initialize airtight sync engine (all syncing happens silently in background)
   const { showOnboarding, userName, completeOnboarding, refreshData, isOnline, pendingCount } = useSyncEngine();
