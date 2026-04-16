@@ -28,7 +28,7 @@ interface SubscriptionSectionProps {
 }
 
 export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
-  const { subscription, isActive, trialActive, trialDaysLeft, needsMandateAuth, refetch } = useSubscription();
+  const { subscription, isActive, isComped, trialActive, trialDaysLeft, needsMandateAuth, refetch } = useSubscription();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [cancelling, setCancelling] = useState(false);
@@ -114,6 +114,7 @@ export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
   };
 
   const statusBadge = () => {
+    if (isComped) return { label: "Complimentary", color: "bg-purple-500/15 text-purple-600 dark:text-purple-400" };
     if (!subscription) return { label: "No subscription", color: "bg-muted text-muted-foreground" };
     if (subscription.cancel_at_period_end) return { label: "Cancelling", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400" };
     switch (subscription.status) {
@@ -156,7 +157,22 @@ export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
             <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${badge.color}`}>{badge.label}</span>
           </div>
 
-          {trialActive && (
+          {isComped && (
+            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-sm space-y-1">
+              <div className="flex items-center gap-2">
+                <Check size={16} className="text-purple-600 dark:text-purple-400" />
+                <span className="font-medium">Complimentary access</span>
+              </div>
+              <p className="text-xs text-muted-foreground pl-6">
+                {subscription?.comped_reason || "You have free access to FinTrack+"}
+                {subscription?.comped_until
+                  ? ` · until ${new Date(subscription.comped_until).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+                  : " · permanent"}
+              </p>
+            </div>
+          )}
+
+          {trialActive && !isComped && (
             <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm space-y-1">
               <div className="flex items-center gap-2">
                 <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
