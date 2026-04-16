@@ -1,63 +1,49 @@
 
 
-User confirms Part B only, plus explicitly wants comp add/remove capability retained inside the new console.
+User refinement: pre-invited users (account already created via `manage-team` with temp password) should NOT be allowed to sign up again from the public auth page. Instead, the auth page should detect this and tell them "Account already exists — please log in" with options to log in or reset password.
 
-## Plan: Admin Console (Part B + Comp management)
+This is a small but important addition to the previously approved plan. Let me fold it in cleanly.
 
-### Edge function — `admin-console` (replaces `admin-comp`)
-Super-admin gated (existing allowlist). Actions:
+How to detect "pre-invited but never logged in":
+- `manage-team` already creates the auth user + `org_members` row with a temp password, sets `must_change_password=true`.
+- On signup attempt, Supabase's `signUp()` with an existing email returns a misleading "fake user" response (security feature) — it doesn't error. So we can't rely on that.
+- Solution: add a lightweight pre-check edge function (`check-email-status`) that the auth page calls before submitting signup. It uses service-role to look up the email in `auth.users`:
+  - Not found → proceed with signup
+  - Found AND user has `org_members` row with `must_change_password=true` → return `{ status: 'invited_pending' }` → UI shows "You've been invited to a team. Please log in with the temporary password sent to your email, or reset your password."
+  - Found AND active user → return `{ status: 'exists' }` → UI shows "Account already exists. Log in or reset password."
 
-| Action | Purpose |
-|---|---|
-| `list_orgs` | All orgs enriched with: owner profile (name/avatar/email), `member_count`, `transaction_count`, `last_activity_at`, `health` (`active`/`idle`/`empty`/`orphan-duplicate`), full subscription block |
-| `list_users` | All auth users with: profile, list of org memberships (org_id + name + role + status), flags `owns_multiple_orgs`, `never_logged_in` |
-| `stats` | Totals by health, user counts, subscription mix |
-| `update_comp` | Toggle `is_comped` / `comped_reason` / `comped_until` (same as today) |
-| `delete_org` | Cascading delete: transactions, partners, categories, vendors, projects, project_labels, project_documents, notifications, change_approvals, subscriptions, backups, org_members, profiles (only if user has no other org), then organization |
+## Plan additions to the previously approved org lifecycle work
 
-Health rules:
-- `active` — has txns in last 30d
-- `idle` — has txns, none last 30d
-- `empty` — zero txns, only owner as member
-- `orphan-duplicate` — owner is also active member of a different org
+### New edge function — `check-email-status`
+- Public (no JWT required), rate-limited by IP
+- Input: `{ email }`
+- Output: `{ status: 'available' | 'exists' | 'invited_pending' }`
+- Uses service-role to query `auth.users` + `org_members`
 
-### New page — `src/pages/AdminConsole.tsx`
-Tabs (shadcn Tabs): **Organizations** | **Users** | **Stats**
+### Updated `handle_new_user()` trigger logic (replaces previously planned "personal org for everyone")
+Three paths:
+1. `org_members` row already exists for this user_id → invited flow, attach profile to that org (current behavior, unchanged)
+2. Pending `team_invites` row matches NEW.email → attach `invitee_user_id`, still create personal org so they can use the app while deciding
+3. Otherwise → create personal org (`is_personal=true`)
 
-**Organizations tab**
-- Top: stats strip ("10 orgs · 3 active · 2 idle · 5 empty/orphan") + filter chips `All / Active / Idle / Empty / Orphan` + search
-- Card per org:
-  - Header: org name + logo + health badge
-  - Owner row: avatar, name, email
-  - Activity: "127 txns · last activity 2d ago · 3 members"
-  - Plan summary in plain English + Comped badge if active
-  - Expandable footer with:
-    - **Comp toggle** (add/remove comp), reason input, until date input, Save button
-    - **Delete org** button (red, opens confirm dialog showing cascade preview: "Will delete X txns, Y projects, Z documents…")
+### Updated Auth page (`src/pages/Auth.tsx`)
+- On signup form submit: call `check-email-status` first
+  - `available` → proceed with `supabase.auth.signUp(...)`
+  - `invited_pending` → switch UI to a friendly screen: "You've been invited to join [org name]. Check your email for a temporary password and log in below." with two buttons: **Log in** (prefills email) and **Reset password**
+  - `exists` → switch UI to: "An account with this email already exists." with **Log in** / **Reset password** buttons
+- Same check on the login tab for clearer "no account found → switch to signup" messaging (nice-to-have, low risk)
 
-**Users tab**
-- Row per auth user: avatar, name, email, joined date
-- Org membership chips: "Saffron Events (Owner)" "My Organization (Owner – orphan)"
-- Issue chips: "Owns 2 orgs" / "Never logged in"
-- Read-only (merge/delete deferred to Part A)
+### Why this is safe
+- The check function only returns coarse status (no PII, no profile data leaked beyond "exists or not" which is already inferable from password reset behavior)
+- Rate-limited to prevent enumeration abuse
 
-**Stats tab**
-- Plain cards: Total orgs, Real orgs, Empty/Orphan orgs, Total users, Active subs, Comped, Trialing
-
-### Routing — `src/App.tsx`
-- `/admin` → `<AdminConsole />` (root domain, primary)
-- `/admin/comp` → `<AdminConsole />` (alias — backward compat)
-- `/application/admin` and `/application/admin/comp` → also alias
-
-### Files
+### Files added/changed (delta on top of previously approved plan)
 | File | Change |
 |---|---|
-| `supabase/functions/admin-console/index.ts` | New — multi-action API with health/stats + comp + delete |
-| `supabase/functions/admin-comp/` | Delete |
-| `src/pages/AdminConsole.tsx` | New tabbed console (Orgs / Users / Stats) with comp + delete controls |
-| `src/pages/AdminComp.tsx` | Delete |
-| `src/App.tsx` | Route updates |
+| `supabase/functions/check-email-status/index.ts` | New — public, rate-limited email status check |
+| `supabase/config.toml` | Add `[functions.check-email-status]` with `verify_jwt = false` |
+| `src/pages/Auth.tsx` | Pre-flight email check on signup; invited-account messaging screen |
+| `handle_new_user()` (in migration) | Updated branching for 3 paths above |
 
-### Out of scope (Part A — later)
-Trigger fixes, smart invite migration, auto-healing orphans, user merge/delete actions.
+Everything else from the previously approved Part B plan (team_invites table, accept/reject flow, Team UI, admin console updates, etc.) stays exactly the same.
 
