@@ -23,6 +23,7 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Refund = lazy(() => import("./pages/Refund"));
 const Billing = lazy(() => import("./pages/Billing"));
+const AdminComp = lazy(() => import("./pages/AdminComp"));
 
 // Prefetch critical routes during idle time so they load instantly when needed
 if (typeof window !== 'undefined') {
@@ -142,6 +143,7 @@ const AppRoutes = () => {
       <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
         <Routes>
           <Route path="/install" element={<InstallPage />} />
+          <Route path="/admin/comp" element={<AdminComp />} />
           <Route path="/landing" element={<Landing />} />
          <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
@@ -175,6 +177,7 @@ const AppRoutes = () => {
 
           {/* App routes under /application (backward compat) */}
           <Route path="/application/install" element={<InstallPage />} />
+          <Route path="/application/admin/comp" element={<AdminComp />} />
           <Route path="/application/reset-password" element={<ResetPasswordPage />} />
           <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
           {user ? (
@@ -199,6 +202,8 @@ const AppRoutes = () => {
       <Routes>
         {/* Public routes */}
         <Route path="/install" element={<InstallPage />} />
+        <Route path="/admin/comp" element={<AdminComp />} />
+        <Route path="/application/admin/comp" element={<AdminComp />} />
         <Route path="/landing" element={<Landing />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
