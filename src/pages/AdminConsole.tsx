@@ -154,15 +154,6 @@ export default function AdminConsole() {
     loadStats();
   }, [isSuper]);
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-  if (!isSuper) return <NotAuthorized />;
-
   const filtered = useMemo(() => {
     return orgs.filter((o) => {
       if (filter !== 'all' && o.health !== filter) return false;
@@ -184,6 +175,15 @@ export default function AdminConsole() {
     orgs.forEach((o) => { c[o.health]++; });
     return c;
   }, [orgs]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+  if (!isSuper) return <NotAuthorized />;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">

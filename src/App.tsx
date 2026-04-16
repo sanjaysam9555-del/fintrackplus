@@ -143,7 +143,7 @@ const AppRoutes = () => {
       <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
         <Routes>
           <Route path="/install" element={<InstallPage />} />
-          <Route path="/admin/comp" element={<AdminComp />} />
+          <Route path="/admin/comp" element={<AdminConsole />} />
           <Route path="/landing" element={<Landing />} />
          <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
@@ -176,11 +176,11 @@ const AppRoutes = () => {
           <Route path="/refund" element={<Refund />} />
 
           {/* Hidden super-admin route — works on root domain too */}
-          <Route path="/admin/comp" element={<AdminComp />} />
+          <Route path="/admin/comp" element={<AdminConsole />} />
 
           {/* App routes under /application (backward compat) */}
           <Route path="/application/install" element={<InstallPage />} />
-          <Route path="/application/admin/comp" element={<AdminComp />} />
+          <Route path="/application/admin/comp" element={<AdminConsole />} />
           <Route path="/application/reset-password" element={<ResetPasswordPage />} />
           <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
           {user ? (
@@ -205,8 +205,8 @@ const AppRoutes = () => {
       <Routes>
         {/* Public routes */}
         <Route path="/install" element={<InstallPage />} />
-        <Route path="/admin/comp" element={<AdminComp />} />
-        <Route path="/application/admin/comp" element={<AdminComp />} />
+        <Route path="/admin/comp" element={<AdminConsole />} />
+        <Route path="/application/admin/comp" element={<AdminConsole />} />
         <Route path="/landing" element={<Landing />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
