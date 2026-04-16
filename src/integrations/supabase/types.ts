@@ -606,6 +606,8 @@ export type Database = {
         Row: {
           cancel_at_period_end: boolean
           cancelled_at: string | null
+          comped_reason: string | null
+          comped_until: string | null
           created_at: string
           current_period_end: string | null
           current_period_start: string | null
@@ -614,6 +616,7 @@ export type Database = {
           customer_gstin: string | null
           customer_state_code: string | null
           id: string
+          is_comped: boolean
           org_id: string
           plan_id: string | null
           razorpay_customer_id: string | null
@@ -625,6 +628,8 @@ export type Database = {
         Insert: {
           cancel_at_period_end?: boolean
           cancelled_at?: string | null
+          comped_reason?: string | null
+          comped_until?: string | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
@@ -633,6 +638,7 @@ export type Database = {
           customer_gstin?: string | null
           customer_state_code?: string | null
           id?: string
+          is_comped?: boolean
           org_id: string
           plan_id?: string | null
           razorpay_customer_id?: string | null
@@ -644,6 +650,8 @@ export type Database = {
         Update: {
           cancel_at_period_end?: boolean
           cancelled_at?: string | null
+          comped_reason?: string | null
+          comped_until?: string | null
           created_at?: string
           current_period_end?: string | null
           current_period_start?: string | null
@@ -652,6 +660,7 @@ export type Database = {
           customer_gstin?: string | null
           customer_state_code?: string | null
           id?: string
+          is_comped?: boolean
           org_id?: string
           plan_id?: string | null
           razorpay_customer_id?: string | null
