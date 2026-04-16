@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { lovable } from '@/integrations/lovable/index';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-type AuthView = 'login' | 'signup' | 'forgot' | 'verification';
+type AuthView = 'login' | 'signup' | 'forgot' | 'verification' | 'account_exists' | 'invited_pending';
 
 const EmailVerificationScreen = ({ email, onBack }: { email: string; onBack: () => void }) => {
   const { resetPassword } = useAuth();
@@ -168,6 +169,69 @@ const ForgotPasswordScreen = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
+const AccountExistsScreen = ({
+  email,
+  variant,
+  onLogin,
+  onForgot,
+  onBack,
+}: {
+  email: string;
+  variant: 'exists' | 'invited_pending';
+  onLogin: () => void;
+  onForgot: () => void;
+  onBack: () => void;
+}) => {
+  const isInvited = variant === 'invited_pending';
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-border/50 text-center space-y-5"
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+        className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto"
+      >
+        {isInvited ? <KeyRound className="w-8 h-8 text-primary" /> : <AlertCircle className="w-8 h-8 text-primary" />}
+      </motion.div>
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-2">
+          {isInvited ? "You've been invited" : 'Account already exists'}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {isInvited
+            ? 'Your business owner has already created an account for you.'
+            : 'An account with this email already exists.'}
+        </p>
+        <p className="text-sm font-semibold text-foreground mt-1">{email}</p>
+        {isInvited && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Check your email for the temporary password sent to you, or reset your password if you can't find it.
+          </p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Button onClick={onLogin} className="w-full h-12 rounded-xl text-base font-semibold">
+          Log in instead
+        </Button>
+        <Button onClick={onForgot} variant="outline" className="w-full h-12 rounded-xl">
+          Reset password
+        </Button>
+      </div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="text-sm text-primary font-semibold hover:underline underline-offset-4 flex items-center gap-1 mx-auto"
+      >
+        <ArrowLeft size={14} /> Use a different email
+      </button>
+    </motion.div>
+  );
+};
+
 export const AuthPage = () => {
   const [searchParams] = useSearchParams();
   const initialView = (searchParams.get('mode') === 'signup' ? 'signup' : 'login') as AuthView;
@@ -200,6 +264,31 @@ export const AuthPage = () => {
           setIsLoading(false);
           return;
         }
+
+        // Pre-flight: check if this email is already registered
+        try {
+          const { data: statusData, error: statusErr } = await supabase.functions.invoke('check-email-status', {
+            body: { email },
+          });
+          if (!statusErr && statusData?.status) {
+            if (statusData.status === 'invited_pending') {
+              setVerificationEmail(email);
+              setView('invited_pending');
+              setIsLoading(false);
+              return;
+            }
+            if (statusData.status === 'exists') {
+              setVerificationEmail(email);
+              setView('account_exists');
+              setIsLoading(false);
+              return;
+            }
+          }
+          // If 'available' or check failed, fall through to signUp
+        } catch (preflightErr) {
+          console.warn('[Auth] email pre-check failed, proceeding with signup', preflightErr);
+        }
+
         const { error } = await signUp(email, password, name);
         if (error) {
           toast.error(error.message);
@@ -280,6 +369,16 @@ export const AuthPage = () => {
 
         {view === 'forgot' && (
           <ForgotPasswordScreen onBack={() => setView('login')} />
+        )}
+
+        {(view === 'account_exists' || view === 'invited_pending') && (
+          <AccountExistsScreen
+            email={verificationEmail}
+            variant={view === 'invited_pending' ? 'invited_pending' : 'exists'}
+            onLogin={() => { setEmail(verificationEmail); setView('login'); }}
+            onForgot={() => { setEmail(verificationEmail); setView('forgot'); }}
+            onBack={() => setView('signup')}
+          />
         )}
 
         {(view === 'login' || view === 'signup') && (
