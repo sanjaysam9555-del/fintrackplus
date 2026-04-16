@@ -86,8 +86,8 @@ export const ComparisonSection = () => (
             <span className="block text-[10px]">(accountant)</span>
           </div>
           <div className="px-3 py-3 text-center border-l border-border/30 bg-primary/5 text-sm font-bold text-primary dark:text-foreground">
-            <span className="line-through text-muted-foreground font-normal text-xs">₹799</span>{" "}₹499
-            <span className="block text-[10px] font-normal text-muted-foreground"><span className="line-through">~₹27/day</span> ~₹17/day</span>
+            <span className="line-through text-muted-foreground font-normal text-xs">₹799</span>{" "}₹599
+            <span className="block text-[10px] font-normal text-muted-foreground">incl. GST · ~₹20/day</span>
           </div>
         </div>
       </motion.div>

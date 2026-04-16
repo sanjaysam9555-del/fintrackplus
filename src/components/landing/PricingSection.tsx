@@ -102,13 +102,13 @@ export const PricingSection = () => {
                 transition={{ type: "spring", stiffness: 180, damping: 14, delay: 0.4 }}
                 className="text-5xl md:text-6xl font-bold text-foreground tracking-tight"
               >
-                ₹499
+                ₹599
                 <span className="text-lg md:text-xl font-normal text-muted-foreground">/month</span>
               </motion.div>
             </div>
 
             <p className="mt-2 text-sm text-muted-foreground">
-              That's just <span className="line-through">~₹27/day</span> ~₹17/day for complete peace of mind
+              That's just ~₹20/day for complete peace of mind · <span className="font-medium text-foreground">incl. GST</span>
             </p>
             <p className="mt-1.5 text-xs font-medium text-primary dark:text-primary">
               Includes 3 seats — share with partners, admins & employees
@@ -166,8 +166,8 @@ export const PricingSection = () => {
               </p>
               <p className="text-xs font-medium mt-0.5">
                 <span className="text-foreground">FinTrack⁺ = </span>
-                <span className="text-primary dark:text-primary">₹499/month</span>
-                <span className="text-muted-foreground"> (save ₹300/month vs regular price)</span>
+                <span className="text-primary dark:text-primary">₹599/month</span>
+                <span className="text-muted-foreground"> (incl. GST · save ₹200/month vs regular price)</span>
               </p>
             </div>
           </div>
