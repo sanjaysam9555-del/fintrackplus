@@ -133,6 +133,7 @@ Deno.serve(async (req) => {
             transaction_count: txCount,
             last_activity_at: lastActivity,
             owner_other_org_ids: ownerOtherOrgs,
+            owner_active_org_name,
             health,
             subscription: subMap.get(o.id) ?? null,
           };
@@ -145,20 +146,23 @@ Deno.serve(async (req) => {
     // ---------- LIST USERS ----------
     if (action === 'list_users') {
       const { data: usersList } = await admin.auth.admin.listUsers({ perPage: 1000 });
-      const [{ data: members }, { data: profiles }, { data: orgs }] = await Promise.all([
+      const [{ data: members }, { data: profiles }, { data: orgs }, { data: subs }] = await Promise.all([
         admin.from('org_members').select('user_id, org_id, role, status'),
         admin.from('profiles').select('user_id, name, avatar_url'),
         admin.from('organizations').select('id, name'),
+        admin.from('subscriptions').select('*'),
       ]);
 
       const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
       const orgMap = new Map((orgs || []).map((o: any) => [o.id, o]));
+      const subByOrg = new Map((subs || []).map((s: any) => [s.org_id, s]));
       const membersByUser = new Map<string, any[]>();
       (members || []).forEach((m: any) => {
         if (!membersByUser.has(m.user_id)) membersByUser.set(m.user_id, []);
         membersByUser.get(m.user_id)!.push(m);
       });
 
+      const now = Date.now();
       const enriched = (usersList?.users || []).map((u: any) => {
         const userMembers = membersByUser.get(u.id) || [];
         const memberships = userMembers.map((m: any) => ({
@@ -166,9 +170,16 @@ Deno.serve(async (req) => {
           org_name: orgMap.get(m.org_id)?.name ?? '(unknown)',
           role: m.role,
           status: m.status,
+          subscription: subByOrg.get(m.org_id) ?? null,
         }));
         const profile = profileMap.get(u.id);
         const activeMemberships = memberships.filter((m) => m.status === 'active');
+        const compedOrgIds = activeMemberships
+          .filter((m) => {
+            const s = m.subscription;
+            return s?.is_comped && (!s.comped_until || new Date(s.comped_until).getTime() > now);
+          })
+          .map((m) => m.org_id);
         return {
           id: u.id,
           email: u.email,
@@ -179,6 +190,7 @@ Deno.serve(async (req) => {
           memberships,
           owns_multiple_orgs: activeMemberships.length > 1,
           never_logged_in: !u.last_sign_in_at,
+          comped_org_ids: compedOrgIds,
         };
       });
 
