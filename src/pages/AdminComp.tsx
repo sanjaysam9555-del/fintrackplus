@@ -6,9 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
-import { Loader2, Search, Shield } from 'lucide-react';
-import { format } from 'date-fns';
+import { Loader2, Search, Shield, Copy, Check } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 
 const SUPER_ADMIN_USER_IDS = ['0f2f00e4-47c0-4c4d-8263-77b7f9a2f336'];
 
@@ -17,6 +18,8 @@ interface OrgRow {
   name: string;
   owner_id: string;
   owner_email: string | null;
+  owner_name: string | null;
+  owner_avatar_url: string | null;
   created_at: string;
   subscription: {
     status: string;
@@ -34,6 +37,28 @@ interface DraftState {
   comped_until: string;
 }
 
+const initials = (name: string | null, email: string | null) => {
+  const src = (name || email || '?').trim();
+  const parts = src.split(/[\s@.]+/).filter(Boolean);
+  return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || '?';
+};
+
+const planSummary = (sub: OrgRow['subscription']): string => {
+  if (!sub) return 'No subscription';
+  if (sub.is_comped) {
+    if (!sub.comped_until) return 'Complimentary — permanent';
+    return `Complimentary until ${format(new Date(sub.comped_until), 'd MMM yyyy')}`;
+  }
+  if (sub.status === 'active' && sub.current_period_end) {
+    return `Active until ${format(new Date(sub.current_period_end), 'd MMM yyyy')}`;
+  }
+  if (sub.status === 'trialing' && sub.trial_end) {
+    return `Trial ends ${format(new Date(sub.trial_end), 'd MMM yyyy')}`;
+  }
+  if (sub.status === 'cancelled') return 'Cancelled';
+  return sub.status.charAt(0).toUpperCase() + sub.status.slice(1);
+};
+
 export default function AdminComp() {
   const { user, loading: authLoading } = useAuth();
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
@@ -41,6 +66,7 @@ export default function AdminComp() {
   const [search, setSearch] = useState('');
   const [drafts, setDrafts] = useState<Record<string, DraftState>>({});
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const isAuthorized = user && SUPER_ADMIN_USER_IDS.includes(user.id);
 
@@ -53,7 +79,6 @@ export default function AdminComp() {
       if (error) throw error;
       const list: OrgRow[] = data.orgs || [];
       setOrgs(list);
-      // Init drafts
       const d: Record<string, DraftState> = {};
       list.forEach((o) => {
         d[o.id] = {
@@ -81,7 +106,8 @@ export default function AdminComp() {
       (o) =>
         o.id.toLowerCase().includes(q) ||
         o.name.toLowerCase().includes(q) ||
-        (o.owner_email?.toLowerCase().includes(q) ?? false),
+        (o.owner_email?.toLowerCase().includes(q) ?? false) ||
+        (o.owner_name?.toLowerCase().includes(q) ?? false),
     );
   }, [orgs, search]);
 
@@ -110,6 +136,16 @@ export default function AdminComp() {
 
   const updateDraft = (orgId: string, patch: Partial<DraftState>) => {
     setDrafts((prev) => ({ ...prev, [orgId]: { ...prev[orgId], ...patch } }));
+  };
+
+  const copyId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      setCopiedId(id);
+      setTimeout(() => setCopiedId((c) => (c === id ? null : c)), 1500);
+    } catch {
+      toast.error('Could not copy');
+    }
   };
 
   if (authLoading) {
@@ -144,7 +180,7 @@ export default function AdminComp() {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search by org name, ID, or owner email…"
+            placeholder="Search by org or owner name…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -167,20 +203,57 @@ export default function AdminComp() {
                 draft.comped_until !== (sub?.comped_until ? sub.comped_until.slice(0, 10) : '');
 
               return (
-                <Card key={org.id} className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0">
-                      <div className="font-semibold truncate">{org.name}</div>
-                      <div className="text-xs text-muted-foreground truncate">{org.owner_email ?? '—'}</div>
-                      <div className="text-[10px] text-muted-foreground font-mono mt-1">{org.id}</div>
-                    </div>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {sub?.is_comped && <Badge className="bg-purple-500/15 text-purple-600 border-purple-500/30">Comped</Badge>}
-                      <Badge variant="outline">{sub?.status ?? 'no sub'}</Badge>
+                <Card key={org.id} className="p-4 space-y-4">
+                  {/* Header: avatar + identity + badges */}
+                  <div className="flex items-start gap-3">
+                    <Avatar className="h-11 w-11 shrink-0">
+                      {org.owner_avatar_url && <AvatarImage src={org.owner_avatar_url} alt={org.owner_name ?? ''} />}
+                      <AvatarFallback className="text-sm font-medium bg-primary/10 text-primary">
+                        {initials(org.owner_name, org.owner_email)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="min-w-0">
+                          <div className="font-semibold text-base truncate">{org.name}</div>
+                          <div className="text-sm font-medium truncate">
+                            {org.owner_name ?? <span className="text-muted-foreground italic">No name set</span>}
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">{org.owner_email ?? '—'}</div>
+                        </div>
+                        <div className="flex gap-1.5 flex-wrap shrink-0">
+                          {sub?.is_comped && (
+                            <Badge className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-700 dark:text-purple-300 border-purple-500/30">
+                              Comped
+                            </Badge>
+                          )}
+                          <Badge variant="outline" className="capitalize">{sub?.status ?? 'no sub'}</Badge>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1.5">
+                        Joined {formatDistanceToNow(new Date(org.created_at), { addSuffix: true })}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t">
+                  {/* Plan summary + copyable ID */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Plan: </span>
+                      <span className="font-medium">{planSummary(sub)}</span>
+                    </div>
+                    <button
+                      onClick={() => copyId(org.id)}
+                      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground font-mono px-2 py-1 rounded-md hover:bg-muted transition-colors"
+                      title={org.id}
+                    >
+                      {copiedId === org.id ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                      <span>ID</span>
+                    </button>
+                  </div>
+
+                  {/* Controls */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-3 border-t">
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={draft.is_comped}
