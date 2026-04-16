@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { lovable } from '@/integrations/lovable/index';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-type AuthView = 'login' | 'signup' | 'forgot' | 'verification';
+type AuthView = 'login' | 'signup' | 'forgot' | 'verification' | 'account_exists' | 'invited_pending';
 
 const EmailVerificationScreen = ({ email, onBack }: { email: string; onBack: () => void }) => {
   const { resetPassword } = useAuth();
