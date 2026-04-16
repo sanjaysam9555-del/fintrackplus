@@ -55,7 +55,7 @@ import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
 import { useTheme, ThemeMode } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { appPath } from "@/lib/domainUtils";
+import { appPath, isLandingDomain } from "@/lib/domainUtils";
 import saffronLogo from "@/assets/saffron-logo.png";
 
 // Action badge helper
