@@ -86,6 +86,9 @@ Deno.serve(async (req) => {
       const now = Date.now();
       const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
+      // Build org-id -> name lookup for owner_active_org_name
+      const orgNameById = new Map((orgs || []).map((o: any) => [o.id, o.name]));
+
       const enriched = await Promise.all(
         (orgs || []).map(async (o: any) => {
           let owner_email: string | null = null;
@@ -98,6 +101,15 @@ Deno.serve(async (req) => {
           const txCount = txCountByOrg.get(o.id) || 0;
           const lastActivity = lastActivityByOrg.get(o.id) || null;
           const ownerOtherOrgs = (orgsByUser.get(o.owner_id) || []).filter((id) => id !== o.id);
+          // Find owner's active non-personal org (excluding this one)
+          let owner_active_org_name: string | null = null;
+          for (const otherId of ownerOtherOrgs) {
+            const other = (orgs || []).find((x: any) => x.id === otherId);
+            if (other && !other.is_personal) { owner_active_org_name = other.name; break; }
+          }
+          if (!owner_active_org_name && ownerOtherOrgs.length > 0) {
+            owner_active_org_name = orgNameById.get(ownerOtherOrgs[0]) ?? null;
+          }
 
           let health: 'active' | 'idle' | 'empty' | 'orphan-duplicate' | 'personal' = 'empty';
           if (o.is_personal) {
