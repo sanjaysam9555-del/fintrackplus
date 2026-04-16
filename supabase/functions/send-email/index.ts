@@ -134,7 +134,7 @@ Deno.serve(async (req) => {
       type: type === "recovery" ? "recovery" : "magiclink",
       email,
       options: {
-        redirectTo: redirectTo || "https://bright-balance-beam.lovable.app/reset-password",
+        redirectTo: redirectTo || "https://fintrackplus.com/reset-password",
       },
     });
 
