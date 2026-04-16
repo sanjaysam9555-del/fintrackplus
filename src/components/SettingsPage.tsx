@@ -414,8 +414,8 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
     ...(isOwner ? [{ section: "Subscription", items: [subscriptionItem] }] : []),
   ];
 
-  const LEFT_SECTIONS = ["Data Management", "Backup & Restore", "Organisation Branding"];
-  const RIGHT_SECTIONS = ["Team & Approvals", "Subscription"];
+  const LEFT_SECTIONS = ["Data Management", "Backup & Restore"];
+  const RIGHT_SECTIONS = ["Team & Approvals", "Subscription", "Organisation Branding"];
   
   const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
     { value: 'light', label: 'Light', icon: Sun, description: 'Light theme' },
