@@ -36,8 +36,17 @@ interface OrgRow {
   transaction_count: number;
   last_activity_at: string | null;
   owner_other_org_ids: string[];
+  owner_active_org_name?: string | null;
   health: Health;
   subscription: any | null;
+}
+
+interface Membership {
+  org_id: string;
+  org_name: string;
+  role: string;
+  status: string;
+  subscription?: any | null;
 }
 
 interface UserRow {
@@ -47,9 +56,10 @@ interface UserRow {
   last_sign_in_at: string | null;
   name: string | null;
   avatar_url: string | null;
-  memberships: { org_id: string; org_name: string; role: string; status: string }[];
+  memberships: Membership[];
   owns_multiple_orgs: boolean;
   never_logged_in: boolean;
+  comped_org_ids?: string[];
 }
 
 interface Stats {
