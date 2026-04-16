@@ -131,6 +131,7 @@ export default function AdminConsole() {
   const [loadingStats, setLoadingStats] = useState(false);
   const [filter, setFilter] = useState<'all' | Health>('all');
   const [search, setSearch] = useState('');
+  const [hidePersonal, setHidePersonal] = useState(true);
 
   const isSuper = !!user && SUPER_ADMIN_USER_IDS.includes(user.id);
 
