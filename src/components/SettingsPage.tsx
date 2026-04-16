@@ -386,34 +386,36 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
     });
   }
   
-  // Backup items (owner only)
-  const backupItems: { icon: React.ElementType; label: string; sublabel: string; onClick: () => void }[] = [];
-  if (isOwner) {
-    backupItems.push({
-      icon: Database,
-      label: "Backup & Restore",
-      sublabel: "Manage data backups",
-      onClick: () => handleSectionChange('backup'),
-    });
-    backupItems.push({
-      icon: Building2,
-      label: "Organisation Branding",
-      sublabel: "Name & logo",
-      onClick: () => handleSectionChange('branding'),
-    });
-    backupItems.push({
-      icon: CreditCard,
-      label: "Subscription",
-      sublabel: "Plan, billing & invoices",
-      onClick: () => handleSectionChange('subscription'),
-    });
-  }
-  
+  // Owner-only sections (each rendered as its own card)
+  const backupItem = {
+    icon: Database,
+    label: "Backup & Restore",
+    sublabel: "Manage data backups",
+    onClick: () => handleSectionChange('backup'),
+  };
+  const brandingItem = {
+    icon: Building2,
+    label: "Organisation Branding",
+    sublabel: "Name & logo",
+    onClick: () => handleSectionChange('branding'),
+  };
+  const subscriptionItem = {
+    icon: CreditCard,
+    label: "Subscription",
+    sublabel: "Plan, billing & invoices",
+    onClick: () => handleSectionChange('subscription'),
+  };
+
   const menuItems = [
     ...(dataItems.length > 0 ? [{ section: "Data Management", items: dataItems }] : []),
     ...(teamItems.length > 0 ? [{ section: "Team & Approvals", items: teamItems }] : []),
-    ...(backupItems.length > 0 ? [{ section: "Backup & Branding", items: backupItems }] : []),
+    ...(isOwner ? [{ section: "Backup & Restore", items: [backupItem] }] : []),
+    ...(isOwner ? [{ section: "Organisation Branding", items: [brandingItem] }] : []),
+    ...(isOwner ? [{ section: "Subscription", items: [subscriptionItem] }] : []),
   ];
+
+  const LEFT_SECTIONS = ["Data Management", "Backup & Restore", "Organisation Branding"];
+  const RIGHT_SECTIONS = ["Team & Approvals", "Subscription"];
   
   const themeOptions: { value: ThemeMode; label: string; icon: React.ElementType; description: string }[] = [
     { value: 'light', label: 'Light', icon: Sun, description: 'Light theme' },
@@ -541,8 +543,8 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
 
         {/* Row 2: Data Management + Team/Backup/Sync */}
         <div className="grid grid-cols-2 gap-6 px-4 mb-6">
-          <div>
-            {menuItems.filter(s => s.section === "Data Management").map((section, sectionIndex) => (
+          <div className="space-y-6">
+            {menuItems.filter(s => LEFT_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
               <div key={section.section}>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
                 <motion.div
@@ -565,7 +567,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           </div>
 
           <div className="space-y-6">
-            {menuItems.filter(s => s.section !== "Data Management").map((section, sectionIndex) => (
+            {menuItems.filter(s => RIGHT_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
               <div key={section.section}>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
                 <motion.div
