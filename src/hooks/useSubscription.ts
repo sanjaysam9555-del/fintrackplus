@@ -36,22 +36,27 @@ export const useSubscription = () => {
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
+    setLoading(true);
+
     if (!orgId) {
       setSubscription(null);
       setLoading(false);
       return;
     }
+
     const { data, error } = await supabase
       .from("subscriptions")
       .select("*")
       .eq("org_id", orgId)
       .maybeSingle();
+
     if (error) {
       console.error("[useSubscription]", error);
       setSubscription(null);
     } else {
       setSubscription(data as Subscription | null);
     }
+
     setLoading(false);
   }, [orgId]);
 
