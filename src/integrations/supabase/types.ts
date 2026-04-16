@@ -894,6 +894,7 @@ export type Database = {
         Args: { _org_id: string }
         Returns: boolean
       }
+      org_last_activity_at: { Args: { _org_id: string }; Returns: string }
       reject_invite: { Args: { _invite_id: string }; Returns: Json }
       trigger_all_org_backups: {
         Args: { backup_label: string }
