@@ -290,7 +290,7 @@ export default function AdminConsole() {
               <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
             ) : (
               <div className="space-y-2">
-                {users.map((u) => <UserRowCard key={u.id} user={u} />)}
+                {users.map((u) => <UserRowCard key={u.id} user={u} onChanged={loadUsers} />)}
                 {users.length === 0 && !loadingUsers && (
                   <p className="text-sm text-muted-foreground text-center py-8">Click Refresh to load users.</p>
                 )}
