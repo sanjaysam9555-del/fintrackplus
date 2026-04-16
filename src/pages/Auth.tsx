@@ -169,6 +169,69 @@ const ForgotPasswordScreen = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
+const AccountExistsScreen = ({
+  email,
+  variant,
+  onLogin,
+  onForgot,
+  onBack,
+}: {
+  email: string;
+  variant: 'exists' | 'invited_pending';
+  onLogin: () => void;
+  onForgot: () => void;
+  onBack: () => void;
+}) => {
+  const isInvited = variant === 'invited_pending';
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-card/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-border/50 text-center space-y-5"
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+        className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto"
+      >
+        {isInvited ? <KeyRound className="w-8 h-8 text-primary" /> : <AlertCircle className="w-8 h-8 text-primary" />}
+      </motion.div>
+      <div>
+        <h2 className="text-xl font-bold text-foreground mb-2">
+          {isInvited ? "You've been invited" : 'Account already exists'}
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          {isInvited
+            ? 'Your business owner has already created an account for you.'
+            : 'An account with this email already exists.'}
+        </p>
+        <p className="text-sm font-semibold text-foreground mt-1">{email}</p>
+        {isInvited && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Check your email for the temporary password sent to you, or reset your password if you can't find it.
+          </p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Button onClick={onLogin} className="w-full h-12 rounded-xl text-base font-semibold">
+          Log in instead
+        </Button>
+        <Button onClick={onForgot} variant="outline" className="w-full h-12 rounded-xl">
+          Reset password
+        </Button>
+      </div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="text-sm text-primary font-semibold hover:underline underline-offset-4 flex items-center gap-1 mx-auto"
+      >
+        <ArrowLeft size={14} /> Use a different email
+      </button>
+    </motion.div>
+  );
+};
+
 export const AuthPage = () => {
   const [searchParams] = useSearchParams();
   const initialView = (searchParams.get('mode') === 'signup' ? 'signup' : 'login') as AuthView;
