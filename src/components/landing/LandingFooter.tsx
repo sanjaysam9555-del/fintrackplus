@@ -61,6 +61,7 @@ export const LandingFooter = () => (
         <div className="flex items-center gap-6 text-sm">
           <a href="/privacy" className="text-muted-foreground hover:text-foreground transition-colors">Privacy</a>
           <a href="/terms" className="text-muted-foreground hover:text-foreground transition-colors">Terms</a>
+          <a href="/refund" className="text-muted-foreground hover:text-foreground transition-colors">Refund</a>
           <a href="mailto:support@fintrackplus.in" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
           <a href="https://www.instagram.com/fintrack_plus/" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground transition-colors" aria-label="Instagram">
             <Instagram className="w-4 h-4" />
