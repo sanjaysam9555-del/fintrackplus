@@ -152,7 +152,7 @@ const AppRoutes = () => {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
           {!user ? (
-            <Route path="*" element={<AuthPage />} />
+            <Route path="*" element={<Navigate to="/auth" replace />} />
           ) : (
             <>
               <Route path="/billing" element={<Billing />} />
@@ -193,7 +193,7 @@ const AppRoutes = () => {
               <Route path="/application/*" element={<NotFound />} />
             </>
           ) : (
-            <Route path="/application/*" element={<AuthPage />} />
+            <Route path="/application/*" element={<Navigate to="/application/auth" replace />} />
           )}
 
           {/* Everything else → landing (PWA users go straight to app) */}
@@ -225,7 +225,7 @@ const AppRoutes = () => {
         <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
 
         {!user ? (
-          <Route path="*" element={<AuthPage />} />
+          <Route path="*" element={<Navigate to="/auth" replace />} />
         ) : (
           <>
             <Route path="/billing" element={<Billing />} />
