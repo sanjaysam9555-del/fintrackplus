@@ -27,7 +27,8 @@ import {
   ClipboardCheck,
   Database,
   Building2,
-  FileText
+  FileText,
+  CreditCard
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,6 +48,7 @@ import { BackupRestoreSection } from "./settings/BackupRestoreSection";
 import { OrgBrandingSection } from "./settings/OrgBrandingSection";
 import { AllDocumentsSection } from "./settings/AllDocumentsSection";
 import { RecurringSection } from "./settings/RecurringSection";
+import { SubscriptionSection } from "./settings/SubscriptionSection";
 import { Button } from "./ui/button";
 import { formatDistanceToNow } from "date-fns";
 import { Check, ArrowUpRight, FileDown, User, Trash2 } from "lucide-react";
@@ -234,7 +236,7 @@ const NotificationsContent = () => {
   );
 };
 
-type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | 'branding' | 'documents' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | 'branding' | 'documents' | 'subscription' | null;
 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
@@ -399,6 +401,12 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
       sublabel: "Name & logo",
       onClick: () => handleSectionChange('branding'),
     });
+    backupItems.push({
+      icon: CreditCard,
+      label: "Subscription",
+      sublabel: "Plan, billing & invoices",
+      onClick: () => handleSectionChange('subscription'),
+    });
   }
   
   const menuItems = [
@@ -432,6 +440,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   }
   if (activeSection === 'documents') {
     return <AllDocumentsSection onBack={handleBack} />;
+  }
+  if (activeSection === 'subscription') {
+    return <SubscriptionSection onBack={handleBack} />;
   }
   if (activeSection === 'partners') {
     return <PartnersSection onBack={handleBack} userId={user?.id} />;

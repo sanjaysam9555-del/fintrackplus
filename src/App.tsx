@@ -10,6 +10,7 @@ import { useStatusBar } from "@/hooks/useStatusBar";
 import { AnimatePresence } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
 import { isLandingDomain, isAppDomain, isPWA, appPath } from "@/lib/domainUtils";
+import { PaywallGate } from "@/components/PaywallGate";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -21,6 +22,7 @@ const Landing = lazy(() => import("./pages/Landing"));
 const Privacy = lazy(() => import("./pages/Privacy"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Refund = lazy(() => import("./pages/Refund"));
+const Billing = lazy(() => import("./pages/Billing"));
 
 // Prefetch critical routes during idle time so they load instantly when needed
 if (typeof window !== 'undefined') {
@@ -150,7 +152,8 @@ const AppRoutes = () => {
             <Route path="*" element={<AuthPage />} />
           ) : (
             <>
-              <Route path="/" element={<Index />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/" element={<PaywallGate><Index /></PaywallGate>} />
               <Route path="*" element={<NotFound />} />
             </>
           )}
@@ -176,7 +179,8 @@ const AppRoutes = () => {
           <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
           {user ? (
             <>
-              <Route path="/application" element={<Index />} />
+              <Route path="/application/billing" element={<Billing />} />
+              <Route path="/application" element={<PaywallGate><Index /></PaywallGate>} />
               <Route path="/application/*" element={<NotFound />} />
             </>
           ) : (
@@ -211,8 +215,10 @@ const AppRoutes = () => {
           <Route path="*" element={<AuthPage />} />
         ) : (
           <>
-            <Route path="/" element={<Index />} />
-            <Route path="/application" element={<Index />} />
+            <Route path="/billing" element={<Billing />} />
+            <Route path="/application/billing" element={<Billing />} />
+            <Route path="/" element={<PaywallGate><Index /></PaywallGate>} />
+            <Route path="/application" element={<PaywallGate><Index /></PaywallGate>} />
             <Route path="*" element={<NotFound />} />
           </>
         )}

@@ -25,7 +25,7 @@ const OnboardingFlow = lazy(() => import("@/components/OnboardingFlow").then(m =
 
 type TabId = 'home' | 'expenses' | 'add' | 'income' | 'projects';
 type ViewMode = TabId | 'settings' | 'ai';
-type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | 'branding' | 'documents' | null;
+type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' | 'partners' | 'features' | 'team' | 'approvals' | 'backup' | 'recurring' | 'branding' | 'documents' | 'subscription' | null;
 
 // Enhanced skeleton with logo animation
 const LogoSkeleton = () => (
