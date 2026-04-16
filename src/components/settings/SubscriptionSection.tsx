@@ -180,7 +180,7 @@ export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
                   </p>
                 </div>
               </div>
-              <Button size="sm" onClick={() => navigate(appPath("/billing"))} className="w-full">
+              <Button size="sm" onClick={() => navigate(appPath("/billing"), { state: { from: "settings:subscription" } })} className="w-full">
                 Complete Verification
               </Button>
             </div>
@@ -198,7 +198,7 @@ export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
 
           <div className="flex flex-wrap gap-2 mt-4">
             {!subscription?.razorpay_subscription_id && (
-              <Button onClick={() => navigate(appPath("/billing"))} size="sm">Subscribe Now</Button>
+              <Button onClick={() => navigate(appPath("/billing"), { state: { from: "settings:subscription" } })} size="sm">Subscribe Now</Button>
             )}
             {subscription?.razorpay_subscription_id && !subscription.cancel_at_period_end && subscription.status !== "cancelled" && (
               <AlertDialog>
