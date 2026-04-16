@@ -1,36 +1,46 @@
 
-Problem is likely not the complimentary-access check anymore. The stronger signal is this:
+## Problem
+On the Settings page (desktop), the third group is currently labeled **"Backup & Branding"** and bundles Backup & Restore, Organisation Branding, and Subscription into one card. The user wants:
+1. **Subscription** as its own section.
+2. **Backup & Restore** as its own section.
+3. **Organisation Branding** as its own section.
+4. The two desktop columns to be **parallel in height**.
 
-- You are currently ending up on `/billing`
-- Session replay shows login succeeds, then Billing renders with “Subscription active” and “Go to App”
-- In `App.tsx`, when logged out, protected routes render `<AuthPage />` directly instead of redirecting to `/auth`
+## Where to change
+Only `src/components/SettingsPage.tsx`.
 
-That means if the current URL is `/billing` while logged out, you see the login form there. After sign-in, the URL is still `/billing`, so the app simply renders the Billing page again.
+### 1. Split the menu groups
+Replace the single `backupItems` group with three separate one-item groups in the `menuItems` builder (around lines 389–416):
 
-Plan:
-1. Fix unauthenticated routing in `src/App.tsx`
-   - Replace the logged-out fallbacks that render `<AuthPage />` on protected paths with redirects to the explicit auth route instead:
-   - app domain: `* -> /auth`
-   - landing domain app routes: `/application/* -> /application/auth`
-   - default routing: protected paths should redirect to the matching auth route, not render auth in place
+```ts
+const menuItems = [
+  ...(dataItems.length > 0 ? [{ section: "Data Management", items: dataItems }] : []),
+  ...(teamItems.length > 0 ? [{ section: "Team & Approvals", items: teamItems }] : []),
+  ...(isOwner ? [{ section: "Backup & Restore", items: [backupItem] }] : []),
+  ...(isOwner ? [{ section: "Organisation Branding", items: [brandingItem] }] : []),
+  ...(isOwner ? [{ section: "Subscription", items: [subscriptionItem] }] : []),
+];
+```
 
-2. Add a defensive post-login redirect in `src/pages/Auth.tsx`
-   - After successful sign-in, navigate to the app root (`appPath("/")`) so login always lands on dashboard even if the auth screen was reached from a protected URL
+This automatically renders them as separate cards on both mobile (single column) and desktop (right column, since they're filtered by `section !== "Data Management"`).
 
-3. Keep billing accessible only when intentionally opened
-   - No auto-bounce out of Billing for valid active users, so Settings → Subscription still works normally
-   - Only fix the accidental “login happened on /billing” case
+### 2. Balance the two desktop columns
+Currently the **left column** only holds Data Management while the **right column** stacks Team & Approvals + (now 3) Backup-family sections + Sync + Default Time Frame, making the right column much taller.
 
-4. Verify related flows
-   - Check both `/auth` and `/application/auth`
-   - Check login from a stale `/billing` URL
-   - Check complimentary-access login specifically
-   - Confirm mobile and desktop behavior remain correct
+Redistribute on desktop (lines 542–636) so heights are visually parallel:
 
-Files to update:
-- `src/App.tsx`
-- `src/pages/Auth.tsx`
+- **Left column**: Data Management + Backup & Restore + Organisation Branding
+- **Right column**: Team & Approvals + Subscription + Sync + Default Time Frame
 
-Expected result:
-- If you sign in from a stale `/billing` URL, you’ll be taken to the dashboard instead of staying on Billing
-- Billing will only appear when you explicitly open it from inside the app
+Implement by filtering the desktop column rendering by explicit section names rather than the current `=== "Data Management"` / `!== "Data Management"` split. Mobile stays unchanged (single stacked column in original order).
+
+### 3. Appearance row
+Already a 2-col grid with empty right cell — leaves room for the Sign Out button to optionally move there later. No change needed now.
+
+## Files touched
+- `src/components/SettingsPage.tsx` (menu builder + desktop column distribution)
+
+## Out of scope
+- Mobile layout (already single-column, will naturally show 3 separate cards)
+- The actual section sub-pages (BackupRestoreSection, OrgBrandingSection, SubscriptionSection) — already separate components
+- Memory update for `mem://style/settings-page-layout-desktop` — will refresh after implementation to reflect the new column distribution
