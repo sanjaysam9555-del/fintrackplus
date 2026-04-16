@@ -1,55 +1,55 @@
 
-User wants a hidden owner-only admin panel to manage comped subscriptions. Key constraints:
-- Hidden via "private link" — not in nav
-- Owner-only access
-- Manage `is_comped`, `comped_reason`, `comped_until` for any org by ID
-- RLS currently blocks UPDATE on subscriptions (no UPDATE policy exists). Need to either add a policy or use an edge function with service role.
 
-Best approach: edge function with service-role key + caller role check. Cleaner than opening up RLS broadly. Also lets us list orgs (which the caller's RLS otherwise hides — they can only see their own org).
+## Plan: Fix admin comp route + improve UX
 
-Route: `/application/admin/comp` (and `/admin/comp` for app domain). Gated by `useUserRole().isOwner` + extra "super-admin" allowlist (just the founder's user_id) so other org owners can't comp themselves.
+### Issue 1 — 404 on `/admin/comp`
+On `fintrackplus.com` (landing domain), only `/application/admin/comp` is registered. Plain `/admin/comp` falls through to the Landing component → looks like 404.
 
-Wait — "any org by ID" means cross-org. Even owners shouldn't be able to comp other orgs. Need to restrict to a specific super-admin (the founder). Will use an env-style allowlist by user_id, hardcoded as a constant `SUPER_ADMIN_USER_IDS` in the edge function (and mirrored in the route gate). User can add their own ID.
+**Fix:** In `src/App.tsx`, inside the `isLandingDomain()` branch, register `/admin/comp` to render `<AdminComp />` directly (bypass landing). Keep `/application/admin/comp` as backward-compat alias. Per user's choice (Root domain only), do NOT add it to `app.fintrackplus.com`.
 
-## Plan
+### Issue 2 — UI is too technical
+Current cards show: org name, owner email, raw UUID. Missing the **owner's actual name** and clearer plan info. Also the React `forwardRef` warning on `Badge` is just a noise warning (Badge already uses forwardRef — actually it's the lazy wrapper warning, harmless), but we'll polish layout regardless.
 
-### Route
-- `src/pages/AdminComp.tsx` — new hidden page
-- Add routes in `App.tsx`: `/admin/comp` and `/application/admin/comp`
-- Not linked from anywhere. Gated by: must be logged in + user_id in `SUPER_ADMIN_USER_IDS`. Otherwise → 404.
+**Edge function change** (`supabase/functions/admin-comp/index.ts`):
+- Also fetch `profiles` (name, avatar_url) for each owner_id, and join into the response as `owner_name` and `owner_avatar_url`.
+- Include `created_at` of org so we can show "Joined X ago".
 
-### UI (`AdminComp.tsx`)
-- **Search/list section**: Search orgs by name or paste org_id. Shows: name, owner email, current comp status, plan status, comped_until.
-- **Edit form** (per org): toggle `is_comped`, text input for `comped_reason`, date picker for `comped_until` (empty = permanent).
-- "Save" calls edge function. Toast on success. Refresh list.
-- Minimal styling — matches existing settings sections.
+**Page change** (`src/pages/AdminComp.tsx`):
+Redesigned card layout:
 
-### Edge function: `supabase/functions/admin-comp/index.ts`
-- Verify JWT, extract user_id, check against `SUPER_ADMIN_USER_IDS` allowlist. 403 otherwise.
-- Actions:
-  - `list` → returns all orgs (id, name, owner_id, owner email via auth.admin, subscription status + comp fields)
-  - `update` → upserts subscription row for org with `is_comped`, `comped_reason`, `comped_until`. Creates row if missing.
-- Uses service role to bypass RLS.
-
-### Super-admin allowlist
-Hardcoded constant in both the edge function and the route gate:
-```ts
-const SUPER_ADMIN_USER_IDS = ['<founder-user-id>'];
+```text
+┌─────────────────────────────────────────────────┐
+│ [Avatar]  Saffron Events            [Comped]   │
+│           Sanjay Singh · sanjay@…              │
+│           Joined 2 months ago                  │
+│                                                 │
+│ Plan: Trialing · Trial ends Apr 30             │
+│ ─────────────────────────────────────           │
+│ [✓] Complimentary access                       │
+│ Reason: [Founder         ]                     │
+│ Until:  [empty = permanent]                    │
+│                                  [Save]        │
+└─────────────────────────────────────────────────┘
 ```
-I'll fetch the founder's user_id from DB during implementation (Sanjay Singh, owner of Saffron Events org `6726455b-3445-41ff-9d56-64481fb66b5f`).
 
-### Files
+Improvements:
+- Owner avatar (circle, fallback to initials) on the left
+- **Owner name** as the secondary line (bold-ish), email muted below
+- Org UUID hidden behind a small "ID" copy button (cleaner, copy-on-click)
+- Plan summary written in plain English: "Trial ends 30 Apr 2026", "Active until 15 May 2026", "Complimentary — permanent" / "Complimentary until 31 Dec 2026", "No subscription"
+- Search hint updated: "Search by org or owner name…"
+- Comped badge gets a subtle gradient
+
+### Files touched
 | File | Change |
 |---|---|
-| `supabase/functions/admin-comp/index.ts` | New: list/update comp status, super-admin gated |
-| `src/pages/AdminComp.tsx` | New: hidden admin UI |
-| `src/App.tsx` | Add `/admin/comp` + `/application/admin/comp` routes (lazy) |
+| `src/App.tsx` | Add `/admin/comp` route on landing domain |
+| `supabase/functions/admin-comp/index.ts` | Enrich list with owner profile name + avatar |
+| `src/pages/AdminComp.tsx` | New friendlier card layout with avatar, owner name, plain-English plan status, copyable org ID |
 
-### Access
-After deploy, visit:
-- `https://app.fintrackplus.com/admin/comp`
-- or `https://fintrackplus.com/application/admin/comp`
+### Access after fix
+- `https://fintrackplus.com/admin/comp` ✅ (primary)
+- `https://fintrackplus.com/application/admin/comp` ✅ (alias)
 
-Anyone not in the allowlist sees NotFound.
+Anyone not in `SUPER_ADMIN_USER_IDS` still sees the 404 screen.
 
-Approve and I'll implement.
