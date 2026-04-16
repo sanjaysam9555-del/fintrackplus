@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { appPath } from '@/lib/domainUtils';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, ArrowLeft, CheckCircle2, AlertCircle, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
