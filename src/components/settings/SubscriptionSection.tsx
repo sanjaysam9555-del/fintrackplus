@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, X, Calendar, Receipt, Loader2, Download, AlertTriangle, Pencil } from "lucide-react";
+import { ArrowLeft, Check, X, Calendar, Receipt, Loader2, Download, AlertTriangle, Pencil, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +28,7 @@ interface SubscriptionSectionProps {
 }
 
 export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
-  const { subscription, isActive, trialActive, trialDaysLeft, refetch } = useSubscription();
+  const { subscription, isActive, trialActive, trialDaysLeft, needsMandateAuth, refetch } = useSubscription();
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [cancelling, setCancelling] = useState(false);
@@ -118,8 +118,8 @@ export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
     if (subscription.cancel_at_period_end) return { label: "Cancelling", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400" };
     switch (subscription.status) {
       case "active": return { label: "Active", color: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400" };
-      case "trialing":
-      case "created": return { label: "Trial", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
+      case "trialing": return { label: "Trial", color: "bg-blue-500/15 text-blue-600 dark:text-blue-400" };
+      case "created": return { label: "Verification pending", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400" };
       case "past_due": return { label: "Past due", color: "bg-destructive/15 text-destructive" };
       case "halted": return { label: "Paused", color: "bg-amber-500/15 text-amber-600 dark:text-amber-400" };
       case "cancelled":
@@ -157,9 +157,32 @@ export const SubscriptionSection = ({ onBack }: SubscriptionSectionProps) => {
           </div>
 
           {trialActive && (
-            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm flex items-center gap-2">
-              <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
-              <span>{trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} left in free trial</span>
+            <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm space-y-1">
+              <div className="flex items-center gap-2">
+                <Calendar size={16} className="text-blue-600 dark:text-blue-400" />
+                <span>{trialDaysLeft} day{trialDaysLeft !== 1 ? "s" : ""} left in free trial</span>
+              </div>
+              <p className="text-xs text-muted-foreground pl-6">
+                The ₹1–₹5 mandate authorization charge is auto-refunded within 5–7 business days.
+                Your first ₹599 charge happens when the trial ends.
+              </p>
+            </div>
+          )}
+
+          {needsMandateAuth && (
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm space-y-2">
+              <div className="flex items-start gap-2">
+                <AlertTriangle size={16} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-amber-700 dark:text-amber-400">Payment method verification incomplete</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Complete the ₹1–₹5 refundable verification (RBI mandate) to start your trial.
+                  </p>
+                </div>
+              </div>
+              <Button size="sm" onClick={() => navigate(appPath("/billing"))} className="w-full">
+                Complete Verification
+              </Button>
             </div>
           )}
 

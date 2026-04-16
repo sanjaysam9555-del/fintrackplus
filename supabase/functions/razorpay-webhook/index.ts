@@ -64,8 +64,16 @@ Deno.serve(async (req) => {
     const updates: Record<string, any> = {};
 
     switch (eventType) {
-      case "subscription.activated":
       case "subscription.authenticated": {
+        // Mandate authorized (₹1–₹5 auth succeeded). Trial officially starts now.
+        // If trial_end is in the future, mark trialing; else active.
+        const trialEndMs = sub.trial_end ? new Date(sub.trial_end).getTime() : 0;
+        updates.status = trialEndMs > Date.now() ? "trialing" : "active";
+        if (subEntity?.current_start) updates.current_period_start = new Date(subEntity.current_start * 1000).toISOString();
+        if (subEntity?.current_end) updates.current_period_end = new Date(subEntity.current_end * 1000).toISOString();
+        break;
+      }
+      case "subscription.activated": {
         updates.status = "active";
         if (subEntity?.current_start) updates.current_period_start = new Date(subEntity.current_start * 1000).toISOString();
         if (subEntity?.current_end) updates.current_period_end = new Date(subEntity.current_end * 1000).toISOString();

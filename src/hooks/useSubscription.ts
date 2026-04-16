@@ -75,10 +75,16 @@ export const useSubscription = () => {
   const now = Date.now();
   const trialEndMs = subscription?.trial_end ? new Date(subscription.trial_end).getTime() : 0;
   const trialActive = subscription?.status === "trialing" && trialEndMs > now;
+  // NOTE: status === "created" is intentionally EXCLUDED. Razorpay sets "created" before
+  // mandate authentication. We only grant access once the webhook flips it to "trialing"
+  // (subscription.authenticated event) or "active" (subscription.charged).
   const isActive =
     subscription?.status === "active" ||
-    (subscription?.status === "trialing" && trialEndMs > now) ||
-    (subscription?.status === "created" && trialEndMs > now);
+    (subscription?.status === "trialing" && trialEndMs > now);
+
+  // Subscription was created in Razorpay but mandate not yet authenticated (₹1–₹5 auth pending)
+  const needsMandateAuth =
+    subscription?.status === "created" && !!subscription?.razorpay_subscription_id;
 
   const trialDaysLeft = trialActive
     ? Math.max(0, Math.ceil((trialEndMs - now) / (24 * 60 * 60 * 1000)))
@@ -90,6 +96,7 @@ export const useSubscription = () => {
     isActive,
     trialActive,
     trialDaysLeft,
+    needsMandateAuth,
     refetch: fetch,
   };
 };
