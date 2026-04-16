@@ -507,12 +507,39 @@ Deno.serve(async (req) => {
         }
 
         if ((remainingMemberships ?? 0) === 0) {
-          await adminClient
-            .from("profiles")
-            .delete()
-            .eq("user_id", targetMember.user_id);
+          // DATA RETENTION POLICY: keep auth user + profile for at least 1 year
+          // from their last sign-in. Org membership/partner are already removed above
+          // (so they lose access immediately), but the underlying account is preserved.
+          const { data: authUser } = await adminClient.auth.admin.getUserById(targetMember.user_id);
+          const lastSignIn = authUser?.user?.last_sign_in_at
+            ? new Date(authUser.user.last_sign_in_at)
+            : null;
+          const createdAt = authUser?.user?.created_at
+            ? new Date(authUser.user.created_at)
+            : null;
+          const referenceDate = lastSignIn || createdAt;
+          const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+          const eligibleForDeletion =
+            referenceDate && Date.now() - referenceDate.getTime() >= ONE_YEAR_MS;
 
-          await adminClient.auth.admin.deleteUser(targetMember.user_id);
+          if (eligibleForDeletion) {
+            await adminClient
+              .from("profiles")
+              .delete()
+              .eq("user_id", targetMember.user_id);
+
+            await adminClient.auth.admin.deleteUser(targetMember.user_id);
+          } else {
+            // Retain account; just ban the user so they cannot sign back in.
+            // (Reversible by an owner re-adding them via create_member.)
+            try {
+              await adminClient.auth.admin.updateUserById(targetMember.user_id, {
+                ban_duration: "876000h", // ~100 years
+              });
+            } catch (banErr) {
+              console.error("[remove_member] ban failed:", banErr);
+            }
+          }
         }
 
         return new Response(
