@@ -1,31 +1,11 @@
 
-## Fix Billing back button
+User is asking about giving free access (e.g., for themselves as owner, internal team, beta testers, friends). Currently the app has a hard paywall — only `trialing` or `active` subscriptions get in. No bypass exists.
 
-**Problem:** Back button on `/billing` calls `navigate(appPath("/"))` which takes user to the Dashboard, not back to the Settings → Subscription page they came from.
+Options to offer:
+1. **Comp/exempt orgs** — flag on `subscriptions` (or `organizations`) that grants permanent access without Razorpay. Cleanest, scales for multiple free users.
+2. **Manually set status='active'** with far-future `current_period_end` — quick hack, no schema change, but mixes with real paying data.
+3. **Lifetime plan** — new status value `comped` treated as active.
 
-**Root cause:** Settings is not a route — it's a `viewMode` state inside `Index.tsx`. There's no URL to navigate back to. The current Back button hardcodes `/`.
+Recommend option 1 — a dedicated `is_comped` boolean + optional `comped_reason` + `comped_until` (nullable for permanent). Owner-only management via a hidden admin tool (or just direct DB for now).
 
-**Fix:** Use browser history to go back, with a smart fallback when there is no in-app history (e.g. user landed on `/billing` directly via PaywallGate redirect).
-
-### Changes
-
-**`src/pages/Billing.tsx`** — replace the back handler:
-- If `window.history.length > 1` and the previous entry is in-app → `navigate(-1)` (returns to Settings → Subscription).
-- Else → navigate to `appPath("/")` with `state: { openSettings: 'subscription' }` so Index opens directly into the Subscription settings section.
-
-**`src/pages/Index.tsx`** — on mount, read `location.state.openSettings`. If present, set `viewMode='settings'` and `settingsSection=<value>`, then clear the state via `navigate(..., { replace: true, state: {} })` so refresh doesn't re-trigger.
-
-**`src/components/settings/SubscriptionSection.tsx`** — when navigating to billing, pass state so we know where to return:
-```ts
-navigate(appPath("/billing"), { state: { from: 'settings:subscription' } });
-```
-(Used as a hint by Billing's back handler if needed.)
-
-This makes Back behave intuitively: Billing → Settings (Subscription section) → wherever the user came from before that.
-
-### Files touched
-| File | Change |
-|---|---|
-| `src/pages/Billing.tsx` | Smart back: `navigate(-1)` with fallback to `/` + state |
-| `src/pages/Index.tsx` | Honor `location.state.openSettings` to deep-link into Settings sections |
-| `src/components/settings/SubscriptionSection.tsx` | Pass `state.from` when opening Billing |
+Keep the plan short — this is a small change.
