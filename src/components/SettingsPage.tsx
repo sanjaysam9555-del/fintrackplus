@@ -543,8 +543,8 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
 
         {/* Row 2: Data Management + Team/Backup/Sync */}
         <div className="grid grid-cols-2 gap-6 px-4 mb-6">
-          <div>
-            {menuItems.filter(s => s.section === "Data Management").map((section, sectionIndex) => (
+          <div className="space-y-6">
+            {menuItems.filter(s => LEFT_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
               <div key={section.section}>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
                 <motion.div
@@ -567,7 +567,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           </div>
 
           <div className="space-y-6">
-            {menuItems.filter(s => s.section !== "Data Management").map((section, sectionIndex) => (
+            {menuItems.filter(s => RIGHT_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
               <div key={section.section}>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
                 <motion.div
