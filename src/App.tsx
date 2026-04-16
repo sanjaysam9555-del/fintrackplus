@@ -152,7 +152,7 @@ const AppRoutes = () => {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
           {!user ? (
-            <Route path="*" element={<AuthPage />} />
+            <Route path="*" element={<Navigate to="/auth" replace />} />
           ) : (
             <>
               <Route path="/billing" element={<Billing />} />
