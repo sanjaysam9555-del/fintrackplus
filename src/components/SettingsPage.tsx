@@ -439,7 +439,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
       {/* Desktop: Structured paired-row layout */}
       <div className="hidden md:block">
         {/* Row 1: Profile + Learn App Features */}
-        <div className="grid grid-cols-2 gap-6 px-4 mb-6">
+        <div className="px-4 mb-6 space-y-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
