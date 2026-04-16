@@ -264,6 +264,31 @@ export const AuthPage = () => {
           setIsLoading(false);
           return;
         }
+
+        // Pre-flight: check if this email is already registered
+        try {
+          const { data: statusData, error: statusErr } = await supabase.functions.invoke('check-email-status', {
+            body: { email },
+          });
+          if (!statusErr && statusData?.status) {
+            if (statusData.status === 'invited_pending') {
+              setVerificationEmail(email);
+              setView('invited_pending');
+              setIsLoading(false);
+              return;
+            }
+            if (statusData.status === 'exists') {
+              setVerificationEmail(email);
+              setView('account_exists');
+              setIsLoading(false);
+              return;
+            }
+          }
+          // If 'available' or check failed, fall through to signUp
+        } catch (preflightErr) {
+          console.warn('[Auth] email pre-check failed, proceeding with signup', preflightErr);
+        }
+
         const { error } = await signUp(email, password, name);
         if (error) {
           toast.error(error.message);
