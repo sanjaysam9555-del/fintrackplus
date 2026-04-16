@@ -483,33 +483,11 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           </motion.button>
         </div>
 
-        {/* Row 2: Data Management + Team/Backup/Sync */}
-        <div className="grid grid-cols-2 gap-6 px-4 mb-6">
+        {/* Row 2: 3-column layout */}
+        <div className="grid grid-cols-3 gap-6 px-4 mb-6">
+          {/* Column 1 */}
           <div className="space-y-6">
-            {menuItems.filter(s => LEFT_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
-              <div key={section.section}>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: sectionIndex * 0.1 }}
-                  className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
-                >
-                  {section.items.map((item, index) => (
-                    <button key={item.label} onClick={item.onClick}
-                      className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
-                      <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
-                      <ChevronRight size={18} className="text-muted-foreground" />
-                    </button>
-                  ))}
-                </motion.div>
-              </div>
-            ))}
-          </div>
-
-          <div className="space-y-6">
-            {menuItems.filter(s => RIGHT_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
+            {menuItems.filter(s => COL1_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
               <div key={section.section}>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
                 <motion.div
@@ -556,6 +534,30 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                 </div>
               </motion.div>
             </div>
+          </div>
+
+          {/* Column 2 */}
+          <div className="space-y-6">
+            {menuItems.filter(s => COL2_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
+              <div key={section.section}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: sectionIndex * 0.1 }}
+                  className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
+                >
+                  {section.items.map((item, index) => (
+                    <button key={item.label} onClick={item.onClick}
+                      className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
+                      <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
+                      <ChevronRight size={18} className="text-muted-foreground" />
+                    </button>
+                  ))}
+                </motion.div>
+              </div>
+            ))}
 
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
@@ -576,6 +578,30 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
                 </div>
               </motion.div>
             </div>
+          </div>
+
+          {/* Column 3 */}
+          <div className="space-y-6">
+            {menuItems.filter(s => COL3_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
+              <div key={section.section}>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: sectionIndex * 0.1 }}
+                  className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
+                >
+                  {section.items.map((item, index) => (
+                    <button key={item.label} onClick={item.onClick}
+                      className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
+                      <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
+                      <ChevronRight size={18} className="text-muted-foreground" />
+                    </button>
+                  ))}
+                </motion.div>
+              </div>
+            ))}
           </div>
         </div>
 
