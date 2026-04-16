@@ -483,125 +483,74 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
           </motion.button>
         </div>
 
-        {/* Row 2: 3-column layout */}
-        <div className="grid grid-cols-3 gap-6 px-4 mb-6">
-          {/* Column 1 */}
-          <div className="space-y-6">
-            {menuItems.filter(s => COL1_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
-              <div key={section.section}>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: sectionIndex * 0.1 }}
-                  className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
-                >
-                  {section.items.map((item, index) => (
-                    <button key={item.label} onClick={item.onClick}
-                      className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
-                      <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
-                      <ChevronRight size={18} className="text-muted-foreground" />
-                    </button>
-                  ))}
-                </motion.div>
-              </div>
-            ))}
+        {/* Single column: all sections stacked */}
+        <div className="px-4 mb-6 space-y-6">
+          {menuItems.map((section, sectionIndex) => (
+            <div key={section.section}>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: sectionIndex * 0.05 }}
+                className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
+              >
+                {section.items.map((item, index) => (
+                  <button key={item.label} onClick={item.onClick}
+                    className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
+                    <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
+                    <ChevronRight size={18} className="text-muted-foreground" />
+                  </button>
+                ))}
+              </motion.div>
+            </div>
+          ))}
 
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sync</p>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
-                className="bg-card rounded-2xl p-4 shadow-card border border-border">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center",
-                      !isOnline ? "bg-amber-500/10" : syncStatus === 'error' ? "bg-destructive/10" : "bg-success/10")}>
-                      {!isOnline ? <WifiOff size={20} className="text-amber-500" /> :
-                       syncStatus === 'syncing' || isRefreshing ? <Loader2 size={20} className="text-primary animate-spin" /> :
-                       syncStatus === 'error' ? <CloudOff size={20} className="text-destructive" /> :
-                       <Cloud size={20} className="text-success" />}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{!isOnline ? 'Offline' : syncStatus === 'syncing' || isRefreshing ? 'Syncing...' : syncStatus === 'error' ? 'Sync Error' : 'Synced'}</p>
-                      <p className="text-xs text-muted-foreground">{pendingCount > 0 ? `${pendingCount} pending changes` : lastSyncedAt ? `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}` : 'Up to date'}</p>
-                    </div>
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sync</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.18 }}
+              className="bg-card rounded-2xl p-4 shadow-card border border-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center",
+                    !isOnline ? "bg-amber-500/10" : syncStatus === 'error' ? "bg-destructive/10" : "bg-success/10")}>
+                    {!isOnline ? <WifiOff size={20} className="text-amber-500" /> :
+                     syncStatus === 'syncing' || isRefreshing ? <Loader2 size={20} className="text-primary animate-spin" /> :
+                     syncStatus === 'error' ? <CloudOff size={20} className="text-destructive" /> :
+                     <Cloud size={20} className="text-success" />}
                   </div>
-                  {onRefresh && (
-                    <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing || !isOnline} className="gap-1.5">
-                      <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} /> Sync
-                    </Button>
-                  )}
+                  <div>
+                    <p className="font-medium text-sm">{!isOnline ? 'Offline' : syncStatus === 'syncing' || isRefreshing ? 'Syncing...' : syncStatus === 'error' ? 'Sync Error' : 'Synced'}</p>
+                    <p className="text-xs text-muted-foreground">{pendingCount > 0 ? `${pendingCount} pending changes` : lastSyncedAt ? `Last synced ${formatDistanceToNow(new Date(lastSyncedAt), { addSuffix: true })}` : 'Up to date'}</p>
+                  </div>
                 </div>
-              </motion.div>
-            </div>
+                {onRefresh && (
+                  <Button variant="outline" size="sm" onClick={onRefresh} disabled={isRefreshing || !isOnline} className="gap-1.5">
+                    <RefreshCw size={14} className={cn(isRefreshing && "animate-spin")} /> Sync
+                  </Button>
+                )}
+              </div>
+            </motion.div>
           </div>
 
-          {/* Column 2 */}
-          <div className="space-y-6">
-            {menuItems.filter(s => COL2_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
-              <div key={section.section}>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: sectionIndex * 0.1 }}
-                  className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
-                >
-                  {section.items.map((item, index) => (
-                    <button key={item.label} onClick={item.onClick}
-                      className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
-                      <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
-                      <ChevronRight size={18} className="text-muted-foreground" />
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+              className="bg-card rounded-2xl p-4 shadow-card border border-border">
+              <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
+              <div className="grid grid-cols-5 gap-2">
+                {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
+                  const isActive = defaultTimeFilter === option.value;
+                  return (
+                    <button key={option.value} onClick={() => setDefaultTimeFilter(option.value)}
+                      className={cn("py-2 rounded-xl text-sm font-medium transition-all",
+                        isActive ? "bg-accent border-2 border-primary text-accent-foreground" : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground")}>
+                      {option.label}
                     </button>
-                  ))}
-                </motion.div>
+                  );
+                })}
               </div>
-            ))}
-
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Default Time Frame</p>
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                className="bg-card rounded-2xl p-4 shadow-card border border-border">
-                <p className="text-xs text-muted-foreground mb-3">Applied across all tabs when you open the app</p>
-                <div className="grid grid-cols-5 gap-2">
-                  {([{ value: 'week' as const, label: 'Week' }, { value: 'month' as const, label: 'Month' }, { value: 'year' as const, label: 'Year' }, { value: 'fy' as const, label: 'FY' }, { value: 'all' as const, label: 'All' }]).map((option) => {
-                    const isActive = defaultTimeFilter === option.value;
-                    return (
-                      <button key={option.value} onClick={() => setDefaultTimeFilter(option.value)}
-                        className={cn("py-2 rounded-xl text-sm font-medium transition-all",
-                          isActive ? "bg-accent border-2 border-primary text-accent-foreground" : "bg-muted/50 border-2 border-transparent hover:bg-muted text-muted-foreground")}>
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            </div>
-          </div>
-
-          {/* Column 3 */}
-          <div className="space-y-6">
-            {menuItems.filter(s => COL3_SECTIONS.includes(s.section)).map((section, sectionIndex) => (
-              <div key={section.section}>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">{section.section}</p>
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: sectionIndex * 0.1 }}
-                  className="bg-card rounded-2xl shadow-card border border-border overflow-hidden"
-                >
-                  {section.items.map((item, index) => (
-                    <button key={item.label} onClick={item.onClick}
-                      className={`w-full flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors ${index !== section.items.length - 1 ? 'border-b border-border' : ''}`}>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted"><item.icon size={20} className="text-muted-foreground" /></div>
-                      <div className="flex-1 text-left"><p className="font-medium">{item.label}</p><p className="text-sm text-muted-foreground">{item.sublabel}</p></div>
-                      <ChevronRight size={18} className="text-muted-foreground" />
-                    </button>
-                  ))}
-                </motion.div>
-              </div>
-            ))}
+            </motion.div>
           </div>
         </div>
 
