@@ -22,6 +22,7 @@ import gstForm from "@/assets/landing/real/gst-form.png";
 import reports from "@/assets/landing/real/reports.png";
 import activityLog from "@/assets/landing/real/activity-log.png";
 import categories from "@/assets/landing/real/categories.png";
+import team from "@/assets/landing/real/team.png";
 
 // Cropped feature images
 import aiInsightsCropped from "@/assets/landing/real/ai-insights-cropped.png";
@@ -81,7 +82,7 @@ const showcaseFeatures = [
     badge: "New",
     description: "Role-based access control (Owner, Admin, Employee) with mandatory approval workflows. Every edit or deletion requires approval before it goes through.",
     screens: [
-      { src: "/placeholder.svg", alt: "Team management with role-based access" },
+      { src: team, alt: "Team management with role-based access" },
     ],
   },
 ];
