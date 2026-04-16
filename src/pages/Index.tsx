@@ -14,6 +14,7 @@ import { GlobalSearchDialog } from "@/components/GlobalSearchDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Lazy load heavy components that aren't needed immediately
 const TransactionList = lazy(() => import("@/components/TransactionList").then(m => ({ default: m.TransactionList })));
