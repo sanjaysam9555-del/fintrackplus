@@ -334,6 +334,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_personal: boolean
           logo_url: string | null
           max_members: number
           name: string
@@ -342,6 +343,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_personal?: boolean
           logo_url?: string | null
           max_members?: number
           name?: string
@@ -350,6 +352,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_personal?: boolean
           logo_url?: string | null
           max_members?: number
           name?: string
@@ -679,6 +682,56 @@ export type Database = {
           },
         ]
       }
+      team_invites: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          invitee_email: string
+          invitee_user_id: string | null
+          inviter_user_id: string
+          message: string | null
+          org_id: string
+          resolved_at: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_email: string
+          invitee_user_id?: string | null
+          inviter_user_id: string
+          message?: string | null
+          org_id: string
+          resolved_at?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_email?: string
+          invitee_user_id?: string | null
+          inviter_user_id?: string
+          message?: string | null
+          org_id?: string
+          resolved_at?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_invites_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           amount: number
@@ -822,6 +875,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite_discard: { Args: { _invite_id: string }; Returns: Json }
+      accept_invite_merge: { Args: { _invite_id: string }; Returns: Json }
+      cancel_invite: { Args: { _invite_id: string }; Returns: Json }
       clear_must_change_password: { Args: never; Returns: undefined }
       get_user_org_id: { Args: { _user_id: string }; Returns: string }
       get_user_partner_id: { Args: { _user_id: string }; Returns: string }
@@ -829,11 +885,16 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      link_pending_invites_to_user: {
+        Args: { _email: string; _user_id: string }
+        Returns: undefined
+      }
       next_invoice_number: { Args: never; Returns: string }
       org_has_active_subscription: {
         Args: { _org_id: string }
         Returns: boolean
       }
+      reject_invite: { Args: { _invite_id: string }; Returns: Json }
       trigger_all_org_backups: {
         Args: { backup_label: string }
         Returns: undefined
