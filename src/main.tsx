@@ -28,7 +28,7 @@ registerSW({
     // will fire `controllerchange`, which triggers the reload above.
     reloadOnce();
   },
-  onRegisteredSW(_swUrl, registration) {
+  onRegistered(registration) {
     // Poll for updates every 60s so long-lived tabs pick up new builds
     // without waiting for a manual navigation.
     if (registration) {
