@@ -14,6 +14,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
 import { useLocation, useNavigate } from "react-router-dom";
+import { appPath } from "@/lib/domainUtils";
 
 // Lazy load heavy components that aren't needed immediately
 const TransactionList = lazy(() => import("@/components/TransactionList").then(m => ({ default: m.TransactionList })));
@@ -347,6 +348,10 @@ const Index = () => {
           <Suspense fallback={null}>
             <OnboardingFlow 
               onComplete={completeOnboarding} 
+              onActivateTrial={() => {
+                completeOnboarding();
+                navigate(appPath('/billing'));
+              }}
               userName={userName}
             />
           </Suspense>

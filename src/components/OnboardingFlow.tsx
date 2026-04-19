@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowRight, 
-  ArrowLeft, 
-  Check, 
-  PlusCircle, 
-  PieChart, 
-  Bell, 
+import {
+  ArrowRight,
+  ArrowLeft,
+  Check,
+  PlusCircle,
+  PieChart,
   FolderKanban,
   Sparkles,
   Download,
@@ -17,13 +16,21 @@ import {
   Moon,
   SlidersHorizontal,
   Store,
-  Grid3X3
+  Grid3X3,
+  Receipt,
+  RefreshCcw,
+  Users,
+  Cloud as CloudCheck,
+  ShieldCheck,
+  Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme, type ThemeMode } from '@/hooks/useTheme';
+import { useSubscription } from '@/hooks/useSubscription';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
+  onActivateTrial: () => void;
   userName?: string;
 }
 
@@ -44,26 +51,55 @@ const isInStandaloneMode = (): boolean => {
   );
 };
 
-const setupStep = {
-  icon: SlidersHorizontal,
-  title: 'Set Up Your Workspace',
-  description: 'Before you start tracking, head to Settings to add your Projects, Vendors, and Categories. This helps you organize entries from day one.',
-  color: 'bg-teal-500',
-};
-
-const baseSteps = [
+// ─── Step Definitions ──────────────────────────────────────────────
+const tourSteps = [
   {
     icon: Sparkles,
     title: 'Welcome to FinTrack+!',
-    description: 'Your personal finance companion. Let\'s take a quick tour to help you get started.',
+    description: "Your personal finance companion. Let's take a quick tour to help you get started.",
     color: 'bg-primary',
   },
-  setupStep,
+  {
+    icon: SlidersHorizontal,
+    title: 'Set Up Your Workspace',
+    description: 'Before you start tracking, head to Settings to add your Projects, Vendors, and Categories. This helps you organize entries from day one.',
+    color: 'bg-teal-500',
+  },
   {
     icon: PlusCircle,
     title: 'Track Your Transactions',
     description: 'Tap the + button at the bottom dock. Use the toggle at the top of the form to switch between Expense and Income — one button handles both!',
     color: 'bg-emerald-500',
+  },
+  {
+    icon: FolderKanban,
+    title: 'Organize with Projects',
+    description: 'Create projects like "Wedding" or "Renovation" to track spending for specific events and goals.',
+    color: 'bg-amber-500',
+  },
+  {
+    icon: Receipt,
+    title: 'Receipts & GST Export',
+    description: 'Attach receipts from camera or gallery, tag entries with GST, and export a CA-ready ZIP with CSVs + receipt images for tax filing.',
+    color: 'bg-pink-500',
+  },
+  {
+    icon: RefreshCcw,
+    title: 'Recurring & Part Payments',
+    description: 'Automate rent, salaries and subscriptions with recurring schedules. Track multi-installment vendor payments inline.',
+    color: 'bg-cyan-500',
+  },
+  {
+    icon: Users,
+    title: 'Team & Roles',
+    description: 'Invite up to 3 members. Owner manages billing & team, Admin handles all data, Employee logs entries for assigned projects only.',
+    color: 'bg-blue-500',
+  },
+  {
+    icon: CloudCheck,
+    title: 'Backups & Sync',
+    description: 'Twice-daily automated backups + offline-first sync. Your data stays safe even without internet.',
+    color: 'bg-green-600',
   },
   {
     icon: PieChart,
@@ -72,32 +108,31 @@ const baseSteps = [
     color: 'bg-violet-500',
   },
   {
-    icon: FolderKanban,
-    title: 'Organize with Projects',
-    description: 'Create projects like "Vacation" or "Home Renovation" to track spending for specific goals.',
-    color: 'bg-amber-500',
+    icon: Monitor,
+    title: 'Choose Your Look',
+    description: 'Pick a display mode that suits your style. You can always change this later in Settings.',
+    color: 'bg-indigo-500',
   },
   {
-    icon: Bell,
-    title: 'Stay Notified',
-    description: 'Get notifications for important updates and transaction summaries.',
-    color: 'bg-rose-500',
+    icon: Download,
+    title: 'Install the App',
+    description: 'Add FinTrack+ to your home screen for the best experience — faster access, offline support & full screen.',
+    color: 'bg-blue-500',
   },
-];
+  {
+    icon: ShieldCheck,
+    title: 'Start your 7-day free trial',
+    description: '',
+    color: 'bg-primary',
+  },
+] as const;
 
-const themeStep = {
-  icon: Monitor,
-  title: 'Choose Your Look',
-  description: 'Pick a display mode that suits your style. You can always change this later in Settings.',
-  color: 'bg-indigo-500',
-};
-
-const installStep = {
-  icon: Download,
-  title: 'Install the App',
-  description: 'Add FinTrack+ to your home screen for the best experience — faster access, offline support & full screen.',
-  color: 'bg-blue-500',
-};
+// Index helpers
+const SETUP_STEP = 1;
+const TRANSACTION_STEP = 2;
+const THEME_STEP = 9;
+const INSTALL_STEP = 10;
+const TRIAL_STEP = 11;
 
 // ─── Setup Suggestion Visual ───────────────────────────────────────
 const SetupSuggestion = () => (
@@ -232,65 +267,118 @@ const InstallInstructions = ({ device }: { device: DeviceType }) => {
   );
 };
 
+// ─── Trial Activation Card Body ────────────────────────────────────
+const TrialCardBody = () => {
+  const ticks = [
+    '7-day free trial',
+    'Up to 3 team members',
+    'Unlimited transactions & projects',
+    'Cancel anytime — access until period end',
+  ];
+
+  return (
+    <div className="mt-2 text-left space-y-4">
+      {/* Pricing block */}
+      <div className="rounded-2xl border border-border bg-muted/40 p-4 text-center">
+        <div className="text-3xl font-bold text-foreground">
+          ₹599<span className="text-base font-medium text-muted-foreground">/month</span>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1">incl. 18% GST</div>
+        <div className="mt-3 pt-3 border-t border-border space-y-1 text-xs">
+          <div className="flex justify-between text-muted-foreground">
+            <span>Subscription (net)</span>
+            <span className="font-medium text-foreground">₹507.63</span>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <span>GST (18%)</span>
+            <span className="font-medium text-foreground">₹91.37</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Feature ticks */}
+      <div className="space-y-2">
+        {ticks.map((t) => (
+          <div key={t} className="flex items-start gap-2">
+            <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+              <Check size={12} />
+            </div>
+            <span className="text-sm text-foreground">{t}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Mandate verification info */}
+      <div className="flex items-start gap-2 rounded-xl bg-amber-500/10 border border-amber-500/30 p-3">
+        <Info size={16} className="text-amber-600 shrink-0 mt-0.5" />
+        <p className="text-xs text-foreground/90 leading-relaxed">
+          <span className="font-semibold">₹1–₹5 refundable verification charge</span> required by RBI for recurring mandates. Auto-refunded in 5–7 business days. First ₹599 charge happens only after the 7-day trial.
+        </p>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Component ────────────────────────────────────────────────
-export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) => {
+export const OnboardingFlow = ({ onComplete, onActivateTrial, userName }: OnboardingFlowProps) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [device, setDevice] = useState<DeviceType>('unknown');
   const [isInstalled, setIsInstalled] = useState(false);
   const { mode: currentThemeMode, setTheme } = useTheme();
+  const { isActive: subActive } = useSubscription();
 
   useEffect(() => {
     setDevice(detectDevice());
     setIsInstalled(isInStandaloneMode());
   }, []);
 
-  const steps = [...baseSteps, themeStep, installStep];
-  const totalSteps = steps.length;
-  const isThemeStep = currentStep === baseSteps.length; // index after base steps
-  const isSetupStep = currentStep === 1;
-  const isTransactionStep = currentStep === 2;
+  const totalSteps = tourSteps.length;
+  const isFirstStep = currentStep === 0;
+  const isSetupStep = currentStep === SETUP_STEP;
+  const isTransactionStep = currentStep === TRANSACTION_STEP;
+  const isThemeStep = currentStep === THEME_STEP;
+  const isInstallStep = currentStep === INSTALL_STEP;
+  const isTrialStep = currentStep === TRIAL_STEP;
 
   const handleNext = () => {
+    if (isTrialStep) {
+      if (subActive) {
+        onComplete();
+      } else {
+        onActivateTrial();
+      }
+      return;
+    }
     if (currentStep < totalSteps - 1) {
       setCurrentStep(currentStep + 1);
-    } else {
-      onComplete();
     }
   };
 
   const handlePrev = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
+    if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
 
-  const handleSkip = () => {
-    onComplete();
-  };
-
-  const step = steps[currentStep];
+  const step = tourSteps[currentStep];
   const Icon = step.icon;
-  const isLastStep = currentStep === totalSteps - 1;
-  const isFirstStep = currentStep === 0;
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
     >
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md my-auto">
         {/* Progress dots */}
-        <div className="flex justify-center gap-2 mb-8">
-          {steps.map((_, index) => (
+        <div className="flex justify-center gap-1.5 mb-6 flex-wrap">
+          {tourSteps.map((_, index) => (
             <motion.div
               key={index}
               className={`h-2 rounded-full transition-all duration-300 ${
-                index === currentStep 
-                  ? 'w-8 bg-primary' 
-                  : index < currentStep 
-                    ? 'w-2 bg-primary/50' 
+                index === currentStep
+                  ? 'w-6 bg-primary'
+                  : index < currentStep
+                    ? 'w-2 bg-primary/50'
                     : 'w-2 bg-muted'
               }`}
             />
@@ -323,27 +411,20 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
             </h2>
 
             {/* Description */}
-            <p className="text-muted-foreground mb-4 leading-relaxed">
-              {isLastStep && isInstalled
-                ? "You're already using FinTrack+ as an installed app. You're all set!"
-                : step.description}
-            </p>
+            {step.description && (
+              <p className="text-muted-foreground mb-4 leading-relaxed">
+                {isInstallStep && isInstalled
+                  ? "You're already using FinTrack+ as an installed app. You're all set!"
+                  : step.description}
+              </p>
+            )}
 
-            {/* Setup suggestion on setup step */}
+            {/* Conditional content */}
             {isSetupStep && <SetupSuggestion />}
-
-            {/* Transaction toggle preview on transaction step */}
             {isTransactionStep && <TransactionTogglePreview />}
-
-            {/* Theme picker on theme step */}
-            {isThemeStep && (
-              <ThemePickerCards currentMode={currentThemeMode} onPick={setTheme} />
-            )}
-
-            {/* Install instructions on last step */}
-            {isLastStep && !isInstalled && (
-              <InstallInstructions device={device} />
-            )}
+            {isThemeStep && <ThemePickerCards currentMode={currentThemeMode} onPick={setTheme} />}
+            {isInstallStep && !isInstalled && <InstallInstructions device={device} />}
+            {isTrialStep && <TrialCardBody />}
 
             {/* Actions */}
             <div className="flex gap-3 mt-6">
@@ -357,16 +438,23 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
                   Back
                 </Button>
               )}
-              
+
               <Button
                 onClick={handleNext}
                 className={`flex-1 ${isFirstStep ? 'w-full' : ''}`}
               >
-                {isLastStep ? (
-                  <>
-                    Get Started
-                    <Check className="w-4 h-4 ml-2" />
-                  </>
+                {isTrialStep ? (
+                  subActive ? (
+                    <>
+                      Go to Dashboard
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  ) : (
+                    <>
+                      Activate Trial
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </>
+                  )
                 ) : (
                   <>
                     Next
@@ -375,16 +463,6 @@ export const OnboardingFlow = ({ onComplete, userName }: OnboardingFlowProps) =>
                 )}
               </Button>
             </div>
-
-            {/* Skip */}
-            {!isLastStep && (
-              <button
-                onClick={handleSkip}
-                className="mt-4 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Skip tour
-              </button>
-            )}
           </motion.div>
         </AnimatePresence>
       </div>
