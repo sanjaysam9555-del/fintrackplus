@@ -459,6 +459,7 @@ const Billing = () => {
             </p>
           </div>
         </motion.div>
+        )}
 
         <p className="text-center text-xs text-muted-foreground mt-6">
           Secure payments powered by Razorpay · GST Tax Invoice issued for every payment
