@@ -20,7 +20,7 @@ import {
   Receipt,
   RefreshCcw,
   Users,
-  CloudCheck,
+  Cloud as CloudCheck,
   ShieldCheck,
   Info,
 } from 'lucide-react';
