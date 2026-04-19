@@ -1,46 +1,28 @@
 
-## Understanding
-Currently `PaywallGate` (or similar) likely redirects unsubscribed users straight to `/billing` on login, bypassing the onboarding tour. We need onboarding to take precedence so the trial pitch happens at the *end* of the tour, not before it.
+## Goal
+Users redirected to `/billing` (post-onboarding, no active subscription) have no escape hatch — no nav, no back button to the app. Add a logout button at the bottom of the Billing page so they can sign out and return to the auth screen.
 
-## Investigation needed
-- `PaywallGate.tsx` — confirm redirect logic
-- `useSyncEngine` — how `showOnboarding` is determined (likely from `profiles.onboarding_completed`)
-- `Index.tsx` — order of gating (onboarding vs paywall)
-- `Auth.tsx` / post-login routing — confirm where trial-incomplete users land
+## Investigation
+- `src/pages/Billing.tsx` — confirm current footer/CTA layout
+- `src/hooks/useAuth.tsx` — confirm `signOut` method exists
+- `src/pages/Auth.tsx` — confirm logout lands users back on the auth screen
 
 ## Plan
 
-### 1. Gating priority (Index.tsx + PaywallGate)
-Establish strict order on every authenticated load:
-1. **`mustChangePassword`** → ForcePasswordChange screen (existing)
-2. **`!onboarding_completed`** → OnboardingFlow (mandatory, ends on trial card → `/billing`)
-3. **No active subscription/trial AND `onboarding_completed === true`** → PaywallGate redirects to `/billing`
-4. Otherwise → app
+### Single change: `src/pages/Billing.tsx`
+Add a subtle "Sign out" button below the main subscribe/verify CTA section (and below any back button if present), styled as a `ghost` variant with `LogOut` icon from lucide-react.
 
-This means PaywallGate must check `profile.onboarding_completed` before redirecting. If onboarding isn't done, it does nothing and lets `Index` show the tour.
+Behaviour:
+- On click → `await signOut()` from `useAuth` → `navigate(appPath('/auth'))`
+- Show a brief toast: "Signed out"
+- Place inside the same max-width container, centered, with `text-muted-foreground` for low visual weight (it's an escape hatch, not a primary action)
 
-### 2. Auth.tsx post-login redirect
-After successful login (both invited members post-password-change AND self-signups), always navigate to `appPath('/')` — never directly to `/billing`. The Index page itself decides whether to show onboarding or paywall.
-
-### 3. PaywallGate update
-- Read `onboarding_completed` from profile (already in context via `useAuth` or fetch alongside subscription).
-- Skip redirect when `onboarding_completed === false`.
-- Keep existing redirect for users who finished onboarding but have no active trial/subscription (covers: cancelled, expired, never-activated-after-tour).
-
-### 4. Force-password-change flow
-After `ForcePasswordChange.onComplete` → `refetchRole()` (existing). On next render, since `onboarding_completed` is still false for fresh invitees, OnboardingFlow shows. No change needed beyond confirming this order in `Index.tsx`.
-
-### 5. Edge case: user closes tab mid-onboarding
-`onboarding_completed` stays false → next login resumes from step 1 of tour (acceptable; mandatory means mandatory). Trial card "Activate Trial" is the only way to mark complete + reach billing.
-
-Optional: add a "Go to Billing" fallback if user already has active subscription (re-onboarding scenario) — already in plan from previous step.
-
-## Files touched
-- `src/components/PaywallGate.tsx` — gate redirect on `onboarding_completed`
-- `src/pages/Auth.tsx` — ensure post-login navigation goes to `appPath('/')`, not `/billing`
-- `src/pages/Index.tsx` — verify gating order: password-change → onboarding → paywall (likely already correct; confirm and adjust if needed)
+Helper text above the button: *"Not ready to subscribe? You can sign out and come back later."*
 
 ## Out of scope
-- No DB changes
-- No changes to onboarding step content or trial card
-- No changes to subscription logic itself
+- No changes to onboarding/paywall gating
+- No changes to subscription flow
+- No new routes
+
+## Files touched
+- `src/pages/Billing.tsx`
