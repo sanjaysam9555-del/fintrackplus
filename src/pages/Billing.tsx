@@ -18,7 +18,8 @@ declare global {
 }
 
 const PRICE = 599;
-const LIVE_HOSTS = ["fintrackplus.com", "www.fintrackplus.com", "app.fintrackplus.com"];
+const LIVE_HOSTS = ["fintrackplus.com", "www.fintrackplus.com"];
+const LIVE_BILLING_URL = "https://fintrackplus.com/application/billing";
 const GST_RATE = 18;
 const NET = +(PRICE / (1 + GST_RATE / 100)).toFixed(2);
 const GST_AMOUNT = +(PRICE - NET).toFixed(2);
