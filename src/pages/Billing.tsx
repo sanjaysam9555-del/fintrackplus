@@ -46,8 +46,47 @@ const Billing = () => {
   const [stateCode, setStateCode] = useState("");
   const [verificationComplete, setVerificationComplete] = useState(false);
   const [redirectCountdown, setRedirectCountdown] = useState(10);
+  const [reconciling, setReconciling] = useState(false);
+  const reconcileTriedRef = useRef(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isLiveHost = typeof window !== "undefined" && LIVE_HOSTS.includes(window.location.hostname);
+
+  // Self-heal: if subscription is stuck in `created` with a Razorpay ID,
+  // ask the backend to reconcile with Razorpay's live state. Covers the
+  // case where webhook events were missed (e.g. invalid signature window).
+  const runReconcile = async (showToast = false) => {
+    setReconciling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reconcile-subscription");
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+      await refetch();
+      if (showToast) {
+        if (data?.changed?.length) {
+          toast.success("Subscription status updated.");
+        } else {
+          toast.info("Already up to date.");
+        }
+      }
+    } catch (err: any) {
+      if (showToast) toast.error(err.message || "Could not refresh status");
+    } finally {
+      setReconciling(false);
+    }
+  };
+
+  useEffect(() => {
+    if (reconcileTriedRef.current) return;
+    if (verificationComplete) return;
+    if (
+      subscription?.status === "created" &&
+      subscription?.razorpay_subscription_id
+    ) {
+      reconcileTriedRef.current = true;
+      runReconcile(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [subscription?.status, subscription?.razorpay_subscription_id, verificationComplete]);
 
   useEffect(() => {
     return () => {
@@ -213,13 +252,28 @@ const Billing = () => {
             className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3"
           >
             <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-            <div>
+            <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
                 Payment method verification incomplete
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Your trial hasn't started yet. Complete the ₹1–₹5 refundable verification below to activate it.
+                {reconciling
+                  ? "Checking with payment provider…"
+                  : "If you've just completed verification, tap refresh. Otherwise, complete the ₹1–₹5 refundable verification below to activate your trial."}
               </p>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => runReconcile(true)}
+                disabled={reconciling}
+                className="mt-2 h-8 text-xs"
+              >
+                {reconciling ? (
+                  <><Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> Checking…</>
+                ) : (
+                  "Refresh subscription status"
+                )}
+              </Button>
             </div>
           </motion.div>
         )}
