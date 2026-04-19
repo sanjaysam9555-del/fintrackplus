@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Check, Sparkles, Shield, Receipt, Calendar, ArrowLeft, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, Check, Sparkles, Shield, Receipt, Calendar, ArrowLeft, Info, AlertTriangle, CheckCircle2, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -35,7 +35,7 @@ const loadRazorpayScript = (): Promise<boolean> =>
   });
 
 const Billing = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { isOwner, loading: roleLoading } = useUserRole();
   const { subscription, isActive, trialActive, trialDaysLeft, needsMandateAuth, refetch } = useSubscription();
   const navigate = useNavigate();
@@ -518,6 +518,26 @@ const Billing = () => {
         <p className="text-center text-xs text-muted-foreground mt-6">
           Secure payments powered by Razorpay · GST Tax Invoice issued for every payment
         </p>
+
+        {/* Escape hatch: sign out (users on this page have no other navigation) */}
+        <div className="mt-10 pt-6 border-t border-border flex flex-col items-center gap-2">
+          <p className="text-xs text-muted-foreground text-center">
+            Not ready to subscribe? You can sign out and come back later.
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await signOut();
+              toast.success("Signed out");
+              navigate(appPath("/auth"));
+            }}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut size={14} className="mr-1.5" />
+            Sign out
+          </Button>
+        </div>
       </div>
     </div>
   );
