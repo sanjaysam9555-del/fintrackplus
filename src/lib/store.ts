@@ -2056,7 +2056,21 @@ export const useFinanceStore = create<FinanceStore>()(
       },
     }),
     {
-      name: 'fintrack-storage',
+      name: (() => {
+        try {
+          // Derive per-user storage key from cached Supabase auth token
+          // so different users on the same browser get isolated stores.
+          const projectRef = 'ilgoprsvztbqocbshtoe';
+          const tokenKey = `sb-${projectRef}-auth-token`;
+          const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(tokenKey) : null;
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            const userId = parsed?.user?.id || parsed?.currentSession?.user?.id;
+            if (userId) return `fintrack-storage::${userId}`;
+          }
+        } catch (_) { /* fall through */ }
+        return 'fintrack-storage::anon';
+      })(),
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         transactions: state.transactions,
