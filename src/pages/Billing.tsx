@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Check, Sparkles, Shield, Receipt, Calendar, ArrowLeft, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Loader2, Check, Sparkles, Shield, Receipt, Calendar, ArrowLeft, Info, AlertTriangle, CheckCircle2, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
