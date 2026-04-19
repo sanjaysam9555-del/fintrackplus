@@ -1,6 +1,8 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import { appPath } from "@/lib/domainUtils";
 
@@ -19,11 +21,37 @@ interface PaywallGateProps {
  */
 export const PaywallGate = ({ children }: PaywallGateProps) => {
   const { isActive, loading, subscription, refetch } = useSubscription();
+  const { user } = useAuth();
   const location = useLocation();
   const [grace, setGrace] = useState(true);
+  // null = not yet known; once resolved, true/false
+  const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
   // Allow billing page through without check
   const isBilling = location.pathname.endsWith("/billing");
+
+  // Resolve onboarding state for the current user. If onboarding isn't done,
+  // we MUST let Index render so the mandatory tour shows — never bounce to billing.
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      setOnboardingDone(null);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!cancelled) {
+        setOnboardingDone(Boolean(data?.onboarding_completed));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   useEffect(() => {
     if (loading || isBilling) return;
@@ -43,7 +71,8 @@ export const PaywallGate = ({ children }: PaywallGateProps) => {
     return <>{children}</>;
   }
 
-  if (loading || (!isActive && grace)) {
+  // Wait for onboarding flag before deciding to redirect
+  if (loading || onboardingDone === null || (!isActive && grace)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -51,7 +80,9 @@ export const PaywallGate = ({ children }: PaywallGateProps) => {
     );
   }
 
-  if (!isActive) {
+  // Onboarding takes precedence — let Index render the mandatory tour.
+  // The trial card at the end will route the user to /billing.
+  if (!isActive && onboardingDone) {
     return <Navigate to={appPath("/billing")} replace />;
   }
 
