@@ -218,6 +218,31 @@ const Billing = () => {
           </motion.div>
         )}
 
+        {isOwner && !isLiveHost && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-3"
+          >
+            <AlertTriangle size={18} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                Subscriptions are only available on the live app
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                You're on a preview/sandbox URL. To subscribe, please open{" "}
+                <a
+                  href="https://app.fintrackplus.com/billing"
+                  className="underline font-medium text-amber-700 dark:text-amber-400"
+                >
+                  app.fintrackplus.com/billing
+                </a>
+                .
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* RBI Mandate explainer — shown before user starts trial */}
         {isOwner && !isActive && (
           <motion.div
@@ -337,12 +362,14 @@ const Billing = () => {
             ) : needsMandateAuth ? (
               <Button
                 onClick={handleSubscribe}
-                disabled={submitting}
+                disabled={submitting || !isLiveHost}
                 size="lg"
                 className="w-full h-12 rounded-xl text-base font-semibold"
               >
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
+                ) : !isLiveHost ? (
+                  "Available on app.fintrackplus.com"
                 ) : (
                   "Complete Verification to Start Trial"
                 )}
@@ -363,12 +390,14 @@ const Billing = () => {
             ) : (
               <Button
                 onClick={handleSubscribe}
-                disabled={submitting}
+                disabled={submitting || !isLiveHost}
                 size="lg"
                 className="w-full h-12 rounded-xl text-base font-semibold"
               >
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
+                ) : !isLiveHost ? (
+                  "Available on app.fintrackplus.com"
                 ) : (
                   "Start 7-Day Free Trial"
                 )}
