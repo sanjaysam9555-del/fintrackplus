@@ -18,6 +18,7 @@ declare global {
 }
 
 const PRICE = 599;
+const LIVE_HOSTS = ["fintrackplus.com", "www.fintrackplus.com", "app.fintrackplus.com"];
 const GST_RATE = 18;
 const NET = +(PRICE / (1 + GST_RATE / 100)).toFixed(2);
 const GST_AMOUNT = +(PRICE - NET).toFixed(2);
@@ -42,6 +43,7 @@ const Billing = () => {
   const [gstin, setGstin] = useState("");
   const [address, setAddress] = useState("");
   const [stateCode, setStateCode] = useState("");
+  const isLiveHost = typeof window !== "undefined" && LIVE_HOSTS.includes(window.location.hostname);
 
   useEffect(() => {
     if (subscription) {
@@ -62,6 +64,10 @@ const Billing = () => {
   const handleSubscribe = async () => {
     if (!isOwner) {
       toast.error("Only the organization owner can manage billing");
+      return;
+    }
+    if (!isLiveHost) {
+      toast.error("Subscriptions can only be purchased on app.fintrackplus.com");
       return;
     }
     setSubmitting(true);
