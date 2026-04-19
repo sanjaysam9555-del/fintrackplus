@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Loader2, Check, Sparkles, Shield, Receipt, Calendar, ArrowLeft, Info, AlertTriangle } from "lucide-react";
+import { Loader2, Check, Sparkles, Shield, Receipt, Calendar, ArrowLeft, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSubscription } from "@/hooks/useSubscription";
@@ -44,7 +44,16 @@ const Billing = () => {
   const [gstin, setGstin] = useState("");
   const [address, setAddress] = useState("");
   const [stateCode, setStateCode] = useState("");
+  const [verificationComplete, setVerificationComplete] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(10);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isLiveHost = typeof window !== "undefined" && LIVE_HOSTS.includes(window.location.hostname);
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (subscription) {
@@ -98,12 +107,28 @@ const Billing = () => {
         theme: { color: "#1665B8" },
         prefill: { email: user?.email },
         handler: async () => {
-          toast.success("Payment method verified! Activating your trial…");
-          // Poll for webhook to flip status to 'trialing'
+          // Razorpay confirmed payment client-side — show success immediately,
+          // independent of webhook.
+          toast.success("Payment method verified!");
+          setVerificationComplete(true);
+          setSubmitting(false);
+          setRedirectCountdown(10);
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          countdownRef.current = setInterval(() => {
+            setRedirectCountdown((n) => {
+              if (n <= 1) {
+                if (countdownRef.current) clearInterval(countdownRef.current);
+                navigate(appPath("/"));
+                return 0;
+              }
+              return n - 1;
+            });
+          }, 1000);
+
+          // Best-effort background poll for webhook to flip status to trialing/active
           const start = Date.now();
-          let activated = false;
-          while (Date.now() - start < 15000) {
-            await new Promise((r) => setTimeout(r, 1500));
+          while (Date.now() - start < 30000) {
+            await new Promise((r) => setTimeout(r, 2000));
             await refetch();
             const { data: fresh } = await supabase
               .from("subscriptions")
@@ -111,17 +136,10 @@ const Billing = () => {
               .eq("razorpay_subscription_id", subscription_id)
               .maybeSingle();
             if (fresh && (fresh.status === "trialing" || fresh.status === "active")) {
-              activated = true;
+              toast.success("Trial activated! 7 days of full access.");
               break;
             }
           }
-          if (activated) {
-            toast.success("Trial activated! 7 days of full access.");
-            setTimeout(() => navigate(appPath("/")), 1000);
-          } else {
-            toast.message("Verification received. Trial will activate within a minute.");
-          }
-          setSubmitting(false);
         },
         modal: {
           ondismiss: () => {
@@ -173,7 +191,7 @@ const Billing = () => {
         </button>
 
         {/* Status banner */}
-        {trialActive && (
+        {trialActive && !verificationComplete && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -188,7 +206,7 @@ const Billing = () => {
           </motion.div>
         )}
 
-        {needsMandateAuth && (
+        {needsMandateAuth && !verificationComplete && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -206,7 +224,7 @@ const Billing = () => {
           </motion.div>
         )}
 
-        {!isActive && !needsMandateAuth && !trialActive && (
+        {!isActive && !needsMandateAuth && !trialActive && !verificationComplete && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -219,7 +237,7 @@ const Billing = () => {
           </motion.div>
         )}
 
-        {isOwner && !isLiveHost && (
+        {isOwner && !isLiveHost && !verificationComplete && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -245,7 +263,7 @@ const Billing = () => {
         )}
 
         {/* RBI Mandate explainer — shown before user starts trial */}
-        {isOwner && !isActive && (
+        {isOwner && !isActive && !verificationComplete && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -265,6 +283,38 @@ const Billing = () => {
           </motion.div>
         )}
 
+        {verificationComplete ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card rounded-3xl border border-border shadow-card overflow-hidden"
+          >
+            <div className="p-8 bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 size={36} className="text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Verification complete!</h2>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Your 7-day free trial is being activated. You can start using FinTrack⁺ right now.
+              </p>
+            </div>
+            <div className="p-6 space-y-4 text-center border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                Redirecting to your dashboard in <span className="font-semibold text-foreground">{redirectCountdown}s</span>…
+              </p>
+              <Button
+                onClick={() => {
+                  if (countdownRef.current) clearInterval(countdownRef.current);
+                  navigate(appPath("/"));
+                }}
+                size="lg"
+                className="w-full h-12 rounded-xl text-base font-semibold"
+              >
+                Go to Dashboard now
+              </Button>
+            </div>
+          </motion.div>
+        ) : (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -409,6 +459,7 @@ const Billing = () => {
             </p>
           </div>
         </motion.div>
+        )}
 
         <p className="text-center text-xs text-muted-foreground mt-6">
           Secure payments powered by Razorpay · GST Tax Invoice issued for every payment
