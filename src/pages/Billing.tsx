@@ -107,12 +107,28 @@ const Billing = () => {
         theme: { color: "#1665B8" },
         prefill: { email: user?.email },
         handler: async () => {
-          toast.success("Payment method verified! Activating your trial…");
-          // Poll for webhook to flip status to 'trialing'
+          // Razorpay confirmed payment client-side — show success immediately,
+          // independent of webhook.
+          toast.success("Payment method verified!");
+          setVerificationComplete(true);
+          setSubmitting(false);
+          setRedirectCountdown(10);
+          if (countdownRef.current) clearInterval(countdownRef.current);
+          countdownRef.current = setInterval(() => {
+            setRedirectCountdown((n) => {
+              if (n <= 1) {
+                if (countdownRef.current) clearInterval(countdownRef.current);
+                navigate(appPath("/"));
+                return 0;
+              }
+              return n - 1;
+            });
+          }, 1000);
+
+          // Best-effort background poll for webhook to flip status to trialing/active
           const start = Date.now();
-          let activated = false;
-          while (Date.now() - start < 15000) {
-            await new Promise((r) => setTimeout(r, 1500));
+          while (Date.now() - start < 30000) {
+            await new Promise((r) => setTimeout(r, 2000));
             await refetch();
             const { data: fresh } = await supabase
               .from("subscriptions")
@@ -120,17 +136,10 @@ const Billing = () => {
               .eq("razorpay_subscription_id", subscription_id)
               .maybeSingle();
             if (fresh && (fresh.status === "trialing" || fresh.status === "active")) {
-              activated = true;
+              toast.success("Trial activated! 7 days of full access.");
               break;
             }
           }
-          if (activated) {
-            toast.success("Trial activated! 7 days of full access.");
-            setTimeout(() => navigate(appPath("/")), 1000);
-          } else {
-            toast.message("Verification received. Trial will activate within a minute.");
-          }
-          setSubmitting(false);
         },
         modal: {
           ondismiss: () => {
