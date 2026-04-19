@@ -35,7 +35,7 @@ const loadRazorpayScript = (): Promise<boolean> =>
   });
 
 const Billing = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { isOwner, loading: roleLoading } = useUserRole();
   const { subscription, isActive, trialActive, trialDaysLeft, needsMandateAuth, refetch } = useSubscription();
   const navigate = useNavigate();
