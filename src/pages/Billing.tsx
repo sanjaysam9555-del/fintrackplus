@@ -371,6 +371,8 @@ const Billing = () => {
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
                 ) : !isLiveHost ? (
                   "Open on fintrackplus.com"
+                ) : (
+                  "Complete Verification to Start Trial"
                 )}
               </Button>
             ) : subscription?.razorpay_subscription_id && isActive ? (
@@ -397,6 +399,8 @@ const Billing = () => {
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
                 ) : !isLiveHost ? (
                   "Open on fintrackplus.com"
+                ) : (
+                  "Start 7-Day Free Trial"
                 )}
               </Button>
             )}
