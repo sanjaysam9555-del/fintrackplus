@@ -1,15 +1,19 @@
 
-User regenerated the Razorpay Key Secret and wants me to update `RAZORPAY_KEY_SECRET` in Lovable Cloud. They haven't pasted the new value yet — I need it before I can update.
+User wants option 1: hardening — block live Razorpay checkout on any non-production host so the preview URL can never trigger another unauthorized-origin event with Razorpay.
 
-## Plan
+## Change
 
-1. Ask user to paste the new Key Secret from Razorpay Dashboard (Settings → API Keys → after Regenerate).
-2. Once provided, update the `RAZORPAY_KEY_SECRET` runtime secret in Lovable Cloud (the other 3 Razorpay secrets stay unchanged).
-3. No code changes — edge functions read the secret dynamically.
+Edit `src/pages/Billing.tsx` only. No backend changes, no secret changes.
 
-## What I need from you
+1. Add a constant `LIVE_HOSTS = ['fintrackplus.com', 'www.fintrackplus.com', 'app.fintrackplus.com']`.
+2. Compute `isLiveHost = LIVE_HOSTS.includes(window.location.hostname)` inside the component.
+3. In `handleSubscribe`, before loading the Razorpay script, guard:
+   - If `!isLiveHost`, show a toast "Subscriptions can only be purchased on app.fintrackplus.com" and return early. Do NOT call `create-subscription` and do NOT open the Razorpay modal.
+4. Add a small inline notice card (amber, same style as existing banners) shown only when `!isLiveHost && isOwner`, telling the user to open `https://app.fintrackplus.com/billing` to subscribe, with a clickable link.
+5. Disable the Subscribe / Verification CTA button when `!isLiveHost` and change its label to "Available on app.fintrackplus.com".
 
-Paste the **new Key Secret** (the long string shown once after clicking Regenerate in Razorpay). The Key ID stays the same (`rzp_live_SfN5j8dYf6Eeoa`) unless you also regenerated that.
+Result: clicking Subscribe on the `*.lovableproject.com` / `*.lovable.app` preview never reaches Razorpay, so no further unauthorized-origin attempts get logged against the merchant account. Live checkout continues to work normally on `app.fintrackplus.com`.
 
-## Security note
-Send it in the next message; once updated, treat that chat message as sensitive. Razorpay only shows the secret once — make sure you've copied it before closing the dialog.
+## Out of scope
+- No reply drafted to Razorpay (you can do that separately).
+- No changes to edge functions, webhooks, or secrets.
