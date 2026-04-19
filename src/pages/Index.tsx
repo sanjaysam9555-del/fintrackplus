@@ -347,6 +347,10 @@ const Index = () => {
           <Suspense fallback={null}>
             <OnboardingFlow 
               onComplete={completeOnboarding} 
+              onActivateTrial={() => {
+                completeOnboarding();
+                navigate(appPath('/billing'));
+              }}
               userName={userName}
             />
           </Suspense>
