@@ -27,6 +27,7 @@ import companyBank from "@/assets/landing/real/company-bank.png";
 import financialHoldings from "@/assets/landing/real/financial-holdings.png";
 import backupRestore from "@/assets/landing/real/backup-restore.png";
 import orgBranding from "@/assets/landing/real/org-branding.png";
+import onboardingCards from "@/assets/onboarding-cards.png";
 
 // Cropped feature images
 import aiInsightsCropped from "@/assets/landing/real/ai-insights-cropped.png";
@@ -160,7 +161,7 @@ const secondaryFeatures = [
   { icon: Moon, title: "Dark Mode + OLED", desc: "Easy on the eyes during late-night event planning", screenshot: darkModeCropped, iconBg: "bg-primary/10 text-primary" },
   { icon: DatabaseBackup, title: "Backup & Restore", desc: "Automated twice-daily snapshots with one-tap restore — never lose your data", screenshot: backupRestore, iconBg: "bg-success/10 text-success" },
   { icon: Building2, title: "Organisation Branding", desc: "Custom company name and logo visible across the app", screenshot: orgBranding, iconBg: "bg-warning/10 text-warning" },
-  { icon: Sparkles, title: "Guided Onboarding", desc: "Step-by-step setup wizard for new users — partners, categories, and preferences", screenshot: "/placeholder.svg", iconBg: "bg-primary/10 text-primary" },
+  { icon: Sparkles, title: "Guided Onboarding", desc: "Step-by-step setup wizard for new users — partners, categories, and preferences", screenshot: onboardingCards, iconBg: "bg-primary/10 text-primary" },
 ];
 
 const extraFeatures = [
