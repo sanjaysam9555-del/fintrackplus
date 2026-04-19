@@ -44,7 +44,16 @@ const Billing = () => {
   const [gstin, setGstin] = useState("");
   const [address, setAddress] = useState("");
   const [stateCode, setStateCode] = useState("");
+  const [verificationComplete, setVerificationComplete] = useState(false);
+  const [redirectCountdown, setRedirectCountdown] = useState(10);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isLiveHost = typeof window !== "undefined" && LIVE_HOSTS.includes(window.location.hostname);
+
+  useEffect(() => {
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (subscription) {
