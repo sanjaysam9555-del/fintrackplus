@@ -1,46 +1,46 @@
 
-## Goal
-Expand the mandatory onboarding tour to showcase 4 more significant features, remove the skip option entirely, and end with a dedicated "Activate Trial" card that clearly states pricing/duration/mandate details and routes to billing.
+## Understanding
+Currently `PaywallGate` (or similar) likely redirects unsubscribed users straight to `/billing` on login, bypassing the onboarding tour. We need onboarding to take precedence so the trial pitch happens at the *end* of the tour, not before it.
 
-## New onboarding step order (10 steps)
-1. **Welcome** (existing) — `Sparkles`
-2. **Set Up Your Workspace** (existing) — Projects, Vendors, Categories
-3. **Track Transactions** (existing) — Expense/Income toggle
-4. **Organize with Projects** (existing — moved up)
-5. **Receipts & GST Export** (NEW) — `Receipt` icon. "Attach receipts from camera or gallery, tag entries with GST, and export a CA-ready ZIP with CSVs + receipt images for tax filing."
-6. **Recurring & Part Payments** (NEW) — `RefreshCcw` icon. "Automate rent, salaries and subscriptions with recurring schedules. Track multi-installment vendor payments inline."
-7. **Team & Roles** (NEW) — `Users` icon. "Invite up to 3 members. Owner manages billing & team, Admin handles all data, Employee logs entries for assigned projects only."
-8. **Backups & Sync** (NEW) — `CloudCheck` icon. "Twice-daily automated backups + offline-first sync. Your data stays safe even without internet."
-9. **AI Insights** (existing — moved here) — `PieChart`
-10. **Choose Your Look** (existing) — theme picker
-11. **Install the App** (existing) — PWA install instructions
-12. **Activate Your 7-Day Free Trial** (NEW final card) — see structure below
+## Investigation needed
+- `PaywallGate.tsx` — confirm redirect logic
+- `useSyncEngine` — how `showOnboarding` is determined (likely from `profiles.onboarding_completed`)
+- `Index.tsx` — order of gating (onboarding vs paywall)
+- `Auth.tsx` / post-login routing — confirm where trial-incomplete users land
 
-> Notifications and Stay Notified step is dropped (low-signal).
+## Plan
 
-## "Activate Trial" final card
-Branded card with:
-- Heading: **"Start your 7-day free trial"**
-- Pricing block (mirrors Billing page):
-  - **₹599/month** (large), "incl. 18% GST"
-  - Subscription net ₹507.63 + GST ₹91.37 row breakdown
-- 4 feature ticks: 7-day free trial · Up to 3 team members · Unlimited transactions/projects · Cancel anytime (access until period end)
-- Info chip (amber/blue): "**₹1–₹5 refundable verification charge** required by RBI for recurring mandates. Auto-refunded in 5–7 business days. First ₹599 charge happens only after the 7-day trial."
-- Primary button: **"Activate Trial → "** → calls `onComplete()` (marks `onboarding_completed = true`) then `navigate(appPath('/billing'))`
-- No "Maybe later" / no skip — only the activate button + Back button
+### 1. Gating priority (Index.tsx + PaywallGate)
+Establish strict order on every authenticated load:
+1. **`mustChangePassword`** → ForcePasswordChange screen (existing)
+2. **`!onboarding_completed`** → OnboardingFlow (mandatory, ends on trial card → `/billing`)
+3. **No active subscription/trial AND `onboarding_completed === true`** → PaywallGate redirects to `/billing`
+4. Otherwise → app
 
-## Behaviour changes
-- **Remove** the "Skip tour" link entirely (no skip on any step).
-- **Remove** the per-step skip handler.
-- Progress dots remain; user must click Next through all steps.
-- `onComplete` signature unchanged; final card additionally navigates to `/billing` after marking complete.
-- If subscription is already active/trialing/comped (re-onboarding edge case), the final card swaps its CTA to **"Go to Dashboard"** instead of routing to billing.
+This means PaywallGate must check `profile.onboarding_completed` before redirecting. If onboarding isn't done, it does nothing and lets `Index` show the tour.
+
+### 2. Auth.tsx post-login redirect
+After successful login (both invited members post-password-change AND self-signups), always navigate to `appPath('/')` — never directly to `/billing`. The Index page itself decides whether to show onboarding or paywall.
+
+### 3. PaywallGate update
+- Read `onboarding_completed` from profile (already in context via `useAuth` or fetch alongside subscription).
+- Skip redirect when `onboarding_completed === false`.
+- Keep existing redirect for users who finished onboarding but have no active trial/subscription (covers: cancelled, expired, never-activated-after-tour).
+
+### 4. Force-password-change flow
+After `ForcePasswordChange.onComplete` → `refetchRole()` (existing). On next render, since `onboarding_completed` is still false for fresh invitees, OnboardingFlow shows. No change needed beyond confirming this order in `Index.tsx`.
+
+### 5. Edge case: user closes tab mid-onboarding
+`onboarding_completed` stays false → next login resumes from step 1 of tour (acceptable; mandatory means mandatory). Trial card "Activate Trial" is the only way to mark complete + reach billing.
+
+Optional: add a "Go to Billing" fallback if user already has active subscription (re-onboarding scenario) — already in plan from previous step.
 
 ## Files touched
-- `src/components/OnboardingFlow.tsx` — add 4 new step entries, drop Bell step, append `TrialActivationCard` component, remove skip button, accept new `onActivateTrial` callback prop, import `useNavigate` + `useSubscription`.
-- `src/pages/Index.tsx` — pass `onActivateTrial` handler that calls `completeOnboarding()` then navigates to `appPath('/billing')`.
+- `src/components/PaywallGate.tsx` — gate redirect on `onboarding_completed`
+- `src/pages/Auth.tsx` — ensure post-login navigation goes to `appPath('/')`, not `/billing`
+- `src/pages/Index.tsx` — verify gating order: password-change → onboarding → paywall (likely already correct; confirm and adjust if needed)
 
 ## Out of scope
-- No DB migration (uses existing `profiles.onboarding_completed`).
-- No changes to Billing page itself.
-- No changes to subscription flow / Razorpay code.
+- No DB changes
+- No changes to onboarding step content or trial card
+- No changes to subscription logic itself
