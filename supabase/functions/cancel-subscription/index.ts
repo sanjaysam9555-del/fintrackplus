@@ -61,16 +61,33 @@ Deno.serve(async (req) => {
       }
     );
     const data = await res.json();
-    if (!res.ok) throw new Error(`Razorpay cancel failed: ${JSON.stringify(data)}`);
+
+    // Razorpay refuses to "cancel" a sub that has no active billing cycle
+    // (trial never authenticated, already cancelled/expired, or completed).
+    // Treat as success — mark DB terminal so the UI moves on.
+    const noCycle =
+      !res.ok &&
+      data?.error?.code === "BAD_REQUEST_ERROR" &&
+      typeof data?.error?.description === "string" &&
+      data.error.description.toLowerCase().includes("no billing cycle");
+
+    if (!res.ok && !noCycle) {
+      throw new Error(`Razorpay cancel failed: ${JSON.stringify(data)}`);
+    }
 
     await admin
       .from("subscriptions")
-      .update({ cancel_at_period_end: true })
+      .update(
+        noCycle
+          ? { status: "cancelled", cancel_at_period_end: false, cancelled_at: new Date().toISOString() }
+          : { cancel_at_period_end: true }
+      )
       .eq("org_id", member.org_id);
 
-    return new Response(JSON.stringify({ ok: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ ok: true, already_inactive: noCycle }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (err: any) {
     console.error("[cancel-subscription]", err);
     return new Response(JSON.stringify({ error: err.message }), {
