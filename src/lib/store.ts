@@ -316,7 +316,9 @@ export const useFinanceStore = create<FinanceStore>()(
         projects: mergeData(data.projects, currentState.projects, 'project'),
         partners: mergeData(data.partners, currentState.partners, 'partner'),
         projectLabels: mergeData(data.projectLabels, currentState.projectLabels, 'project_label'),
-        userProfile: data.profile || currentState.userProfile || { name: 'User' },
+      userProfile: data.profile
+          ? data.profile
+          : (currentState.userProfile || { name: 'User' }),
         orgName: data.orgName || currentState.orgName || '',
         orgLogoUrl: data.orgLogoUrl !== undefined ? data.orgLogoUrl : currentState.orgLogoUrl,
       });
