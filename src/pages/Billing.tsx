@@ -18,7 +18,8 @@ declare global {
 }
 
 const PRICE = 599;
-const LIVE_HOSTS = ["fintrackplus.com", "www.fintrackplus.com", "app.fintrackplus.com"];
+const LIVE_HOSTS = ["fintrackplus.com", "www.fintrackplus.com"];
+const LIVE_BILLING_URL = "https://fintrackplus.com/application/billing";
 const GST_RATE = 18;
 const NET = +(PRICE / (1 + GST_RATE / 100)).toFixed(2);
 const GST_AMOUNT = +(PRICE - NET).toFixed(2);
@@ -67,7 +68,7 @@ const Billing = () => {
       return;
     }
     if (!isLiveHost) {
-      toast.error("Subscriptions can only be purchased on app.fintrackplus.com");
+      toast.error("Subscriptions can only be purchased on fintrackplus.com");
       return;
     }
     setSubmitting(true);
@@ -232,10 +233,10 @@ const Billing = () => {
               <p className="text-xs text-muted-foreground mt-0.5">
                 You're on a preview/sandbox URL. To subscribe, please open{" "}
                 <a
-                  href="https://app.fintrackplus.com/billing"
+                  href={LIVE_BILLING_URL}
                   className="underline font-medium text-amber-700 dark:text-amber-400"
                 >
-                  app.fintrackplus.com/billing
+                  fintrackplus.com/application/billing
                 </a>
                 .
               </p>
@@ -369,7 +370,7 @@ const Billing = () => {
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
                 ) : !isLiveHost ? (
-                  "Available on app.fintrackplus.com"
+                  "Open on fintrackplus.com"
                 ) : (
                   "Complete Verification to Start Trial"
                 )}
@@ -397,7 +398,7 @@ const Billing = () => {
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
                 ) : !isLiveHost ? (
-                  "Available on app.fintrackplus.com"
+                  "Open on fintrackplus.com"
                 ) : (
                   "Start 7-Day Free Trial"
                 )}
