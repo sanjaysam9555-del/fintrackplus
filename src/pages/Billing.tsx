@@ -283,6 +283,38 @@ const Billing = () => {
           </motion.div>
         )}
 
+        {verificationComplete ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card rounded-3xl border border-border shadow-card overflow-hidden"
+          >
+            <div className="p-8 bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 text-center">
+              <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 size={36} className="text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Verification complete!</h2>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                Your 7-day free trial is being activated. You can start using FinTrack⁺ right now.
+              </p>
+            </div>
+            <div className="p-6 space-y-4 text-center border-t border-border">
+              <p className="text-sm text-muted-foreground">
+                Redirecting to your dashboard in <span className="font-semibold text-foreground">{redirectCountdown}s</span>…
+              </p>
+              <Button
+                onClick={() => {
+                  if (countdownRef.current) clearInterval(countdownRef.current);
+                  navigate(appPath("/"));
+                }}
+                size="lg"
+                className="w-full h-12 rounded-xl text-base font-semibold"
+              >
+                Go to Dashboard now
+              </Button>
+            </div>
+          </motion.div>
+        ) : (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
