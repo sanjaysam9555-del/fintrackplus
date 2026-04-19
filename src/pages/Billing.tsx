@@ -68,7 +68,7 @@ const Billing = () => {
       return;
     }
     if (!isLiveHost) {
-      toast.error("Subscriptions can only be purchased on app.fintrackplus.com");
+      toast.error("Subscriptions can only be purchased on fintrackplus.com");
       return;
     }
     setSubmitting(true);
@@ -233,10 +233,10 @@ const Billing = () => {
               <p className="text-xs text-muted-foreground mt-0.5">
                 You're on a preview/sandbox URL. To subscribe, please open{" "}
                 <a
-                  href="https://app.fintrackplus.com/billing"
+                  href={LIVE_BILLING_URL}
                   className="underline font-medium text-amber-700 dark:text-amber-400"
                 >
-                  app.fintrackplus.com/billing
+                  fintrackplus.com/application/billing
                 </a>
                 .
               </p>
@@ -370,9 +370,7 @@ const Billing = () => {
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
                 ) : !isLiveHost ? (
-                  "Available on app.fintrackplus.com"
-                ) : (
-                  "Complete Verification to Start Trial"
+                  "Open on fintrackplus.com"
                 )}
               </Button>
             ) : subscription?.razorpay_subscription_id && isActive ? (
@@ -398,9 +396,7 @@ const Billing = () => {
                 {submitting ? (
                   <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Loading checkout…</>
                 ) : !isLiveHost ? (
-                  "Available on app.fintrackplus.com"
-                ) : (
-                  "Start 7-Day Free Trial"
+                  "Open on fintrackplus.com"
                 )}
               </Button>
             )}
