@@ -518,6 +518,26 @@ const Billing = () => {
         <p className="text-center text-xs text-muted-foreground mt-6">
           Secure payments powered by Razorpay · GST Tax Invoice issued for every payment
         </p>
+
+        {/* Escape hatch: sign out (users on this page have no other navigation) */}
+        <div className="mt-10 pt-6 border-t border-border flex flex-col items-center gap-2">
+          <p className="text-xs text-muted-foreground text-center">
+            Not ready to subscribe? You can sign out and come back later.
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={async () => {
+              await signOut();
+              toast.success("Signed out");
+              navigate(appPath("/auth"));
+            }}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <LogOut size={14} className="mr-1.5" />
+            Sign out
+          </Button>
+        </div>
       </div>
     </div>
   );
