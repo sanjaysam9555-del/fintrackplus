@@ -112,6 +112,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (err) {
       console.error('[useAuth] signOut error (ignored):', err);
     }
+
+    // Hard wipe persisted store + auxiliary keys to prevent cross-user data leakage
+    try {
+      const { useFinanceStore } = await import('@/lib/store');
+      // Clear the persisted snapshot for the current user
+      // @ts-ignore — persist API exists at runtime
+      useFinanceStore.persist?.clearStorage?.();
+      useFinanceStore.setState({
+        userProfile: { name: 'User' },
+        transactions: [],
+        categories: [],
+        projects: [],
+        vendors: [],
+        partners: [],
+        projectLabels: [],
+        notifications: [],
+        orgName: '',
+        orgLogoUrl: null,
+        lastSyncedAt: null,
+      } as any);
+    } catch (err) {
+      console.error('[useAuth] store clear error (ignored):', err);
+    }
+
+    try {
+      localStorage.removeItem('fintrack_pending_operations');
+      localStorage.removeItem('fintrack_recently_synced');
+      sessionStorage.removeItem('fintrack_taxonomy_ensured');
+      // Also remove any legacy shared key from before per-user storage was introduced
+      localStorage.removeItem('fintrack-storage');
+    } catch (_) { /* ignore */ }
+
     // Deterministically clear state — iPad Safari/PWA may not fire SIGNED_OUT reliably
     setSession(null);
     setUser(null);
