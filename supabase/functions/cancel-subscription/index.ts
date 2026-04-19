@@ -84,6 +84,38 @@ Deno.serve(async (req) => {
       )
       .eq("org_id", member.org_id);
 
+    // Send branded confirmation email (best-effort, don't fail the cancel if email fails)
+    try {
+      const { data: userRow } = await admin.auth.admin.getUserById(userId);
+      const email = userRow?.user?.email;
+      const name = userRow?.user?.user_metadata?.name || "there";
+
+      // If noCycle (trial never authenticated / already terminal) → access ends immediately.
+      // Otherwise, access continues until current_period_end.
+      const accessUntil = noCycle ? null : (sub.current_period_end ?? null);
+
+      if (email) {
+        const emailRes = await fetch(`${SUPABASE_URL}/functions/v1/send-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${SERVICE_ROLE}`,
+          },
+          body: JSON.stringify({
+            email,
+            type: "subscription_cancelled",
+            name,
+            accessUntil,
+          }),
+        });
+        if (!emailRes.ok) {
+          console.error("[cancel-subscription] email send failed:", await emailRes.text());
+        }
+      }
+    } catch (emailErr) {
+      console.error("[cancel-subscription] email error (non-fatal):", emailErr);
+    }
+
     return new Response(
       JSON.stringify({ ok: true, already_inactive: noCycle }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
