@@ -1,41 +1,50 @@
 
 ## Root cause
-When a settings sub-page (Categories, Vendors, Recurring, All Documents, etc.) is opened on mobile, the parent Settings page has already been scrolled down to the row the user tapped. The sub-page renders into the same scroll container, so it inherits that scroll position — appearing to open ~30–40% down.
+The in-app preview in `AllDocumentsSection.tsx` has several issues that cause "JPGs, PNGs, PDFs, Docs not opening properly":
 
-This is the classic "no scroll restoration on view change" problem. Since these sub-pages are toggled via internal state (not React Router navigation), the existing stack-overflow `ScrollToTop` (route-based) won't help — we need to scroll on view change.
-
-## Investigation needed
-- `src/components/SettingsPage.tsx` — confirm sub-page switching is via local state (e.g. `activeSection`), and identify the scroll container (window vs. inner div).
-- The individual section components (`CategoriesSection`, `VendorsSection`, `RecurringSection`, `AllDocumentsSection`, etc.) — confirm none currently handle scroll reset.
+1. **`fileType` is unreliable** — for receipts, it's derived from URL extension (`isImageType(ext)` where `ext` is just `"jpg"`, not `"image/jpeg"`). The check `type.startsWith('image/')` then fails on the receipt's `mimeGuess` for some edge cases (e.g., `jpg` extension produces `image/jpg` which is non-standard). Worse, when `extractStoragePath` returns the raw path (new format without `http`), the `ext` is parsed from the path — fine — but if the receipt URL has query params or no extension, `fileType` becomes `application/octet-stream` and `canPreview` becomes `false`, so JPGs/PNGs show "cannot be previewed in-app".
+2. **PDFs in iframes** — using a `blob:` URL in `<iframe>` works on desktop but is unreliable on mobile WebViews/Safari (some block blob iframes). PDFs also need `#toolbar=0` styling, height fixes (`h-full` on iframe in a flex container needs `min-h-0`).
+3. **DOCX / unknown types** — currently fall through to the "cannot be previewed" message with only a Download button. Many users expect at least an "Open in new tab" option, and for Office docs we can use Google Docs Viewer or Microsoft Office Online viewer with the **public/signed URL** (not the blob URL).
+4. **Container layout** — `flex-1 overflow-auto flex items-center justify-center p-4` centers content, but the iframe with `w-full h-full` inside flex needs the parent to have explicit constrained height. On mobile this collapses, making PDFs render with 0 height.
+5. **Image error handling** — `onError` hides the thumbnail but leaves an empty grey square; we should show the icon fallback.
 
 ## Plan
 
-### Fix: scroll to top when a settings sub-view mounts
-Two complementary touches:
+### 1. Fix MIME type detection (`AllDocumentsSection.tsx`)
+- For receipts, normalize: `jpg` → `image/jpeg`, `jpeg` → `image/jpeg`, `png` → `image/png`, `webp` → `image/webp`, `pdf` → `application/pdf`, `doc/docx` → `application/msword` family.
+- Make `isImageType` / `isPdfType` accept both MIME and extension robustly.
+- Add `isOfficeType` helper (doc, docx, xls, xlsx, ppt, pptx).
 
-1. **In `SettingsPage.tsx`** — add a `useEffect` that fires whenever `activeSection` (or whatever state controls which sub-view is shown) changes to a non-null value:
-   ```ts
-   useEffect(() => {
-     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
-   }, [activeSection]);
-   ```
-   Also reset on returning to the main settings list (so the back navigation lands at top, not at the previously-tapped row) — or preserve the parent scroll if that's preferred. Recommend resetting to top for both directions for consistency.
+### 2. Robust preview rendering
+- **Images**: `<img>` with `max-w-full max-h-full object-contain` inside a properly-sized container (`flex-1 min-h-0`).
+- **PDFs**: Use `<object data={previewUrl} type="application/pdf">` with `<embed>` fallback inside, then a "Open in new tab" link. Set explicit `width="100%" height="100%"` and ensure parent container has `min-h-0` so flex-1 actually computes a height. Also append `#view=FitH&toolbar=1` to encourage native viewer toolbar.
+- **Office docs**: When we have a publicly-fetchable signed URL (not blob), embed via Microsoft Office Online viewer:  
+  `https://view.officeapps.live.com/op/embed.aspx?src=<encoded signed URL>`  
+  Fall back to download if no signed URL is available.
+- **Unknown / other**: Keep the "Download" CTA, but also add an "Open in new tab" button using the signed URL.
 
-2. **Belt-and-braces in each sub-section root** (only if step 1 doesn't catch every entry path) — a one-line `useEffect(() => window.scrollTo(0,0), [])` in the section component's mount.
+### 3. Container layout fix
+- Change preview content wrapper to `flex-1 min-h-0 flex flex-col` so PDF/iframe children can claim full height on mobile.
+- Wrap PDF/iframe in a `w-full h-full` div.
 
-If the scroll container is an inner div (not `window`), use a ref on that container and call `ref.current?.scrollTo(0,0)` instead.
+### 4. Thumbnail fallback
+- On `<img onError>`, swap to the file icon (track per-item with a ref/state) instead of leaving an empty box.
 
-### Verify back-navigation behaviour
-Decide: when user taps the back arrow in a sub-page, should they return to:
-- (a) Top of Settings (clean), or
-- (b) The exact row they tapped (preserves context)
-
-Recommend **(a)** for simplicity and consistency with current native-app conventions in this codebase. If user wants (b), we'd need to capture & restore scroll position in a ref before opening the sub-view.
+### 5. Use signed URL (not blob) for iframe-based viewers
+- For PDF and Office viewers, prefer the already-signed `item.fileUrl` (1-hour signed URL we created in fetch). Blob URLs work for `<img>` and download but cause problems for iframe/`<object>` on mobile and are unusable by external viewers (Office Online viewer can't fetch a `blob:`).
+- Keep blob for download/share (already correct) and for `<img>` previews (works great offline-ish).
 
 ## Files touched
-- `src/components/SettingsPage.tsx` — add scroll-to-top effect on sub-view change.
-- Potentially 1–2 section components if their mount path bypasses the parent effect (will confirm during implementation).
+- `src/components/settings/AllDocumentsSection.tsx` — all of the above; single-file change.
 
 ## Out of scope
-- Router-level `ScrollToTop` (settings sub-views aren't routes).
-- Changing how sub-views are mounted/structured.
+- No backend / RLS / storage policy changes.
+- No new dependencies (no PDF.js install — we use native browser PDF viewer).
+- No changes to upload flow or DB schema.
+
+## Verification
+1. Open All Documents → tap a JPG/PNG receipt → image renders fullscreen, fits viewport.
+2. Tap a PDF → renders inline in native PDF viewer with toolbar.
+3. Tap a DOCX/XLSX → renders via Office Online viewer (or graceful "Open / Download" fallback if signed URL isn't reachable).
+4. On mobile, PDF doesn't collapse to zero height.
+5. Broken/missing files show the friendly error state.
