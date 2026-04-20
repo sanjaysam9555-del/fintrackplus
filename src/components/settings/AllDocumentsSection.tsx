@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, FileText, FileImage, File, FileSpreadsheet, Eye, Download, FolderOpen, Share2, X, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, FileImage, File, FileSpreadsheet, Download, FolderOpen, Share2, X, Loader2, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useFinanceStore } from "@/lib/store";
@@ -30,7 +30,6 @@ interface DocItem {
 
 const extractStoragePath = (url: string, bucket: string): string | null => {
   try {
-    // If value doesn't start with http, it's already a raw storage path (new format)
     if (!url.startsWith('http')) return url;
     const signedMatch = url.match(new RegExp(`/object/sign/${bucket}/(.+?)\\?`));
     if (signedMatch) return decodeURIComponent(signedMatch[1]);
@@ -44,16 +43,52 @@ const extractStoragePath = (url: string, bucket: string): string | null => {
   }
 };
 
-const isImageType = (type: string) =>
-  type.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|svg)$/i.test(type);
+// Normalize a file extension to a standard MIME type
+const extToMime = (ext: string): string => {
+  const e = ext.toLowerCase().replace(/^\./, '').split('?')[0];
+  const map: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    gif: 'image/gif',
+    bmp: 'image/bmp',
+    svg: 'image/svg+xml',
+    heic: 'image/heic',
+    pdf: 'application/pdf',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    csv: 'text/csv',
+    txt: 'text/plain',
+  };
+  return map[e] || 'application/octet-stream';
+};
 
-const isPdfType = (type: string) =>
-  type.includes('pdf') || type.endsWith('.pdf');
+const isImageType = (typeOrName: string) => {
+  const t = (typeOrName || '').toLowerCase();
+  return t.startsWith('image/') || /\.(jpg|jpeg|png|webp|gif|bmp|svg|heic)(\?|$)/i.test(t) || /^(jpg|jpeg|png|webp|gif|bmp|svg|heic)$/i.test(t);
+};
 
-const getFileIcon = (type: string) => {
-  if (isImageType(type)) return FileImage;
-  if (isPdfType(type)) return FileText;
-  if (type.includes('sheet') || type.includes('csv') || type.includes('excel')) return FileSpreadsheet;
+const isPdfType = (typeOrName: string) => {
+  const t = (typeOrName || '').toLowerCase();
+  return t.includes('pdf') || /\.pdf(\?|$)/i.test(t);
+};
+
+const isOfficeType = (typeOrName: string) => {
+  const t = (typeOrName || '').toLowerCase();
+  return /(msword|wordprocessingml|ms-excel|spreadsheetml|ms-powerpoint|presentationml)/.test(t)
+    || /\.(docx?|xlsx?|pptx?)(\?|$)/i.test(t)
+    || /^(docx?|xlsx?|pptx?)$/i.test(t);
+};
+
+const getFileIcon = (typeOrName: string) => {
+  if (isImageType(typeOrName)) return FileImage;
+  if (isPdfType(typeOrName)) return FileText;
+  if (typeOrName.includes('sheet') || typeOrName.includes('csv') || typeOrName.includes('excel') || /\.(xlsx?|csv)(\?|$)/i.test(typeOrName)) return FileSpreadsheet;
   return File;
 };
 
@@ -70,10 +105,11 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
   const [docs, setDocs] = useState<DocItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
+  const [thumbErrors, setThumbErrors] = useState<Record<string, boolean>>({});
 
   // Preview state
   const [previewDoc, setPreviewDoc] = useState<DocItem | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null); // blob: URL for img/download
   const [previewBlob, setPreviewBlob] = useState<Blob | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewError, setPreviewError] = useState<string | null>(null);
@@ -97,17 +133,21 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
           const { data: signedData } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
           if (signedData?.signedUrl) displayUrl = signedData.signedUrl;
         }
+        // Normalize file_type if it's just an extension or unreliable
+        const normalizedType = d.file_type && d.file_type.includes('/')
+          ? d.file_type
+          : extToMime(d.file_type || d.file_name.split('.').pop() || '');
         items.push({
           id: d.id, fileName: d.file_name, fileUrl: displayUrl, storagePath: path, bucket,
-          fileType: d.file_type, fileSize: d.file_size, date: d.uploaded_at, projectId: d.project_id, source: 'document',
+          fileType: normalizedType, fileSize: d.file_size, date: d.uploaded_at, projectId: d.project_id, source: 'document',
         });
       }
 
       for (const t of (receiptTxns || [])) {
         const url = t.receipt_url as string;
         const name = t.title || t.vendor || 'Receipt';
-        const ext = url.split('.').pop()?.split('?')[0] || '';
-        const mimeGuess = isImageType(ext) ? `image/${ext}` : isPdfType(ext) ? 'application/pdf' : 'application/octet-stream';
+        const ext = (url.split('.').pop()?.split('?')[0] || '').toLowerCase();
+        const mimeGuess = extToMime(ext);
         const bucket = 'receipts';
         const path = extractStoragePath(url, bucket);
         let displayUrl = url;
@@ -147,20 +187,18 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
     return { groups, unassigned };
   }, [docs, projectMap]);
 
-  // Clean up object URLs on unmount or when preview changes
+  // Clean up object URLs when preview changes/unmounts
   useEffect(() => {
     return () => {
-      if (previewUrl && previewUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(previewUrl);
-      }
+      if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
     };
-  }, [previewUrl]);
+  }, [previewObjectUrl]);
 
   const handleOpenPreview = useCallback(async (item: DocItem) => {
     setPreviewDoc(item);
     setPreviewLoading(true);
     setPreviewError(null);
-    setPreviewUrl(null);
+    setPreviewObjectUrl(null);
     setPreviewBlob(null);
 
     try {
@@ -171,14 +209,10 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
         if (error) throw error;
         if (data) {
           const objectUrl = URL.createObjectURL(data);
-          setPreviewUrl(objectUrl);
+          setPreviewObjectUrl(objectUrl);
           setPreviewBlob(data);
-          setPreviewLoading(false);
-          return;
         }
       }
-      // Fallback: try using the stored URL directly
-      setPreviewUrl(item.fileUrl);
       setPreviewLoading(false);
     } catch (err: any) {
       console.error('Failed to load document:', err);
@@ -188,25 +222,30 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
   }, []);
 
   const handleClosePreview = useCallback(() => {
-    if (previewUrl && previewUrl.startsWith('blob:')) {
-      URL.revokeObjectURL(previewUrl);
-    }
+    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl);
     setPreviewDoc(null);
-    setPreviewUrl(null);
+    setPreviewObjectUrl(null);
     setPreviewBlob(null);
     setPreviewError(null);
-  }, [previewUrl]);
+  }, [previewObjectUrl]);
 
   const handleDownload = useCallback(() => {
-    if (!previewUrl || !previewDoc) return;
+    if (!previewDoc) return;
+    const href = previewObjectUrl || previewDoc.fileUrl;
+    if (!href) return;
     const a = document.createElement('a');
-    a.href = previewUrl;
+    a.href = href;
     a.download = previewDoc.fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     toast.success("Download started");
-  }, [previewUrl, previewDoc]);
+  }, [previewObjectUrl, previewDoc]);
+
+  const handleOpenExternal = useCallback(() => {
+    if (!previewDoc?.fileUrl) return;
+    window.open(previewDoc.fileUrl, '_blank', 'noopener,noreferrer');
+  }, [previewDoc]);
 
   const handleShare = useCallback(async () => {
     if (!previewDoc) return;
@@ -217,7 +256,6 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
       } else if (navigator.share) {
         await navigator.share({ title: previewDoc.fileName, text: `Sharing: ${previewDoc.fileName}` });
       } else {
-        // Fallback: trigger download
         handleDownload();
         toast.info("Share not supported on this device — downloaded instead");
       }
@@ -229,8 +267,9 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
   }, [previewDoc, previewBlob, handleDownload]);
 
   const ThumbnailCard = ({ item }: { item: DocItem }) => {
-    const Icon = getFileIcon(item.fileType);
-    const isImg = isImageType(item.fileType);
+    const Icon = getFileIcon(item.fileType || item.fileName);
+    const isImg = isImageType(item.fileType) || isImageType(item.fileName);
+    const errored = thumbErrors[item.id];
 
     return (
       <button
@@ -238,8 +277,14 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
         className="group relative rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors text-left w-full"
       >
         <div className="aspect-square flex items-center justify-center bg-muted/50 overflow-hidden relative">
-          {isImg ? (
-            <img src={item.fileUrl} alt={item.fileName} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+          {isImg && !errored ? (
+            <img
+              src={item.fileUrl}
+              alt={item.fileName}
+              className="w-full h-full object-cover"
+              loading="lazy"
+              onError={() => setThumbErrors(prev => ({ ...prev, [item.id]: true }))}
+            />
           ) : (
             <Icon size={32} className="text-muted-foreground" />
           )}
@@ -284,7 +329,27 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
     );
   };
 
-  const canPreview = previewDoc && (isImageType(previewDoc.fileType) || isPdfType(previewDoc.fileType));
+  // Decide preview mode
+  const previewMode: 'image' | 'pdf' | 'office' | 'other' | null = previewDoc
+    ? (isImageType(previewDoc.fileType) || isImageType(previewDoc.fileName))
+      ? 'image'
+      : (isPdfType(previewDoc.fileType) || isPdfType(previewDoc.fileName))
+        ? 'pdf'
+        : (isOfficeType(previewDoc.fileType) || isOfficeType(previewDoc.fileName))
+          ? 'office'
+          : 'other'
+    : null;
+
+  const officeViewerUrl = previewDoc && previewMode === 'office' && previewDoc.fileUrl?.startsWith('http')
+    ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewDoc.fileUrl)}`
+    : null;
+
+  // Use signed URL (http) for PDF iframe; blob fallback if no http URL
+  const pdfSrc = previewDoc && previewMode === 'pdf'
+    ? (previewDoc.fileUrl?.startsWith('http')
+        ? `${previewDoc.fileUrl}#view=FitH&toolbar=1`
+        : previewObjectUrl)
+    : null;
 
   return (
     <div className="min-h-screen pb-24">
@@ -359,61 +424,103 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
             className="fixed inset-0 z-50 bg-background flex flex-col"
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border safe-top">
+            <div className="flex items-center justify-between p-4 border-b border-border safe-top shrink-0">
               <button onClick={handleClosePreview} className="p-2 -ml-2 rounded-full hover:bg-muted">
                 <X size={20} />
               </button>
               <h2 className="text-sm font-medium truncate flex-1 mx-3 text-center">{previewDoc.fileName}</h2>
               <div className="flex items-center gap-1">
+                <button onClick={handleOpenExternal} className="p-2 rounded-full hover:bg-muted" title="Open in new tab">
+                  <ExternalLink size={18} />
+                </button>
                 <button onClick={handleShare} className="p-2 rounded-full hover:bg-muted" title="Share">
                   <Share2 size={18} />
                 </button>
-                <button onClick={handleDownload} disabled={!previewUrl} className="p-2 rounded-full hover:bg-muted disabled:opacity-40" title="Download">
+                <button onClick={handleDownload} className="p-2 rounded-full hover:bg-muted" title="Download">
                   <Download size={18} />
                 </button>
               </div>
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+            <div className="flex-1 min-h-0 flex flex-col bg-muted/30">
               {previewLoading ? (
-                <div className="flex flex-col items-center gap-3">
+                <div className="flex-1 flex flex-col items-center justify-center gap-3">
                   <Loader2 size={32} className="animate-spin text-primary" />
                   <p className="text-sm text-muted-foreground">Loading document…</p>
                 </div>
               ) : previewError ? (
-                <div className="text-center max-w-xs">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
-                    <File size={24} className="text-destructive" />
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <div className="text-center max-w-xs">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+                      <File size={24} className="text-destructive" />
+                    </div>
+                    <p className="text-sm text-muted-foreground">{previewError}</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">{previewError}</p>
                 </div>
-              ) : previewUrl && canPreview ? (
-                isImageType(previewDoc.fileType) ? (
-                  <img src={previewUrl} alt={previewDoc.fileName} className="max-w-full max-h-full object-contain rounded-lg" />
-                ) : (
-                  <iframe src={previewUrl} className="w-full h-full rounded-lg border-0" title={previewDoc.fileName} />
-                )
-              ) : (
-                <div className="text-center max-w-xs">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
-                    {(() => { const Icon = getFileIcon(previewDoc.fileType); return <Icon size={32} className="text-muted-foreground" />; })()}
-                  </div>
-                  <p className="font-medium text-sm mb-1">{previewDoc.fileName}</p>
-                  <p className="text-xs text-muted-foreground mb-4">This file type cannot be previewed in-app</p>
-                  <button
-                    onClick={handleDownload}
-                    disabled={!previewUrl}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium disabled:opacity-40"
+              ) : previewMode === 'image' && previewObjectUrl ? (
+                <div className="flex-1 min-h-0 flex items-center justify-center p-4 overflow-auto">
+                  <img
+                    src={previewObjectUrl}
+                    alt={previewDoc.fileName}
+                    className="max-w-full max-h-full object-contain rounded-lg"
+                  />
+                </div>
+              ) : previewMode === 'pdf' && pdfSrc ? (
+                <div className="flex-1 min-h-0 w-full">
+                  <object
+                    data={pdfSrc}
+                    type="application/pdf"
+                    width="100%"
+                    height="100%"
+                    className="w-full h-full"
                   >
-                    <Download size={16} /> Download
-                  </button>
+                    <iframe
+                      src={pdfSrc}
+                      title={previewDoc.fileName}
+                      className="w-full h-full border-0"
+                    />
+                  </object>
+                </div>
+              ) : previewMode === 'office' && officeViewerUrl ? (
+                <div className="flex-1 min-h-0 w-full bg-background">
+                  <iframe
+                    src={officeViewerUrl}
+                    title={previewDoc.fileName}
+                    className="w-full h-full border-0"
+                  />
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center p-4">
+                  <div className="text-center max-w-xs">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-muted flex items-center justify-center">
+                      {(() => { const Icon = getFileIcon(previewDoc.fileType || previewDoc.fileName); return <Icon size={32} className="text-muted-foreground" />; })()}
+                    </div>
+                    <p className="font-medium text-sm mb-1">{previewDoc.fileName}</p>
+                    <p className="text-xs text-muted-foreground mb-4">This file type cannot be previewed in-app</p>
+                    <div className="flex flex-col gap-2 items-center">
+                      <button
+                        onClick={handleDownload}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
+                      >
+                        <Download size={16} /> Download
+                      </button>
+                      {previewDoc.fileUrl?.startsWith('http') && (
+                        <button
+                          onClick={handleOpenExternal}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-muted"
+                        >
+                          <ExternalLink size={16} /> Open in new tab
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Footer info */}
-            <div className="p-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+            <div className="p-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground shrink-0">
               <span>{previewDoc.date ? format(new Date(previewDoc.date), 'dd MMM yyyy') : ''}</span>
               <span className={cn(
                 "font-semibold uppercase px-1.5 py-0.5 rounded-full",
