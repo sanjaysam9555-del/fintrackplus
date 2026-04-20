@@ -272,6 +272,11 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   useEffect(() => {
     setActiveSection(initialSection);
   }, [initialSection]);
+
+  // Reset scroll to top whenever the active sub-section changes (including back to main list)
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [activeSection]);
   
   const handleSectionChange = (section: SettingsSection) => {
     setActiveSection(section);
