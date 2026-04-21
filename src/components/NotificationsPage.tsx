@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban, Users, Tag, Settings, Loader2 } from "lucide-react";
+import { Bell, ArrowDownLeft, ArrowUpRight, FileDown, User, Check, Trash2, Pencil, Grid3X3, Store, FolderKanban, Users, Tag, Settings } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { supabase } from "@/integrations/supabase/client";
 import type { Notification } from "@/lib/types";
+import { PageLoader } from "@/components/ui/skeleton-loader";
 
 const getActionBadge = (notification: { type: string; details?: { from: string }[] }) => {
   const isNew = notification.details && notification.details.length > 0 && notification.details[0].from === 'New';
@@ -216,9 +217,7 @@ export const NotificationsPage = () => {
       
       <div className="px-4 space-y-3">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="animate-spin text-muted-foreground" />
-          </div>
+          <PageLoader className="min-h-[30vh] py-8" />
         ) : filteredNotifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">

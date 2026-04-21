@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { appPath } from "@/lib/domainUtils";
+import { PageLoader } from "@/components/ui/skeleton-loader";
 
 declare global {
   interface Window { Razorpay?: any }
@@ -199,11 +200,7 @@ const Billing = () => {
   };
 
   if (roleLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoader className="min-h-screen" />;
   }
 
   return (
