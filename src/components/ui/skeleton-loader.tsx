@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import appIcon from "@/assets/app-icon.png";
+import appIcon from "@/assets/spinner-logo.png";
 
 interface SkeletonProps {
   className?: string;
@@ -24,9 +24,9 @@ export const PageLoader = ({ className }: { className?: string }) => (
         src={appIcon}
         alt=""
         aria-hidden
-        className="w-12 h-12 rounded-2xl shadow-lg opacity-90"
+        className="w-12 h-12 rounded-full shadow-lg opacity-90"
       />
-      <div className="absolute -inset-2 rounded-2xl border-2 border-primary/30 border-t-primary animate-spin" />
+      <div className="absolute -inset-2 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
     </div>
     <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
       Loading
