@@ -202,15 +202,36 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
     setPreviewBlob(null);
 
     try {
+      let downloaded = false;
       if (item.storagePath) {
         const { data, error } = await supabase.storage
           .from(item.bucket)
           .download(item.storagePath);
-        if (error) throw error;
-        if (data) {
+        if (error) {
+          console.warn('[AllDocuments] Download failed, will fall back to signed URL:', error.message, { bucket: item.bucket, path: item.storagePath });
+        } else if (data) {
           const objectUrl = URL.createObjectURL(data);
           setPreviewObjectUrl(objectUrl);
           setPreviewBlob(data);
+          downloaded = true;
+        }
+      } else {
+        console.warn('[AllDocuments] No storagePath resolved for item; will use fileUrl directly:', { id: item.id, fileUrl: item.fileUrl });
+      }
+      // If blob download failed/skipped but we have an http signed URL, that's still usable for <img>/<iframe>
+      if (!downloaded && !item.fileUrl?.startsWith('http')) {
+        // Last-resort: try to mint a signed URL from the raw path
+        const rawPath = item.storagePath || item.fileUrl;
+        if (rawPath) {
+          const { data: signed } = await supabase.storage.from(item.bucket).createSignedUrl(rawPath, 3600);
+          if (signed?.signedUrl) {
+            // Mutate previewDoc fileUrl so render branches see http URL
+            setPreviewDoc(prev => prev ? { ...prev, fileUrl: signed.signedUrl } : prev);
+          } else {
+            throw new Error('Could not generate access URL for this file.');
+          }
+        } else {
+          throw new Error('No file location available.');
         }
       }
       setPreviewLoading(false);
