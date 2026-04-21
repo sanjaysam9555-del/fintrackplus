@@ -17,6 +17,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ChevronDown, Search, Trash2, Loader2, AlertTriangle } from "lucide-react";
+import { PageLoader } from "@/components/ui/skeleton-loader";
 
 const SUPER_ADMIN_USER_IDS = ['0f2f00e4-47c0-4c4d-8263-77b7f9a2f336'];
 
@@ -193,11 +194,7 @@ export default function AdminConsole() {
   }, [orgs]);
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <PageLoader className="min-h-screen" />;
   }
   if (!isSuper) return <NotAuthorized />;
 

@@ -11,6 +11,7 @@ import { useFinanceStore } from '@/lib/store';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { PageLoader } from '@/components/ui/skeleton-loader';
 
 interface ChangeApproval {
   id: string;
@@ -331,14 +332,7 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
 
           <TabsContent value="pending" className="space-y-3">
             {loading ? (
-              <div className="space-y-3">
-                {[1, 2].map(i => (
-                  <div key={i} className="bg-card rounded-2xl p-4 border border-border">
-                    <div className="h-4 w-32 bg-muted rounded animate-pulse mb-2" />
-                    <div className="h-3 w-48 bg-muted rounded animate-pulse" />
-                  </div>
-                ))}
-              </div>
+              <PageLoader className="min-h-[30vh] py-8" />
             ) : pendingApprovals.length === 0 ? (
               <div className="text-center py-12">
                 <Clock size={40} className="mx-auto text-muted-foreground/50 mb-3" />
@@ -351,14 +345,7 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
 
           <TabsContent value="history" className="space-y-3">
             {loading ? (
-              <div className="space-y-3">
-                {[1, 2].map(i => (
-                  <div key={i} className="bg-card rounded-2xl p-4 border border-border">
-                    <div className="h-4 w-32 bg-muted rounded animate-pulse mb-2" />
-                    <div className="h-3 w-48 bg-muted rounded animate-pulse" />
-                  </div>
-                ))}
-              </div>
+              <PageLoader className="min-h-[30vh] py-8" />
             ) : historyApprovals.length === 0 ? (
               <div className="text-center py-12">
                 <CheckCircle2 size={40} className="mx-auto text-muted-foreground/50 mb-3" />

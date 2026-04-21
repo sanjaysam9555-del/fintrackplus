@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { appPath } from '@/lib/domainUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { PageLoader } from '@/components/ui/skeleton-loader';
 
 type VerifyState = 'verifying' | 'ready' | 'invalid';
 
@@ -134,11 +135,9 @@ export const ResetPasswordPage = () => {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-card/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-border/50 text-center space-y-5"
+            className="bg-card/80 backdrop-blur-xl rounded-3xl p-6 shadow-xl border border-border/50 text-center space-y-3"
           >
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Loader2 className="w-8 h-8 text-primary animate-spin" />
-            </div>
+            <PageLoader className="min-h-[160px] py-4" />
             <h2 className="text-xl font-bold text-foreground">Verifying link…</h2>
             <p className="text-sm text-muted-foreground">Just a moment while we confirm your reset request.</p>
           </motion.div>
