@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense, useRef, useCallback, useMemo } fro
 import { GlassDock } from "@/components/GlassDock";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { Dashboard } from "@/components/Dashboard";
-import { DashboardSkeleton, TransactionSkeleton } from "@/components/ui/skeleton-loader";
+import { DashboardSkeleton, PageLoader } from "@/components/ui/skeleton-loader";
 import { PageTransition } from "@/components/PageTransition";
 import { useFinanceStore } from "@/lib/store";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,45 +69,10 @@ const LogoSkeleton = () => (
   </div>
 );
 
-// Skeleton loader for transaction lists
-const TransactionListSkeleton = () => (
-  <div className="p-4 space-y-2">
-    <div className="h-6 w-32 bg-muted rounded skeleton mb-4" />
-    {[1, 2, 3, 4, 5].map(i => (
-      <TransactionSkeleton key={i} />
-    ))}
-  </div>
-);
-
-// Skeleton loader for settings
-const SettingsSkeleton = () => (
-  <div className="p-4 space-y-4">
-    <div className="h-8 w-24 bg-muted rounded skeleton" />
-    <div className="space-y-3">
-      {[1, 2, 3, 4].map(i => (
-        <div key={i} className="bg-card rounded-2xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-muted skeleton" />
-          <div className="flex-1 space-y-2">
-            <div className="h-4 w-24 bg-muted rounded skeleton" />
-            <div className="h-3 w-32 bg-muted rounded skeleton" />
-          </div>
-        </div>
-      ))}
-    </div>
-  </div>
-);
-
-// Generic content skeleton
-const ContentSkeleton = () => (
-  <div className="p-4 space-y-4">
-    <div className="h-6 w-40 bg-muted rounded skeleton" />
-    <div className="bg-card rounded-2xl p-6 space-y-4">
-      <div className="h-4 w-full bg-muted rounded skeleton" />
-      <div className="h-4 w-3/4 bg-muted rounded skeleton" />
-      <div className="h-4 w-1/2 bg-muted rounded skeleton" />
-    </div>
-  </div>
-);
+// Unified loading state — single centered branded spinner across all views
+const TransactionListSkeleton = () => <PageLoader />;
+const SettingsSkeleton = () => <PageLoader />;
+const ContentSkeleton = () => <PageLoader />;
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('home');
