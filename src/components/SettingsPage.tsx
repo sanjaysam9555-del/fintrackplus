@@ -31,6 +31,8 @@ import {
   CreditCard
 } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
+import { supabase } from "@/integrations/supabase/client";
+import type { Notification } from "@/lib/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { toast } from "sonner";
@@ -73,9 +75,83 @@ const getActionBadge = (notification: { type: string; details?: { from: string }
   }
 };
 
-// Inline notification content for settings page
+// Inline notification content for settings page — fetches full org-wide log from cloud
+interface DbNotification {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  created_at: string;
+  read: boolean | null;
+  details: any;
+  entity_type: string | null;
+  entity_id: string | null;
+  actor_name: string | null;
+  user_id: string;
+  org_id: string | null;
+}
+
+const mapDbToNotification = (row: DbNotification): Notification => ({
+  id: row.id,
+  type: row.type as Notification['type'],
+  title: row.title,
+  message: row.message,
+  timestamp: row.created_at,
+  read: row.read ?? false,
+  details: Array.isArray(row.details) ? row.details : [],
+  entityType: row.entity_type || undefined,
+  entityId: row.entity_id || undefined,
+  actorName: row.actor_name || undefined,
+});
+
 const NotificationsContent = () => {
-  const { notifications, markNotificationRead, markAllNotificationsRead } = useFinanceStore();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (!cancelled && !error && data) {
+        setNotifications((data as unknown as DbNotification[]).map(mapDbToNotification));
+      }
+      if (!cancelled) setLoading(false);
+    };
+    load();
+
+    const channel = supabase
+      .channel('settings-notifications-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
+        const newNotif = mapDbToNotification(payload.new as DbNotification);
+        setNotifications((prev) => [newNotif, ...prev].slice(0, 200));
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, (payload) => {
+        const updated = mapDbToNotification(payload.new as DbNotification);
+        setNotifications((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+      })
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const markNotificationRead = async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    await supabase.from('notifications').update({ read: true } as any).eq('id', id);
+  };
+
+  const markAllNotificationsRead = async () => {
+    const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    await supabase.from('notifications').update({ read: true } as any).in('id', unreadIds);
+  };
   
   const getIcon = (type: string) => {
     switch (type) {
@@ -120,7 +196,11 @@ const NotificationsContent = () => {
         </div>
       )}
       <div className="space-y-3">
-        {notifications.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 size={24} className="animate-spin text-muted-foreground" />
+          </div>
+        ) : notifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
               <ScrollText size={24} className="text-muted-foreground" />
