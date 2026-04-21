@@ -104,22 +104,32 @@ const mapDbToNotification = (row: DbNotification): Notification => ({
   actorName: row.actor_name || undefined,
 });
 
+const PAGE_SIZE = 100;
+
 const NotificationsContent = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+
+  const fetchPage = async (from: number, to: number) => {
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, to);
+    if (error) return [] as Notification[];
+    return (data as unknown as DbNotification[]).map(mapDbToNotification);
+  };
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(200);
-      if (!cancelled && !error && data) {
-        setNotifications((data as unknown as DbNotification[]).map(mapDbToNotification));
-      }
-      if (!cancelled) setLoading(false);
+      const page = await fetchPage(0, PAGE_SIZE - 1);
+      if (cancelled) return;
+      setNotifications(page);
+      setHasMore(page.length === PAGE_SIZE);
+      setLoading(false);
     };
     load();
 
@@ -127,7 +137,7 @@ const NotificationsContent = () => {
       .channel('settings-notifications-realtime')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications' }, (payload) => {
         const newNotif = mapDbToNotification(payload.new as DbNotification);
-        setNotifications((prev) => [newNotif, ...prev].slice(0, 200));
+        setNotifications((prev) => prev.some((n) => n.id === newNotif.id) ? prev : [newNotif, ...prev]);
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'notifications' }, (payload) => {
         const updated = mapDbToNotification(payload.new as DbNotification);
@@ -140,6 +150,19 @@ const NotificationsContent = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const from = notifications.length;
+    const page = await fetchPage(from, from + PAGE_SIZE - 1);
+    setNotifications((prev) => {
+      const seen = new Set(prev.map((n) => n.id));
+      return [...prev, ...page.filter((n) => !seen.has(n.id))];
+    });
+    setHasMore(page.length === PAGE_SIZE);
+    setLoadingMore(false);
+  };
 
   const markNotificationRead = async (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -310,6 +333,17 @@ const NotificationsContent = () => {
               </motion.div>
             );
           })
+        )}
+        {!loading && hasMore && notifications.length > 0 && (
+          <div className="flex justify-center pt-2">
+            <Button variant="outline" size="sm" onClick={loadMore} disabled={loadingMore}>
+              {loadingMore ? (
+                <><Loader2 size={14} className="mr-2 animate-spin" />Loading...</>
+              ) : (
+                'Load more'
+              )}
+            </Button>
+          </div>
         )}
       </div>
     </div>
