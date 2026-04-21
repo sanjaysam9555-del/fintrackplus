@@ -9,6 +9,8 @@ interface ShareData {
   vendorName?: string;
   partnerName?: string;
   partnerColor?: string;
+  orgName?: string;
+  orgLogoUrl?: string | null;
 }
 
 const CARD_WIDTH = 400;
@@ -31,6 +33,10 @@ function formatFilenameDate(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
   const month = MONTHS[m - 1];
   return `${d} ${month} ${y}`;
+}
+
+function sanitizeFilenamePart(value: string): string {
+  return value.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, ' ').trim();
 }
 
 function getThemeColors() {
@@ -86,9 +92,11 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-export async function shareTransaction({ transaction, categoryName, projectName, vendorName, partnerName, partnerColor }: ShareData): Promise<void> {
+export async function shareTransaction({ transaction, categoryName, projectName, vendorName, partnerName, partnerColor, orgName, orgLogoUrl }: ShareData): Promise<void> {
   const colors = getThemeColors();
   const isExpense = transaction.type === 'expense';
+  const organizationName = orgName?.trim() || '';
+  const hasOrgBranding = Boolean(organizationName || orgLogoUrl);
 
   // Build rows
   const rows: [string, string][] = [];
@@ -109,7 +117,8 @@ export async function shareTransaction({ transaction, categoryName, projectName,
   if (transaction.isGst) rows.push(['GST', 'Included']);
   if (transaction.notes) rows.push(['Notes', transaction.notes]);
 
-  const cardHeight = 80 + 90 + rows.length * LINE_HEIGHT + 20 + 40 + 16;
+  const headerHeight = hasOrgBranding ? 78 : 48;
+  const cardHeight = headerHeight + 90 + rows.length * LINE_HEIGHT + 20 + 40 + 16;
 
   const canvas = document.createElement('canvas');
   const scale = 3;
@@ -132,33 +141,74 @@ export async function shareTransaction({ transaction, categoryName, projectName,
   // ── Header with app icon ──
   let y = 28;
 
-  // Try to load the real app icon
-  try {
-    const icon = await loadImage('/app-icon-192.png');
-    const iconSize = 28;
-    const iconX = PADDING;
-    const iconY = y - 16;
-    ctx.save();
-    roundRect(ctx, iconX, iconY, iconSize, iconSize, 6);
-    ctx.clip();
-    ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
-    ctx.restore();
-  } catch {
-    // Fallback: draw a colored circle
-    ctx.beginPath();
-    ctx.arc(PADDING + 14, y - 2, 14, 0, Math.PI * 2);
-    ctx.fillStyle = isExpense ? colors.expense : colors.income;
-    ctx.fill();
-    ctx.font = 'bold 12px Inter, system-ui, sans-serif';
-    ctx.fillStyle = '#fff';
-    ctx.textAlign = 'center';
-    ctx.fillText('F+', PADDING + 14, y + 2);
-    ctx.textAlign = 'left';
-  }
+  if (hasOrgBranding) {
+    if (orgLogoUrl) {
+      try {
+        const logo = await loadImage(orgLogoUrl);
+        const logoSize = 34;
+        const logoX = PADDING;
+        const logoY = y - 18;
+        ctx.save();
+        roundRect(ctx, logoX, logoY, logoSize, logoSize, 8);
+        ctx.clip();
+        ctx.drawImage(logo, logoX, logoY, logoSize, logoSize);
+        ctx.restore();
+      } catch {
+        ctx.beginPath();
+        ctx.arc(PADDING + 17, y - 1, 17, 0, Math.PI * 2);
+        ctx.fillStyle = isExpense ? colors.expense : colors.income;
+        ctx.fill();
+        ctx.font = 'bold 13px Inter, system-ui, sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.fillText((organizationName || 'O').charAt(0).toUpperCase(), PADDING + 17, y + 4);
+        ctx.textAlign = 'left';
+      }
+    }
 
-  ctx.font = 'bold 18px Inter, system-ui, sans-serif';
-  ctx.fillStyle = colors.text;
-  ctx.fillText('FinTrack+', PADDING + 36, y + 4);
+    ctx.font = 'bold 18px Inter, system-ui, sans-serif';
+    ctx.fillStyle = colors.text;
+    const orgTextX = PADDING + (orgLogoUrl ? 46 : 0);
+    let displayOrgName = organizationName || 'Organisation';
+    const orgMaxWidth = CARD_WIDTH - orgTextX - PADDING;
+    while (ctx.measureText(displayOrgName).width > orgMaxWidth && displayOrgName.length > 3) {
+      displayOrgName = displayOrgName.slice(0, -4) + '...';
+    }
+    ctx.fillText(displayOrgName, orgTextX, y + 2);
+
+    y += 24;
+    ctx.font = '600 12px Inter, system-ui, sans-serif';
+    ctx.fillStyle = colors.muted;
+    ctx.fillText('FinTrack⁺ transaction share', orgTextX, y);
+  } else {
+    // Try to load the real app icon
+    try {
+      const icon = await loadImage('/app-icon-192.png');
+      const iconSize = 28;
+      const iconX = PADDING;
+      const iconY = y - 16;
+      ctx.save();
+      roundRect(ctx, iconX, iconY, iconSize, iconSize, 6);
+      ctx.clip();
+      ctx.drawImage(icon, iconX, iconY, iconSize, iconSize);
+      ctx.restore();
+    } catch {
+      // Fallback: draw a colored circle
+      ctx.beginPath();
+      ctx.arc(PADDING + 14, y - 2, 14, 0, Math.PI * 2);
+      ctx.fillStyle = isExpense ? colors.expense : colors.income;
+      ctx.fill();
+      ctx.font = 'bold 12px Inter, system-ui, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.fillText('F+', PADDING + 14, y + 2);
+      ctx.textAlign = 'left';
+    }
+
+    ctx.font = 'bold 18px Inter, system-ui, sans-serif';
+    ctx.fillStyle = colors.text;
+    ctx.fillText('FinTrack+', PADDING + 36, y + 4);
+  }
 
   // Divider
   y += 20;
@@ -218,7 +268,8 @@ export async function shareTransaction({ transaction, categoryName, projectName,
   });
 
   const title = transaction.title || transaction.vendor || (isExpense ? 'Expense' : 'Income');
-  const filename = `${title} - ${formatFilenameDate(transaction.date)} - FinTrack+.png`;
+  const filenameParts = [organizationName && sanitizeFilenamePart(organizationName), sanitizeFilenamePart(title), formatFilenameDate(transaction.date), 'FinTrack+'].filter(Boolean);
+  const filename = `${filenameParts.join(' - ')}.png`;
   const file = new File([blob], filename, { type: 'image/png' });
 
   const shareText = `${title} — ${isExpense ? '-' : '+'}${formatCurrency(transaction.amount)}`;
