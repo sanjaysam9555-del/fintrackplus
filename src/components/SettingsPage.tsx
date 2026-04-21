@@ -59,6 +59,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { appPath, isLandingDomain } from "@/lib/domainUtils";
 import saffronLogo from "@/assets/saffron-logo.png";
+import { PageLoader } from "./ui/skeleton-loader";
 
 // Action badge helper
 const getActionBadge = (notification: { type: string; details?: { from: string }[] }) => {
@@ -220,9 +221,7 @@ const NotificationsContent = () => {
       )}
       <div className="space-y-3">
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={24} className="animate-spin text-muted-foreground" />
-          </div>
+          <PageLoader className="min-h-[30vh] py-8" />
         ) : notifications.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">

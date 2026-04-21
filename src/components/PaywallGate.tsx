@@ -3,8 +3,8 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
 import { appPath } from "@/lib/domainUtils";
+import { PageLoader } from "@/components/ui/skeleton-loader";
 
 interface PaywallGateProps {
   children: ReactNode;
@@ -73,11 +73,7 @@ export const PaywallGate = ({ children }: PaywallGateProps) => {
 
   // Wait for onboarding flag before deciding to redirect
   if (loading || onboardingDone === null || (!isActive && grace)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoader className="min-h-screen" />;
   }
 
   // Onboarding takes precedence — let Index render the mandatory tour.
