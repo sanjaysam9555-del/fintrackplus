@@ -479,12 +479,13 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
                     <p className="text-sm text-muted-foreground">{previewError}</p>
                   </div>
                 </div>
-              ) : previewMode === 'image' && previewObjectUrl ? (
+              ) : previewMode === 'image' && (previewObjectUrl || previewDoc.fileUrl?.startsWith('http')) ? (
                 <div className="flex-1 min-h-0 flex items-center justify-center p-4 overflow-auto">
                   <img
-                    src={previewObjectUrl}
+                    src={previewObjectUrl || previewDoc.fileUrl}
                     alt={previewDoc.fileName}
                     className="max-w-full max-h-full object-contain rounded-lg"
+                    onError={() => setPreviewError("Could not display this image. Try downloading it.")}
                   />
                 </div>
               ) : previewMode === 'pdf' && pdfSrc ? (
