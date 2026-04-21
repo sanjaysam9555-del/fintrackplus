@@ -24,7 +24,7 @@ interface TransactionItemProps {
 }
 
 export const TransactionItem = ({ transaction, category, userId, onEditSheetChange, compact = false }: TransactionItemProps) => {
-  const { deleteTransaction, addTransaction, projects, partners } = useFinanceStore();
+  const { deleteTransaction, addTransaction, projects, partners, orgName, orgLogoUrl } = useFinanceStore();
   const [isExpanded, setIsExpanded] = useState(false);
   
   const partner = findPartnerByHandledBy(partners, transaction.handledBy);
@@ -364,6 +364,8 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                             vendorName: transaction.vendor,
                             partnerName: partner?.name,
                             partnerColor: partner?.color,
+                            orgName,
+                            orgLogoUrl,
                           });
                         }}
                         className="flex-1 h-8"
