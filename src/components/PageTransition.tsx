@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import appIcon from '@/assets/spinner-logo.png';
 
 interface PageTransitionProps {
   isLoading: boolean;
