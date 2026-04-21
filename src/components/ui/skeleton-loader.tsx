@@ -1,69 +1,45 @@
 import { cn } from "@/lib/utils";
+import appIcon from "@/assets/app-icon.png";
 
 interface SkeletonProps {
   className?: string;
 }
 
+/**
+ * Centered branded loading spinner.
+ * Replaces all in-app placeholder skeletons with a single, consistent
+ * "page is loading" animation across landing + app screens.
+ */
+export const PageLoader = ({ className }: { className?: string }) => (
+  <div
+    className={cn(
+      "flex flex-col items-center justify-center gap-4 w-full min-h-[40vh] py-12 animate-fade-in",
+      className,
+    )}
+    role="status"
+    aria-label="Loading"
+  >
+    <div className="relative">
+      <img
+        src={appIcon}
+        alt=""
+        aria-hidden
+        className="w-12 h-12 rounded-2xl shadow-lg opacity-90"
+      />
+      <div className="absolute -inset-2 rounded-2xl border-2 border-primary/30 border-t-primary animate-spin" />
+    </div>
+    <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-semibold">
+      Loading
+    </p>
+  </div>
+);
+
+// Backwards-compatible aliases — every previous skeleton now renders the
+// same centered branded loader so we never show empty placeholder containers.
 export const Skeleton = ({ className }: SkeletonProps) => (
   <div className={cn("skeleton", className)} />
 );
-
-export const TransactionSkeleton = () => (
-  <div className="flex items-center gap-3 p-4">
-    <Skeleton className="w-10 h-10 rounded-xl" />
-    <div className="flex-1 space-y-2">
-      <Skeleton className="h-4 w-24" />
-      <Skeleton className="h-3 w-32" />
-    </div>
-    <Skeleton className="h-5 w-16" />
-  </div>
-);
-
-export const CardSkeleton = () => (
-  <div className="bg-card rounded-2xl p-4 shadow-card space-y-3">
-    <Skeleton className="h-4 w-20" />
-    <Skeleton className="h-8 w-28" />
-    <Skeleton className="h-3 w-16" />
-  </div>
-);
-
-export const ChartSkeleton = () => (
-  <div className="bg-card rounded-2xl p-4 shadow-card space-y-4">
-    <div className="flex justify-between items-center">
-      <Skeleton className="h-6 w-32" />
-      <Skeleton className="h-5 w-16" />
-    </div>
-    <Skeleton className="h-40 w-full rounded-xl" />
-  </div>
-);
-
-export const DashboardSkeleton = () => (
-  <div className="space-y-6 p-4 animate-fade-in">
-    {/* Header */}
-    <div className="flex items-center gap-3">
-      <Skeleton className="w-12 h-12 rounded-full" />
-      <div className="space-y-2">
-        <Skeleton className="h-4 w-20" />
-        <Skeleton className="h-5 w-28" />
-      </div>
-    </div>
-    
-    {/* Summary Cards */}
-    <div className="grid grid-cols-3 gap-3">
-      <CardSkeleton />
-      <CardSkeleton />
-      <CardSkeleton />
-    </div>
-    
-    {/* Chart */}
-    <ChartSkeleton />
-    
-    {/* Transactions */}
-    <div className="space-y-2">
-      <Skeleton className="h-5 w-32" />
-      {[1, 2, 3, 4].map((i) => (
-        <TransactionSkeleton key={i} />
-      ))}
-    </div>
-  </div>
-);
+export const TransactionSkeleton = () => <PageLoader />;
+export const CardSkeleton = () => <PageLoader />;
+export const ChartSkeleton = () => <PageLoader />;
+export const DashboardSkeleton = () => <PageLoader className="min-h-[60vh]" />;

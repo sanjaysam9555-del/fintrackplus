@@ -3,7 +3,7 @@ import { Transaction, TransactionType } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
 import { formatDate as formatDateLabel, formatCurrency } from "@/lib/constants";
 import { TransactionItem } from "./TransactionItem";
-import { TransactionSkeleton } from "./ui/skeleton-loader";
+import { PageLoader } from "./ui/skeleton-loader";
 import { UpcomingRecurringBanner } from "./UpcomingRecurringBanner";
 import { Search, ArrowUpDown, Settings } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -503,7 +503,7 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
       {/* Transaction List */}
       <div className="px-4 space-y-4">
         {isLoading ? (
-          Array.from({ length: 5 }).map((_, i) => <TransactionSkeleton key={i} />)
+          <PageLoader />
         ) : isAmountSort ? (
           // Flat list for amount-based sorting
           sortedTransactions.length === 0 ? (
