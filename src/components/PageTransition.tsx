@@ -22,9 +22,9 @@ export const PageTransition = ({ isLoading }: PageTransitionProps) => {
         transition={{ duration: 0.2 }}
       >
         <motion.img
-          src="/app-icon-192.png"
+          src={appIcon}
           alt="Loading"
-          className="w-12 h-12 rounded-[25%] overflow-hidden"
+          className="w-12 h-12 rounded-full overflow-hidden"
           animate={{ 
             rotate: [0, 5, -5, 0],
             scale: [1, 1.05, 1],
