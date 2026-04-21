@@ -30,7 +30,7 @@ export const TransactionDetailSheet = ({
   onClose,
   userId,
 }: TransactionDetailSheetProps) => {
-  const { categories, projects, partners, deleteTransaction, addTransaction } = useFinanceStore();
+  const { categories, projects, partners, deleteTransaction, addTransaction, orgName, orgLogoUrl } = useFinanceStore();
   const { user } = useAuth();
   const { orgId } = useUserRole();
   const [isEditing, setIsEditing] = useState(false);
@@ -318,6 +318,8 @@ export const TransactionDetailSheet = ({
                     vendorName: transaction.vendor,
                     partnerName: partner?.name,
                     partnerColor: partner?.color,
+                    orgName,
+                    orgLogoUrl,
                   })}
                 >
                   <Share2 size={16} className="mr-2" />
