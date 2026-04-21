@@ -334,6 +334,17 @@ const NotificationsContent = () => {
             );
           })
         )}
+        {!loading && hasMore && notifications.length > 0 && (
+          <div className="flex justify-center pt-2">
+            <Button variant="outline" size="sm" onClick={loadMore} disabled={loadingMore}>
+              {loadingMore ? (
+                <><Loader2 size={14} className="mr-2 animate-spin" />Loading...</>
+              ) : (
+                'Load more'
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
