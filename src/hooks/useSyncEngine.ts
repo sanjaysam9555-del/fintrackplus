@@ -327,7 +327,7 @@ export const useSyncEngine = () => {
       onlineRef.current?.cleanup();
       document.removeEventListener('visibilitychange', trackHide);
     };
-  }, [user]); // Only depends on user — callbacks accessed via refs
+  }, [userId]); // Only depends on user.id — callbacks accessed via refs
 
   return {
     isOnline,
