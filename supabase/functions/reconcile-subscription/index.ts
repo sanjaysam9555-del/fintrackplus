@@ -100,7 +100,30 @@ Deno.serve(async (req) => {
       );
     }
 
-    const fresh = await rzp(`/subscriptions/${sub.razorpay_subscription_id}`);
+    let fresh: any;
+    try {
+      fresh = await rzp(`/subscriptions/${sub.razorpay_subscription_id}`);
+    } catch (e: any) {
+      // Stale Razorpay ID (deleted, wrong env, or never existed). Don't 500 —
+      // self-heal by clearing the bad id and marking the row expired so the
+      // owner is routed to billing to start fresh instead of seeing a blank screen.
+      if (e?.status === 400 || e?.status === 404) {
+        await admin
+          .from("subscriptions")
+          .update({ razorpay_subscription_id: null, status: "expired" })
+          .eq("id", sub.id);
+        return new Response(
+          JSON.stringify({
+            reconciled: true,
+            reason: "stale_razorpay_id_cleared",
+            db_status: "expired",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw e;
+    }
+
     const mapped = mapRzpStatus(fresh.status);
     const updates: Record<string, any> = {};
 
