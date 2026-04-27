@@ -20,7 +20,7 @@ interface PaywallGateProps {
  * "logged in → bounced to billing → realtime flips to active 200ms later" loop.
  */
 export const PaywallGate = ({ children }: PaywallGateProps) => {
-  const { isActive, loading, subscription, refetch } = useSubscription();
+  const { isActive, loading, refetch } = useSubscription();
   const { user } = useAuth();
   const location = useLocation();
   const [grace, setGrace] = useState(true);
