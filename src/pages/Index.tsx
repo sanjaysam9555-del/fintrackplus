@@ -109,13 +109,12 @@ const Index = () => {
     }
   }, [viewMode]);
   
-  // Only show loading on initial mount, not during syncs
+  // Show the dashboard skeleton only on the very first paint, then hand off
+  // to the live Dashboard. Sync updates flow in silently — never gate the UI
+  // on syncStatus, which can flip and cause skeleton↔content flicker.
   useEffect(() => {
-    // Once we have any data or the first sync completes, stop showing loading
-    if (syncStatus === 'synced' || syncStatus === 'error') {
-      setIsLoading(false);
-    }
-  }, [syncStatus]);
+    setIsLoading(false);
+  }, []);
   
   const resetScrollPosition = useCallback(() => {
     // iOS PWA: reset scroll after sheets close to prevent safe-area spacing drift

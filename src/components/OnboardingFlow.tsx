@@ -366,7 +366,7 @@ export const OnboardingFlow = ({ onComplete, onActivateTrial, userName }: Onboar
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 bg-background z-50 flex items-center justify-center p-4 overflow-y-auto"
     >
       <div className="w-full max-w-md my-auto">
         {/* Progress dots */}

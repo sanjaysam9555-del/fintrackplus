@@ -20,7 +20,7 @@ interface PaywallGateProps {
  * "logged in → bounced to billing → realtime flips to active 200ms later" loop.
  */
 export const PaywallGate = ({ children }: PaywallGateProps) => {
-  const { isActive, loading, subscription, refetch } = useSubscription();
+  const { isActive, loading, refetch } = useSubscription();
   const { user } = useAuth();
   const location = useLocation();
   const [grace, setGrace] = useState(true);
@@ -60,25 +60,29 @@ export const PaywallGate = ({ children }: PaywallGateProps) => {
       return;
     }
     // One-shot reconciliation: refetch after a short delay before we redirect.
+    // Deps intentionally minimal — realtime ticks must NOT re-arm this timer.
     const t = setTimeout(async () => {
       await refetch();
       setGrace(false);
     }, 1200);
     return () => clearTimeout(t);
-  }, [loading, isActive, isBilling, refetch, subscription?.status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, isActive, isBilling]);
 
   if (isBilling) {
     return <>{children}</>;
   }
 
-  // Wait for onboarding flag before deciding to redirect
-  if (loading || onboardingDone === null || (!isActive && grace)) {
+  // Only block on TRUE initial loads (auth + role + first subscription fetch).
+  // During grace, render children so the user never sees a flash of the loader
+  // between login and the first realtime/refetch tick.
+  if (loading || onboardingDone === null) {
     return <PageLoader className="min-h-screen" />;
   }
 
   // Onboarding takes precedence — let Index render the mandatory tour.
   // The trial card at the end will route the user to /billing.
-  if (!isActive && onboardingDone) {
+  if (!isActive && !grace && onboardingDone) {
     return <Navigate to={appPath("/billing")} replace />;
   }
 
