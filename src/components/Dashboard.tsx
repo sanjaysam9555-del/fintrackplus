@@ -379,16 +379,12 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
         
         <div className="space-y-2">
           {filteredTransactions.length === 0 ? (
-            <motion.div
-              animate={{ y: [0, -6, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="text-center py-8 bg-card rounded-xl border border-border"
-            >
+            <div className="text-center py-8 bg-card rounded-xl border border-border">
               <p className="text-muted-foreground">No transactions in this period</p>
               <p className="text-sm text-muted-foreground mt-1">
                 Try selecting a different time frame
               </p>
-            </motion.div>
+            </div>
           ) : (
             filteredTransactions.map((transaction, index) => (
               <motion.div
