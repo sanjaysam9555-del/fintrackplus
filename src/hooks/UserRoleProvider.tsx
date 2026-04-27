@@ -59,6 +59,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
       setOrgId(null);
       setMustChangePassword(false);
       setMemberId(null);
+      hasLoadedOnce.current = true;
       setLoading(false);
       return;
     }
