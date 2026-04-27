@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
 
@@ -34,12 +34,18 @@ export const useSubscription = () => {
   const { orgId, loading: roleLoading } = useUserRole();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnce = useRef(false);
 
   const fetch = useCallback(async () => {
-    setLoading(true);
+    // Only show loading on the very first fetch. Background refetches
+    // (realtime updates, grace-period reconciliation) must NOT flip
+    // loading=true — that causes consumers like PaywallGate to flash
+    // a full-screen loader and remount the entire app.
+    if (!hasLoadedOnce.current) setLoading(true);
 
     if (!orgId) {
       setSubscription(null);
+      hasLoadedOnce.current = true;
       setLoading(false);
       return;
     }
@@ -57,6 +63,7 @@ export const useSubscription = () => {
       setSubscription(data as Subscription | null);
     }
 
+    hasLoadedOnce.current = true;
     setLoading(false);
   }, [orgId]);
 

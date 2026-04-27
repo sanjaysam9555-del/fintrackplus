@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, useCallback, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
@@ -47,9 +47,12 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   const [mustChangePassword, setMustChangePassword] = useState(false);
   const [memberId, setMemberId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const hasLoadedOnce = useRef(false);
 
   const fetchRole = useCallback(async () => {
-    setLoading(true);
+    // Only flip loading=true on the very first fetch. Background refetches
+    // (e.g. after force-password-change) must not unmount consumers.
+    if (!hasLoadedOnce.current) setLoading(true);
 
     if (!user) {
       setRole(null);
@@ -92,6 +95,7 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
       setMustChangePassword(false);
       setMemberId(null);
     } finally {
+      hasLoadedOnce.current = true;
       setLoading(false);
     }
   }, [user]);
