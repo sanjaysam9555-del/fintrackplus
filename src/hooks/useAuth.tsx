@@ -30,6 +30,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const intentionalSignOut = useRef(false);
 
   useEffect(() => {
+    // Helper: only swap user/session into state when the identity actually
+    // changes. Supabase returns fresh objects on every TOKEN_REFRESHED tick,
+    // and a new reference would cascade re-renders through every consumer
+    // (UserRoleProvider, useSubscription, useSyncEngine), causing the whole
+    // app to "refresh" when the user comes back to the tab.
+    const applySession = (next: Session | null) => {
+      setSession((prev) => {
+        if (prev?.access_token === next?.access_token) return prev;
+        return next;
+      });
+      setUser((prev) => {
+        const nextUser = next?.user ?? null;
+        if (prev?.id === nextUser?.id) return prev; // keep same reference
+        return nextUser;
+      });
+    };
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT') {
         if (intentionalSignOut.current) {
@@ -41,8 +58,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Unexpected sign-out — try to recover session
           supabase.auth.refreshSession().then(({ data }) => {
             if (data.session) {
-              setSession(data.session);
-              setUser(data.session.user);
+              applySession(data.session);
             } else {
               setSession(null);
               setUser(null);
@@ -54,15 +70,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
-        setSession(session);
-        setUser(session?.user ?? null);
+        applySession(session);
         setLoading(false);
         return;
       }
 
       // All other events
-      setSession(session);
-      setUser(session?.user ?? null);
+      applySession(session);
       setLoading(false);
     });
 

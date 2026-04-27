@@ -260,20 +260,25 @@ export const useSyncEngine = () => {
     setShowOnboarding(false);
   }, [user]);
 
-  // Setup all sync mechanisms — depends ONLY on `user` thanks to refs
+  // Setup all sync mechanisms — depends ONLY on user.id (not the user object)
+  // so a TOKEN_REFRESHED tick that produces a new User reference does NOT
+  // tear down realtime / healing / visibility listeners and re-run initSync.
+  // Re-running fullSync on every tab focus was the cause of the perceived
+  // "refresh + animations replaying" when returning to the tab.
+  const userId = user?.id;
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     isMounted.current = true;
 
     const initSync = async () => {
-      await ensureDefaultTaxonomy(user.id);
+      await ensureDefaultTaxonomy(userId);
       await fullSyncRef.current({ showToast: false });
     };
     initSync();
 
     // 1. Realtime subscriptions
-    realtimeRef.current = createRealtimeSubscription(user.id, () => {
+    realtimeRef.current = createRealtimeSubscription(userId, () => {
       syncFromCloudRef.current({ showToast: false, isBackground: true });
     });
 
@@ -283,10 +288,22 @@ export const useSyncEngine = () => {
       await syncFromCloudRef.current({ showToast: false, isBackground: true });
     });
 
-    // 3. Background sync on visibility change
+    // 3. Background sync on visibility change — only after a long absence.
+    //    Realtime keeps data current while the tab is in the background, so
+    //    syncing on every brief tab switch is wasteful and causes a visible
+    //    re-render. Only refetch if the tab was hidden for >5 minutes.
+    let hiddenAt = 0;
     backgroundRef.current = setupBackgroundSync(async () => {
-      await fullSyncRef.current({ showToast: false });
+      const hiddenForMs = hiddenAt ? Date.now() - hiddenAt : 0;
+      hiddenAt = 0;
+      if (hiddenForMs > 5 * 60 * 1000) {
+        await fullSyncRef.current({ showToast: false });
+      }
     });
+    const trackHide = () => {
+      if (document.visibilityState === 'hidden') hiddenAt = Date.now();
+    };
+    document.addEventListener('visibilitychange', trackHide);
 
     // 4. Online/offline detection
     onlineRef.current = setupOnlineListener(
@@ -308,8 +325,9 @@ export const useSyncEngine = () => {
       healingRef.current?.stop();
       backgroundRef.current?.cleanup();
       onlineRef.current?.cleanup();
+      document.removeEventListener('visibilitychange', trackHide);
     };
-  }, [user]); // Only depends on user — callbacks accessed via refs
+  }, [userId]); // Only depends on user.id — callbacks accessed via refs
 
   return {
     isOnline,
