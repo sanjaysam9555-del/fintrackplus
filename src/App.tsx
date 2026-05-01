@@ -94,6 +94,10 @@ const AppRoutes = () => {
     return <AuthPageSkeleton />;
   }
 
+  // Mount the daily verifier exactly once whenever a user is signed in.
+  // It owns ALL server-side subscription checks; nothing else triggers them.
+  const verifier = user ? <SubscriptionVerifier /> : null;
+
   // On app.fintrackplus.com → serve app routes directly (same as dev/preview)
   if (isAppDomain()) {
     return (
