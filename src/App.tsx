@@ -131,38 +131,41 @@ const AppRoutes = () => {
 
   if (isLandingDomain()) {
     return (
-      <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
-        <Routes>
-          {/* Public pages */}
-          <Route path="/landing" element={<Landing />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/refund" element={<Refund />} />
+      <>
+        {verifier}
+        <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
+          <Routes>
+            {/* Public pages */}
+            <Route path="/landing" element={<Landing />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/refund" element={<Refund />} />
 
-          {/* Hidden super-admin route — works on root domain too */}
-          <Route path="/admin" element={<AdminConsole />} />
-          <Route path="/admin/comp" element={<AdminConsole />} />
+            {/* Hidden super-admin route — works on root domain too */}
+            <Route path="/admin" element={<AdminConsole />} />
+            <Route path="/admin/comp" element={<AdminConsole />} />
 
-          {/* App routes under /application (backward compat) */}
-          <Route path="/application/install" element={<InstallPage />} />
-          <Route path="/application/admin" element={<AdminConsole />} />
-          <Route path="/application/admin/comp" element={<AdminConsole />} />
-          <Route path="/application/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
-          {user ? (
-            <>
-              <Route path="/application/billing" element={<Billing />} />
-              <Route path="/application" element={<PaywallGate><Index /></PaywallGate>} />
-              <Route path="/application/*" element={<NotFound />} />
-            </>
-          ) : (
-            <Route path="/application/*" element={<Navigate to="/application/auth" replace />} />
-          )}
+            {/* App routes under /application (backward compat) */}
+            <Route path="/application/install" element={<InstallPage />} />
+            <Route path="/application/admin" element={<AdminConsole />} />
+            <Route path="/application/admin/comp" element={<AdminConsole />} />
+            <Route path="/application/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
+            {user ? (
+              <>
+                <Route path="/application/billing" element={<Billing />} />
+                <Route path="/application" element={<PaywallGate><Index /></PaywallGate>} />
+                <Route path="/application/*" element={<NotFound />} />
+              </>
+            ) : (
+              <Route path="/application/*" element={<Navigate to="/application/auth" replace />} />
+            )}
 
-          {/* Everything else → landing (PWA users go straight to app) */}
-          <Route path="*" element={isPWA() ? <Navigate to="/application" replace /> : <Landing />} />
-        </Routes>
-      </Suspense>
+            {/* Everything else → landing (PWA users go straight to app) */}
+            <Route path="*" element={isPWA() ? <Navigate to="/application" replace /> : <Landing />} />
+          </Routes>
+        </Suspense>
+      </>
     );
   }
 
