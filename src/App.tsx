@@ -127,6 +127,8 @@ const AppRoutes = () => {
         </Suspense>
       </>
     );
+  }
+
   if (isLandingDomain()) {
     return (
       <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
@@ -165,39 +167,42 @@ const AppRoutes = () => {
   }
 
   return (
-    <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/install" element={<InstallPage />} />
-        <Route path="/admin" element={<AdminConsole />} />
-        <Route path="/admin/comp" element={<AdminConsole />} />
-        <Route path="/application/admin" element={<AdminConsole />} />
-        <Route path="/application/admin/comp" element={<AdminConsole />} />
-        <Route path="/landing" element={<Landing />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/terms" element={<Terms />} />
-        <Route path="/refund" element={<Refund />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+    <>
+      {verifier}
+      <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/install" element={<InstallPage />} />
+          <Route path="/admin" element={<AdminConsole />} />
+          <Route path="/admin/comp" element={<AdminConsole />} />
+          <Route path="/application/admin" element={<AdminConsole />} />
+          <Route path="/application/admin/comp" element={<AdminConsole />} />
+          <Route path="/landing" element={<Landing />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/refund" element={<Refund />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
 
-        {/* /application/ routes for cross-domain compatibility */}
-        <Route path="/application/install" element={<InstallPage />} />
-        <Route path="/application/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
+          {/* /application/ routes for cross-domain compatibility */}
+          <Route path="/application/install" element={<InstallPage />} />
+          <Route path="/application/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/application/auth" element={user ? <Navigate to="/application" replace /> : <AuthPage />} />
 
-        {!user ? (
-          <Route path="*" element={<Navigate to="/auth" replace />} />
-        ) : (
-          <>
-            <Route path="/billing" element={<Billing />} />
-            <Route path="/application/billing" element={<Billing />} />
-            <Route path="/" element={<PaywallGate><Index /></PaywallGate>} />
-            <Route path="/application" element={<PaywallGate><Index /></PaywallGate>} />
-            <Route path="*" element={<NotFound />} />
-          </>
-        )}
-      </Routes>
-    </Suspense>
+          {!user ? (
+            <Route path="*" element={<Navigate to="/auth" replace />} />
+          ) : (
+            <>
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/application/billing" element={<Billing />} />
+              <Route path="/" element={<PaywallGate><Index /></PaywallGate>} />
+              <Route path="/application" element={<PaywallGate><Index /></PaywallGate>} />
+              <Route path="*" element={<NotFound />} />
+            </>
+          )}
+        </Routes>
+      </Suspense>
+    </>
   );
 };
 
