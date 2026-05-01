@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
+import {
+  AccessCacheEntry,
+  readAccessCache,
+  recomputeIsActive,
+  writeAccessCache,
+} from "@/lib/subscriptionCache";
 
 export type SubscriptionStatus =
   | "trialing"
@@ -30,18 +36,52 @@ export interface Subscription {
   customer_state_code: string | null;
 }
 
+/**
+ * Build a cache entry from a freshly-read subscription row.
+ */
+const cacheEntryFromRow = (row: Subscription | null): AccessCacheEntry => {
+  const now = Date.now();
+  const isComped = !!row?.is_comped;
+  const status = (row?.status ?? null) as AccessCacheEntry["status"];
+  const trialEnd = row?.trial_end ?? null;
+  const compedUntil = row?.comped_until ?? null;
+
+  const entry: AccessCacheEntry = {
+    isActive: false,
+    status,
+    isComped,
+    trialEnd,
+    compedUntil,
+    cachedAt: now,
+    lastVerifiedAt: now,
+  };
+  entry.isActive = recomputeIsActive(entry, now);
+  return entry;
+};
+
 export const useSubscription = () => {
   const { orgId, loading: roleLoading } = useUserRole();
+
+  // Seed access state synchronously from the cache so paywall decisions
+  // never flicker on cold opens / iOS resumes.
+  const seedCache = readAccessCache(orgId);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [cacheEntry, setCacheEntry] = useState<AccessCacheEntry | null>(seedCache);
+  // If we have a cache, we are NOT loading — paywall can decide immediately.
+  const [loading, setLoading] = useState(!seedCache);
   const hasLoadedOnce = useRef(false);
 
+  // If orgId resolves later, re-seed.
+  useEffect(() => {
+    const seed = readAccessCache(orgId);
+    if (seed) {
+      setCacheEntry(seed);
+      setLoading(false);
+    }
+  }, [orgId]);
+
   const fetch = useCallback(async () => {
-    // Only show loading on the very first fetch. Background refetches
-    // (realtime updates, grace-period reconciliation) must NOT flip
-    // loading=true — that causes consumers like PaywallGate to flash
-    // a full-screen loader and remount the entire app.
-    if (!hasLoadedOnce.current) setLoading(true);
+    if (!hasLoadedOnce.current && !readAccessCache(orgId)) setLoading(true);
 
     if (!orgId) {
       setSubscription(null);
@@ -58,15 +98,24 @@ export const useSubscription = () => {
 
     if (error) {
       console.error("[useSubscription]", error);
-      setSubscription(null);
-    } else {
-      setSubscription(data as Subscription | null);
+      // Don't clobber cache on transient errors.
+      hasLoadedOnce.current = true;
+      setLoading(false);
+      return;
     }
+
+    const row = (data as Subscription | null) ?? null;
+    setSubscription(row);
+
+    const entry = cacheEntryFromRow(row);
+    writeAccessCache(orgId, entry);
+    setCacheEntry(entry);
 
     hasLoadedOnce.current = true;
     setLoading(false);
   }, [orgId]);
 
+  // Initial fetch — only once roles are known.
   useEffect(() => {
     if (!roleLoading) fetch();
   }, [fetch, roleLoading]);
@@ -87,46 +136,30 @@ export const useSubscription = () => {
     };
   }, [orgId, fetch]);
 
+  // Decide access from cache when present, otherwise from the live row.
+  const liveEntry = subscription ? cacheEntryFromRow(subscription) : null;
+  const effective = cacheEntry ?? liveEntry;
+  const isActive = effective ? recomputeIsActive(effective) : false;
+  const isComped = !!effective?.isComped && isActive;
+
   const now = Date.now();
-  const trialEndMs = subscription?.trial_end ? new Date(subscription.trial_end).getTime() : 0;
-  const trialActive = subscription?.status === "trialing" && trialEndMs > now;
+  const trialEndMs = effective?.trialEnd ? new Date(effective.trialEnd).getTime() : 0;
+  const trialActive = effective?.status === "trialing" && trialEndMs > now;
+  const trialDaysLeft = trialActive
+    ? Math.max(0, Math.ceil((trialEndMs - now) / (24 * 60 * 60 * 1000)))
+    : 0;
 
-  // Complimentary access: org granted free use (e.g. founder, beta tester).
-  // Permanent if comped_until is null, otherwise until that timestamp.
-  const compedUntilMs = subscription?.comped_until
-    ? new Date(subscription.comped_until).getTime()
-    : Infinity;
-  const isComped = !!subscription?.is_comped && compedUntilMs > now;
-
-  // Access rule: comped, paid active, or trialing with valid trial_end.
-  // NOTE: "created" status (Razorpay mandate not yet authenticated) does NOT
-  // grant access by itself — the user must complete mandate auth first.
-  const isActive =
-    isComped ||
-    subscription?.status === "active" ||
-    (subscription?.status === "trialing" && trialEndMs > now);
-
-  // Mandate auth pending → show mandate auth UI on billing page (not a hard block).
-  // Comped orgs never need mandate auth.
   const needsMandateAuth =
     !isComped &&
     subscription?.status === "created" &&
     !!subscription?.razorpay_subscription_id;
 
-  // Stale/broken subscription: row exists but status indicates payment never
-  // completed AND there's no active Razorpay sub to resume. Owner should be
-  // routed to billing to start fresh, but we mark this so callers can show a
-  // clearer message instead of "payment incomplete forever".
   const isStale =
     !isComped &&
     !!subscription &&
     (subscription.status === "expired" ||
       subscription.status === "cancelled" ||
       (subscription.status === "created" && !subscription.razorpay_subscription_id));
-
-  const trialDaysLeft = trialActive
-    ? Math.max(0, Math.ceil((trialEndMs - now) / (24 * 60 * 60 * 1000)))
-    : 0;
 
   return {
     subscription,
@@ -138,5 +171,7 @@ export const useSubscription = () => {
     needsMandateAuth,
     isStale,
     refetch: fetch,
+    /** ms epoch of the last successful server verification, or 0 if never. */
+    lastVerifiedAt: cacheEntry?.lastVerifiedAt ?? 0,
   };
 };
