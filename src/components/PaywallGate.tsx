@@ -1,37 +1,47 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { appPath } from "@/lib/domainUtils";
 import { PageLoader } from "@/components/ui/skeleton-loader";
+import { readAccessCache } from "@/lib/subscriptionCache";
 
 interface PaywallGateProps {
   children: ReactNode;
 }
 
 /**
- * Hard paywall: redirects to billing page if org has no active subscription.
- * The billing page itself is exempt so users can subscribe.
+ * Paywall — cache-first.
  *
- * Hardening: on the very first inactive read, we briefly wait + refetch once
- * to let any in-flight webhook reconciliation (subscription.authenticated /
- * subscription.charged) land before yanking the user to billing. Prevents the
- * "logged in → bounced to billing → realtime flips to active 200ms later" loop.
+ * - If the local access cache says active, render immediately. Never bounces
+ *   on cold opens / iOS resumes / tab focus.
+ * - If there's no cache yet (first ever login), wait for the first server
+ *   read, then decide.
+ * - Realtime updates that flip access to FALSE update the cache silently;
+ *   we do NOT yank the user mid-session — the redirect only takes effect
+ *   on the next app open. This avoids surprise paywall mid-edit.
+ *
+ * Server verification is owned by `useSubscriptionVerifier`, not this gate.
  */
 export const PaywallGate = ({ children }: PaywallGateProps) => {
-  const { isActive, loading, refetch } = useSubscription();
+  const { isActive, loading } = useSubscription();
   const { user } = useAuth();
+  const { orgId } = useUserRole();
   const location = useLocation();
-  const [grace, setGrace] = useState(true);
-  // null = not yet known; once resolved, true/false
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
-  // Allow billing page through without check
-  const isBilling = location.pathname.endsWith("/billing");
+  // Snapshot the access decision from the moment this gate first had data.
+  // Realtime cancellations mid-session won't yank an active user out.
+  const initialActiveRef = useRef<boolean | null>(null);
+  if (initialActiveRef.current === null && !loading) {
+    initialActiveRef.current = isActive;
+  }
 
-  // Resolve onboarding state for the current user. If onboarding isn't done,
-  // we MUST let Index render so the mandatory tour shows — never bounce to billing.
+  const isBilling = location.pathname.endsWith("/billing");
+  const hasCache = !!readAccessCache(orgId);
+
   useEffect(() => {
     let cancelled = false;
     if (!user?.id) {
@@ -53,36 +63,18 @@ export const PaywallGate = ({ children }: PaywallGateProps) => {
     };
   }, [user?.id]);
 
-  useEffect(() => {
-    if (loading || isBilling) return;
-    if (isActive) {
-      setGrace(false);
-      return;
-    }
-    // One-shot reconciliation: refetch after a short delay before we redirect.
-    // Deps intentionally minimal — realtime ticks must NOT re-arm this timer.
-    const t = setTimeout(async () => {
-      await refetch();
-      setGrace(false);
-    }, 1200);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, isActive, isBilling]);
-
   if (isBilling) {
     return <>{children}</>;
   }
 
-  // Only block on TRUE initial loads (auth + role + first subscription fetch).
-  // During grace, render children so the user never sees a flash of the loader
-  // between login and the first realtime/refetch tick.
-  if (loading || onboardingDone === null) {
+  // Only block on a TRUE first-ever load (no cache, still loading) or while
+  // we don't yet know onboarding state.
+  if ((loading && !hasCache) || onboardingDone === null) {
     return <PageLoader className="min-h-screen" />;
   }
 
-  // Onboarding takes precedence — let Index render the mandatory tour.
-  // The trial card at the end will route the user to /billing.
-  if (!isActive && !grace && onboardingDone) {
+  const initialActive = initialActiveRef.current ?? isActive;
+  if (!initialActive && onboardingDone) {
     return <Navigate to={appPath("/billing")} replace />;
   }
 
