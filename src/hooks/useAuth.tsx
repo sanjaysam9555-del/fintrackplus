@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, useRef, ReactNode } fro
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { isLandingDomain } from '@/lib/domainUtils';
+import { clearAllAccessCaches } from '@/lib/subscriptionCache';
 
 const getAuthRedirectUrl = (path: string) => {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -156,6 +157,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       sessionStorage.removeItem('fintrack_taxonomy_ensured');
       // Also remove any legacy shared key from before per-user storage was introduced
       localStorage.removeItem('fintrack-storage');
+      // Wipe all per-org subscription access caches so the next user
+      // can't piggyback on the previous user's cached access state.
+      clearAllAccessCaches();
     } catch (_) { /* ignore */ }
 
     // Deterministically clear state — iPad Safari/PWA may not fire SIGNED_OUT reliably
