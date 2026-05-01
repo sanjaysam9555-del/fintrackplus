@@ -76,18 +76,12 @@ const Billing = () => {
     }
   };
 
-  useEffect(() => {
-    if (reconcileTriedRef.current) return;
-    if (verificationComplete) return;
-    if (
-      subscription?.status === "created" &&
-      subscription?.razorpay_subscription_id
-    ) {
-      reconcileTriedRef.current = true;
-      runReconcile(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subscription?.status, subscription?.razorpay_subscription_id, verificationComplete]);
+  // NOTE: We deliberately do NOT auto-run reconcile-subscription on mount.
+  // Reconciliation is a server-side check and should only happen when the
+  // user explicitly asks (e.g. "Refresh status" button) or right after a
+  // successful checkout. Auto-running it caused stale-ID 500s and pulled
+  // comped/active users into unnecessary network calls on every visit.
+  void reconcileTriedRef; // keep ref allocated for any manual flow below
 
   useEffect(() => {
     return () => {
