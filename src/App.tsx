@@ -53,6 +53,11 @@ const FullScreenLoader = () => <PageLoader className="min-h-screen" />;
 const AuthPageSkeleton = FullScreenLoader;
 const AppSkeleton = FullScreenLoader;
 
+const SubscriptionVerifier = () => {
+  useSubscriptionVerifier();
+  return null;
+};
+
 const AppRoutes = () => {
   const { user, loading } = useAuth();
   const [showSplash, setShowSplash] = useState(true);
