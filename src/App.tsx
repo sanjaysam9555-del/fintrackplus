@@ -101,32 +101,32 @@ const AppRoutes = () => {
   // On app.fintrackplus.com → serve app routes directly (same as dev/preview)
   if (isAppDomain()) {
     return (
-      <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
-        <Routes>
-          <Route path="/install" element={<InstallPage />} />
-          <Route path="/admin" element={<AdminConsole />} />
-          <Route path="/admin/comp" element={<AdminConsole />} />
-          <Route path="/landing" element={<Landing />} />
-         <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/refund" element={<Refund />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
-          {!user ? (
-            <Route path="*" element={<Navigate to="/auth" replace />} />
-          ) : (
-            <>
-              <Route path="/billing" element={<Billing />} />
-              <Route path="/" element={<PaywallGate><Index /></PaywallGate>} />
-              <Route path="*" element={<NotFound />} />
-            </>
-          )}
-        </Routes>
-      </Suspense>
+      <>
+        {verifier}
+        <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
+          <Routes>
+            <Route path="/install" element={<InstallPage />} />
+            <Route path="/admin" element={<AdminConsole />} />
+            <Route path="/admin/comp" element={<AdminConsole />} />
+            <Route path="/landing" element={<Landing />} />
+           <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/refund" element={<Refund />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            <Route path="/auth" element={user ? <Navigate to="/" replace /> : <AuthPage />} />
+            {!user ? (
+              <Route path="*" element={<Navigate to="/auth" replace />} />
+            ) : (
+              <>
+                <Route path="/billing" element={<Billing />} />
+                <Route path="/" element={<PaywallGate><Index /></PaywallGate>} />
+                <Route path="*" element={<NotFound />} />
+              </>
+            )}
+          </Routes>
+        </Suspense>
+      </>
     );
-  }
-
-  // On fintrackplus.com / www.fintrackplus.com → landing + app under /application/*
   if (isLandingDomain()) {
     return (
       <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
