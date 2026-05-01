@@ -12,6 +12,7 @@ import { SplashScreen } from "@/components/SplashScreen";
 import { isLandingDomain, isAppDomain, isPWA, appPath } from "@/lib/domainUtils";
 import { PaywallGate } from "@/components/PaywallGate";
 import { PageLoader } from "@/components/ui/skeleton-loader";
+import { useSubscriptionVerifier } from "@/hooks/useSubscriptionVerifier";
 
 // Lazy load pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
