@@ -1,84 +1,104 @@
-# Root cause analysis: continuous screen flicker
+## Problem
 
-The flicker users report on onboarding, dashboard, and other screens is **not** a CSS animation glitch. It is the **entire content tree being unmounted and replaced by the full-screen `PageLoader`** repeatedly, every time a background data hook flips its `loading` flag back to `true`. A secondary contributor amplifies the visual noise: the onboarding overlay uses `backdrop-blur` over an animated dashboard underneath.
+The paywall (`PaywallGate`) re-evaluates on every app open / cold launch / iOS resume. Because `useSubscription` always starts with `loading=true` and then performs a fresh DB read, any of the following pushes a comped/active user to `/billing`:
 
-## What's actually happening
+- Cold open on iPhone PWA — RLS read takes longer than the 1.2s grace, `isActive` is still `false`, redirect fires.
+- Tab/app resume after a long hide → realtime hasn't reconnected yet, first read returns nothing or stale `created` row, redirect fires.
+- `reconcile-subscription` was being invoked too eagerly (Billing page mount + grace refetch), occasionally clearing the Razorpay ID and flipping status to `expired` (the 500 we just patched).
 
-### 1. `useSubscription.fetch()` sets `loading = true` on every refetch (primary cause)
+Net effect: comped and paid users get bounced to the subscription page repeatedly.
 
-`src/hooks/useSubscription.ts`
-- The hook calls `setLoading(true)` at the top of every `fetch()`.
-- It subscribes to a Postgres realtime channel on `subscriptions` and calls `fetch()` on **every** insert/update/delete for the org's row.
-- It also exposes `refetch` (= the same `fetch`), which `PaywallGate` calls inside its grace-period `setTimeout`.
+## Goal
 
-`src/components/PaywallGate.tsx`
-- Renders `<PageLoader className="min-h-screen" />` whenever `loading || onboardingDone === null || (!isActive && grace)` is true.
-- Its `useEffect` depends on `subscription?.status` and `refetch`, so any realtime tick re-runs the effect, re-arms the 1.2s timer, calls `refetch()` → `setLoading(true)` → `PageLoader` replaces children → `setLoading(false)` → children remount.
+Subscription enforcement must be "trust local cache by default, verify lazily":
+1. Once we've ever confirmed access for this org, **never** show the paywall on subsequent app opens until the cache says otherwise.
+2. Real server verification runs **at most once every 24 hours**, and only **after a delay** post login / app open (not on the critical path).
+3. Realtime updates still take effect immediately when they arrive (so a real cancellation or comp grant flips access without waiting a day) — but they can only **upgrade** trust silently, never bounce a previously-active user mid-session.
 
-Result: every realtime ping (mandate auth, webhook, even unrelated row touches) flashes the entire app to the spinner and back. On Dashboard this looks like the page "blinking". During Onboarding it remounts the `OnboardingFlow` Suspense subtree mid-animation, producing the worst flicker.
+## Design
 
-### 2. `UserRoleProvider.fetchRole()` has the same anti-pattern
+### 1. Local access cache (`src/lib/subscriptionCache.ts` — new)
 
-`src/hooks/UserRoleProvider.tsx` calls `setLoading(true)` on every `fetchRole()`. Anything that calls `refetchRole()` (e.g. `ForcePasswordChange` completion) bubbles `loading=true` up to `useSubscription` (which composes `loading || roleLoading`), which bubbles to `PaywallGate`, which shows the full-screen loader. Same flicker chain.
+Per-org localStorage entry:
+```
+fintrack_sub_access_v1:<orgId> = {
+  isActive: boolean,
+  status: SubscriptionStatus,
+  isComped: boolean,
+  trialEnd: string | null,
+  compedUntil: string | null,
+  cachedAt: number,        // ms
+  lastVerifiedAt: number,  // ms — last successful server fetch
+}
+```
 
-### 3. `Index.isLoading` toggles from `syncStatus`
+Helpers:
+- `readAccessCache(orgId)` / `writeAccessCache(orgId, data)`
+- `isCacheFresh(orgId, maxAgeMs = 24h)` — drives the daily check
+- `isCacheStillValid(entry)` — re-evaluates `isActive` against `Date.now()` so an expired trial in cache doesn't keep granting access
 
-`src/pages/Index.tsx` flips `isLoading=false` only when `syncStatus === 'synced' | 'error'`. On a hard reload before the first sync completes, `<DashboardSkeleton />` (full PageLoader) is shown, then swapped for `<Dashboard />`. Combined with cause #1, users see: skeleton → dashboard → spinner (PaywallGate refetch) → dashboard → spinner. That sequence reads as "flickering".
+### 2. `useSubscription` changes
 
-### 4. `OnboardingFlow` uses `backdrop-blur-sm` over an animated Dashboard
+- On mount: synchronously seed `subscription` / `isActive` from `readAccessCache(orgId)`. If a valid cache exists, `loading` starts as `false` (no flash, no race).
+- Background `fetch()` still runs once on mount, but result is written to cache. Realtime listener stays as-is.
+- Expose `lastVerifiedAt` from the cache.
 
-`src/components/OnboardingFlow.tsx` line 369: `bg-background/95 backdrop-blur-sm` over the full screen. Dashboard sits behind it (Index renders both) and runs entrance motion + repeating `y: [0, -6, 0]` animation on the empty state. `backdrop-blur` re-samples the layer beneath every frame; combined with the remounts from #1, this produces visible per-frame flicker on lower-end Android.
+### 3. Daily verification, delayed (`useSubscriptionVerifier` — new hook, mounted once in `App.tsx`)
 
-### 5. Splash screen never shows on subsequent loads but the gate still does
+```
+useEffect:
+  if (!user || !orgId) return
+  const last = readAccessCache(orgId)?.lastVerifiedAt ?? 0
+  const dueIn = Math.max(0, 24*60*60*1000 - (Date.now() - last))
+  // Always wait at least 60s after mount so we're never on the critical path
+  const delay = Math.max(60_000, dueIn)
+  const t = setTimeout(() => { refetch().then(writeCache) }, delay)
+  return () => clearTimeout(t)
+```
 
-`SplashScreen` exits → `PaywallGate` mounts → `loading=true` initially → `PageLoader` shows → `loading=false` → content. Visually a brief second flash right after the splash. Users perceive it as a flicker between two loaders.
+This is the **only** place that triggers a server verification on app open. Login, route changes, tab focus, and PaywallGate mount do **not** trigger checks.
 
-## Fixes (airtight, low-risk for launch)
+### 4. `PaywallGate` simplified
 
-### Fix A — Stop full-screen remounts on background refetches
-Make `useSubscription` and `UserRoleProvider` distinguish **initial load** from **background refresh**:
-- Add `initialLoading` (only true until the first fetch settles) and keep `loading` for the in-flight indicator that *callers can ignore*.
-- `PaywallGate` and any other gate uses `initialLoading`, not `loading`. Background realtime pings update `subscription` silently without ever returning to the loader.
-- Concretely: in `fetch()`, do **not** call `setLoading(true)` on subsequent calls; only set it on the very first call (track with a `hasLoadedOnce` ref). Keep `setLoading(false)` in the finally path.
+- Reads access exclusively from the cache-backed `useSubscription` (which is now synchronous on mount when cache exists).
+- Remove the 1.2s grace + inline `refetch()` (the verifier hook owns refresh).
+- Remove the `reconcile-subscription` self-heal hook from `Billing.tsx` mount (it stays available as a manual "Refresh status" button only).
+- Decision tree:
+  ```
+  if (cacheExists && cache.isActive) → render children, never redirect
+  if (!cacheExists) → show PageLoader until first fetch resolves
+  if (cacheExists && !cache.isActive && onboardingDone) → redirect to /billing
+  ```
+- Realtime updates that flip `isActive: true` → write cache, no UI change.
+- Realtime updates that flip `isActive: false` → write cache, but **do not** redirect mid-session; redirect only applies on next app open. (Prevents the "user is using the app, webhook lands, they get yanked" experience.)
 
-### Fix B — Make `PaywallGate` resilient
-- Depend the grace `useEffect` on stable values only (`loading`, `isActive`, `isBilling`) — drop `refetch` and `subscription?.status` from deps so realtime ticks don't re-arm the timer.
-- Use `initialLoading` (from Fix A) for the loader gate condition.
-- While `grace` countdown is running and `isActive` is false, render `children` (not the loader). The user is already authenticated; showing the gated page for ≤1.2s is correct and prevents a flash.
+### 5. Cache invalidation points
 
-### Fix C — Don't unmount Dashboard for sync transitions
-- In `Index.tsx`, set `isLoading=false` once we have **any** local data (store hydrated) instead of waiting for `syncStatus`. The first paint shows whatever cached data exists; sync updates flow in silently. Removes the skeleton↔dashboard swap.
+Write `lastVerifiedAt = Date.now()` and refresh cache on:
+- Successful Razorpay checkout completion (Billing page).
+- Manual "Refresh status" / `runReconcile` in Billing or Settings → Subscription.
+- The daily verifier hook firing.
+- Sign-out → clear all `fintrack_sub_access_v1:*` keys.
 
-### Fix D — Remove `backdrop-blur` from OnboardingFlow overlay
-- Replace `bg-background/95 backdrop-blur-sm` with a solid `bg-background` overlay (the onboarding card already obscures the page; the blur adds nothing). Eliminates per-frame resampling.
-- While here, stop the infinite `y: [0,-6,0]` animation on the empty-state card in `Dashboard.tsx` — it is not needed and contributes to repaint cost behind the overlay.
+### 6. Edge cases
 
-### Fix E — Single splash→app transition
-- In `App.tsx`, wait for `loading=false` (auth settled) **before** dismissing splash, so the splash hands off directly to content (or auth page) without a second loader frame.
+- **First-ever login (no cache):** `useSubscription` shows loader briefly, fetches once, writes cache. Verifier hook is a no-op for 24h after that.
+- **Trial expiry mid-session:** cache stores `trialEnd`. `isCacheStillValid` recomputes `isActive` on every read, so when trial naturally expires the cache stops granting access on next mount. The verifier will also catch it within 24h.
+- **Comped user:** cache marks `isComped: true`, never bounced.
+- **User actually cancels:** webhook → realtime → cache rewritten. Effective on next app open (or immediately in Settings → Subscription where they cancelled from).
 
-### Fix F — Defensive: guard PageLoader against thrash
-- `PageLoader` already uses `animate-fade-in`. If the container mounts/unmounts within ~150ms, the fade-in plays repeatedly. After fixes A–C this should never happen, but add a small mount delay (only render after 120ms) so any residual sub-second loader never reaches the screen.
+## Files to change
 
-## Files to edit
+- **new** `src/lib/subscriptionCache.ts` — cache helpers
+- **new** `src/hooks/useSubscriptionVerifier.ts` — delayed daily check
+- `src/hooks/useSubscription.ts` — seed from cache, write cache on fetch/realtime
+- `src/components/PaywallGate.tsx` — drop grace timer, trust cache
+- `src/App.tsx` — mount `useSubscriptionVerifier` once inside the authed tree
+- `src/pages/Billing.tsx` — remove auto-`runReconcile` on mount (keep manual button); write cache after successful checkout
+- `src/hooks/useAuth.tsx` — clear cache keys on `signOut`
 
-- `src/hooks/useSubscription.ts` — add `initialLoading`, suppress `setLoading(true)` on refetch.
-- `src/hooks/UserRoleProvider.tsx` — same pattern; export `initialLoading`.
-- `src/components/PaywallGate.tsx` — use `initialLoading`; trim effect deps; render children during `grace`.
-- `src/pages/Index.tsx` — drop `syncStatus`-driven `isLoading`; consider store-hydration flag instead.
-- `src/components/OnboardingFlow.tsx` — remove `backdrop-blur-sm`, use solid background.
-- `src/components/Dashboard.tsx` — remove infinite empty-state bounce animation.
-- `src/components/SplashScreen.tsx` / `src/App.tsx` — keep splash mounted until `auth.loading=false`.
-- `src/components/ui/skeleton-loader.tsx` — add 120ms delayed-mount guard inside `PageLoader`.
+## Result
 
-## Out of scope (explicitly not changing)
-
-- Visual design of the spinner / round logo (already finalized).
-- Realtime channel subscriptions (kept; they update data, just no longer flash the loader).
-- Page transition removal (already done in prior turn).
-
-## Verification plan after implementation
-
-1. Hard reload `/` while logged in → expect: splash → dashboard. No spinner in between, no second flash.
-2. Open onboarding → expect: solid overlay, card animation only. No background shimmer.
-3. Trigger a subscription realtime event (e.g. mandate update) → expect: no full-screen spinner, no remount of Dashboard. Network tab still shows the refetch.
-4. Throttle CPU 4× in DevTools → repeat steps 1–3. No visible flicker.
+- Cold app open / iPhone resume / tab switch → zero subscription network calls, zero paywall flash, zero false redirects for comped or paid users.
+- Server-side truth is reconciled at most once every 24h, and only ≥60s after the user is already in the app.
+- Real cancellations still propagate via realtime + take effect on next session.
