@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useSubscription } from "@/hooks/useSubscription";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { supabase } from "@/integrations/supabase/client";
 import { appPath } from "@/lib/domainUtils";
 import { PageLoader } from "@/components/ui/skeleton-loader";
@@ -27,17 +28,19 @@ interface PaywallGateProps {
 export const PaywallGate = ({ children }: PaywallGateProps) => {
   const { isActive, loading } = useSubscription();
   const { user } = useAuth();
+  const { orgId } = useUserRole();
   const location = useLocation();
   const [onboardingDone, setOnboardingDone] = useState<boolean | null>(null);
 
-  // Snapshot the access state from the moment this gate mounted. Realtime
-  // changes during the session won't yank an active user out.
+  // Snapshot the access decision from the moment this gate first had data.
+  // Realtime cancellations mid-session won't yank an active user out.
   const initialActiveRef = useRef<boolean | null>(null);
   if (initialActiveRef.current === null && !loading) {
     initialActiveRef.current = isActive;
   }
 
   const isBilling = location.pathname.endsWith("/billing");
+  const hasCache = !!readAccessCache(orgId);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,15 +67,12 @@ export const PaywallGate = ({ children }: PaywallGateProps) => {
     return <>{children}</>;
   }
 
-  // First-ever login (no cache + no live row yet) → wait briefly.
-  const hasCache = !!readAccessCache(useUserOrgIdSilent());
+  // Only block on a TRUE first-ever load (no cache, still loading) or while
+  // we don't yet know onboarding state.
   if ((loading && !hasCache) || onboardingDone === null) {
     return <PageLoader className="min-h-screen" />;
   }
 
-  // Onboarding takes precedence — let Index render the mandatory tour.
-  // Use the snapshotted "initial" access decision so realtime can't bounce
-  // someone mid-session.
   const initialActive = initialActiveRef.current ?? isActive;
   if (!initialActive && onboardingDone) {
     return <Navigate to={appPath("/billing")} replace />;
@@ -80,12 +80,3 @@ export const PaywallGate = ({ children }: PaywallGateProps) => {
 
   return <>{children}</>;
 };
-
-// Tiny helper so we don't pull all of useUserRole just for the orgId here.
-// useSubscription already consumes useUserRole; reading from cache only needs
-// the id which we can pluck via the same provider without duplicate work.
-import { useUserRole } from "@/hooks/useUserRole";
-function useUserOrgIdSilent(): string | null {
-  const { orgId } = useUserRole();
-  return orgId ?? null;
-}
