@@ -1,104 +1,54 @@
-## Problem
+## Add Meta Pixel Tracking
 
-The paywall (`PaywallGate`) re-evaluates on every app open / cold launch / iOS resume. Because `useSubscription` always starts with `loading=true` and then performs a fresh DB read, any of the following pushes a comped/active user to `/billing`:
+Install the Meta Pixel (ID: `913489805027360`) for `PageView` tracking across the site.
 
-- Cold open on iPhone PWA — RLS read takes longer than the 1.2s grace, `isActive` is still `false`, redirect fires.
-- Tab/app resume after a long hide → realtime hasn't reconnected yet, first read returns nothing or stale `created` row, redirect fires.
-- `reconcile-subscription` was being invoked too eagerly (Billing page mount + grace refetch), occasionally clearing the Razorpay ID and flipping status to `expired` (the 500 we just patched).
+### Where it goes
 
-Net effect: comped and paid users get bounced to the subscription page repeatedly.
+Add the script to `index.html` so it loads on every page (landing, auth, app).
 
-## Goal
+### Placement rules (per project directives)
 
-Subscription enforcement must be "trust local cache by default, verify lazily":
-1. Once we've ever confirmed access for this org, **never** show the paywall on subsequent app opens until the cache says otherwise.
-2. Real server verification runs **at most once every 24 hours**, and only **after a delay** post login / app open (not on the critical path).
-3. Realtime updates still take effect immediately when they arrive (so a real cancellation or comp grant flips access without waiting a day) — but they can only **upgrade** trust silently, never bounce a previously-active user mid-session.
+- The `<script>` block goes inside `<head>` — safe, standard placement.
+- The `<noscript><img/></noscript>` fallback **must NOT go in `<head>`** (HTML5 only allows metadata tags inside `<noscript>` in head). It must be placed at the **start of `<body>`**.
 
-## Design
+### Changes to `index.html`
 
-### 1. Local access cache (`src/lib/subscriptionCache.ts` — new)
+1. Inside `<head>`, just before the closing `</head>` (after the existing `<script>` theme block stays where it is — that block is in `<body>` already, so this goes after the manifest link):
 
-Per-org localStorage entry:
-```
-fintrack_sub_access_v1:<orgId> = {
-  isActive: boolean,
-  status: SubscriptionStatus,
-  isComped: boolean,
-  trialEnd: string | null,
-  compedUntil: string | null,
-  cachedAt: number,        // ms
-  lastVerifiedAt: number,  // ms — last successful server fetch
-}
-```
+   ```html
+   <!-- Meta Pixel Code -->
+   <script>
+   !function(f,b,e,v,n,t,s)
+   {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+   n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+   if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+   n.queue=[];t=b.createElement(e);t.async=!0;
+   t.src=v;s=b.getElementsByTagName(e)[0];
+   s.parentNode.insertBefore(t,s)}(window, document,'script',
+   'https://connect.facebook.net/en_US/fbevents.js');
+   fbq('init', '913489805027360');
+   fbq('track', 'PageView');
+   </script>
+   <!-- End Meta Pixel Code -->
+   ```
 
-Helpers:
-- `readAccessCache(orgId)` / `writeAccessCache(orgId, data)`
-- `isCacheFresh(orgId, maxAgeMs = 24h)` — drives the daily check
-- `isCacheStillValid(entry)` — re-evaluates `isActive` against `Date.now()` so an expired trial in cache doesn't keep granting access
+2. At the start of `<body>` (right after the opening `<body>` tag, before the existing theme script):
 
-### 2. `useSubscription` changes
+   ```html
+   <!-- Meta Pixel (noscript fallback) -->
+   <noscript><img height="1" width="1" style="display:none"
+   src="https://www.facebook.com/tr?id=913489805027360&ev=PageView&noscript=1"
+   /></noscript>
+   ```
 
-- On mount: synchronously seed `subscription` / `isActive` from `readAccessCache(orgId)`. If a valid cache exists, `loading` starts as `false` (no flash, no race).
-- Background `fetch()` still runs once on mount, but result is written to cache. Realtime listener stays as-is.
-- Expose `lastVerifiedAt` from the cache.
+### Notes
 
-### 3. Daily verification, delayed (`useSubscriptionVerifier` — new hook, mounted once in `App.tsx`)
+- Single-page app caveat: `fbq('track', 'PageView')` only fires on initial HTML load, not on client-side route changes. For now this matches the snippet you shared (PageView on load). If you later want PageView to fire on each in-app route change (e.g. `/`, `/billing`, `/application`), I can add a small React Router listener that calls `window.fbq?.('track', 'PageView')` on every location change.
+- The pixel script is async and will not block render — no impact on the flicker fixes already in place.
+- No CSP/headers changes needed; `connect.facebook.net` and `facebook.com/tr` are loaded directly by the browser.
 
-```
-useEffect:
-  if (!user || !orgId) return
-  const last = readAccessCache(orgId)?.lastVerifiedAt ?? 0
-  const dueIn = Math.max(0, 24*60*60*1000 - (Date.now() - last))
-  // Always wait at least 60s after mount so we're never on the critical path
-  const delay = Math.max(60_000, dueIn)
-  const t = setTimeout(() => { refetch().then(writeCache) }, delay)
-  return () => clearTimeout(t)
-```
+### Files to edit
 
-This is the **only** place that triggers a server verification on app open. Login, route changes, tab focus, and PaywallGate mount do **not** trigger checks.
+- `index.html` — add the two snippets in the locations above.
 
-### 4. `PaywallGate` simplified
-
-- Reads access exclusively from the cache-backed `useSubscription` (which is now synchronous on mount when cache exists).
-- Remove the 1.2s grace + inline `refetch()` (the verifier hook owns refresh).
-- Remove the `reconcile-subscription` self-heal hook from `Billing.tsx` mount (it stays available as a manual "Refresh status" button only).
-- Decision tree:
-  ```
-  if (cacheExists && cache.isActive) → render children, never redirect
-  if (!cacheExists) → show PageLoader until first fetch resolves
-  if (cacheExists && !cache.isActive && onboardingDone) → redirect to /billing
-  ```
-- Realtime updates that flip `isActive: true` → write cache, no UI change.
-- Realtime updates that flip `isActive: false` → write cache, but **do not** redirect mid-session; redirect only applies on next app open. (Prevents the "user is using the app, webhook lands, they get yanked" experience.)
-
-### 5. Cache invalidation points
-
-Write `lastVerifiedAt = Date.now()` and refresh cache on:
-- Successful Razorpay checkout completion (Billing page).
-- Manual "Refresh status" / `runReconcile` in Billing or Settings → Subscription.
-- The daily verifier hook firing.
-- Sign-out → clear all `fintrack_sub_access_v1:*` keys.
-
-### 6. Edge cases
-
-- **First-ever login (no cache):** `useSubscription` shows loader briefly, fetches once, writes cache. Verifier hook is a no-op for 24h after that.
-- **Trial expiry mid-session:** cache stores `trialEnd`. `isCacheStillValid` recomputes `isActive` on every read, so when trial naturally expires the cache stops granting access on next mount. The verifier will also catch it within 24h.
-- **Comped user:** cache marks `isComped: true`, never bounced.
-- **User actually cancels:** webhook → realtime → cache rewritten. Effective on next app open (or immediately in Settings → Subscription where they cancelled from).
-
-## Files to change
-
-- **new** `src/lib/subscriptionCache.ts` — cache helpers
-- **new** `src/hooks/useSubscriptionVerifier.ts` — delayed daily check
-- `src/hooks/useSubscription.ts` — seed from cache, write cache on fetch/realtime
-- `src/components/PaywallGate.tsx` — drop grace timer, trust cache
-- `src/App.tsx` — mount `useSubscriptionVerifier` once inside the authed tree
-- `src/pages/Billing.tsx` — remove auto-`runReconcile` on mount (keep manual button); write cache after successful checkout
-- `src/hooks/useAuth.tsx` — clear cache keys on `signOut`
-
-## Result
-
-- Cold app open / iPhone resume / tab switch → zero subscription network calls, zero paywall flash, zero false redirects for comped or paid users.
-- Server-side truth is reconciled at most once every 24h, and only ≥60s after the user is already in the app.
-- Real cancellations still propagate via realtime + take effect on next session.
+Do you also want me to wire up automatic SPA route-change PageView tracking, or keep it strictly to this snippet?
