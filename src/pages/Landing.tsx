@@ -72,6 +72,12 @@ const Landing = () => {
 
   return (
     <main className="min-h-screen bg-background text-foreground overflow-x-hidden scroll-smooth">
+      <SEO
+        title="FinTrack+ | Finance Tracker for Indian Event Planners"
+        description="Track every rupee across events, vendors, and partners. GST-ready reports, offline-first, built for Indian wedding and event planners. Starts at ₹17/day."
+        path="/"
+        jsonLd={landingJsonLd}
+      />
       <LandingHeader />
       <ScrollProgress />
       <HeroSection />
