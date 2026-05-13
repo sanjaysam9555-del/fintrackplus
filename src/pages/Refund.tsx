@@ -1,12 +1,18 @@
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import appIcon from '@/assets/app-icon.png';
+import { SEO } from '@/components/SEO';
 
 const Refund = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Refund & Cancellation Policy | FinTrack+"
+        description="FinTrack+ refund and cancellation terms — 7-day refund window, cancel anytime, and how subscription renewals work."
+        path="/refund"
+      />
       <div className="max-w-3xl mx-auto px-4 py-12">
         <div className="flex items-center gap-3 mb-10">
           <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground transition-colors">

@@ -1,12 +1,18 @@
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import appIcon from '@/assets/app-icon.png';
+import { SEO } from '@/components/SEO';
 
 const Terms = () => {
   const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Terms of Service | FinTrack+"
+        description="The terms and conditions governing your use of FinTrack+, the GST-ready finance tracker for Indian event planners."
+        path="/terms"
+      />
       <div className="max-w-3xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="flex items-center gap-3 mb-10">

@@ -1,0 +1,16 @@
+# FinTrack+
+
+> Finance tracker built for Indian event planners. Track expenses, vendors, partners, and GST — offline-first with cloud sync. Launch price ₹599/month.
+
+FinTrack+ helps wedding and event planning businesses track every rupee across projects, vendors, partners, and team members. It is offline-first, GST-ready, and supports up to 3 team members per organization.
+
+## Pages
+
+- [Home](/): Product overview, features, pricing, and FAQs.
+- [Privacy Policy](/privacy): How user data is collected, stored, and protected.
+- [Terms of Service](/terms): Legal terms governing use of FinTrack+.
+- [Refund & Cancellation Policy](/refund): Subscription cancellation and refund terms.
+
+## Optional
+
+- [App](https://app.fintrackplus.com/): Authenticated web application for existing users.
