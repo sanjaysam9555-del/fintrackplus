@@ -15,6 +15,41 @@ import { PricingSection } from "@/components/landing/PricingSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { FinalCTA, LandingFooter } from "@/components/landing/LandingFooter";
 import { FloatingMobileCTA } from "@/components/landing/FloatingMobileCTA";
+import { SEO } from "@/components/SEO";
+
+const landingFaqs = [
+  { q: "Can I use this for non-wedding events?", a: "Absolutely. Projects work for any event — corporate functions, exhibitions, private parties. The finance tracking is universal." },
+  { q: "Is my data safe?", a: "Yes. All data is cloud-synced with secure authentication. Your financial data is encrypted and only accessible to you." },
+  { q: "Does it work offline?", a: "Yes, fully offline-first. Changes are queued locally and synced automatically when you're back online. You'll see a pending count on the dashboard." },
+  { q: "Can my business partner access the same data?", a: "Yes! Anyone who logs in with the same credentials will see the same data. You can share your login with a trusted partner to collaborate on the same set of projects, transactions, and reports." },
+  { q: "How much does it cost?", a: "Launch price is ₹599/month including GST (regular ₹799). That's roughly ₹20/day. Credit card required at signup. Cancel anytime, no hidden fees." },
+  { q: "What payment methods do you accept?", a: "Credit card, debit card, and UPI. All payments are processed securely." },
+];
+
+const landingJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "FinTrack+",
+    url: "https://fintrackplus.com/",
+    logo: "https://fintrackplus.com/app-icon-512.png",
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: "FinTrack+",
+    url: "https://fintrackplus.com/",
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: landingFaqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  },
+];
 
 const SectionDivider = () => (
   <div className="relative py-1">
