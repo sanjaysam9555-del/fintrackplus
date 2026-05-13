@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://bright-balance-beam.lovable.app/sitemap.xml
+Sitemap: https://fintrackplus.com/sitemap.xml
