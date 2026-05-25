@@ -15,6 +15,13 @@ const KEY_PATTERN = /^fintrack_sub_access_v1:/;
 
 export const ACCESS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
+/**
+ * How long we trust a cached "no access" verdict without re-checking with
+ * the server. Outside this window, the gate must wait for a fresh fetch
+ * before redirecting to /billing. Granting access from cache is always OK.
+ */
+export const DENY_CACHE_TRUST_MS = 10 * 60 * 1000; // 10 minutes
+
 export type CachedSubscriptionStatus =
   | "trialing"
   | "active"
