@@ -15,6 +15,13 @@ const KEY_PATTERN = /^fintrack_sub_access_v1:/;
 
 export const ACCESS_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
+/**
+ * How long we trust a cached "no access" verdict without re-checking with
+ * the server. Outside this window, the gate must wait for a fresh fetch
+ * before redirecting to /billing. Granting access from cache is always OK.
+ */
+export const DENY_CACHE_TRUST_MS = 10 * 60 * 1000; // 10 minutes
+
 export type CachedSubscriptionStatus =
   | "trialing"
   | "active"
@@ -99,5 +106,21 @@ export const isCacheFresh = (
   nowMs = Date.now(),
 ): boolean => {
   if (!entry) return false;
+  return nowMs - entry.lastVerifiedAt < ttlMs;
+};
+
+/**
+ * Only trust a cached "deny" decision if it was server-verified recently.
+ * Stale deny verdicts must wait for a fresh server fetch — otherwise users
+ * whose access was granted server-side (e.g. comped) get bounced to /billing
+ * on cold opens until the cache happens to refresh.
+ */
+export const isDenyCacheTrustworthy = (
+  entry: AccessCacheEntry | null,
+  ttlMs = DENY_CACHE_TRUST_MS,
+  nowMs = Date.now(),
+): boolean => {
+  if (!entry) return false;
+  if (recomputeIsActive(entry, nowMs)) return true; // allow is always trusted
   return nowMs - entry.lastVerifiedAt < ttlMs;
 };
