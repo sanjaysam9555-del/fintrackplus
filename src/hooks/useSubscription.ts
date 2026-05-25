@@ -84,7 +84,7 @@ export const useSubscription = () => {
   }, [orgId]);
 
   const fetch = useCallback(async () => {
-    if (!hasLoadedOnce.current && !readAccessCache(orgId)) setLoading(true);
+    if (!hasLoadedOnce.current && !isDenyCacheTrustworthy(readAccessCache(orgId))) setLoading(true);
 
     if (!orgId) {
       setSubscription(null);
