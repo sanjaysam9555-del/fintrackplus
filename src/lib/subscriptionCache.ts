@@ -108,3 +108,19 @@ export const isCacheFresh = (
   if (!entry) return false;
   return nowMs - entry.lastVerifiedAt < ttlMs;
 };
+
+/**
+ * Only trust a cached "deny" decision if it was server-verified recently.
+ * Stale deny verdicts must wait for a fresh server fetch — otherwise users
+ * whose access was granted server-side (e.g. comped) get bounced to /billing
+ * on cold opens until the cache happens to refresh.
+ */
+export const isDenyCacheTrustworthy = (
+  entry: AccessCacheEntry | null,
+  ttlMs = DENY_CACHE_TRUST_MS,
+  nowMs = Date.now(),
+): boolean => {
+  if (!entry) return false;
+  if (recomputeIsActive(entry, nowMs)) return true; // allow is always trusted
+  return nowMs - entry.lastVerifiedAt < ttlMs;
+};
