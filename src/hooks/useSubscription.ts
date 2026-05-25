@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "./useUserRole";
 import {
   AccessCacheEntry,
+  isDenyCacheTrustworthy,
   readAccessCache,
   recomputeIsActive,
   writeAccessCache,
