@@ -64,12 +64,14 @@ export const useSubscription = () => {
   const { orgId, loading: roleLoading } = useUserRole();
 
   // Seed access state synchronously from the cache so paywall decisions
-  // never flicker on cold opens / iOS resumes.
+  // never flicker on cold opens / iOS resumes — but only trust the seed
+  // when it grants access OR was server-verified recently. A stale "deny"
+  // seed must wait for a fresh fetch before the gate can act on it.
   const seedCache = readAccessCache(orgId);
+  const seedTrusted = isDenyCacheTrustworthy(seedCache);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [cacheEntry, setCacheEntry] = useState<AccessCacheEntry | null>(seedCache);
-  // If we have a cache, we are NOT loading — paywall can decide immediately.
-  const [loading, setLoading] = useState(!seedCache);
+  const [loading, setLoading] = useState(!seedTrusted);
   const hasLoadedOnce = useRef(false);
 
   // If orgId resolves later, re-seed.
@@ -77,7 +79,7 @@ export const useSubscription = () => {
     const seed = readAccessCache(orgId);
     if (seed) {
       setCacheEntry(seed);
-      setLoading(false);
+      if (isDenyCacheTrustworthy(seed)) setLoading(false);
     }
   }, [orgId]);
 
