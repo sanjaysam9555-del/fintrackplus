@@ -233,7 +233,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                     parts.push(transaction.paymentMethod === 'cash' ? 'Cash' : 'Online');
                   }
                   
-                  parts.push(formatTime(transaction.time));
+                  parts.push(`${formatTime(transaction.time)}, ${formatDate(transaction.date)}`);
                   
                   return parts.join(' • ');
                 })()}
