@@ -14,6 +14,7 @@ import { useFinanceStore } from "@/lib/store";
 import { PaymentMethod } from "@/lib/types";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { getPartnerHandledByKey } from "@/lib/partnerIdentity";
 
 interface InstallmentConfirmFormProps {
   defaultPaymentMethod: PaymentMethod;
@@ -88,11 +89,15 @@ export const InstallmentConfirmForm = ({
             </SelectTrigger>
             <SelectContent className="z-[90]">
               <SelectItem value="__none__">No partner</SelectItem>
-              {partners.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
+              {partners.map((p) => {
+                const partnerKey = getPartnerHandledByKey(p);
+                if (!partnerKey) return null;
+                return (
+                  <SelectItem key={p.id} value={partnerKey}>
+                    {p.name}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
