@@ -14,7 +14,23 @@ export const getPartnerHandledByKey = (partner?: Partner | null) => {
 
 export const findPartnerByHandledBy = (partners: Partner[], handledBy?: string | null) => {
   if (!handledBy) return undefined;
-  return partners.find((partner) => getPartnerHandledByKey(partner) === handledBy);
+  const exactMatch = partners.find((partner) => getPartnerHandledByKey(partner) === handledBy);
+  if (exactMatch) return exactMatch;
+
+  // Backward compatibility for older regular-partner transactions that may have
+  // stored partner.id instead of partner.userId. Never match company accounts by
+  // userId because their user_id can be the owner's id and would pollute balances.
+  return partners.find((partner) => !partner.isCompanyAccount && partner.id === handledBy);
+};
+
+export const doesHandledByBelongToPartner = (partner?: Partner | null, handledBy?: string | null) => {
+  if (!partner || !handledBy) return false;
+  if (partner.isCompanyAccount) return handledBy === partner.id;
+  return handledBy === partner.userId || handledBy === partner.id;
+};
+
+export const isHandledByAssignedToAnyPartner = (partners: Partner[], handledBy?: string | null) => {
+  return Boolean(findPartnerByHandledBy(partners, handledBy));
 };
 
 export const isInternalTransferVendor = (vendor?: string | null) => {
