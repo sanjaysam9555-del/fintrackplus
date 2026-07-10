@@ -7,7 +7,7 @@ import { CategoryIcon } from "@/components/CategoryIcon";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Banknote, CreditCard } from "lucide-react";
-import { getPartnerHandledByKey } from "@/lib/partnerIdentity";
+import { getPartnerHandledByKey, isHandledByAssignedToAnyPartner } from "@/lib/partnerIdentity";
 
 interface UnassignedTransactionsSheetProps {
   isOpen: boolean;
@@ -28,12 +28,9 @@ export const UnassignedTransactionsSheet = ({
   const [assigningId, setAssigningId] = useState<string | null>(null);
 
   const unassignedTransactions = useMemo(() => {
-    const validKeys = new Set(
-      partners.map((p) => getPartnerHandledByKey(p)).filter(Boolean) as string[]
-    );
     return transactions
       .filter(t => t.date >= startDate && t.date <= endDate)
-      .filter(t => !t.handledBy || !validKeys.has(t.handledBy))
+      .filter(t => !isHandledByAssignedToAnyPartner(partners, t.handledBy))
       .sort((a, b) => {
         const d = b.date.localeCompare(a.date);
         return d !== 0 ? d : b.time.localeCompare(a.time);

@@ -33,6 +33,7 @@ import { ReceiptUpload } from "./ReceiptUpload";
 import { GstToggle } from "./GstToggle";
 import { InstallmentRow } from "./InstallmentRow";
 import { v4 as uuidv4 } from "uuid";
+import { findPartnerByHandledBy, getPartnerHandledByKey } from "@/lib/partnerIdentity";
 
 interface AddTransactionSheetProps {
   isOpen: boolean;
@@ -92,7 +93,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     return projects.filter(p => !p.archived);
   }, [projects, isEmployee, userId]);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.isCompanyAccount ? p.id === handledBy : p.userId === handledBy);
+  const selectedPartner = findPartnerByHandledBy(partners, handledBy);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
@@ -747,16 +748,19 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <span className="flex-1 text-muted-foreground">None</span>
                             <Check size={14} className={cn("text-primary shrink-0", !handledBy ? "opacity-100" : "opacity-0")} />
                           </button>
-                          {partners.filter(p => !p.isCompanyAccount).map((p) => (
+                          {partners.filter(p => !p.isCompanyAccount).map((p) => {
+                            const partnerKey = getPartnerHandledByKey(p);
+                            if (!partnerKey) return null;
+                            return (
                             <button
                               key={p.id}
                               onClick={() => {
-                                setHandledBy(p.userId || p.id);
+                                setHandledBy(partnerKey);
                                 setShowPartners(false);
                               }}
                               className={cn(
                                 "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
-                                handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
+                                handledBy === partnerKey ? "bg-primary/10" : "hover:bg-muted"
                               )}
                             >
                               {p.avatarUrl ? (
@@ -770,33 +774,38 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                 </div>
                               )}
                               <span className="flex-1">{p.name}</span>
-                              <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
+                              <Check size={14} className={cn("text-primary shrink-0", handledBy === partnerKey ? "opacity-100" : "opacity-0")} />
                             </button>
-                          ))}
+                            );
+                          })}
                           {/* Company Account separator and entry */}
                           {partners.some(p => p.isCompanyAccount) && (
                             <>
                               <div className="border-t border-border my-1" />
-                              {partners.filter(p => p.isCompanyAccount).map((p) => (
+                              {partners.filter(p => p.isCompanyAccount).map((p) => {
+                                const partnerKey = getPartnerHandledByKey(p);
+                                if (!partnerKey) return null;
+                                return (
                                 <button
                                   key={p.id}
                                   onClick={() => {
-                                    setHandledBy(p.id);
+                                    setHandledBy(partnerKey);
                                     setPaymentMethod('online');
                                     setShowPartners(false);
                                   }}
                                   className={cn(
                                     "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-3",
-                                    handledBy === p.id ? "bg-primary/10" : "hover:bg-muted"
+                                    handledBy === partnerKey ? "bg-primary/10" : "hover:bg-muted"
                                   )}
                                 >
                                   <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                     <Landmark size={12} className="text-primary" />
                                   </div>
                                   <span className="flex-1 font-medium">{p.name}</span>
-                                  <Check size={14} className={cn("text-primary shrink-0", handledBy === p.id ? "opacity-100" : "opacity-0")} />
+                                  <Check size={14} className={cn("text-primary shrink-0", handledBy === partnerKey ? "opacity-100" : "opacity-0")} />
                                 </button>
-                              ))}
+                                );
+                              })}
                             </>
                           )}
                         </div>

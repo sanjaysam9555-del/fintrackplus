@@ -27,6 +27,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
+import { isHandledByAssignedToAnyPartner } from "@/lib/partnerIdentity";
 
 interface PartnersSectionProps {
   onBack: () => void;
@@ -326,11 +327,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
   // Compute unassigned/orphaned transactions
   const unassignedStats = useMemo(() => {
-    const partnerUserIds = new Set(partners.filter(p => !p.isCompanyAccount).map((p) => p.userId).filter(Boolean));
-    const companyAccountIds = new Set(partners.filter(p => p.isCompanyAccount).map((p) => p.id));
     const unassigned = transactions.
     filter((t) => t.date >= dateRange.start && t.date <= dateRange.end).
-    filter((t) => !t.handledBy || (!partnerUserIds.has(t.handledBy) && !companyAccountIds.has(t.handledBy)));
+    filter((t) => !isHandledByAssignedToAnyPartner(partners, t.handledBy));
 
     let cashNet = 0;
     let onlineNet = 0;
@@ -388,7 +387,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
       // Log partner photo change if editing an existing partner
       if (editingPartner) {
-        const partnerObj = partners.find((p) => p.userId === editingPartner);
+        const partnerObj = partners.find((p) => p.id === editingPartner);
         if (partnerObj) {
           addNotification({
             type: 'partner',
@@ -424,8 +423,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setIsAddOpen(false);
   };
 
-  const handleEdit = (handledBy: string) => {
-    const partner = partners.find((p) => p.userId === handledBy);
+  const handleEdit = (partnerId: string) => {
+    const partner = partners.find((p) => p.id === partnerId);
     if (!partner) return;
 
     setName(partner.name);
@@ -433,7 +432,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     setInitialCash(partner.initialCashBalance.toString());
     setInitialOnline(partner.initialOnlineBalance.toString());
     setAvatarUrl(partner.avatarUrl);
-    setEditingPartner(handledBy);
+    setEditingPartner(partner.id);
   };
 
   const handleUpdate = async () => {
@@ -448,8 +447,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     }, userId);
 
     // If this partner is linked to a user (owner), sync name/avatar to their profile
-    const partnerRecord = partners.find((p) => p.userId === editingPartner);
-    if (partnerRecord) {
+    const partnerRecord = partners.find((p) => p.id === editingPartner);
+    if (partnerRecord && !partnerRecord.isCompanyAccount) {
       const { data: dbPartner } = await supabase.
       from('partners').
       select('user_id').
@@ -469,17 +468,17 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
 
 
-  const handleDelete = async (handledBy: string, e?: React.MouseEvent) => {
+  const handleDelete = async (partnerId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const partner = partners.find((p) => p.userId === handledBy);
+    const partner = partners.find((p) => p.id === partnerId);
     if (!partner) return;
 
     // Check if this partner is linked to a user (owner-linked)
-    const { data: dbPartner } = await supabase.
+    const { data: dbPartner } = !partner.isCompanyAccount ? await supabase.
     from('partners').
     select('user_id').
-    eq('id', handledBy).
-    maybeSingle();
+    eq('id', partner.id).
+    maybeSingle() : { data: null };
 
     const { data: orgMember } = dbPartner?.user_id ?
     await supabase.
@@ -595,9 +594,9 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     }
   };
 
-  const handleEditClick = (handledBy: string, e: React.MouseEvent) => {
+  const handleEditClick = (partnerId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    handleEdit(handledBy);
+    handleEdit(partnerId);
   };
 
   const openPartnerDetail = (balanceData: typeof partnerBalances[0]) => {
