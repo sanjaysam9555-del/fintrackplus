@@ -7,6 +7,7 @@ import { CategoryIcon } from "@/components/CategoryIcon";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Banknote, CreditCard } from "lucide-react";
+import { getPartnerHandledByKey } from "@/lib/partnerIdentity";
 
 interface UnassignedTransactionsSheetProps {
   isOpen: boolean;
@@ -27,10 +28,12 @@ export const UnassignedTransactionsSheet = ({
   const [assigningId, setAssigningId] = useState<string | null>(null);
 
   const unassignedTransactions = useMemo(() => {
-    const partnerUserIds = new Set(partners.map(p => p.userId).filter(Boolean));
+    const validKeys = new Set(
+      partners.map((p) => getPartnerHandledByKey(p)).filter(Boolean) as string[]
+    );
     return transactions
       .filter(t => t.date >= startDate && t.date <= endDate)
-      .filter(t => !t.handledBy || !partnerUserIds.has(t.handledBy))
+      .filter(t => !t.handledBy || !validKeys.has(t.handledBy))
       .sort((a, b) => {
         const d = b.date.localeCompare(a.date);
         return d !== 0 ? d : b.time.localeCompare(a.time);
@@ -111,17 +114,21 @@ export const UnassignedTransactionsSheet = ({
                       <SelectValue placeholder="Assign to team member…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {partners.map((p) => (
-                        <SelectItem key={p.id} value={p.userId || p.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: p.color }}
-                            />
-                            {p.name}
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {partners.map((p) => {
+                        const key = getPartnerHandledByKey(p);
+                        if (!key) return null;
+                        return (
+                          <SelectItem key={p.id} value={key}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: p.color }}
+                              />
+                              {p.name}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
