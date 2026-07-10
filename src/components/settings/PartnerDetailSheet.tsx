@@ -9,7 +9,7 @@ import { Banknote, CreditCard, TrendingUp, TrendingDown, X, List, Columns3, Chev
 import { motion, AnimatePresence } from "framer-motion";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { getPartnerHandledByKey } from "@/lib/partnerIdentity";
+import { doesHandledByBelongToPartner } from "@/lib/partnerIdentity";
 
 interface PartnerPeriodBalance {
   partner: Partner;
@@ -57,7 +57,7 @@ export const PartnerDetailSheet = ({
     if (!partner) return [];
     return transactions
       .filter(t => 
-        t.handledBy === getPartnerHandledByKey(partner) && 
+        doesHandledByBelongToPartner(partner, t.handledBy) && 
         t.date >= dateRange.start && 
         t.date <= dateRange.end
       )
