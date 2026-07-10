@@ -114,17 +114,21 @@ export const UnassignedTransactionsSheet = ({
                       <SelectValue placeholder="Assign to team member…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {partners.map((p) => (
-                        <SelectItem key={p.id} value={p.userId || p.id}>
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: p.color }}
-                            />
-                            {p.name}
-                          </div>
-                        </SelectItem>
-                      ))}
+                      {partners.map((p) => {
+                        const key = getPartnerHandledByKey(p);
+                        if (!key) return null;
+                        return (
+                          <SelectItem key={p.id} value={key}>
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: p.color }}
+                              />
+                              {p.name}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
