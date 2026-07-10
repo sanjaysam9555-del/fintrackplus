@@ -23,7 +23,7 @@ import { GstToggle } from "./GstToggle";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { isInternalTransferVendor } from "@/lib/partnerIdentity";
+import { findPartnerByHandledBy, getPartnerHandledByKey, isInternalTransferVendor } from "@/lib/partnerIdentity";
 
 interface EditTransactionSheetProps {
   isOpen: boolean;
@@ -78,7 +78,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.isCompanyAccount ? p.id === handledBy : p.userId === handledBy);
+  const selectedPartner = findPartnerByHandledBy(partners, handledBy);
   const availableProjects = useMemo(() => {
     if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
     return projects.filter(p => !p.archived);
