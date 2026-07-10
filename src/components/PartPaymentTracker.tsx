@@ -10,6 +10,7 @@ import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { format, parseISO } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { InstallmentConfirmForm } from "@/components/InstallmentConfirmForm";
+import { findPartnerByHandledBy } from "@/lib/partnerIdentity";
 
 interface PartPaymentTrackerProps {
   onAddNextPayment?: (parentTransaction: Transaction) => void;
@@ -71,7 +72,7 @@ export const PartPaymentTracker = ({ onAddNextPayment, onEditPayment }: PartPaym
       {groupedPayments.map((group) => {
         const category = categories.find(c => c.id === group.parent.categoryId);
         const project = projects.find(p => p.id === group.parent.projectId);
-        const partner = partners.find(p => p.userId === group.parent.handledBy);
+        const partner = findPartnerByHandledBy(partners, group.parent.handledBy);
         const isExpanded = expandedId === group.parent.id;
         const isComplete = group.remaining === 0;
         
