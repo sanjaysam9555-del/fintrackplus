@@ -7,6 +7,7 @@ import { CategoryIcon } from "@/components/CategoryIcon";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Banknote, CreditCard } from "lucide-react";
+import { getPartnerHandledByKey } from "@/lib/partnerIdentity";
 
 interface UnassignedTransactionsSheetProps {
   isOpen: boolean;
