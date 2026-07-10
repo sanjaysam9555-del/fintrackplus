@@ -448,7 +448,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
     // If this partner is linked to a user (owner), sync name/avatar to their profile
     const partnerRecord = partners.find((p) => p.id === editingPartner);
-    if (partnerRecord) {
+    if (partnerRecord && !partnerRecord.isCompanyAccount) {
       const { data: dbPartner } = await supabase.
       from('partners').
       select('user_id').
@@ -474,11 +474,11 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
     if (!partner) return;
 
     // Check if this partner is linked to a user (owner-linked)
-    const { data: dbPartner } = await supabase.
+    const { data: dbPartner } = !partner.isCompanyAccount ? await supabase.
     from('partners').
     select('user_id').
     eq('id', partner.id).
-    maybeSingle();
+    maybeSingle() : { data: null };
 
     const { data: orgMember } = dbPartner?.user_id ?
     await supabase.
