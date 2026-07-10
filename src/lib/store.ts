@@ -4,7 +4,7 @@ import { Transaction, Category, Project, ProjectLabel, FinanceState, Transaction
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
-import { findPartnerByHandledBy, getInternalTransferVendor, isInternalTransferVendor } from './partnerIdentity';
+import { doesHandledByBelongToPartner, findPartnerByHandledBy, getInternalTransferVendor, isInternalTransferVendor } from './partnerIdentity';
 
 type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 type GlobalTimeFilter = 'week' | 'month' | 'year' | 'fy' | 'all' | 'custom';
@@ -309,12 +309,23 @@ export const useFinanceStore = create<FinanceStore>()(
         }
       });
       
+      const mergedPartners = mergeData(data.partners, currentState.partners, 'partner').map((partner) => {
+        const cloudPartner = data.partners.find((p) => p.id === partner.id);
+        if (!cloudPartner) return partner;
+
+        return {
+          ...partner,
+          userId: cloudPartner.userId,
+          isCompanyAccount: cloudPartner.isCompanyAccount,
+        };
+      });
+
       set({
         transactions: mergeData(data.transactions, currentState.transactions, 'transaction'),
         categories: mergedCategories,
         vendors: mergedVendors,
         projects: mergeData(data.projects, currentState.projects, 'project'),
-        partners: mergeData(data.partners, currentState.partners, 'partner'),
+        partners: mergedPartners,
         projectLabels: mergeData(data.projectLabels, currentState.projectLabels, 'project_label'),
       userProfile: data.profile
           ? data.profile
@@ -1669,16 +1680,15 @@ export const useFinanceStore = create<FinanceStore>()(
         ] : [];
         
         // Find all transactions assigned to this partner so we can unassign them
-        const partnerUserId = partner?.userId;
-        const affectedTransactionIds = partnerUserId ? get().transactions
-          .filter(t => t.handledBy === partnerUserId)
+        const affectedTransactionIds = partner ? get().transactions
+          .filter(t => doesHandledByBelongToPartner(partner, t.handledBy))
           .map(t => t.id) : [];
         
         set((state) => ({
           partners: state.partners.filter((p) => p.id !== id),
           // Unassign transactions from deleted partner
-          transactions: partnerUserId ? state.transactions.map(t => 
-            t.handledBy === partnerUserId ? { ...t, handledBy: undefined } : t
+          transactions: partner ? state.transactions.map(t => 
+            doesHandledByBelongToPartner(partner, t.handledBy) ? { ...t, handledBy: undefined } : t
           ) : state.transactions,
         }));
         
@@ -1868,12 +1878,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          // Company account matches by partner.id; regular partners by partner.userId
-          const partnerTxns = transactions.filter(t => 
-            partner.isCompanyAccount 
-              ? t.handledBy === partner.id 
-              : t.handledBy === partner.userId
-          );
+          const partnerTxns = transactions.filter(t => doesHandledByBelongToPartner(partner, t.handledBy));
           
           if (partner.isCompanyAccount) {
             // Single balance pool for company account
@@ -1926,10 +1931,7 @@ export const useFinanceStore = create<FinanceStore>()(
         const { transactions, partners } = get();
         
         return partners.map(partner => {
-          const matchFn = (t: Transaction) => 
-            partner.isCompanyAccount 
-              ? t.handledBy === partner.id 
-              : t.handledBy === partner.userId;
+          const matchFn = (t: Transaction) => doesHandledByBelongToPartner(partner, t.handledBy);
           
           const txnsBeforePeriod = transactions.filter(t => matchFn(t) && t.date < startDate);
           const txnsInPeriod = transactions.filter(t => matchFn(t) && t.date >= startDate && t.date <= endDate);
