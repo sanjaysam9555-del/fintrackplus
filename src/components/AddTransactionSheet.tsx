@@ -33,6 +33,7 @@ import { ReceiptUpload } from "./ReceiptUpload";
 import { GstToggle } from "./GstToggle";
 import { InstallmentRow } from "./InstallmentRow";
 import { v4 as uuidv4 } from "uuid";
+import { findPartnerByHandledBy, getPartnerHandledByKey } from "@/lib/partnerIdentity";
 
 interface AddTransactionSheetProps {
   isOpen: boolean;
@@ -92,7 +93,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     return projects.filter(p => !p.archived);
   }, [projects, isEmployee, userId]);
   const selectedProject = projects.find(p => p.id === projectId);
-  const selectedPartner = partners.find(p => p.isCompanyAccount ? p.id === handledBy : p.userId === handledBy);
+  const selectedPartner = findPartnerByHandledBy(partners, handledBy);
   
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
