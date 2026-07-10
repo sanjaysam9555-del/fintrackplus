@@ -711,16 +711,19 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                             >
                               None
                             </button>
-                            {partners.filter(p => !p.isCompanyAccount).map((p) => (
+                            {partners.filter(p => !p.isCompanyAccount).map((p) => {
+                              const partnerKey = getPartnerHandledByKey(p);
+                              if (!partnerKey) return null;
+                              return (
                               <button
                                 key={p.id}
                                 onClick={() => {
-                                  setHandledBy(p.userId || p.id);
+                                  setHandledBy(partnerKey);
                                   setShowPartners(false);
                                 }}
                                 className={cn(
                                   "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-2",
-                                  handledBy === (p.userId || p.id) ? "bg-primary/10" : "hover:bg-muted"
+                                  handledBy === partnerKey ? "bg-primary/10" : "hover:bg-muted"
                                 )}
                               >
                                 {p.avatarUrl ? (
@@ -734,33 +737,38 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                                   </div>
                                 )}
                                 <span className="font-medium flex-1">{p.name}</span>
-                                <Check size={14} className={cn("text-primary shrink-0", handledBy === (p.userId || p.id) ? "opacity-100" : "opacity-0")} />
+                                <Check size={14} className={cn("text-primary shrink-0", handledBy === partnerKey ? "opacity-100" : "opacity-0")} />
                               </button>
-                            ))}
+                              );
+                            })}
                             {/* Company Account */}
                             {partners.some(p => p.isCompanyAccount) && (
                               <>
                                 <div className="border-t border-border my-1" />
-                                {partners.filter(p => p.isCompanyAccount).map((p) => (
+                                {partners.filter(p => p.isCompanyAccount).map((p) => {
+                                  const partnerKey = getPartnerHandledByKey(p);
+                                  if (!partnerKey) return null;
+                                  return (
                                   <button
                                     key={p.id}
                                     onClick={() => {
-                                      setHandledBy(p.id);
+                                      setHandledBy(partnerKey);
                                       setPaymentMethod('online');
                                       setShowPartners(false);
                                     }}
                                     className={cn(
                                       "w-full px-3 py-2.5 text-left text-sm rounded-lg transition-colors flex items-center gap-2",
-                                      handledBy === p.id ? "bg-primary/10" : "hover:bg-muted"
+                                      handledBy === partnerKey ? "bg-primary/10" : "hover:bg-muted"
                                     )}
                                   >
                                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                                       <Landmark size={12} className="text-primary" />
                                     </div>
                                     <span className="font-medium flex-1">{p.name}</span>
-                                    <Check size={14} className={cn("text-primary shrink-0", handledBy === p.id ? "opacity-100" : "opacity-0")} />
+                                    <Check size={14} className={cn("text-primary shrink-0", handledBy === partnerKey ? "opacity-100" : "opacity-0")} />
                                   </button>
-                                ))}
+                                  );
+                                })}
                               </>
                             )}
                           </div>
