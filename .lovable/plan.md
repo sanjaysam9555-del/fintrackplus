@@ -1,78 +1,39 @@
-# Why complimentary access keeps bouncing you to /billing
+## Root cause found
 
-## What's actually in the database
+The reported entry **“Debit Card Charges” (₹1,180)** is correctly stored in the backend as assigned to **Axis Company Account** using the company account’s `partner.id`.
 
-Your org's subscription row is correct:
+The likely remaining bug is local/UI-side identity drift:
+- Company bank accounts have both `id` and `user_id` in the database, but accounting rules require them to be keyed by **`partner.id`**.
+- Several UI paths still compare or edit partners through `userId` assumptions, and the persisted local store can preserve stale partner objects where `isCompanyAccount` is missing/incorrect.
+- That makes the same backend row appear as assigned in one place, unassigned in another, and included in the wrong holder’s balance.
 
-- `status = expired`
-- `is_comped = true`
-- `comped_until = null` (i.e. permanent comp)
+## Plan
 
-`recomputeIsActive()` in `src/lib/subscriptionCache.ts` handles this correctly — `isComped && !compedUntil` returns `true`. So the access logic itself is fine. **The bug is in how `PaywallGate` decides when to trust the local cache.**
+1. **Centralize partner identity matching**
+   - Strengthen the shared partner identity helper so company accounts always match by `partner.id`.
+   - Add safe handling for stale local company-account records that may still carry the owner `userId`.
+   - Use the helper consistently for unassigned detection, partner detail rows, balance calculations, transaction display, and edit/add selections.
 
-## The actual bug
+2. **Fix local merge/persistence drift**
+   - In the cloud-data merge path, normalize partner records before saving to the local store.
+   - Ensure cloud partner metadata (`isCompanyAccount`, `userId`, balances, name, avatar) wins over stale cached partner metadata unless that exact partner has a pending local edit.
+   - This prevents old cached bank-account records from continuing to behave like regular partners after refresh.
 
-`src/hooks/useSubscription.ts` seeds state synchronously from `localStorage` (`readAccessCache(orgId)`). If a cache entry exists, `loading` is initialized to `false`. `PaywallGate` then immediately renders with whatever that cache says.
+3. **Fix settings partner edit paths**
+   - Update Financial Holdings / Partners settings edit handlers to use `partner.id` as the edit key.
+   - Remove assumptions that `editingPartner` or edit buttons receive a `userId`.
+   - This prevents edits to bank accounts from targeting the owner/another partner.
 
-Sequence that breaks you:
+4. **Harden unassigned entries**
+   - Keep the Unassigned sheet using the shared helper.
+   - Make the parent unassigned badge/count use the exact same helper so the badge and sheet cannot disagree.
+   - Exclude any transaction whose `handledBy` matches a valid company account `partner.id` from unassigned stats.
 
-1. Long ago, before you were comped, the cache was written with `isActive: false` (e.g. trial expired).
-2. An admin/owner later flipped `is_comped = true` on the row.
-3. You open the app on a device. `useUserRole` resolves `orgId`. `useSubscription` immediately seeds from the **old** cache entry → `isActive = false`, `loading = false`.
-4. `PaywallGate` sees `!initialActive && onboardingDone` on the first render and fires `<Navigate to="/billing" replace />`.
-5. The background verifier in `useSubscriptionVerifier` only runs **60 seconds after mount** — by then you're already stuck on `/billing`. Realtime would fix it, but realtime fires on table changes, not on app open, so a cold open never gets a fresh read in time.
-6. On a brand-new device (no cache), the first cold fetch should work — but if the route guard runs before `orgId` resolves and `onboardingDone` is read, edge cases (slow network on iOS PWA resume) still let a stale write win on the next open.
+5. **Balance validation**
+   - Update partner balance functions to use the same shared matcher instead of inline `partner.isCompanyAccount ? id : userId` comparisons.
+   - This makes the bank-account card, partner detail sheet, and unassigned totals agree.
 
-In short: the paywall is willing to **deny access from cache alone**, but only schedules a server check long after the redirect has happened.
-
-## The fix (robust, no schema changes)
-
-Principle: **redirects are destructive; never deny access based on cache without a recent server confirmation.** Granting access from cache is fine (that's the whole point — no flicker for paying users). Denying access from cache is what hurts.
-
-### Changes
-
-1. **`src/lib/subscriptionCache.ts`**
-   - Keep `recomputeIsActive` as is.
-   - Add a helper `isDenyCacheTrustworthy(entry, ttlMs)` → `true` only when the entry was server-verified within a short window (e.g. 10 minutes) AND `isActive === false`. This is the window in which we'll trust a "no access" verdict from cache alone.
-
-2. **`src/hooks/useSubscription.ts`**
-   - Expose `lastVerifiedAt` (already there) and a derived `denyTrusted` flag using the helper above.
-   - On seed, if the cache says `isActive: false`, set `loading = true` anyway so the gate waits for a fresh server read instead of redirecting on stale data. (If the cache says `isActive: true`, keep `loading = false` — no regression for paying/comped users with a fresh "active" cache.)
-
-3. **`src/components/PaywallGate.tsx`**
-   - Replace the current branch
-     ```
-     if ((loading && !hasCache) || onboardingDone === null) return <PageLoader />
-     ```
-     with: show the loader while `loading || onboardingDone === null` **whenever the current decision would be to deny**. Concretely: if `initialActive` would be `false`, wait for `loading` to settle (a fresh server read) before redirecting. If `initialActive` is `true`, render children immediately (current fast path preserved).
-   - Add a max wait (e.g. 4s) so a network failure doesn't trap users on a spinner — after timeout, fall back to the cached verdict.
-
-4. **`src/hooks/useSubscriptionVerifier.ts`**
-   - Run verification **immediately** (no `POST_MOUNT_DELAY_MS`) when:
-     - there is no cache entry, OR
-     - the cache says `isActive: false`, OR
-     - `lastVerifiedAt` is older than 10 minutes.
-   - Keep the 24h+delay path only when the cache is fresh AND says active. This keeps the original "no server calls on the critical path for happy-path paid users" behavior, while making sure anyone who looks denied gets re-checked instantly.
-
-5. **Cache invalidation on comp changes (defense in depth)**
-   - In `src/hooks/useSubscription.ts` realtime handler, also write `lastVerifiedAt = now` after the refetch (already does via `writeAccessCache` → `cacheEntryFromRow`). No change needed, but confirm the realtime channel is actually subscribed before the user navigates (it is — happens in a `useEffect`).
-
-### What this fixes
-
-- Comped users with an old "inactive" cache no longer get bounced — gate waits the few hundred ms for the fresh read.
-- Paying users with a fresh "active" cache keep the zero-flicker cold open.
-- Future comp grants take effect on the very next app open, not 24h later.
-- No DB or RLS changes; pure client correctness fix.
-
-### Out of scope
-
-- Changing how comps are granted (admin-console / SQL path).
-- Changing trial/Razorpay logic.
-- Visual changes to the Billing page or PaywallGate loader.
-
-## Files touched
-
-- `src/lib/subscriptionCache.ts` — add `isDenyCacheTrustworthy` helper, small TTL constant.
-- `src/hooks/useSubscription.ts` — don't mark `loading=false` on a deny-seed; expose `denyTrusted`.
-- `src/components/PaywallGate.tsx` — gate redirects behind a fresh verification (with timeout fallback).
-- `src/hooks/useSubscriptionVerifier.ts` — verify immediately on stale/deny/empty cache; defer only on fresh allow.
+6. **Verify with the reported entry**
+   - Confirm “Debit Card Charges” no longer appears in unassigned entries.
+   - Confirm it appears under Axis Company Account and reduces that account’s online balance by ₹1,180.
+   - Confirm it does not affect Sanjay/other partner balances.
