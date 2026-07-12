@@ -91,6 +91,14 @@
         } else {
           root.classList.add(resolved);
         }
+        // iOS PWA status bar only supports 'default' (opaque, dark icons) or
+        // 'black-translucent' (overlay, forced white icons) — match it to the
+        // resolved theme so it never reads as a mismatched patch glued on top
+        // of the app's own background.
+        var statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+        if (statusBarMeta) {
+          statusBarMeta.setAttribute('content', resolved === 'light' ? 'default' : 'black-translucent');
+        }
       })();
     </script>
     <div id="root"></div>

@@ -47,7 +47,7 @@ export const GlassDock = ({ activeTab, onTabChange, onAddClick, onSearchClick, o
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border pb-safe md:hidden">
-      <nav className="flex items-center justify-around py-1 px-1.5 max-w-md mx-auto">
+      <nav className="flex items-center justify-around py-2 px-1.5 max-w-md mx-auto">
         {tabs.map((tab) => {
           if (tab.id === 'add') {
             return (

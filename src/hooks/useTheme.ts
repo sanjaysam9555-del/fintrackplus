@@ -45,7 +45,16 @@ export const useTheme = () => {
     } else {
       root.classList.add(resolved);
     }
-    
+
+    // iOS PWA status bar (browser/home-screen install, not the native app) —
+    // only 'default' (opaque, dark icons) or 'black-translucent' (overlay,
+    // forced white icons) are available, so it must track the resolved theme
+    // to avoid a mismatched patch at the top of the screen.
+    const statusBarMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if (statusBarMeta) {
+      statusBarMeta.setAttribute('content', resolved === 'light' ? 'default' : 'black-translucent');
+    }
+
     // Update status bar color for native apps
     if (resolved === 'light') {
       statusBarUtils.setLight();

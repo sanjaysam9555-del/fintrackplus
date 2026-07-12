@@ -340,4 +340,11 @@ html, body {
        header. 1rem only covers browsers/devices that report 0. */
     padding-top: max(1rem, env(safe-area-inset-top));
   }
+
+  /* Extra breathing room for hero-style headers (e.g. the Home dashboard's
+     avatar/greeting row) — adds a real gap below the status bar/notch on top
+     of the device's own inset, instead of sitting flush against it. */
+  .safe-top-lg {
+    padding-top: max(1rem, calc(env(safe-area-inset-top) + 0.75rem));
+  }
 }
