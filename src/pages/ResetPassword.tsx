@@ -79,8 +79,8 @@ export const ResetPasswordPage = () => {
 
         setVerifyError('No reset token found in the link.');
         setVerifyState('invalid');
-      } catch (err: any) {
-        setVerifyError(err?.message || 'Failed to verify reset link');
+      } catch (err: unknown) {
+        setVerifyError(err instanceof Error ? err.message : 'Failed to verify reset link');
         setVerifyState('invalid');
       }
     };

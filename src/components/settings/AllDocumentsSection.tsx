@@ -235,7 +235,7 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
         }
       }
       setPreviewLoading(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to load document:', err);
       setPreviewError("Could not load document. The file may have been moved or deleted.");
       setPreviewLoading(false);
@@ -280,8 +280,8 @@ export const AllDocumentsSection = ({ onBack }: AllDocumentsSectionProps) => {
         handleDownload();
         toast.info("Share not supported on this device — downloaded instead");
       }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
+    } catch (err: unknown) {
+      if (!(err instanceof Error) || err.name !== 'AbortError') {
         toast.error("Could not share document");
       }
     }

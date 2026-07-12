@@ -83,7 +83,7 @@ export const HeroSection = () => {
               <Button
                 size="lg"
                 className="relative text-base px-8 rounded-xl gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-shadow overflow-hidden group"
-                onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+                onClick={() => { const url = getAppUrl(); if (url.startsWith('http')) { window.location.href = url; } else { navigate(url); } }}
               >
                 {/* Shimmer effect */}
                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />

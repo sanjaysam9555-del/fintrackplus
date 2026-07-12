@@ -131,7 +131,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
             </div>
             
             <ScrollArea className="h-[calc(85vh-160px)]">
-              <div className="p-4 space-y-4 pb-8">
+              <div className="p-4 space-y-4 safe-bottom-lg">
                 {/* Transfer Visual */}
                 <div className="flex items-center justify-center gap-3 py-4">
                   <div className="flex flex-col items-center gap-2">
@@ -334,11 +334,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                       "flex-1 p-3 rounded-xl flex items-center justify-center gap-2 border-2 transition-colors",
                       requiresOnlineTransfer && "opacity-50 cursor-not-allowed",
                       paymentMethod === 'cash' ?
-                      "border-primary bg-primary/5" :
+                      "border-cash bg-cash/10" :
                       "border-transparent bg-muted"
                     )}>
-                    
-                      <Banknote size={16} className={paymentMethod === 'cash' ? "text-primary" : "text-muted-foreground"} />
+
+                      <Banknote size={16} className={paymentMethod === 'cash' ? "text-cash" : "text-muted-foreground"} />
                       <span className={cn("text-sm font-medium", paymentMethod === 'cash' ? "text-foreground" : "text-muted-foreground")}>Cash</span>
                     </button>
                     <button
@@ -346,11 +346,11 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
                     className={cn(
                       "flex-1 p-3 rounded-xl flex items-center justify-center gap-2 border-2 transition-colors",
                       paymentMethod === 'online' ?
-                      "border-primary bg-primary/5" :
+                      "border-online bg-online/10" :
                       "border-transparent bg-muted"
                     )}>
-                    
-                      <CreditCard size={16} className={paymentMethod === 'online' ? "text-primary" : "text-muted-foreground"} />
+
+                      <CreditCard size={16} className={paymentMethod === 'online' ? "text-online" : "text-muted-foreground"} />
                       <span className={cn("text-sm font-medium", paymentMethod === 'online' ? "text-foreground" : "text-muted-foreground")}>Online</span>
                     </button>
                   </div>

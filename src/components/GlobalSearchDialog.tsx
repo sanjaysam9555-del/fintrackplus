@@ -112,10 +112,10 @@ export const GlobalSearchDialog = ({
                 <Search size={22} className="text-primary shrink-0" />
                 <Input
                   autoFocus
-                  placeholder="Search everything..."
+                  placeholder="Search anything..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  className="flex-1 border-0 bg-transparent focus-visible:ring-0 px-0 text-lg placeholder:text-muted-foreground/60"
+                  className="flex-1 border-0 bg-transparent focus-visible:ring-0 px-0 text-lg text-center placeholder:text-muted-foreground/60"
                 />
                 {query && (
                   <button

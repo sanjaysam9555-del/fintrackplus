@@ -5,10 +5,11 @@ import { CashFlowChart } from "./CashFlowChart";
 import { TransactionItem } from "./TransactionItem";
 import { DashboardSkeleton } from "./ui/skeleton-loader";
 import { InstallmentDueReminder } from "./InstallmentDueReminder";
-import { TimeFrameSelector, computeDateRange } from "./TimeFrameSelector";
+import { TimeFrameDropdown, computeDateRange } from "./TimeFrameSelector";
+import { useUserRole } from "@/hooks/useUserRole";
 
 import { motion } from "framer-motion";
-import { Grid3X3, Store, ScrollText, FileBarChart, Settings, Sparkles, Search, ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Grid3X3, Store, ScrollText, FileBarChart, Users, Tag, FileText, ClipboardCheck } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -22,23 +23,29 @@ interface DashboardProps {
   isOnline?: boolean;
   pendingCount?: number;
   userId?: string;
-  onSearchClick?: () => void;
   onEditSheetChange?: (isOpen: boolean) => void;
   isEmployee?: boolean;
 }
 
-export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onSearchClick, onEditSheetChange, isEmployee = false }: DashboardProps) => {
+export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, userId, onEditSheetChange, isEmployee = false }: DashboardProps) => {
   const { transactions, categories, partners, getTotalIncome, getTotalExpense, userProfile, syncStatus, lastSyncedAt, activeTimeFilter, activeCustomStartDate, activeCustomEndDate, setActiveTimeFilter, setActiveCustomDateRange } = useFinanceStore();
+  const { isOwner, canViewPartners } = useUserRole();
   const timeFilter = activeTimeFilter;
-  const customStartDate = activeCustomStartDate ? new Date(activeCustomStartDate) : undefined;
-  const customEndDate = activeCustomEndDate ? new Date(activeCustomEndDate) : undefined;
+  const customStartDate = useMemo(
+    () => (activeCustomStartDate ? new Date(activeCustomStartDate) : undefined),
+    [activeCustomStartDate]
+  );
+  const customEndDate = useMemo(
+    () => (activeCustomEndDate ? new Date(activeCustomEndDate) : undefined),
+    [activeCustomEndDate]
+  );
   const setTimeFilter = setActiveTimeFilter;
   const setCustomStartDate = (date: Date | undefined) => setActiveCustomDateRange(date ? date.toISOString() : null, activeCustomEndDate);
   const setCustomEndDate = (date: Date | undefined) => setActiveCustomDateRange(activeCustomStartDate, date ? date.toISOString() : null);
   const [sortBy, setSortBy] = useState<string>('recent');
-  
-  const today = new Date();
-  
+
+  const today = useMemo(() => new Date(), []);
+
   const dateRange = useMemo(() => {
     return computeDateRange(timeFilter, customStartDate, customEndDate);
   }, [timeFilter, customStartDate, customEndDate]);
@@ -58,20 +65,29 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
     };
   }, [dateRange]);
   
+  // Note: 'transactions' is intentionally kept in these dep arrays even though the
+  // memo body doesn't reference it by name. getTotalIncome/getTotalExpense are stable
+  // Zustand action references that read the live store via get() internally, so they
+  // never change identity when transactions change. Without 'transactions' here, these
+  // memos would keep returning stale totals after adding/editing/deleting a transaction.
   const currentIncome = useMemo(
     () => getTotalIncome(dateRange.start, dateRange.end),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [getTotalIncome, dateRange, transactions]
   );
   const currentExpense = useMemo(
     () => getTotalExpense(dateRange.start, dateRange.end),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [getTotalExpense, dateRange, transactions]
   );
   const previousIncome = useMemo(
     () => getTotalIncome(previousDateRange.start, previousDateRange.end),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [getTotalIncome, previousDateRange, transactions]
   );
   const previousExpense = useMemo(
     () => getTotalExpense(previousDateRange.start, previousDateRange.end),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [getTotalExpense, previousDateRange, transactions]
   );
 
@@ -137,7 +153,7 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
     if (hour < 12) return "Good Morning";
     if (hour < 17) return "Good Afternoon";
     return "Good Evening";
-  }, []);
+  }, [today]);
   
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -174,33 +190,15 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 <h1 className="text-sm font-bold leading-tight">{userProfile.name}</h1>
               </div>
             </div>
-            
-            {/* Mobile action icons - no calendar or sync */}
-            <div className="flex items-center">
-              {onSearchClick && (
-                <button 
-                  onClick={onSearchClick}
-                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
-                  title="Search (⌘K)"
-                >
-                  <Search size={18} className="text-muted-foreground" />
-                </button>
-              )}
-              {!isEmployee && (
-                <button 
-                  onClick={() => onNavigate?.('ai')}
-                  className="p-1.5 rounded-full hover:bg-muted transition-colors"
-                >
-                  <Sparkles size={18} className="text-muted-foreground" />
-                </button>
-              )}
-              <button 
-                onClick={() => onNavigate?.('settings')}
-                className="p-1.5 rounded-full hover:bg-muted transition-colors"
-              >
-                <Settings size={18} className="text-muted-foreground" />
-              </button>
-            </div>
+
+            <TimeFrameDropdown
+              timeFilter={timeFilter}
+              onTimeFilterChange={setTimeFilter}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onCustomStartDateChange={setCustomStartDate}
+              onCustomEndDateChange={setCustomEndDate}
+            />
           </div>
         </div>
 
@@ -231,46 +229,17 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
                 <h1 className="text-lg font-bold">{userProfile.name}</h1>
               </div>
             </div>
-            
-            <div className="flex items-center gap-1">
-              {onSearchClick && (
-                <button 
-                  onClick={onSearchClick}
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
-                  title="Search (⌘K)"
-                >
-                  <Search size={22} className="text-muted-foreground" />
-                </button>
-              )}
-              {!isEmployee && (
-                <button 
-                  onClick={() => onNavigate?.('ai')}
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
-                >
-                  <Sparkles size={22} className="text-muted-foreground" />
-                </button>
-              )}
-              <button 
-                onClick={() => onNavigate?.('settings')}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-              >
-                <Settings size={22} className="text-muted-foreground" />
-              </button>
-            </div>
+
+            <TimeFrameDropdown
+              timeFilter={timeFilter}
+              onTimeFilterChange={setTimeFilter}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onCustomStartDateChange={setCustomStartDate}
+              onCustomEndDateChange={setCustomEndDate}
+            />
           </div>
         </div>
-      </div>
-
-      {/* Unified Time Frame Selector */}
-      <div className="px-4 lg:px-0 mb-4">
-        <TimeFrameSelector
-          timeFilter={timeFilter}
-          onTimeFilterChange={setTimeFilter}
-          customStartDate={customStartDate}
-          customEndDate={customEndDate}
-          onCustomStartDateChange={setCustomStartDate}
-          onCustomEndDateChange={setCustomEndDate}
-        />
       </div>
       
       {/* Installment Due Reminders */}
@@ -334,10 +303,14 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
           className="grid grid-cols-4 gap-2 lg:gap-3"
         >
           {[
-            { key: 'categories', icon: Grid3X3, label: 'Categories', color: 'bg-accent', iconColor: 'text-accent-foreground' },
-            { key: 'vendors', icon: Store, label: 'Vendors', color: 'bg-success/10', iconColor: 'text-success' },
-            ...(!isEmployee ? [{ key: 'logs', icon: ScrollText, label: 'Logs', color: 'bg-amber-500/10', iconColor: 'text-amber-500 dark:text-amber-400' }] : []),
-            ...(!isEmployee ? [{ key: 'reports', icon: FileBarChart, label: 'Reports', color: 'bg-purple-500/10', iconColor: 'text-purple-500 dark:text-purple-400' }] : []),
+            { key: 'categories', label: 'Categories', icon: Grid3X3, iconColor: 'text-accent-foreground' },
+            { key: 'vendors', label: 'Vendors', icon: Store, iconColor: 'text-success' },
+            ...(!isEmployee ? [{ key: 'logs', label: 'Logs', icon: ScrollText, iconColor: 'text-amber-500 dark:text-amber-400' }] : []),
+            ...(!isEmployee ? [{ key: 'reports', label: 'Reports', icon: FileBarChart, iconColor: 'text-purple-500 dark:text-purple-400' }] : []),
+            ...(canViewPartners ? [{ key: 'partners', label: 'Holdings', icon: Users, iconColor: 'text-blue-500 dark:text-blue-400' }] : []),
+            ...(!isEmployee ? [{ key: 'labels', label: 'Labels', icon: Tag, iconColor: 'text-pink-500 dark:text-pink-400' }] : []),
+            ...(isOwner ? [{ key: 'documents', label: 'Documents', icon: FileText, iconColor: 'text-cyan-500 dark:text-cyan-400' }] : []),
+            ...(isOwner ? [{ key: 'approvals', label: 'Approval', icon: ClipboardCheck, iconColor: 'text-orange-500 dark:text-orange-400' }] : []),
           ].map((item, index) => (
             <motion.button
               key={item.key}
@@ -346,13 +319,12 @@ export const Dashboard = ({ isLoading = false, onAddClick, onNavigate, onRefresh
               transition={{ delay: index * 0.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onNavigate?.(item.key)}
-              className="flex flex-col items-center text-center gap-1 p-2 lg:p-3 bg-card rounded-xl shadow-card border border-border hover:shadow-card-hover transition-shadow"
+              className="flex flex-col items-center justify-center gap-1 text-center px-2 h-[4.5rem] lg:h-20 bg-muted border border-border rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.3),inset_0_1px_0_rgba(255,255,255,0.06)] hover:bg-muted/80 hover:border-border/80 active:bg-muted/70 active:shadow-[inset_0_1px_3px_rgba(0,0,0,0.35)] transition-all"
             >
-              <div className={cn("w-6 h-6 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center shrink-0", item.color)}>
-                <item.icon size={12} className={cn(item.iconColor, "lg:hidden")} />
-                <item.icon size={14} className={cn(item.iconColor, "hidden lg:block")} />
-              </div>
-              <span className="text-[9px] lg:text-xs font-medium text-muted-foreground leading-tight truncate w-full">{item.label}</span>
+              <item.icon size={16} className={cn(item.iconColor, "shrink-0")} />
+              <span className="max-w-full whitespace-nowrap overflow-hidden text-ellipsis text-[11px] lg:text-xs font-semibold text-foreground leading-none">
+                {item.label}
+              </span>
             </motion.button>
           ))}
         </motion.div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
-import { ArrowLeft, FolderKanban, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, TrendingUp, TrendingDown, Save, Check, Calendar, Tag, X, Pencil, Eye, Columns3, List, Users } from "lucide-react";
+import { ArrowLeft, Store, Receipt, ArrowDown, ArrowUp, StickyNote, Loader2, ChevronDown, Search, FileText, Upload, Trash2, ExternalLink, File, Image, FileSpreadsheet, Save, Check, Calendar, Tag, X, Pencil, Eye, Columns3, List, Users, MoreVertical, Copy, Archive, ArchiveRestore } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProjectDocument } from "@/hooks/useProjectDocuments";
 import { Input } from "@/components/ui/input";
@@ -17,11 +17,20 @@ import { toast } from "sonner";
 import { formatCurrency } from "@/lib/constants";
 import { Textarea } from "@/components/ui/textarea";
 import { TransactionItem } from "./TransactionItem";
+import { SummaryCard } from "./SummaryCard";
+import { PdfPreview } from "./PdfPreview";
+import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface VendorBreakdown {
   vendor: string;
@@ -29,6 +38,8 @@ interface VendorBreakdown {
   count: number;
   lastDate: string;
 }
+
+const COLOR_OPTIONS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#6366F1'];
 
 interface ProjectDetailSheetProps {
   project: Project | null;
@@ -53,13 +64,16 @@ export const ProjectDetailSheet = ({
   userId,
   onEditSheetChange,
 }: ProjectDetailSheetProps) => {
-  const { getCategoryById, updateProject, transactions: allTransactions, projectLabels } = useFinanceStore();
+  const { getCategoryById, updateProject, deleteProject, addProject, transactions: allTransactions, projectLabels } = useFinanceStore();
   const { isOwner, isAdmin } = useUserRole();
   const isMobile = useIsMobile();
   const [viewMode, setViewMode] = useState<'list' | 'columns'>('list');
   const [isChildEditing, setIsChildEditing] = useState(false);
   const [employees, setEmployees] = useState<{ user_id: string; name: string }[]>([]);
-  
+  const [showArchiveConfirm, setShowArchiveConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [documentsOpen, setDocumentsOpen] = useState(false);
+
   const handleChildEditSheetChange = useCallback((open: boolean) => {
     setIsChildEditing(open);
     onEditSheetChange?.(open);
@@ -82,7 +96,7 @@ export const ProjectDetailSheet = ({
   const projectTransactions = useMemo(() => {
     if (!project) return [];
     return allTransactions.filter(t => t.projectId === project.id);
-  }, [allTransactions, project?.id]);
+  }, [allTransactions, project]);
   
   // Sort and separate transactions
   const { sortedTransactions, incomeTransactions, expenseTransactions } = useMemo(() => {
@@ -201,7 +215,6 @@ export const ProjectDetailSheet = ({
       color: project.color,
       clientCost: project.clientCost,
       eventDate: project.eventDate || '',
-      startDate: project.startDate || '',
       labelIds: project.labelIds || [],
       assignedEmployeeIds: project.assignedEmployeeIds || [],
     });
@@ -214,6 +227,35 @@ export const ProjectDetailSheet = ({
     setIsEditing(false);
     toast.success("Project updated");
   }, [project, userId, editForm, updateProject]);
+
+  const handleDuplicateProject = useCallback(() => {
+    if (!project) return;
+    addProject({
+      name: `${project.name} (Copy)`,
+      description: project.description,
+      notes: project.notes,
+      internalCost: project.internalCost,
+      clientCost: project.clientCost || 0,
+      expectedMargin: project.expectedMargin || 0,
+      color: project.color,
+    }, userId);
+    toast.success(`Project "${project.name}" duplicated`);
+  }, [project, userId, addProject]);
+
+  const handleArchiveConfirm = useCallback(() => {
+    if (!project) return;
+    updateProject(project.id, { archived: !project.archived }, userId);
+    toast.success(project.archived ? 'Project restored' : 'Project archived');
+    setShowArchiveConfirm(false);
+  }, [project, userId, updateProject]);
+
+  const handleDeleteConfirm = useCallback(() => {
+    if (!project) return;
+    deleteProject(project.id, userId);
+    toast.success(`Project "${project.name}" deleted`);
+    setShowDeleteConfirm(false);
+    onClose();
+  }, [project, userId, deleteProject, onClose]);
 
   if (!project || !isOpen) return null;
 
@@ -244,32 +286,17 @@ export const ProjectDetailSheet = ({
             <ArrowLeft size={20} />
           </button>
           <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-            style={{ backgroundColor: `${project.color}20` }}
+            className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
+            style={{ backgroundColor: project.color }}
           >
-            <FolderKanban size={18} style={{ color: project.color }} />
+            {project.name.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold truncate">{project.name}</h1>
+            <h1 className="text-base font-bold leading-tight line-clamp-2">{project.name}</h1>
             {project.description && (
               <p className="text-xs text-muted-foreground truncate">{project.description}</p>
             )}
           </div>
-          <button
-            onClick={() => {
-              if (isEditing) {
-                setIsEditing(false);
-              } else {
-                handleStartEditing();
-              }
-            }}
-            className={cn(
-              "p-2 rounded-full hover:bg-muted transition-colors shrink-0",
-              isEditing && "bg-muted"
-            )}
-          >
-            {isEditing ? <X size={18} className="text-muted-foreground" /> : <Pencil size={18} className="text-muted-foreground" />}
-          </button>
           <button
             onClick={() => setIsSearching(!isSearching)}
             className={cn(
@@ -279,6 +306,40 @@ export const ProjectDetailSheet = ({
           >
             <Search size={18} className="text-muted-foreground" />
           </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="p-2 rounded-full hover:bg-muted transition-colors shrink-0">
+                <MoreVertical size={18} className="text-muted-foreground" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={handleStartEditing} className="gap-2">
+                <Pencil size={14} />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleDuplicateProject} className="gap-2">
+                <Copy size={14} />
+                Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowArchiveConfirm(true)} className="gap-2">
+                {project.archived ? (
+                  <>
+                    <ArchiveRestore size={14} />
+                    Restore
+                  </>
+                ) : (
+                  <>
+                    <Archive size={14} />
+                    Archive
+                  </>
+                )}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowDeleteConfirm(true)} className="gap-2 text-destructive focus:text-destructive">
+                <Trash2 size={14} />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {isSearching && (
@@ -332,138 +393,138 @@ export const ProjectDetailSheet = ({
           <div className="p-4 space-y-4 pb-40">
             {/* Project Info Card / Edit Form */}
             {isEditing ? (
-              <div className="bg-card rounded-xl border border-border p-4 space-y-3">
-                <div>
-                  <Label className="text-xs">Project Name</Label>
-                  <Input
-                    value={editForm.name || ''}
-                    onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
-                    className="mt-1"
-                  />
+              <div className="bg-card rounded-2xl border border-border overflow-hidden">
+                <div className="px-4 py-3 border-b border-border">
+                  <h3 className="text-sm font-semibold">Edit Project</h3>
                 </div>
-                <div>
-                  <Label className="text-xs">Description</Label>
-                  <Input
-                    value={editForm.description || ''}
-                    onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
-                    className="mt-1"
-                    placeholder="Optional description"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="p-4 space-y-5">
                   <div>
-                    <Label className="text-xs">Event Date</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">Project Name</Label>
+                    <Input
+                      value={editForm.name || ''}
+                      onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
+                      className="mt-1.5"
+                      placeholder="Project name"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Description</Label>
+                    <Input
+                      value={editForm.description || ''}
+                      onChange={(e) => setEditForm(f => ({ ...f, description: e.target.value }))}
+                      className="mt-1.5"
+                      placeholder="Optional description"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-medium text-muted-foreground">Event Date</Label>
                     <Input
                       type="date"
                       value={editForm.eventDate || ''}
                       onChange={(e) => setEditForm(f => ({ ...f, eventDate: e.target.value }))}
-                      className="mt-1"
+                      className="mt-1.5"
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Start Date</Label>
-                    <Input
-                      type="date"
-                      value={editForm.startDate || ''}
-                      onChange={(e) => setEditForm(f => ({ ...f, startDate: e.target.value }))}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <Label className="text-xs">Color</Label>
-                    <div className="flex items-center gap-2 mt-1">
-                      <input
-                        type="color"
-                        value={editForm.color || '#6366f1'}
-                        onChange={(e) => setEditForm(f => ({ ...f, color: e.target.value }))}
-                        className="w-10 h-10 rounded-lg border border-border cursor-pointer"
-                      />
-                      <span className="text-xs text-muted-foreground">{editForm.color}</span>
+                    <Label className="text-xs font-medium text-muted-foreground">Color</Label>
+                    <div className="flex flex-wrap gap-2.5 mt-1.5">
+                      {COLOR_OPTIONS.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setEditForm(f => ({ ...f, color }))}
+                          className={cn(
+                            "w-8 h-8 rounded-full transition-all",
+                            editForm.color === color && "ring-2 ring-offset-2 ring-primary"
+                          )}
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
                     </div>
                   </div>
-                </div>
-                {projectLabels.length > 0 && (
-                  <div>
-                    <Label className="text-xs">Labels</Label>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {projectLabels.map((label) => {
-                        const isSelected = (editForm.labelIds || []).includes(label.id);
-                        return (
-                          <button
-                            key={label.id}
-                            type="button"
-                            onClick={() => setEditForm(f => ({
-                              ...f,
-                              labelIds: isSelected
-                                ? (f.labelIds || []).filter((id: string) => id !== label.id)
-                                : [...(f.labelIds || []), label.id],
-                            }))}
-                            className={cn(
-                              "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
-                              isSelected
-                                ? "text-white border-transparent"
-                                : "bg-transparent border-border text-muted-foreground hover:bg-muted"
-                            )}
-                            style={isSelected ? { backgroundColor: label.color, borderColor: label.color } : {}}
-                          >
-                            #{label.name}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-                {(isOwner || isAdmin) && (
-                  <div>
-                    <Label className="text-xs">Assign Employees</Label>
-                    {employees.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        {employees.map((emp) => {
-                          const selectedIds = (editForm.assignedEmployeeIds as string[] | undefined) || [];
-                          const isSelected = selectedIds.includes(emp.user_id);
+                  {projectLabels.length > 0 && (
+                    <div>
+                      <Label className="text-xs font-medium text-muted-foreground">Labels</Label>
+                      <div className="flex flex-wrap gap-1.5 mt-1.5">
+                        {projectLabels.map((label) => {
+                          const isSelected = (editForm.labelIds || []).includes(label.id);
                           return (
                             <button
-                              key={emp.user_id}
+                              key={label.id}
                               type="button"
                               onClick={() => setEditForm(f => ({
                                 ...f,
-                                assignedEmployeeIds: isSelected
-                                  ? selectedIds.filter((id: string) => id !== emp.user_id)
-                                  : [...selectedIds, emp.user_id],
+                                labelIds: isSelected
+                                  ? (f.labelIds || []).filter((id: string) => id !== label.id)
+                                  : [...(f.labelIds || []), label.id],
                               }))}
                               className={cn(
                                 "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
                                 isSelected
-                                  ? "bg-primary text-primary-foreground border-primary"
+                                  ? "text-white border-transparent"
                                   : "bg-transparent border-border text-muted-foreground hover:bg-muted"
                               )}
+                              style={isSelected ? { backgroundColor: label.color, borderColor: label.color } : {}}
                             >
-                              {emp.name}
+                              #{label.name}
                             </button>
                           );
                         })}
                       </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground italic mt-1">No employees added yet. Add employees via Settings → Team.</p>
-                    )}
-                  </div>
-                )}
-                <div className="flex gap-2 pt-1">
-                  <Button size="sm" onClick={handleSaveEdit} className="flex-1">
-                    <Check size={14} /> Save
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => setIsEditing(false)} className="flex-1">
+                    </div>
+                  )}
+                  {(isOwner || isAdmin) && (
+                    <div>
+                      <Label className="text-xs font-medium text-muted-foreground">Assign Employees</Label>
+                      {employees.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {employees.map((emp) => {
+                            const selectedIds = (editForm.assignedEmployeeIds as string[] | undefined) || [];
+                            const isSelected = selectedIds.includes(emp.user_id);
+                            return (
+                              <button
+                                key={emp.user_id}
+                                type="button"
+                                onClick={() => setEditForm(f => ({
+                                  ...f,
+                                  assignedEmployeeIds: isSelected
+                                    ? selectedIds.filter((id: string) => id !== emp.user_id)
+                                    : [...selectedIds, emp.user_id],
+                                }))}
+                                className={cn(
+                                  "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+                                  isSelected
+                                    ? "bg-primary text-primary-foreground border-primary"
+                                    : "bg-transparent border-border text-muted-foreground hover:bg-muted"
+                                )}
+                              >
+                                {emp.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground italic mt-1.5">No employees added yet. Add employees via Settings → Team.</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                <div className="flex gap-2 px-4 py-3 border-t border-border bg-muted/30">
+                  <Button variant="outline" onClick={() => setIsEditing(false)} className="flex-1">
                     Cancel
+                  </Button>
+                  <Button onClick={handleSaveEdit} className="flex-1">
+                    <Check size={14} /> Save Changes
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="bg-card rounded-xl border border-border p-3 space-y-2.5">
+              <div className="bg-card rounded-xl border border-border p-3.5 space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-muted-foreground shrink-0" />
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Calendar size={14} className="text-muted-foreground" />
+                    </div>
                     <div>
                       <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Event Date</p>
                       <p className="text-sm font-medium">
@@ -472,24 +533,17 @@ export const ProjectDetailSheet = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Calendar size={14} className="text-muted-foreground shrink-0" />
+                    <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <Calendar size={14} className="text-muted-foreground" />
+                    </div>
                     <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Start Date</p>
-                      <p className="text-sm font-medium">
-                        {project.startDate ? format(new Date(project.startDate), 'MMM d, yyyy') : 'Not set'}
-                      </p>
+                      <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Created</p>
+                      <p className="text-sm font-medium">{format(new Date(project.createdAt), 'MMM d, yyyy')}</p>
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Calendar size={14} className="text-muted-foreground shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Created</p>
-                    <p className="text-sm font-medium">{format(new Date(project.createdAt), 'MMM d, yyyy')}</p>
-                  </div>
-                </div>
                 {Array.isArray(project.labelIds) && project.labelIds.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div className="flex flex-wrap gap-1.5 pt-2.5 border-t border-border">
                     {project.labelIds.map(lid => {
                       const label = projectLabels.find(l => l.id === lid);
                       if (!label) return null;
@@ -509,31 +563,11 @@ export const ProjectDetailSheet = ({
               </div>
             )}
 
-            {/* Financial Summary - 3-column Grid */}
-            <div className="grid grid-cols-3 gap-px bg-border rounded-xl overflow-hidden w-full">
-              <div className="bg-card p-3 flex flex-col items-center gap-0.5">
-                <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <ArrowDown size={12} className="text-green-500" />
-                </div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
-                <p className="text-sm font-bold text-green-600 dark:text-green-400">₹{income.toLocaleString()}</p>
-              </div>
-              <div className="bg-card p-3 flex flex-col items-center gap-0.5">
-                <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center">
-                  <ArrowUp size={12} className="text-destructive" />
-                </div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
-                <p className="text-sm font-bold text-destructive">₹{spent.toLocaleString()}</p>
-              </div>
-              <div className="bg-card p-3 flex flex-col items-center gap-0.5">
-                <div className={cn("w-6 h-6 rounded-lg flex items-center justify-center", net >= 0 ? "bg-green-500/10" : "bg-red-500/10")}>
-                  {net >= 0 ? <TrendingUp size={12} className="text-green-500" /> : <TrendingDown size={12} className="text-red-500" />}
-                </div>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-                <p className={cn("text-sm font-bold", net >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                  ₹{net.toLocaleString()}
-                </p>
-              </div>
+            {/* Financial Summary */}
+            <div className="grid grid-cols-3 gap-2">
+              <SummaryCard title="Income" amount={income} type="income" />
+              <SummaryCard title="Expenses" amount={spent} type="expense" />
+              <SummaryCard title="Net Margin" amount={net} type="balance" />
             </div>
 
             {/* View Mode Toggle - Desktop only */}
@@ -597,15 +631,19 @@ export const ProjectDetailSheet = ({
               />
             </div>
 
-            {/* Documents Section (above income) */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-semibold flex items-center gap-1.5">
-                  <FileText size={14} className="text-muted-foreground" />
-                  Documents {documents.length > 0 && `(${documents.length})`}
-                </h3>
-              </div>
-              <div className="space-y-2">
+            {/* Documents Section - collapsed by default, matching Income/Expense/Vendor sections */}
+            <Collapsible open={documentsOpen} onOpenChange={setDocumentsOpen}>
+              <CollapsibleTrigger asChild>
+                <button className="w-full flex items-center justify-between py-2.5 px-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+                  <div className="flex items-center gap-1.5">
+                    <ChevronDown size={14} className={cn("text-muted-foreground transition-transform duration-200", documentsOpen && "rotate-180")} />
+                    <FileText size={14} className="text-muted-foreground" />
+                    <span className="text-sm font-semibold">Documents ({documents.length})</span>
+                  </div>
+                </button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+              <div className="space-y-2 mt-2">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -694,7 +732,8 @@ export const ProjectDetailSheet = ({
                   })
                 )}
               </div>
-            </div>
+              </CollapsibleContent>
+            </Collapsible>
 
             {/* Column View - Desktop only */}
             {!isMobile && viewMode === 'columns' ? (
@@ -951,6 +990,30 @@ export const ProjectDetailSheet = ({
         )}
       </div>
 
+      {/* Archive Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={showArchiveConfirm}
+        onClose={() => setShowArchiveConfirm(false)}
+        onConfirm={handleArchiveConfirm}
+        title={project.archived ? "Restore Project" : "Archive Project"}
+        description={
+          project.archived
+            ? `Are you sure you want to restore "${project.name}"? It will appear in your active projects.`
+            : `Are you sure you want to archive "${project.name}"? You can restore it anytime from the Archived tab.`
+        }
+        variant={project.archived ? 'restore' : 'archive'}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Project"
+        description={`Are you sure you want to delete "${project.name}"? This action cannot be undone.`}
+        variant="delete"
+      />
+
       {/* Document Preview Overlay */}
       {previewDoc && (
         <div className="fixed inset-0 z-[100] bg-background flex flex-col">
@@ -971,19 +1034,15 @@ export const ProjectDetailSheet = ({
               <ExternalLink size={18} className="text-muted-foreground" />
             </a>
           </div>
-          <div className="flex-1 flex items-center justify-center p-4 overflow-auto">
+          <div className="flex-1 flex items-start justify-center p-4 overflow-auto">
             {previewDoc.fileType.startsWith('image/') ? (
               <img
                 src={previewDoc.fileUrl}
                 alt={previewDoc.fileName}
-                className="max-w-full max-h-full object-contain rounded-lg"
+                className="max-w-full max-h-full object-contain rounded-lg m-auto"
               />
             ) : previewDoc.fileType === 'application/pdf' ? (
-              <iframe
-                src={previewDoc.fileUrl}
-                title={previewDoc.fileName}
-                className="w-full h-full border-0 rounded-lg"
-              />
+              <PdfPreview url={previewDoc.fileUrl} />
             ) : (
               <div className="text-center text-muted-foreground">
                 <File size={48} className="mx-auto mb-3 opacity-50" />

@@ -26,4 +26,5 @@ const Toaster = ({ ...props }: ToasterProps) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- shadcn primitive: intentionally co-exports the toast function alongside the component
 export { Toaster, toast };

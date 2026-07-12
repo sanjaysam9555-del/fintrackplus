@@ -216,9 +216,9 @@ export const TransactionDetailSheet = ({
                   {/* Payment Method */}
                   <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-xl">
                     {transaction.paymentMethod === 'cash' ? (
-                      <Banknote size={18} className="text-muted-foreground shrink-0" />
+                      <Banknote size={18} className="text-cash shrink-0" />
                     ) : (
-                      <CreditCard size={18} className="text-muted-foreground shrink-0" />
+                      <CreditCard size={18} className="text-online shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-muted-foreground">Payment Method</p>
@@ -298,7 +298,7 @@ export const TransactionDetailSheet = ({
               </div>
               
               {/* Action Buttons */}
-              <div className="p-4 border-t border-border flex gap-3">
+              <div className="p-4 border-t border-border flex gap-3 safe-bottom">
                 <Button
                   variant="outline"
                   className="flex-1"

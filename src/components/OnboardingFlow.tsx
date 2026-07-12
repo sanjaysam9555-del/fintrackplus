@@ -44,10 +44,15 @@ const detectDevice = (): DeviceType => {
   return 'unknown';
 };
 
+/** iOS Safari exposes a non-standard `navigator.standalone` flag for PWA detection. */
+interface NavigatorWithStandalone extends Navigator {
+  standalone?: boolean;
+}
+
 const isInStandaloneMode = (): boolean => {
   return (
     window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true
+    (window.navigator as NavigatorWithStandalone).standalone === true
   );
 };
 

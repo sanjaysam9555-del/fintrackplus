@@ -40,34 +40,54 @@ export const statusBarUtils = {
     if (!Capacitor.isNativePlatform()) return;
     try {
       await StatusBar.setStyle({ style: Style.Light });
-    } catch (e) {}
+    } catch (e) {
+      // Already confirmed native platform above — a failure here means the
+      // StatusBar plugin itself is unavailable/misconfigured. Log for visibility.
+      console.warn('[useStatusBar] setLight failed:', e);
+    }
   },
-  
+
   setDark: async () => {
     if (!Capacitor.isNativePlatform()) return;
     try {
       await StatusBar.setStyle({ style: Style.Dark });
-    } catch (e) {}
+    } catch (e) {
+      // Already confirmed native platform above — a failure here means the
+      // StatusBar plugin itself is unavailable/misconfigured. Log for visibility.
+      console.warn('[useStatusBar] setDark failed:', e);
+    }
   },
-  
+
   hide: async () => {
     if (!Capacitor.isNativePlatform()) return;
     try {
       await StatusBar.hide();
-    } catch (e) {}
+    } catch (e) {
+      // Already confirmed native platform above — a failure here means the
+      // StatusBar plugin itself is unavailable/misconfigured. Log for visibility.
+      console.warn('[useStatusBar] hide failed:', e);
+    }
   },
-  
+
   show: async () => {
     if (!Capacitor.isNativePlatform()) return;
     try {
       await StatusBar.show();
-    } catch (e) {}
+    } catch (e) {
+      // Already confirmed native platform above — a failure here means the
+      // StatusBar plugin itself is unavailable/misconfigured. Log for visibility.
+      console.warn('[useStatusBar] show failed:', e);
+    }
   },
-  
+
   setBackgroundColor: async (color: string) => {
     if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') return;
     try {
       await StatusBar.setBackgroundColor({ color });
-    } catch (e) {}
+    } catch (e) {
+      // Already confirmed native Android platform above — a failure here means the
+      // StatusBar plugin itself is unavailable/misconfigured. Log for visibility.
+      console.warn('[useStatusBar] setBackgroundColor failed:', e);
+    }
   }
 };

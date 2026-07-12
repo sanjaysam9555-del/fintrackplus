@@ -1,6 +1,28 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import { toast } from "sonner";
+
+type ProjectDocumentRow = Database['public']['Tables']['project_documents']['Row'];
+
+const PROJECT_DOCUMENTS_BUCKET = 'project-documents';
+
+// file_url is normally stored as a raw storage path, but older rows may hold a full
+// signed/public URL — extract the underlying path either way so we can mint a fresh signed URL.
+const extractStoragePath = (value: string): string => {
+  if (!value.startsWith('http')) return value;
+  try {
+    const signedMatch = value.match(new RegExp(`/object/sign/${PROJECT_DOCUMENTS_BUCKET}/(.+?)\\?`));
+    if (signedMatch) return decodeURIComponent(signedMatch[1]);
+    const publicMatch = value.match(new RegExp(`/object/public/${PROJECT_DOCUMENTS_BUCKET}/(.+?)($|\\?)`));
+    if (publicMatch) return decodeURIComponent(publicMatch[1]);
+    const storageMatch = value.match(new RegExp(`/storage/v1/object/(?:sign|public|authenticated)/${PROJECT_DOCUMENTS_BUCKET}/(.+?)(?:\\?|$)`));
+    if (storageMatch) return decodeURIComponent(storageMatch[1]);
+  } catch {
+    // fall through to returning the raw value
+  }
+  return value;
+};
 
 export interface ProjectDocument {
   id: string;
@@ -29,15 +51,22 @@ export const useProjectDocuments = (projectId: string | undefined, userId: strin
         .order('uploaded_at', { ascending: false });
 
       if (error) throw error;
-      setDocuments((data || []).map((d: any) => ({
-        id: d.id,
-        projectId: d.project_id,
-        fileName: d.file_name,
-        fileUrl: d.file_url,
-        fileType: d.file_type,
-        fileSize: d.file_size,
-        uploadedAt: d.uploaded_at,
-      })));
+      const resolved = await Promise.all((data || []).map(async (d: ProjectDocumentRow) => {
+        const path = extractStoragePath(d.file_url);
+        const { data: signedData } = await supabase.storage
+          .from(PROJECT_DOCUMENTS_BUCKET)
+          .createSignedUrl(path, 3600);
+        return {
+          id: d.id,
+          projectId: d.project_id,
+          fileName: d.file_name,
+          fileUrl: signedData?.signedUrl || d.file_url,
+          fileType: d.file_type,
+          fileSize: d.file_size,
+          uploadedAt: d.uploaded_at,
+        };
+      }));
+      setDocuments(resolved);
     } catch (err) {
       console.error('Failed to fetch documents:', err);
     } finally {
@@ -93,9 +122,10 @@ export const useProjectDocuments = (projectId: string | undefined, userId: strin
       }
 
       toast.success("Document uploaded");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Upload failed:', err);
-      toast.error("Upload failed: " + (err.message || 'Unknown error'));
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      toast.error("Upload failed: " + message);
     } finally {
       setIsUploading(false);
     }
@@ -117,7 +147,7 @@ export const useProjectDocuments = (projectId: string | undefined, userId: strin
 
       setDocuments(prev => prev.filter(d => d.id !== docId));
       toast.success("Document deleted");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Delete failed:', err);
       toast.error("Failed to delete document");
     }

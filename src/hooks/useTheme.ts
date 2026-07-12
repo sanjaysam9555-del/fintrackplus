@@ -75,7 +75,7 @@ export const useTheme = () => {
       if (user) {
         await supabase
           .from('profiles')
-          .update({ theme: mode } as any)
+          .update({ theme: mode })
           .eq('user_id', user.id);
       }
     } catch (e) {
@@ -99,10 +99,12 @@ export const useTheme = () => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [theme.mode, applyTheme]);
 
-  // Apply theme on mount
+  // Apply theme on mount (and whenever the resolved theme or applyTheme itself
+  // changes — applyTheme is a stable useCallback and applying is idempotent
+  // DOM/status-bar work, so re-running it here is safe and not a loop risk).
   useEffect(() => {
     applyTheme(theme.resolved);
-  }, []);
+  }, [applyTheme, theme.resolved]);
 
   const toggleTheme = useCallback(() => {
     const modes: ThemeMode[] = ['light', 'dark', 'oled', 'system'];
@@ -142,7 +144,7 @@ export const loadCloudTheme = async (userId: string) => {
       .eq('user_id', userId)
       .maybeSingle();
 
-    const cloudTheme = (data as any)?.theme as ThemeMode | undefined;
+    const cloudTheme = data?.theme as ThemeMode | undefined;
     if (cloudTheme && ['light', 'dark', 'oled'].includes(cloudTheme)) {
       localStorage.setItem(THEME_STORAGE_KEY, cloudTheme);
 

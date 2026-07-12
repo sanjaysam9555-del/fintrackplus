@@ -59,7 +59,15 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
   const [isGst, setIsGst] = useState(transaction.isGst || false);
 
 
-  // Reset state when transaction changes
+  // Reset state when transaction changes.
+  // Each EditTransactionSheet instance is rendered for one specific transaction
+  // (TransactionItem is keyed by transaction.id in its parent list), so transaction.id
+  // never actually changes across this component's lifetime — this effect exists to
+  // snapshot the transaction's fields into local editable state once, on mount/open.
+  // Intentionally depending only on transaction.id (not the individual fields) so that
+  // if the underlying transaction is updated elsewhere while this sheet is open (e.g. a
+  // realtime sync from another collaborator, or an automated installment update), the
+  // user's in-progress edits in this form are not silently overwritten.
   useEffect(() => {
     setType(transaction.type);
     setAmount(transaction.amount.toString());
@@ -73,6 +81,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     setNotes(transaction.notes || "");
     setReceiptUrl(transaction.receiptUrl);
     setIsGst(transaction.isGst || false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [transaction.id]);
   
   const filteredCategories = categories.filter(c => c.type === type);
@@ -239,7 +248,7 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
             </div>
             
             <div className="overflow-y-scroll overscroll-contain touch-pan-y" data-vaul-no-drag style={{ WebkitOverflowScrolling: 'touch', maxHeight: 'calc(85vh - 140px)' }}>
-              <div className="p-4 space-y-4 pb-8">
+              <div className="p-4 space-y-4 safe-bottom-lg">
                 {/* Type Toggle */}
                 <div className="flex gap-2 p-1 bg-muted rounded-xl">
                   <button
@@ -532,24 +541,24 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
                       onClick={() => setPaymentMethod('online')}
                       className={cn(
                         "flex-1 p-3 rounded-xl flex items-center justify-center gap-2 border-2 transition-colors",
-                        paymentMethod === 'online' 
-                          ? "border-primary bg-primary/5" 
+                        paymentMethod === 'online'
+                          ? "border-online bg-online/10"
                           : "border-transparent bg-muted"
                       )}
                     >
-                      <CreditCard size={16} className={paymentMethod === 'online' ? "text-primary" : "text-muted-foreground"} />
+                      <CreditCard size={16} className={paymentMethod === 'online' ? "text-online" : "text-muted-foreground"} />
                       <span className={cn("text-sm font-medium", paymentMethod === 'online' ? "text-foreground" : "text-muted-foreground")}>Online</span>
                     </button>
                     <button
                       onClick={() => setPaymentMethod('cash')}
                       className={cn(
                         "flex-1 p-3 rounded-xl flex items-center justify-center gap-2 border-2 transition-colors",
-                        paymentMethod === 'cash' 
-                          ? "border-primary bg-primary/5" 
+                        paymentMethod === 'cash'
+                          ? "border-cash bg-cash/10"
                           : "border-transparent bg-muted"
                       )}
                     >
-                      <Banknote size={16} className={paymentMethod === 'cash' ? "text-primary" : "text-muted-foreground"} />
+                      <Banknote size={16} className={paymentMethod === 'cash' ? "text-cash" : "text-muted-foreground"} />
                       <span className={cn("text-sm font-medium", paymentMethod === 'cash' ? "text-foreground" : "text-muted-foreground")}>Cash</span>
                     </button>
                   </div>

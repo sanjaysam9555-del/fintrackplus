@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: 'app.lovable.fintrackplus',
   appName: 'FinTrack+',
   webDir: 'dist',
-  server: {
-    url: 'https://79a3e63b-a41d-4b9c-bf1d-9935381d7325.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
   ios: {
     contentInset: 'automatic',
     backgroundColor: '#f8fafc',

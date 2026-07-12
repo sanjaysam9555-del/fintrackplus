@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Plus, Copy, Check, Trash2, Link, Shield, UserCheck, User, AlertTriangle, HelpCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
@@ -72,7 +72,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
   const [deleteConfirmMember, setDeleteConfirmMember] = useState<{ id: string; name: string; role: AppRole } | null>(null);
   const [currentUserName, setCurrentUserName] = useState('');
 
-  const fetchMembers = async () => {
+  const fetchMembers = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase.functions.invoke('manage-team', {
@@ -82,13 +82,13 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
-      setMembers((data.members || []).map((m: any) => ({ ...m, role: m.role as AppRole })));
+      setMembers((data.members || []).map((m: { role: string; [key: string]: unknown }) => ({ ...m, role: m.role as AppRole })));
     } catch (err) {
       console.error('Failed to fetch team members:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const fetchPartners = async () => {
     const { data } = await supabase.from('partners').select('id, name, user_id');
@@ -117,7 +117,7 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       if (profile?.name) setCurrentUserName(profile.name);
     };
     fetchOwnerData();
-  }, [user, orgId]);
+  }, [user, orgId, fetchMembers]);
 
   const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,8 +140,8 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       setExistingPartnerId(null);
       fetchMembers();
       fetchPartners();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add member');
+    } catch (err: unknown) {
+      toast.error((err instanceof Error && err.message) || 'Failed to add member');
     } finally {
       setIsSubmitting(false);
     }
@@ -185,8 +185,8 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
           duration: 4000,
           className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
         });
-      } catch (err: any) {
-        toast.error(err.message || 'Failed to create approval request');
+      } catch (err: unknown) {
+        toast.error((err instanceof Error && err.message) || 'Failed to create approval request');
       }
       return;
     }
@@ -203,8 +203,8 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       toast.success(`${memberName} removed`);
       fetchMembers();
       fetchPartners();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to remove member');
+    } catch (err: unknown) {
+      toast.error((err instanceof Error && err.message) || 'Failed to remove member');
     }
   };
 
@@ -224,8 +224,8 @@ export const TeamSection = ({ onBack }: TeamSectionProps) => {
       setSelectedPartnerId('');
       fetchMembers();
       fetchPartners();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to link partner');
+    } catch (err: unknown) {
+      toast.error((err instanceof Error && err.message) || 'Failed to link partner');
     } finally {
       setIsLinking(false);
     }

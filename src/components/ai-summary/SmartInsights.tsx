@@ -99,6 +99,7 @@ export const SmartInsights = ({ insights }: SmartInsightsProps) => {
 };
 
 // Helper to generate insights from data
+// eslint-disable-next-line react-refresh/only-export-components
 export const generateInsights = ({
   currentMonthExpense,
   lastMonthExpense,

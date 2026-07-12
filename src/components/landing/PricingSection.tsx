@@ -142,7 +142,7 @@ export const PricingSection = () => {
             <Button
               size="lg"
               className="w-full text-base rounded-xl gap-2 bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/25"
-              onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+              onClick={() => { const url = getAppUrl(); if (url.startsWith('http')) { window.location.href = url; } else { navigate(url); } }}
             >
               Get Started <ArrowRight className="w-4 h-4" />
             </Button>

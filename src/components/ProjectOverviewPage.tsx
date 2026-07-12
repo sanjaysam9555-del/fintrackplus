@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FolderKanban, TrendingUp, TrendingDown, Archive, ArchiveRestore, PiggyBank, Receipt, Search, MoreVertical, Copy, Trash2, Plus, X, Check, Tag, ArrowDown, Pencil, Users } from "lucide-react";
+import { FolderKanban, Archive, ArchiveRestore, MoreVertical, Copy, Trash2, Plus, X, Check, Tag, Pencil, Users, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
@@ -18,11 +18,15 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CashFlowChart } from "./CashFlowChart";
+import { SummaryCard } from "./SummaryCard";
+import { TimeFrameDropdown, computeDateRange } from "./TimeFrameSelector";
+import { ProjectFilterSheet, ProjectFilters, emptyProjectFilters, countActiveProjectFilters } from "./ProjectFilterSheet";
 interface ProjectOverviewPageProps {
   userId?: string;
   isEmployee?: boolean;
   onEditSheetChange?: (isOpen: boolean) => void;
-  onSearchClick?: () => void;
 }
 
 type HealthStatus = 'healthy' | 'at-risk' | 'critical';
@@ -35,14 +39,6 @@ const getHealthStatus = (actualMargin: number, expectedMargin: number): HealthSt
   return 'critical';
 };
 
-const getHealthGradient = (status: HealthStatus): string => {
-  switch (status) {
-    case 'healthy': return 'from-green-500/20 to-green-500/5';
-    case 'at-risk': return 'from-yellow-500/20 to-yellow-500/5';
-    case 'critical': return 'from-red-500/20 to-red-500/5';
-  }
-};
-
 const getHealthDot = (status: HealthStatus): string => {
   switch (status) {
     case 'healthy': return 'bg-green-500';
@@ -51,8 +47,11 @@ const getHealthDot = (status: HealthStatus): string => {
   }
 };
 
-export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetChange, onSearchClick }: ProjectOverviewPageProps) => {
-  const { projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject, projectLabels, addProjectLabel } = useFinanceStore();
+export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetChange }: ProjectOverviewPageProps) => {
+  const {
+    projects, getProjectSpending, getProjectIncome, transactions, updateProject, deleteProject, addProject, projectLabels, addProjectLabel,
+    activeTimeFilter, activeCustomStartDate, activeCustomEndDate, setActiveTimeFilter, setActiveCustomDateRange,
+  } = useFinanceStore();
   const { isOwner, isAdmin } = useUserRole();
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showArchived, setShowArchived] = useState(false);
@@ -63,6 +62,26 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
   const [formData, setFormData] = useState({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [] as string[], assignedEmployeeIds: [] as string[] });
   const [newLabelName, setNewLabelName] = useState('');
   const [employees, setEmployees] = useState<{ user_id: string; name: string }[]>([]);
+  const [projectFilters, setProjectFilters] = useState<ProjectFilters>(emptyProjectFilters);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const [projectSortBy, setProjectSortBy] = useState<string>('name-asc');
+  const activeProjectFilterCount = countActiveProjectFilters(projectFilters);
+
+  const timeFilter = activeTimeFilter;
+  const customStartDate = useMemo(
+    () => (activeCustomStartDate ? new Date(activeCustomStartDate) : undefined),
+    [activeCustomStartDate]
+  );
+  const customEndDate = useMemo(
+    () => (activeCustomEndDate ? new Date(activeCustomEndDate) : undefined),
+    [activeCustomEndDate]
+  );
+  const setCustomStartDate = (date: Date | undefined) => setActiveCustomDateRange(date ? date.toISOString() : null, activeCustomEndDate);
+  const setCustomEndDate = (date: Date | undefined) => setActiveCustomDateRange(activeCustomStartDate, date ? date.toISOString() : null);
+  const dateRange = useMemo(
+    () => computeDateRange(timeFilter, customStartDate, customEndDate),
+    [timeFilter, customStartDate, customEndDate]
+  );
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -143,18 +162,68 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
     setNewLabelName('');
   };
 
-  // Filter projects - employees only see assigned projects
-  const activeProjects = projects.filter(p => !p.archived).filter(p => !isEmployee || (p.assignedEmployeeIds || []).includes(userId || ''));
-  const archivedProjects = projects.filter(p => p.archived).filter(p => !isEmployee || (p.assignedEmployeeIds || []).includes(userId || ''));
-  const displayedProjects = showArchived ? archivedProjects : activeProjects;
+  // Filter projects - employees only see assigned projects; apply label/employee filters
+  const matchesProjectFilters = (p: Project) => {
+    if (projectFilters.labelIds.length > 0 && !(p.labelIds || []).some(lid => projectFilters.labelIds.includes(lid))) return false;
+    if (projectFilters.employeeIds.length > 0 && !(p.assignedEmployeeIds || []).some(eid => projectFilters.employeeIds.includes(eid))) return false;
+    return true;
+  };
+  const activeProjects = projects.filter(p => !p.archived).filter(p => !isEmployee || (p.assignedEmployeeIds || []).includes(userId || '')).filter(matchesProjectFilters);
+  const archivedProjects = projects.filter(p => p.archived).filter(p => !isEmployee || (p.assignedEmployeeIds || []).includes(userId || '')).filter(matchesProjectFilters);
 
   // Calculate totals based on selected tab
   const relevantProjects = showArchived ? archivedProjects : activeProjects;
+  const relevantProjectIds = new Set(relevantProjects.map(p => p.id));
+
+  // Transactions for the currently displayed projects, scoped to the selected time frame
+  const scopedProjectTransactions = useMemo(
+    () => transactions.filter(t => t.projectId && relevantProjectIds.has(t.projectId) && t.date >= dateRange.start && t.date <= dateRange.end),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- relevantProjectIds is derived fresh each render from relevantProjects/showArchived/projectFilters, which are already covered by their own inputs
+    [transactions, showArchived, projectFilters, projects, dateRange]
+  );
+
+  const getProjectSpendingInRange = (projectId: string) =>
+    scopedProjectTransactions.filter(t => t.projectId === projectId && t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const getProjectIncomeInRange = (projectId: string) =>
+    scopedProjectTransactions.filter(t => t.projectId === projectId && t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+
   const totalInternalCost = relevantProjects.reduce((sum, p) => sum + p.internalCost, 0);
   const totalClientCost = relevantProjects.reduce((sum, p) => sum + (p.clientCost || 0), 0);
-  const totalSpent = relevantProjects.reduce((sum, p) => sum + getProjectSpending(p.id), 0);
-  const totalIncome = relevantProjects.reduce((sum, p) => sum + getProjectIncome(p.id), 0);
+  const totalSpent = scopedProjectTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = scopedProjectTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const totalExpectedMargin = relevantProjects.reduce((sum, p) => sum + (p.expectedMargin || 0), 0);
+
+  // Sort the displayed projects
+  const displayedProjects = useMemo(() => {
+    const list = [...relevantProjects];
+    switch (projectSortBy) {
+      case 'name-asc': list.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case 'name-desc': list.sort((a, b) => b.name.localeCompare(a.name)); break;
+      case 'income-desc': list.sort((a, b) => getProjectIncomeInRange(b.id) - getProjectIncomeInRange(a.id)); break;
+      case 'expense-desc': list.sort((a, b) => getProjectSpendingInRange(b.id) - getProjectSpendingInRange(a.id)); break;
+      case 'margin-desc': list.sort((a, b) => (getProjectIncomeInRange(b.id) - getProjectSpendingInRange(b.id)) - (getProjectIncomeInRange(a.id) - getProjectSpendingInRange(a.id))); break;
+      case 'margin-asc': list.sort((a, b) => (getProjectIncomeInRange(a.id) - getProjectSpendingInRange(a.id)) - (getProjectIncomeInRange(b.id) - getProjectSpendingInRange(b.id))); break;
+      case 'recent': list.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || '')); break;
+      case 'event-date-desc':
+        list.sort((a, b) => {
+          if (!a.eventDate && !b.eventDate) return 0;
+          if (!a.eventDate) return 1;
+          if (!b.eventDate) return -1;
+          return b.eventDate.localeCompare(a.eventDate);
+        });
+        break;
+      case 'event-date-asc':
+        list.sort((a, b) => {
+          if (!a.eventDate && !b.eventDate) return 0;
+          if (!a.eventDate) return 1;
+          if (!b.eventDate) return -1;
+          return a.eventDate.localeCompare(b.eventDate);
+        });
+        break;
+    }
+    return list;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- getProjectIncomeInRange/getProjectSpendingInRange are derived from scopedProjectTransactions, already a dependency
+  }, [relevantProjects, projectSortBy, scopedProjectTransactions]);
 
   // Handle project duplication
   const handleDuplicate = (project: Project) => {
@@ -233,30 +302,27 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
 
   return (
     <div className="min-h-screen bg-background pb-40 md:pb-8 md:px-6 md:max-w-6xl">
-      {/* Enhanced Header */}
-      <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 border-b border-border safe-top">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-            <FolderKanban size={20} className="text-accent-foreground" />
+      {/* Header */}
+      <div className="sticky top-0 bg-background/95 backdrop-blur-sm z-10 px-4 py-4 safe-top">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-2xl font-bold">Projects</h1>
+          <div className="flex items-center gap-2">
+            <TimeFrameDropdown
+              timeFilter={timeFilter}
+              onTimeFilterChange={setActiveTimeFilter}
+              customStartDate={customStartDate}
+              customEndDate={customEndDate}
+              onCustomStartDateChange={setCustomStartDate}
+              onCustomEndDateChange={setCustomEndDate}
+            />
+            <button
+              onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] }); setNewLabelName(''); }}
+              className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              title="Add Project"
+            >
+              <Plus size={18} />
+            </button>
           </div>
-          <div className="flex-1">
-            <h1 className="text-xl font-bold">Projects</h1>
-            <p className="text-xs text-muted-foreground">Track project financials</p>
-          </div>
-          <button 
-            onClick={onSearchClick}
-            className="p-2.5 rounded-full hover:bg-muted transition-colors"
-            title="Search (⌘K)"
-          >
-            <Search size={18} className="text-muted-foreground" />
-          </button>
-          <button 
-            onClick={() => { setShowAddForm(true); setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] }); setNewLabelName(''); }}
-            className="p-2.5 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            title="Add Project"
-          >
-            <Plus size={18} />
-          </button>
         </div>
       </div>
 
@@ -414,97 +480,78 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
         )}
       </AnimatePresence>
 
-      {/* Enhanced Summary Section */}
-      <div className="px-4 pt-4">
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
-          {/* Header */}
-          <div className="px-4 pt-3 pb-1.5">
-            <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">{showArchived ? 'Archived' : 'Active'} Portfolio</p>
-          </div>
-          {/* Stats Row - 3-column grid */}
-          <div className="grid grid-cols-3 gap-px bg-border mx-3 mb-3 rounded-xl overflow-hidden">
-            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className="w-7 h-7 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <ArrowDown size={14} className="text-green-500" />
-              </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
-              <p className="text-sm font-bold text-green-600 dark:text-green-400">
-                <span className="lg:hidden">₹{formatCompactCurrency(totalIncome, false)}</span>
-                <span className="hidden lg:inline">₹{totalIncome.toLocaleString()}</span>
-              </p>
-            </div>
-            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className="w-7 h-7 rounded-lg bg-destructive/10 flex items-center justify-center">
-                <Receipt size={14} className="text-destructive" />
-              </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
-              <p className="text-sm font-bold text-destructive">
-                <span className="lg:hidden">₹{formatCompactCurrency(totalSpent, false)}</span>
-                <span className="hidden lg:inline">₹{totalSpent.toLocaleString()}</span>
-              </p>
-            </div>
-            <div className="bg-card p-2.5 flex flex-col items-center gap-1">
-              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", (totalIncome - totalSpent) >= 0 ? "bg-green-500/10" : "bg-destructive/10")}>
-                {(totalIncome - totalSpent) >= 0 ? (
-                  <TrendingUp size={14} className="text-green-500" />
-                ) : (
-                  <TrendingDown size={14} className="text-destructive" />
-                )}
-              </div>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-              <p className={cn("text-sm font-bold", (totalIncome - totalSpent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                <span className="lg:hidden">₹{formatCompactCurrency(totalIncome - totalSpent, false)}</span>
-                <span className="hidden lg:inline">₹{(totalIncome - totalSpent).toLocaleString()}</span>
-              </p>
-            </div>
-          </div>
+      {/* Portfolio Summary + Cash Flow - same components as the Home page */}
+      <div className="px-4">
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          <SummaryCard title="Income" amount={totalIncome} type="income" />
+          <SummaryCard title="Expenses" amount={totalSpent} type="expense" />
+          <SummaryCard title="Net Margin" amount={totalIncome - totalSpent} type="balance" />
         </div>
+
+        <CashFlowChart
+          transactions={scopedProjectTransactions}
+          timeFilter={timeFilter}
+          dateRange={dateRange}
+          topRightExtra={
+            <Select value={showArchived ? 'archived' : 'active'} onValueChange={(v) => setShowArchived(v === 'archived')}>
+              <SelectTrigger className="w-auto h-6 gap-1 px-2 py-0.5 rounded-full border-none bg-muted text-[11px] font-medium text-foreground hover:bg-muted/80 transition-colors focus:ring-0 focus:ring-offset-0 [&>svg:last-child]:opacity-100 [&>svg:last-child]:h-3 [&>svg:last-child]:w-3">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="end">
+                <SelectItem value="active">Active ({activeProjects.length})</SelectItem>
+                <SelectItem value="archived">Archived ({archivedProjects.length})</SelectItem>
+              </SelectContent>
+            </Select>
+          }
+        />
       </div>
 
-      {/* Enhanced Toggle Tabs */}
-      <div className="px-4 pt-4">
-        <div className="flex p-1 bg-muted rounded-xl">
-          <button
-            onClick={() => setShowArchived(false)}
-            className={cn(
-              "flex-1 py-2.5 rounded-lg font-medium transition-all text-sm flex items-center justify-center gap-2",
-              !showArchived 
-                ? "bg-card shadow-sm text-foreground" 
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <span className={cn(
-              "w-2 h-2 rounded-full",
-              !showArchived ? "bg-primary" : "bg-muted-foreground/50"
-            )} />
-            Active
-            <span className={cn(
-              "px-1.5 py-0.5 rounded-md text-xs",
-              !showArchived ? "bg-accent text-accent-foreground" : "bg-muted-foreground/20"
-            )}>
-              {activeProjects.length}
+      {/* Filters & Sort */}
+      <div className="px-4 pt-3 flex items-center justify-between gap-2">
+        <button
+          onClick={() => setIsFilterSheetOpen(true)}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+            activeProjectFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"
+          )}
+        >
+          <SlidersHorizontal size={14} />
+          Filters
+          {activeProjectFilterCount > 0 && (
+            <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+              {activeProjectFilterCount}
             </span>
-          </button>
-          <button
-            onClick={() => setShowArchived(true)}
-            className={cn(
-              "flex-1 py-2.5 rounded-lg font-medium transition-all text-sm flex items-center justify-center gap-2",
-              showArchived 
-                ? "bg-card shadow-sm text-foreground" 
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Archive size={14} />
-            Archived
-            <span className={cn(
-              "px-1.5 py-0.5 rounded-md text-xs",
-              showArchived ? "bg-accent text-accent-foreground" : "bg-muted-foreground/20"
-            )}>
-              {archivedProjects.length}
-            </span>
-          </button>
-        </div>
+          )}
+        </button>
+
+        <Select value={projectSortBy} onValueChange={setProjectSortBy}>
+          <SelectTrigger className="w-auto h-auto gap-1.5 px-3 py-1.5 rounded-full border-none bg-muted text-sm font-medium text-muted-foreground hover:bg-muted/80 transition-colors focus:ring-0 focus:ring-offset-0 [&>svg:last-child]:opacity-100 [&>svg:last-child]:h-3.5 [&>svg:last-child]:w-3.5">
+            <ArrowUpDown size={14} className="text-muted-foreground shrink-0" />
+            Sort
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="name-asc">Name (A-Z)</SelectItem>
+            <SelectItem value="name-desc">Name (Z-A)</SelectItem>
+            <SelectItem value="income-desc">Income (High)</SelectItem>
+            <SelectItem value="expense-desc">Expenses (High)</SelectItem>
+            <SelectItem value="margin-desc">Margin (High)</SelectItem>
+            <SelectItem value="margin-asc">Margin (Low)</SelectItem>
+            <SelectItem value="recent">Created (Newest)</SelectItem>
+            <SelectItem value="event-date-desc">Event Date (Newest)</SelectItem>
+            <SelectItem value="event-date-asc">Event Date (Oldest)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
+      <ProjectFilterSheet
+        open={isFilterSheetOpen}
+        onOpenChange={setIsFilterSheetOpen}
+        filters={projectFilters}
+        onFiltersChange={setProjectFilters}
+        resultCount={displayedProjects.length}
+        projectLabels={projectLabels}
+        employees={employees}
+      />
 
       {/* Project Cards - Two Column Grid */}
       <div className="px-4 pt-4 pb-4">
@@ -528,8 +575,8 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             <AnimatePresence>
               {displayedProjects.map((project) => {
-                const spent = getProjectSpending(project.id);
-                const income = getProjectIncome(project.id);
+                const spent = getProjectSpendingInRange(project.id);
+                const income = getProjectIncomeInRange(project.id);
                 const net = income - spent;
                 const budgetPercent = income > 0 ? Math.min((spent / income) * 100, 100) : 0;
                 const healthStatus: HealthStatus = budgetPercent < 80 ? 'healthy' : budgetPercent < 100 ? 'at-risk' : 'critical';
@@ -543,70 +590,48 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    whileHover={{ y: -2, boxShadow: "0 8px 25px rgba(0,0,0,0.1)" }}
+                    whileHover={{ y: -2, boxShadow: "0 8px 20px rgba(0,0,0,0.08)" }}
                     className={cn(
-                      "bg-card rounded-2xl border border-border overflow-hidden transition-shadow",
+                      "bg-card rounded-2xl border border-border border-l-4 overflow-hidden transition-shadow",
                       project.archived && "opacity-60"
                     )}
+                    style={{ borderLeftColor: project.archived ? 'hsl(var(--border))' : project.color }}
                   >
-                    {/* Health Indicator Strip */}
-                    <div className={cn(
-                      "h-1 w-full bg-gradient-to-r",
-                      project.archived ? "from-muted to-muted" : getHealthGradient(healthStatus)
-                    )} style={{ backgroundColor: project.archived ? undefined : project.color }} />
-                    
                     {/* Header with Three-Dot Menu */}
-                    <div className="flex items-start justify-between p-3 pb-0">
+                    <div className="flex items-center justify-between gap-2 p-3.5 pb-2.5">
                       <button
                         onClick={() => setSelectedProject(project)}
-                        className="flex items-start gap-2.5 flex-1 min-w-0 text-left"
+                        className="flex items-center gap-3 flex-1 min-w-0 text-left"
                       >
                         <div
-                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ backgroundColor: `${project.color}20` }}
+                          className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-white"
+                          style={{ backgroundColor: project.color }}
                         >
-                          <FolderKanban size={16} style={{ color: project.color }} />
+                          {project.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
                             <p className="text-sm font-semibold truncate leading-tight">{project.name}</p>
-                            {!project.archived && (
+                            {!project.archived && healthStatus !== 'healthy' && (
                               <motion.span
-                                className={cn("w-2 h-2 rounded-full shrink-0", getHealthDot(healthStatus))}
-                                animate={healthStatus !== 'healthy' ? { scale: [1, 1.4, 1] } : undefined}
-                                transition={healthStatus !== 'healthy' ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" } : undefined}
+                                className={cn("w-1.5 h-1.5 rounded-full shrink-0", getHealthDot(healthStatus))}
+                                animate={{ scale: [1, 1.4, 1] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
                               />
                             )}
                           </div>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                          <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                             {transactionCount} transaction{transactionCount !== 1 ? 's' : ''}
                           </p>
-                          {Array.isArray(project.labelIds) && project.labelIds.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {project.labelIds.map(lid => {
-                                const label = projectLabels.find(l => l.id === lid);
-                                if (!label) return null;
-                                return (
-                                  <span
-                                    key={lid}
-                                    className="text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium"
-                                    style={{ backgroundColor: label.color }}
-                                  >
-                                    #{label.name}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          )}
                         </div>
                       </button>
-                      
+
                       {/* Three-Dot Menu */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
                             onClick={(e) => e.stopPropagation()}
-                            className="p-1.5 rounded-lg hover:bg-muted transition-colors -mt-0.5"
+                            className="p-1.5 rounded-lg hover:bg-muted transition-colors shrink-0"
                           >
                             <MoreVertical size={16} className="text-muted-foreground" />
                           </button>
@@ -802,23 +827,49 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
                     ) : (
                       <button
                         onClick={() => setSelectedProject(project)}
-                        className="w-full px-3 pb-2.5 pt-2 text-left hover:bg-accent/30 transition-colors"
+                        className="w-full px-3.5 pb-3.5 text-left hover:bg-accent/30 transition-colors"
                       >
-                        {/* Budget Progress with inline stats */}
+                        {/* Labels */}
+                        {Array.isArray(project.labelIds) && project.labelIds.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mb-2.5">
+                            {project.labelIds.map(lid => {
+                              const label = projectLabels.find(l => l.id === lid);
+                              if (!label) return null;
+                              return (
+                                <span
+                                  key={lid}
+                                  className="text-[10px] px-1.5 py-0.5 rounded-full text-white font-medium"
+                                  style={{ backgroundColor: label.color }}
+                                >
+                                  #{label.name}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        {/* Financial Numbers - clean, no boxes */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
+                            <p className="text-sm font-bold text-green-600 dark:text-green-400 truncate">₹{formatCompactCurrency(income, false)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
+                            <p className="text-sm font-bold text-destructive truncate">₹{formatCompactCurrency(spent, false)}</p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Margin</p>
+                            <p className={cn("text-sm font-bold truncate", net >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
+                              ₹{formatCompactCurrency(net, false)}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Budget Progress */}
                         {income > 0 && (
-                          <div className="mb-2">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-[10px] text-muted-foreground">
-                                ₹{formatCompactCurrency(spent, false)} / ₹{formatCompactCurrency(income, false)}
-                              </span>
-                              <span className={cn(
-                                "text-[10px] font-medium",
-                                budgetPercent >= 80 ? "text-destructive" : budgetPercent >= 60 ? "text-amber-500" : "text-muted-foreground"
-                              )}>
-                                {isOverBudget ? 'Over income!' : `${Math.round(budgetPercent)}%`}
-                              </span>
-                            </div>
-                            <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div className="mt-3">
+                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${budgetPercent}%` }}
@@ -829,39 +880,19 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
                                 }}
                               />
                             </div>
+                            <div className="flex justify-between items-center mt-1">
+                              <span className="text-[10px] text-muted-foreground">
+                                ₹{formatCompactCurrency(spent, false)} of ₹{formatCompactCurrency(income, false)} spent
+                              </span>
+                              <span className={cn(
+                                "text-[10px] font-medium",
+                                budgetPercent >= 80 ? "text-destructive" : budgetPercent >= 60 ? "text-amber-500" : "text-muted-foreground"
+                              )}>
+                                {isOverBudget ? 'Over income!' : `${Math.round(budgetPercent)}%`}
+                              </span>
+                            </div>
                           </div>
                         )}
-
-                        {/* Compact Stats Row - 3-column grid */}
-                        <div className="grid grid-cols-3 gap-px bg-border rounded-xl overflow-hidden mt-1">
-                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                            <div className="w-6 h-6 rounded-lg bg-green-500/10 flex items-center justify-center">
-                              <ArrowDown size={12} className="text-green-500" />
-                            </div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Income</p>
-                            <p className="text-xs font-bold text-green-600 dark:text-green-400">₹{formatCompactCurrency(income, false)}</p>
-                          </div>
-                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                            <div className="w-6 h-6 rounded-lg bg-destructive/10 flex items-center justify-center">
-                              <Receipt size={12} className="text-destructive" />
-                            </div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Expenses</p>
-                            <p className="text-xs font-bold text-destructive">₹{formatCompactCurrency(spent, false)}</p>
-                          </div>
-                          <div className="bg-card p-2 flex flex-col items-center gap-0.5">
-                            <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: (income - spent) >= 0 ? 'hsl(142 71% 45% / 0.1)' : 'hsl(var(--destructive) / 0.1)' }}>
-                              {(income - spent) >= 0 ? (
-                                <TrendingUp size={12} className="text-green-500" />
-                              ) : (
-                                <TrendingDown size={12} className="text-destructive" />
-                              )}
-                            </div>
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Net Margin</p>
-                            <p className={cn("text-xs font-bold", (income - spent) >= 0 ? "text-green-600 dark:text-green-400" : "text-destructive")}>
-                              ₹{formatCompactCurrency(income - spent, false)}
-                            </p>
-                          </div>
-                        </div>
                       </button>
                     )}
                   </motion.div>

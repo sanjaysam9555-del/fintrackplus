@@ -16,6 +16,16 @@ html, body {
   background-color: hsl(var(--background));
 }
 
+/* Radix ScrollArea wraps its content in a `display: table` node to measure
+   scroll height, which lets that content size itself to its own preferred
+   (max-content) width instead of the container — the classic cause of
+   sheets/forms overflowing horizontally at narrow viewports. Force it back
+   to a normal block so it respects the parent's width. */
+[data-radix-scroll-area-viewport] > div {
+  display: block !important;
+  min-width: 100%;
+}
+
 #root {
   min-height: 100vh;
   min-height: 100dvh;
@@ -46,7 +56,13 @@ html, body {
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --warning-light: 38 92% 95%;
-    
+
+    /* Payment method — Cash (vivid orange) / Online (brown) */
+    --cash: 48 96% 40%;
+    --cash-foreground: 0 0% 100%;
+    --online: 152 55% 42%;
+    --online-foreground: 0 0% 100%;
+
     /* Backgrounds */
     --background: 220 20% 97%;
     --foreground: 222 47% 11%;
@@ -133,6 +149,10 @@ html, body {
     --destructive-light: 4 50% 16%;
     --warning: 38 92% 60%;
     --warning-light: 38 50% 15%;
+
+    /* Payment method — brightened for legibility on dark/OLED backgrounds */
+    --cash: 48 96% 58%;
+    --online: 152 55% 60%;
     
     --border: 222 20% 25%;
     --input: 222 20% 25%;
@@ -305,14 +325,19 @@ html, body {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
-  .safe-top {
-    padding-top: max(1rem, env(safe-area-inset-top));
+  /* Bottom padding for sheet/modal action buttons — keeps the original
+     comfortable spacing (2rem) as a floor, but yields to the real device
+     inset (e.g. the iPhone home indicator) whenever that's larger. */
+  .safe-bottom-lg {
+    padding-bottom: max(2rem, env(safe-area-inset-bottom));
   }
-}
 
-/* When running as an installed PWA / home screen app */
-@media (display-mode: standalone) {
   .safe-top {
-    padding-top: max(3.75rem, env(safe-area-inset-top));
+    /* Trust the device-reported inset (status bar / notch / Dynamic Island
+       height) directly instead of forcing a fixed floor — a hardcoded
+       minimum here overshoots on devices with a smaller real inset
+       (no-notch phones, Android, iPad) and leaves a dead gap under the
+       header. 1rem only covers browsers/devices that report 0. */
+    padding-top: max(1rem, env(safe-area-inset-top));
   }
 }

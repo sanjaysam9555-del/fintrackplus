@@ -65,7 +65,7 @@ export const LandingHeader = () => {
           ))}
           <a
             href="#"
-            onClick={(e) => { e.preventDefault(); const url = getAppUrl('/auth?mode=login'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+            onClick={(e) => { e.preventDefault(); const url = getAppUrl('/auth?mode=login'); if (url.startsWith('http')) { window.location.href = url; } else { navigate(url); } }}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             Existing User
@@ -73,7 +73,7 @@ export const LandingHeader = () => {
           <Button
             size="sm"
             className={`gap-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/25 transition-all ${showGlow ? "animate-[pulse_2s_ease-in-out_infinite] shadow-primary/40" : ""}`}
-            onClick={() => { const url = getAppUrl('/auth?mode=signup'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+            onClick={() => { const url = getAppUrl('/auth?mode=signup'); if (url.startsWith('http')) { window.location.href = url; } else { navigate(url); } }}
           >
             <Sparkles className="w-3 h-3" />
             Get Started <ArrowRight className="w-3.5 h-3.5" />
@@ -114,7 +114,7 @@ export const LandingHeader = () => {
               ))}
               <a
                 href="#"
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); const url = getAppUrl('/auth?mode=login'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMobileOpen(false); const url = getAppUrl('/auth?mode=login'); if (url.startsWith('http')) { window.location.href = url; } else { navigate(url); } }}
                 className="w-full text-center text-sm text-muted-foreground hover:text-foreground py-2 transition-colors cursor-pointer"
               >
                 Existing User
@@ -122,7 +122,7 @@ export const LandingHeader = () => {
               <Button
                 size="sm"
                 className="gap-1.5 rounded-full bg-gradient-to-r from-primary to-primary/80 shadow-md shadow-primary/20 mt-1"
-                onClick={(e) => { e.stopPropagation(); setMobileOpen(false); const url = getAppUrl('/auth?mode=signup'); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+                onClick={(e) => { e.stopPropagation(); setMobileOpen(false); const url = getAppUrl('/auth?mode=signup'); if (url.startsWith('http')) { window.location.href = url; } else { navigate(url); } }}
               >
                 <Sparkles className="w-3 h-3" />
                 Get Started <ArrowRight className="w-3.5 h-3.5" />

@@ -33,7 +33,7 @@ export const SpendingTrendChart = ({ data }: SpendingTrendChartProps) => {
   const trendDown = expenseTrend < -5;
 
   // Custom tooltip
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value?: number }[]; label?: string }) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-card border border-border rounded-lg p-2 shadow-lg">

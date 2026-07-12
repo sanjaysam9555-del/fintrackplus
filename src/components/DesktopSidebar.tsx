@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Home, 
-  ArrowDownLeft, 
-  ArrowUpRight, 
-  Plus, 
-  FolderKanban, 
-  Settings, 
+import {
+  Home,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Plus,
+  FolderKanban,
+  Settings,
   Sparkles,
+  Search,
   LogOut,
   ChevronLeft,
   ChevronRight,
@@ -145,6 +146,7 @@ export const DesktopSidebar = ({
           )}
           <div className={cn("space-y-1", isCollapsed && "mt-4")}>
             {[
+              { id: 'search', icon: Search, label: 'Search' },
               ...(!isEmployee ? [{ id: 'ai', icon: Sparkles, label: 'AI Summary' }] : []),
               { id: 'settings', icon: Settings, label: 'Settings' },
             ].map((item) => {

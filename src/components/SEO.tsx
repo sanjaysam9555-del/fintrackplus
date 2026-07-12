@@ -2,11 +2,13 @@ import { Helmet } from "react-helmet-async";
 
 const BASE_URL = "https://fintrackplus.com";
 
+type JsonLdSchema = Record<string, unknown>;
+
 interface SEOProps {
   title: string;
   description: string;
   path: string;
-  jsonLd?: Record<string, any> | Record<string, any>[];
+  jsonLd?: JsonLdSchema | JsonLdSchema[];
 }
 
 export const SEO = ({ title, description, path, jsonLd }: SEOProps) => {

@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Sparkles, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Repeat, Users, SplitSquareHorizontal, Plus, Search, Landmark } from "lucide-react";
+import { X, ChevronDown, CreditCard, Banknote, CalendarIcon, Check, Settings, Repeat, Users, SplitSquareHorizontal, Plus, Search, Landmark } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useFinanceStore } from "@/lib/store";
 import { TransactionType, PaymentMethod, PlannedInstallment } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -44,11 +45,15 @@ interface AddTransactionSheetProps {
   onNavigate?: (section: string) => void;
 }
 
+// Shared visual language for every dropdown/picker trigger in this sheet
+const PICKER_TRIGGER_CLASS = "w-full mt-1.5 p-3 bg-muted/60 border border-border/60 rounded-xl flex items-center justify-between min-h-[52px] transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 active:scale-[0.99]";
+const FIELD_LABEL_CLASS = "text-[13px] font-medium text-muted-foreground";
+
 export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', userId, isEmployee = false, onNavigate }: AddTransactionSheetProps) => {
   const navigate = useNavigate();
   const { categories, projects, transactions, vendors, partners, addTransaction } = useFinanceStore();
   const { checkForDuplicates } = useDuplicateDetection();
-  
+
   const [type, setType] = useState<TransactionType>(defaultType);
   const [amount, setAmount] = useState("");
   const [title, setTitle] = useState("");
@@ -59,7 +64,6 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
   const [date, setDate] = useState<Date>(new Date());
   const [notes, setNotes] = useState("");
-  const [magicInput, setMagicInput] = useState("");
   const [showCategories, setShowCategories] = useState(false);
   const [showProjects, setShowProjects] = useState(false);
   const [showVendors, setShowVendors] = useState(false);
@@ -77,7 +81,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
   const [isPartPayment, setIsPartPayment] = useState(false);
   const [totalExpectedAmount, setTotalExpectedAmount] = useState("");
   const [plannedInstallments, setPlannedInstallments] = useState<PlannedInstallment[]>([]);
-  
+
   const filteredCategories = categories.filter(c => c.type === type);
   const selectedCategory = categories.find(c => c.id === categoryId);
 
@@ -87,67 +91,77 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       const notSpecifiedCat = filteredCategories.find(c => c.name === 'Not Specified');
       if (notSpecifiedCat) setCategoryId(notSpecifiedCat.id);
     }
-  }, [type, filteredCategories]);
+  }, [type, filteredCategories, categoryId]);
   const availableProjects = useMemo(() => {
     if (isEmployee) return projects.filter(p => !p.archived && (p.assignedEmployeeIds || []).includes(userId || ''));
     return projects.filter(p => !p.archived);
   }, [projects, isEmployee, userId]);
   const selectedProject = projects.find(p => p.id === projectId);
   const selectedPartner = findPartnerByHandledBy(partners, handledBy);
-  
+
   // Get all vendors from both store and transactions
   const allVendors = useMemo(() => {
     const storedVendors = vendors;
     const transactionVendorNames = Array.from(new Set(transactions.map(t => t.vendor)));
-    
+
     // Merge: stored vendors take priority, then transaction vendors as fallback
     const vendorMap = new Map<string, { name: string; icon?: string; color?: string }>();
-    
+
     // Add transaction vendors first (will be overwritten by stored vendors)
     transactionVendorNames.forEach(name => {
       vendorMap.set(name.toLowerCase(), { name });
     });
-    
+
     // Add stored vendors (overwrite transaction vendors)
     storedVendors.forEach(v => {
       vendorMap.set(v.name.toLowerCase(), { name: v.name, icon: v.icon, color: v.color });
     });
-    
+
     return Array.from(vendorMap.values());
   }, [vendors, transactions]);
-  
+
   // Find vendor details for selected vendor
   const selectedVendorDetails = useMemo(() => {
     return allVendors.find(v => v.name.toLowerCase() === vendor.toLowerCase());
   }, [allVendors, vendor]);
-  
-  const handleMagicFill = () => {
-    const text = magicInput.toLowerCase();
-    const numberMatch = text.match(/\d+/);
-    
-    if (numberMatch) {
-      setAmount(numberMatch[0]);
-    }
-    
-    const words = text.split(' ');
-    const atIndex = words.indexOf('at');
-    if (atIndex !== -1 && words[atIndex + 1]) {
-      setVendor(words.slice(atIndex + 1).join(' ').replace(/for.*/, '').trim());
-    } else if (words.length > 1) {
-      setVendor(words[0].charAt(0).toUpperCase() + words[0].slice(1));
-    }
-    
-    if (text.includes('coffee') || text.includes('lunch') || text.includes('food') || text.includes('starbucks')) {
-      setCategoryId('food');
-    } else if (text.includes('uber') || text.includes('taxi') || text.includes('transport')) {
-      setCategoryId('transport');
-    } else if (text.includes('shopping') || text.includes('buy')) {
-      setCategoryId('shopping');
-    }
-    
-    setMagicInput("");
-  };
-  
+
+  // Usage counts drive "most used first" ordering in every picker below —
+  // no "Most Used" label, the ordering itself is the signal.
+  const categoryUsageCount = useMemo(() => {
+    const counts: Record<string, number> = {};
+    transactions.forEach(t => {
+      if (t.categoryId) counts[t.categoryId] = (counts[t.categoryId] || 0) + 1;
+    });
+    return counts;
+  }, [transactions]);
+
+  const vendorUsageCount = useMemo(() => {
+    const counts: Record<string, number> = {};
+    transactions.forEach(t => {
+      if (t.vendor) {
+        const key = t.vendor.toLowerCase();
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [transactions]);
+
+  const projectUsageCount = useMemo(() => {
+    const counts: Record<string, number> = {};
+    transactions.forEach(t => {
+      if (t.projectId) counts[t.projectId] = (counts[t.projectId] || 0) + 1;
+    });
+    return counts;
+  }, [transactions]);
+
+  const partnerUsageCount = useMemo(() => {
+    const counts: Record<string, number> = {};
+    transactions.forEach(t => {
+      if (t.handledBy) counts[t.handledBy] = (counts[t.handledBy] || 0) + 1;
+    });
+    return counts;
+  }, [transactions]);
+
   const doAddTransaction = useCallback(async () => {
     await addTransaction({
       type,
@@ -169,13 +183,13 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       totalExpectedAmount: isPartPayment && totalExpectedAmount ? parseFloat(totalExpectedAmount) : undefined,
       plannedInstallments: isPartPayment && plannedInstallments.length > 0 ? plannedInstallments : undefined,
     }, userId);
-    
+
     // Show success confirmation
     toast.success(type === 'expense' ? 'Expense Added' : 'Income Added', {
       description: `₹${parseFloat(amount).toLocaleString()} ${title ? `- ${title}` : ''}${isPartPayment ? ' (Part Payment)' : ''}`,
       duration: 3000,
     });
-    
+
     setAmount("");
     setTitle("");
     setVendor("Not Specified");
@@ -195,14 +209,14 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     setPlannedInstallments([]);
     onClose();
   }, [type, amount, title, vendor, categoryId, projectId, handledBy, paymentMethod, date, notes, isRecurring, recurringFrequency, receiptUrl, isGst, isPartPayment, totalExpectedAmount, plannedInstallments, userId, addTransaction, onClose]);
-  
+
   // Installment helper functions
   const addNewInstallment = useCallback(() => {
     const total = parseFloat(totalExpectedAmount || '0');
     const current = parseFloat(amount || '0');
     const planned = plannedInstallments.reduce((sum, i) => sum + i.amount, 0);
     const remaining = Math.max(0, total - current - planned);
-    
+
     setPlannedInstallments(prev => [
       ...prev,
       {
@@ -213,66 +227,69 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
       }
     ]);
   }, [totalExpectedAmount, amount, plannedInstallments]);
-  
+
   const updateInstallment = useCallback((id: string, updates: Partial<PlannedInstallment>) => {
-    setPlannedInstallments(prev => 
+    setPlannedInstallments(prev =>
       prev.map(inst => inst.id === id ? { ...inst, ...updates } : inst)
     );
   }, []);
-  
+
   const removeInstallment = useCallback((id: string) => {
     setPlannedInstallments(prev => prev.filter(inst => inst.id !== id));
   }, []);
-  
+
   const getRemainingAmount = useCallback(() => {
     const total = parseFloat(totalExpectedAmount || '0');
     const current = parseFloat(amount || '0');
     const planned = plannedInstallments.reduce((sum, i) => sum + i.amount, 0);
     return Math.max(0, total - current - planned);
   }, [totalExpectedAmount, amount, plannedInstallments]);
-  
+
   const handleSubmit = () => {
     if (!amount || !categoryId) return;
-    
+
     // Check for duplicates
     const potentialDuplicates = checkForDuplicates(
       vendor || 'Not Specified',
       parseFloat(amount),
       format(date, 'yyyy-MM-dd')
     );
-    
+
     if (potentialDuplicates.length > 0) {
       setDuplicates(potentialDuplicates);
       setShowDuplicateWarning(true);
       return;
     }
-    
+
     doAddTransaction();
   };
-  
+
   const handleDismissDuplicate = () => {
     setShowDuplicateWarning(false);
     setDuplicates([]);
   };
-  
+
   const handleProceedAnyway = () => {
     setShowDuplicateWarning(false);
     doAddTransaction();
   };
-  
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
+        <motion.div
+          key="add-txn-backdrop"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/40 z-50"
+          onClick={onClose}
+        />
+      )}
+
+      {isOpen && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 z-50"
-            onClick={onClose}
-          />
-          
-          <motion.div
+            key="add-txn-sheet"
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
@@ -282,118 +299,115 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
             <div className="flex justify-center pt-3">
               <div className="w-10 h-1 bg-muted rounded-full" />
             </div>
-            
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-xl font-bold">
+
+            <div className="flex items-center justify-between gap-2 p-4 border-b border-border">
+              <h2 className="text-xl font-bold flex-1 truncate">
                 Add {type === 'expense' ? 'Expense' : 'Income'}
               </h2>
-              <button onClick={onClose} className="p-2 rounded-full hover:bg-muted">
+              <Button
+                onClick={handleSubmit}
+                disabled={!amount || !categoryId}
+                size="sm"
+                className={cn(
+                  "rounded-lg font-semibold text-white shrink-0",
+                  type === 'expense' ? "bg-destructive hover:bg-destructive/90" : "bg-success hover:bg-success/90"
+                )}
+              >
+                Add
+              </Button>
+              <button onClick={onClose} className="p-2 -mr-2 rounded-full hover:bg-muted transition-colors active:scale-95 shrink-0">
                 <X size={20} />
               </button>
             </div>
-            
+
             <ScrollArea className="h-[calc(85vh-100px)]">
-              <div className="p-4 space-y-4 pb-8">
-                
-                {/* Type Toggle */}
-                <div className="flex gap-2 p-1 bg-muted rounded-xl">
-                  <button
-                    onClick={() => setType('expense')}
-                    className={cn(
-                      "flex-1 py-2 rounded-lg font-medium transition-colors",
-                      type === 'expense' 
-                        ? "bg-destructive text-destructive-foreground" 
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    Expense
-                  </button>
-                  <button
-                    onClick={() => setType('income')}
-                    className={cn(
-                      "flex-1 py-2 rounded-lg font-medium transition-colors",
-                      type === 'income' 
-                        ? "bg-success text-success-foreground" 
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    Income
-                  </button>
+              <div className="p-4 space-y-4 safe-bottom-lg">
+
+                {/* Type Toggle — sliding pill so the state change itself carries motion */}
+                <div className="relative flex gap-1 p-1 bg-muted rounded-xl">
+                  {(['expense', 'income'] as const).map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setType(t)}
+                      className={cn(
+                        "relative flex-1 py-2.5 rounded-lg font-semibold text-sm transition-colors z-10",
+                        type === t ? "text-white" : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      {type === t && (
+                        <motion.div
+                          layoutId="transaction-type-pill"
+                          className={cn(
+                            "absolute inset-0 rounded-lg -z-10",
+                            t === 'expense' ? "bg-destructive" : "bg-success"
+                          )}
+                          transition={{ type: "spring", duration: 0.3, bounce: 0.15 }}
+                        />
+                      )}
+                      {t === 'expense' ? 'Expense' : 'Income'}
+                    </button>
+                  ))}
                 </div>
-                
-                {/* Magic Fill */}
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Sparkles size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-primary" />
-                    <Input
-                      placeholder="Magic: 'Lunch at Cafe for 450'"
-                      value={magicInput}
-                      onChange={(e) => setMagicInput(e.target.value)}
-                      className="pl-9 text-sm bg-primary/5 border-primary/20"
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleMagicFill}
-                    disabled={!magicInput}
-                    size="sm"
-                    variant="outline"
-                  >
-                    Fill
-                  </Button>
-                </div>
-                
+
                 {/* Title */}
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Title <span className="text-muted-foreground/60">(optional)</span>
-                  </Label>
+                  <Label className={FIELD_LABEL_CLASS}>Title</Label>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     placeholder={type === 'expense' ? 'e.g., Office supplies' : 'e.g., Monthly salary'}
-                    className="mt-1"
+                    className="mt-1.5 rounded-xl h-11"
                   />
                 </div>
-                
-                {/* Amount */}
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Amount *</Label>
-                  <div className="flex items-center gap-2 mt-1 border-b-2 border-primary pb-2">
-                    <span className="text-xl font-bold text-muted-foreground">{CURRENCY_SYMBOL}</span>
+
+                {/* Amount — the hero field, colored to match the selected type */}
+                <div className={cn(
+                  "rounded-2xl p-4 border transition-colors",
+                  type === 'expense'
+                    ? "bg-destructive/[0.06] border-destructive/20"
+                    : "bg-success/[0.06] border-success/20"
+                )}>
+                  <Label className={FIELD_LABEL_CLASS}>
+                    Amount <span className={type === 'expense' ? "text-destructive" : "text-success"}>*</span>
+                  </Label>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className={cn("text-2xl font-bold", type === 'expense' ? "text-destructive" : "text-success")}>
+                      {CURRENCY_SYMBOL}
+                    </span>
                     <input
                       type="number"
                       inputMode="decimal"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0"
-                      className="flex-1 text-2xl font-bold bg-transparent outline-none"
+                      className="flex-1 text-3xl font-bold bg-transparent outline-none placeholder:text-muted-foreground/30 min-w-0"
                     />
                   </div>
                 </div>
-                
+
                 {/* Category Dropdown */}
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Category *</Label>
+                  <Label className={FIELD_LABEL_CLASS}>Category <span className="text-destructive">*</span></Label>
                   <Popover open={showCategories} onOpenChange={(open) => {
                     setShowCategories(open);
                     if (!open) setCategorySearch("");
                   }}>
                     <PopoverTrigger asChild>
-                      <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
+                      <button className={PICKER_TRIGGER_CLASS}>
                         {selectedCategory ? (
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-6 h-6 rounded-md flex items-center justify-center"
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                               style={{ backgroundColor: `${selectedCategory.color}20` }}
                             >
-                              {renderCategoryIcon(selectedCategory.icon, selectedCategory.color)}
+                              {renderCategoryIcon(selectedCategory.icon, selectedCategory.color, 16)}
                             </div>
                             <span className="text-sm font-medium truncate">{selectedCategory.name}</span>
                           </div>
                         ) : (
-                          <span className="text-sm text-muted-foreground">Select category...</span>
+                          <span className="text-sm text-muted-foreground">Select category</span>
                         )}
-                        <ChevronDown size={16} className="text-muted-foreground shrink-0" />
+                        <ChevronDown size={16} className={cn("text-muted-foreground shrink-0 transition-transform duration-200", showCategories && "rotate-180")} />
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[calc(100vw-2rem)] sm:w-72 p-2 bg-card z-[70]" align="start" sideOffset={8} onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -412,7 +426,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <>
                               {filteredCategories
                                 .filter(c => !categorySearch || c.name.toLowerCase().includes(categorySearch.toLowerCase()))
-                                .sort((a, b) => (a.name === 'Not Specified' ? -1 : b.name === 'Not Specified' ? 1 : 0))
+                                .sort((a, b) => (categoryUsageCount[b.id] || 0) - (categoryUsageCount[a.id] || 0))
                                 .map((cat) => (
                                 <button
                                   key={cat.id}
@@ -465,129 +479,39 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     </PopoverContent>
                   </Popover>
                 </div>
-                
-                {/* Date Picker */}
+
+                {/* Vendor Dropdown — expense only, income has no "Source" field */}
+                {type === 'expense' && (
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Date</Label>
-                  <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
-                    <PopoverTrigger asChild>
-                      <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
-                        <span className="text-sm font-medium">{format(date, 'MMM dd, yyyy')}</span>
-                        <CalendarIcon size={16} className="text-muted-foreground" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-card z-[70]" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={(d) => {
-                          if (d) setDate(d);
-                          setShowDatePicker(false);
-                        }}
-                        initialFocus
-                        className="p-3 pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                
-                {/* Recurring Toggle */}
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Recurring <span className="text-muted-foreground/60">(optional)</span>
-                  </Label>
-                  <button
-                    onClick={() => setIsRecurring(!isRecurring)}
-                    className={cn(
-                      "w-full mt-1 p-3 rounded-xl flex items-center justify-between min-h-[48px] border-2 transition-colors",
-                      isRecurring 
-                        ? "border-primary bg-primary/5" 
-                        : "border-transparent bg-muted"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Repeat size={16} className={isRecurring ? "text-primary" : "text-muted-foreground"} />
-                      <span className={cn("text-sm font-medium", isRecurring ? "text-foreground" : "text-muted-foreground")}>
-                        {isRecurring ? "This is a recurring transaction" : "Make this recurring"}
-                      </span>
-                    </div>
-                    <div className={cn(
-                      "w-10 h-6 rounded-full transition-colors flex items-center px-0.5",
-                      isRecurring ? "bg-primary" : "bg-muted-foreground/30"
-                    )}>
-                      <div className={cn(
-                        "w-5 h-5 rounded-full bg-white shadow transition-transform",
-                        isRecurring ? "translate-x-4" : "translate-x-0"
-                      )} />
-                    </div>
-                  </button>
-                  
-                  {/* Frequency Options */}
-                  {isRecurring && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mt-2 grid grid-cols-4 gap-2"
-                    >
-                      {([
-                        { value: "daily" as const, label: "Daily" },
-                        { value: "weekly" as const, label: "Weekly" },
-                        { value: "monthly" as const, label: "Monthly" },
-                        { value: "yearly" as const, label: "Yearly" },
-                      ]).map((freq) => (
-                        <button
-                          key={freq.value}
-                          onClick={() => setRecurringFrequency(freq.value)}
-                          className={cn(
-                            "p-2 rounded-lg text-xs font-medium transition-colors border-2",
-                            recurringFrequency === freq.value
-                              ? "border-primary bg-accent text-accent-foreground"
-                              : "border-border bg-muted text-muted-foreground hover:border-primary/50"
-                          )}
-                        >
-                          {freq.label}
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </div>
-                
-                {/* Vendor Dropdown */}
-                <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    {type === 'expense' ? 'Vendor' : 'Source'} <span className="text-muted-foreground/60">(optional)</span>
-                  </Label>
+                  <Label className={FIELD_LABEL_CLASS}>Vendor</Label>
                   <Popover open={showVendors} onOpenChange={(open) => {
                     setShowVendors(open);
                     if (!open) setVendorSearch("");
                   }}>
                     <PopoverTrigger asChild>
-                      <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
+                      <button className={PICKER_TRIGGER_CLASS}>
                         {vendor ? (
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-6 h-6 rounded-md flex items-center justify-center"
-                              style={{ 
-                                backgroundColor: selectedVendorDetails?.color 
-                                  ? `${selectedVendorDetails.color}20` 
-                                  : 'hsl(var(--success) / 0.2)' 
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                              style={{
+                                backgroundColor: selectedVendorDetails?.color
+                                  ? `${selectedVendorDetails.color}20`
+                                  : 'hsl(var(--success) / 0.2)'
                               }}
                             >
                               {renderVendorIcon(
-                                selectedVendorDetails?.icon, 
+                                selectedVendorDetails?.icon,
                                 selectedVendorDetails?.color || 'hsl(var(--success))',
-                                14
+                                16
                               )}
                             </div>
-                            <span className="text-sm font-medium">{vendor}</span>
+                            <span className="text-sm font-medium truncate">{vendor}</span>
                           </div>
                         ) : (
-                          <span className="text-sm text-muted-foreground">
-                            {type === 'expense' ? 'Select vendor...' : 'Select source...'}
-                          </span>
+                          <span className="text-sm text-muted-foreground">Select vendor</span>
                         )}
-                        <ChevronDown size={16} className="text-muted-foreground" />
+                        <ChevronDown size={16} className={cn("text-muted-foreground shrink-0 transition-transform duration-200", showVendors && "rotate-180")} />
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[calc(100vw-2rem)] sm:w-72 p-2 bg-card z-[70]" align="start" sideOffset={8} onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -606,7 +530,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <>
                               {allVendors
                                 .filter(v => !vendorSearch || v.name.toLowerCase().includes(vendorSearch.toLowerCase()))
-                                .sort((a, b) => (a.name === 'Not Specified' ? -1 : b.name === 'Not Specified' ? 1 : 0))
+                                .sort((a, b) => (vendorUsageCount[b.name.toLowerCase()] || 0) - (vendorUsageCount[a.name.toLowerCase()] || 0))
                                 .map((v) => (
                                   <button
                                     key={v.name}
@@ -620,10 +544,10 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                       vendor === v.name ? "bg-primary/10" : "hover:bg-muted"
                                     )}
                                   >
-                                    <div 
+                                    <div
                                       className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
-                                      style={{ 
-                                        backgroundColor: v.color ? `${v.color}20` : 'hsl(var(--success) / 0.2)' 
+                                      style={{
+                                        backgroundColor: v.color ? `${v.color}20` : 'hsl(var(--success) / 0.2)'
                                       }}
                                     >
                                       {renderVendorIcon(v.icon, v.color || 'hsl(var(--success))', 14)}
@@ -665,69 +589,146 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     </PopoverContent>
                   </Popover>
                 </div>
-                
+                )}
+
+                {/* Date */}
+                <div>
+                  <Label className={FIELD_LABEL_CLASS}>Date</Label>
+                  <Popover open={showDatePicker} onOpenChange={setShowDatePicker}>
+                    <PopoverTrigger asChild>
+                      <button className={PICKER_TRIGGER_CLASS}>
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                            <CalendarIcon size={16} className="text-primary" />
+                          </div>
+                          <span className="text-sm font-medium">{format(date, 'EEE, MMM dd, yyyy')}</span>
+                        </div>
+                        <ChevronDown size={16} className={cn("text-muted-foreground shrink-0 transition-transform duration-200", showDatePicker && "rotate-180")} />
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 bg-card z-[70]" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(d) => {
+                          if (d) setDate(d);
+                          setShowDatePicker(false);
+                        }}
+                        initialFocus
+                        className="p-3 pointer-events-auto"
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
                 {/* Payment Method */}
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">Payment Method</Label>
-                  <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Label className={FIELD_LABEL_CLASS}>Payment Method</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-1.5">
                     <button
                       onClick={() => setPaymentMethod("cash")}
                       className={cn(
-                        "p-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-colors",
-                        paymentMethod === "cash" 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border"
+                        "p-3 rounded-xl border flex items-center justify-center gap-2 transition-colors min-h-[52px] active:scale-[0.99]",
+                        paymentMethod === "cash"
+                          ? "border-cash bg-cash/10 text-cash"
+                          : "border-border/60 bg-muted/60 text-muted-foreground hover:border-cash/30"
                       )}
                     >
                       <Banknote size={16} />
-                      <span className="text-sm font-medium">Cash</span>
+                      <span className="text-sm font-semibold">Cash</span>
                     </button>
                     <button
                       onClick={() => setPaymentMethod("online")}
                       className={cn(
-                        "p-3 rounded-xl border-2 flex items-center justify-center gap-2 transition-colors",
-                        paymentMethod === "online" 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border"
+                        "p-3 rounded-xl border flex items-center justify-center gap-2 transition-colors min-h-[52px] active:scale-[0.99]",
+                        paymentMethod === "online"
+                          ? "border-online bg-online/10 text-online"
+                          : "border-border/60 bg-muted/60 text-muted-foreground hover:border-online/30"
                       )}
                     >
                       <CreditCard size={16} />
-                      <span className="text-sm font-medium">Online</span>
+                      <span className="text-sm font-semibold">Online</span>
                     </button>
                   </div>
                 </div>
-                
+
+                {/* Recurring Toggle */}
+                <div>
+                  <div className="flex items-center justify-between p-3 bg-muted/60 border border-border/60 rounded-xl">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", isRecurring ? "bg-primary/10" : "bg-muted")}>
+                        <Repeat size={16} className={isRecurring ? "text-primary" : "text-muted-foreground"} />
+                      </div>
+                      <div className="min-w-0">
+                        <Label htmlFor="recurring-toggle" className="text-sm font-medium cursor-pointer">
+                          Recurring transaction
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Repeats automatically</p>
+                      </div>
+                    </div>
+                    <Switch id="recurring-toggle" checked={isRecurring} onCheckedChange={setIsRecurring} />
+                  </div>
+
+                  {/* Frequency Options */}
+                  {isRecurring && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-2 grid grid-cols-4 gap-2"
+                    >
+                      {([
+                        { value: "daily" as const, label: "Daily" },
+                        { value: "weekly" as const, label: "Weekly" },
+                        { value: "monthly" as const, label: "Monthly" },
+                        { value: "yearly" as const, label: "Yearly" },
+                      ]).map((freq) => (
+                        <button
+                          key={freq.value}
+                          onClick={() => setRecurringFrequency(freq.value)}
+                          className={cn(
+                            "p-2 rounded-lg text-xs font-medium transition-colors border-2",
+                            recurringFrequency === freq.value
+                              ? "border-primary bg-accent text-accent-foreground"
+                              : "border-border bg-muted text-muted-foreground hover:border-primary/50"
+                          )}
+                        >
+                          {freq.label}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
+
                 {/* Partner Selector - Always show, even if no partners yet */}
                 {partners && partners.length > 0 && (
                   <div>
-                    <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                      Handled By <span className="text-muted-foreground/60">(optional)</span>
-                    </Label>
+                    <Label className={FIELD_LABEL_CLASS}>Handled By</Label>
                     <Popover open={showPartners} onOpenChange={setShowPartners}>
                       <PopoverTrigger asChild>
-                        <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
+                        <button className={PICKER_TRIGGER_CLASS}>
                           {selectedPartner ? (
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
                               {selectedPartner.isCompanyAccount ? (
-                                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <Landmark size={12} className="text-primary" />
+                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                                  <Landmark size={14} className="text-primary" />
                                 </div>
                               ) : selectedPartner.avatarUrl ? (
-                                <img src={selectedPartner.avatarUrl} alt={selectedPartner.name} className="w-6 h-6 rounded-full object-cover" />
+                                <img src={selectedPartner.avatarUrl} alt={selectedPartner.name} className="w-8 h-8 rounded-full object-cover shrink-0" />
                               ) : (
-                                <div 
-                                  className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold"
+                                <div
+                                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
                                   style={{ backgroundColor: selectedPartner.color }}
                                 >
                                   {selectedPartner.name.charAt(0).toUpperCase()}
                                 </div>
                               )}
-                              <span className="text-sm font-medium">{selectedPartner.name}</span>
+                              <span className="text-sm font-medium truncate">{selectedPartner.name}</span>
                             </div>
                           ) : (
-                            <span className="text-sm text-muted-foreground">Select team member...</span>
+                            <span className="text-sm text-muted-foreground">Select team member</span>
                           )}
-                          <ChevronDown size={16} className="text-muted-foreground" />
+                          <ChevronDown size={16} className={cn("text-muted-foreground shrink-0 transition-transform duration-200", showPartners && "rotate-180")} />
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="w-72 p-2 bg-card z-[70]" align="start">
@@ -748,7 +749,14 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                             <span className="flex-1 text-muted-foreground">None</span>
                             <Check size={14} className={cn("text-primary shrink-0", !handledBy ? "opacity-100" : "opacity-0")} />
                           </button>
-                          {partners.filter(p => !p.isCompanyAccount).map((p) => {
+                          {partners.filter(p => !p.isCompanyAccount)
+                            .slice()
+                            .sort((a, b) => {
+                              const keyA = getPartnerHandledByKey(a) || '';
+                              const keyB = getPartnerHandledByKey(b) || '';
+                              return (partnerUsageCount[keyB] || 0) - (partnerUsageCount[keyA] || 0);
+                            })
+                            .map((p) => {
                             const partnerKey = getPartnerHandledByKey(p);
                             if (!partnerKey) return null;
                             return (
@@ -766,7 +774,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                               {p.avatarUrl ? (
                                 <img src={p.avatarUrl} alt={p.name} className="w-6 h-6 rounded-full object-cover shrink-0" />
                               ) : (
-                                <div 
+                                <div
                                   className="w-6 h-6 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
                                   style={{ backgroundColor: p.color }}
                                 >
@@ -813,35 +821,33 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     </Popover>
                   </div>
                 )}
-                
+
                 {/* Project Label */}
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Project Label <span className="text-muted-foreground/60">(optional)</span>
-                  </Label>
+                  <Label className={FIELD_LABEL_CLASS}>Project Label</Label>
                   <Popover open={showProjects} onOpenChange={(open) => {
                     setShowProjects(open);
                     if (!open) setProjectSearch("");
                   }}>
                     <PopoverTrigger asChild>
-                      <button className="w-full mt-1 p-3 bg-muted rounded-xl flex items-center justify-between min-h-[48px]">
+                      <button className={PICKER_TRIGGER_CLASS}>
                         {selectedProject ? (
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-6 h-6 rounded-md flex items-center justify-center"
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                               style={{ backgroundColor: `${selectedProject.color}20` }}
                             >
-                              <div 
-                                className="w-3 h-3 rounded-full" 
+                              <div
+                                className="w-3 h-3 rounded-full"
                                 style={{ backgroundColor: selectedProject.color }}
                               />
                             </div>
-                            <span className="text-sm font-medium">{selectedProject.name}</span>
+                            <span className="text-sm font-medium truncate">{selectedProject.name}</span>
                           </div>
                         ) : (
-                          <span className="text-sm text-muted-foreground">Select project...</span>
+                          <span className="text-sm text-muted-foreground">Select project</span>
                         )}
-                        <ChevronDown size={16} className="text-muted-foreground" />
+                        <ChevronDown size={16} className={cn("text-muted-foreground shrink-0 transition-transform duration-200", showProjects && "rotate-180")} />
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-[calc(100vw-2rem)] sm:w-72 p-2 bg-card z-[70]" align="start" sideOffset={8} onOpenAutoFocus={(e) => e.preventDefault()}>
@@ -874,7 +880,10 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                           </button>
                           {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).length > 0 ? (
                             <>
-                              {availableProjects.filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase())).map((proj) => (
+                              {availableProjects
+                                .filter(p => !projectSearch || p.name.toLowerCase().includes(projectSearch.toLowerCase()))
+                                .sort((a, b) => (projectUsageCount[b.id] || 0) - (projectUsageCount[a.id] || 0))
+                                .map((proj) => (
                                 <button
                                   key={proj.id}
                                   onClick={() => {
@@ -886,12 +895,12 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                                     projectId === proj.id ? "bg-primary/10" : "hover:bg-muted"
                                   )}
                                 >
-                                  <div 
+                                  <div
                                     className="w-6 h-6 rounded-md flex items-center justify-center shrink-0"
                                     style={{ backgroundColor: `${proj.color}20` }}
                                   >
-                                    <div 
-                                      className="w-3 h-3 rounded-full" 
+                                    <div
+                                      className="w-3 h-3 rounded-full"
                                       style={{ backgroundColor: proj.color }}
                                     />
                                   </div>
@@ -932,24 +941,22 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     </PopoverContent>
                   </Popover>
                 </div>
-                
+
                 {/* Notes */}
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Notes <span className="text-muted-foreground/60">(optional)</span>
-                  </Label>
+                  <Label className={FIELD_LABEL_CLASS}>Notes</Label>
                   <Input
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Add description..."
-                    className="mt-1"
+                    className="mt-1.5 rounded-xl h-11"
                   />
                 </div>
-                
+
                 {/* Receipt Upload */}
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide mb-1 block">
-                    Receipt/Invoice <span className="text-muted-foreground/60">(optional)</span>
+                  <Label className={cn(FIELD_LABEL_CLASS, "mb-1.5 block")}>
+                    Receipt/Invoice
                   </Label>
                   <ReceiptUpload
                     value={receiptUrl}
@@ -957,46 +964,34 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     userId={userId}
                   />
                 </div>
-                
+
                 {/* GST Toggle */}
                 <GstToggle value={isGst} onChange={setIsGst} />
-                
+
                 {/* Part Payment Toggle */}
                 <div>
-                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-                    Part Payment <span className="text-muted-foreground/60">(optional)</span>
-                  </Label>
-                  <button
-                    onClick={() => {
-                      setIsPartPayment(!isPartPayment);
-                      if (!isPartPayment) {
-                        setPlannedInstallments([]);
-                      }
-                    }}
-                    className={cn(
-                      "w-full mt-1 p-3 rounded-xl flex items-center justify-between min-h-[48px] border-2 transition-colors",
-                      isPartPayment 
-                        ? "border-amber-500 bg-amber-500/5" 
-                        : "border-transparent bg-muted"
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <SplitSquareHorizontal size={16} className={isPartPayment ? "text-amber-500" : "text-muted-foreground"} />
-                      <span className={cn("text-sm font-medium", isPartPayment ? "text-foreground" : "text-muted-foreground")}>
-                        {isPartPayment ? "This is a part payment" : "Mark as part payment"}
-                      </span>
+                  <div className="flex items-center justify-between p-3 bg-muted/60 border border-border/60 rounded-xl">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", isPartPayment ? "bg-amber-500/10" : "bg-muted")}>
+                        <SplitSquareHorizontal size={16} className={isPartPayment ? "text-amber-500" : "text-muted-foreground"} />
+                      </div>
+                      <div className="min-w-0">
+                        <Label htmlFor="part-payment-toggle" className="text-sm font-medium cursor-pointer">
+                          Part payment
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Split across installments</p>
+                      </div>
                     </div>
-                    <div className={cn(
-                      "w-10 h-6 rounded-full transition-colors flex items-center px-0.5",
-                      isPartPayment ? "bg-amber-500" : "bg-muted-foreground/30"
-                    )}>
-                      <div className={cn(
-                        "w-5 h-5 rounded-full bg-white shadow transition-transform",
-                        isPartPayment ? "translate-x-4" : "translate-x-0"
-                      )} />
-                    </div>
-                  </button>
-                  
+                    <Switch
+                      id="part-payment-toggle"
+                      checked={isPartPayment}
+                      onCheckedChange={(checked) => {
+                        setIsPartPayment(checked);
+                        if (!checked) setPlannedInstallments([]);
+                      }}
+                    />
+                  </div>
+
                   {/* Inline Installment Manager */}
                   <AnimatePresence>
                     {isPartPayment && (
@@ -1103,19 +1098,21 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
                     )}
                   </AnimatePresence>
                 </div>
-                
+
                 {/* Submit Button */}
                 <Button
                   onClick={handleSubmit}
                   disabled={!amount || !categoryId}
-                  className="w-full py-5 text-base font-semibold gradient-primary text-primary-foreground rounded-xl"
+                  className={cn(
+                    "w-full py-6 text-base font-semibold rounded-xl transition-transform active:scale-[0.98] text-white",
+                    type === 'expense' ? "bg-destructive hover:bg-destructive/90" : "bg-success hover:bg-success/90"
+                  )}
                 >
                   Add {type === 'expense' ? 'Expense' : 'Income'} →
                 </Button>
               </div>
             </ScrollArea>
           </motion.div>
-        </>
       )}
 
       {/* Duplicate Warning Modal */}

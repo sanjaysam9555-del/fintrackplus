@@ -8,10 +8,19 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { DeleteConfirmDialog } from "@/components/DeleteConfirmDialog";
 
+interface BackupSnapshot {
+  transactions?: unknown[];
+  categories?: unknown[];
+  vendors?: unknown[];
+  projects?: unknown[];
+  partners?: unknown[];
+  project_labels?: unknown[];
+}
+
 interface BackupRow {
   id: string;
   label: string;
-  snapshot: any;
+  snapshot: BackupSnapshot;
   created_at: string;
 }
 
@@ -57,8 +66,8 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
       if (data?.error) throw new Error(data.error);
       toast.success("Backup created successfully");
       fetchBackups();
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create backup");
+    } catch (err: unknown) {
+      toast.error((err instanceof Error && err.message) || "Failed to create backup");
     } finally {
       setCreating(false);
     }
@@ -76,8 +85,8 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
       toast.success("Backup restored! Refreshing data...");
       // Force page reload to re-sync all data
       setTimeout(() => window.location.reload(), 1500);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to restore backup");
+    } catch (err: unknown) {
+      toast.error((err instanceof Error && err.message) || "Failed to restore backup");
       setRestoringId(null);
     }
   };
@@ -94,7 +103,7 @@ export const BackupRestoreSection = ({ onBack }: BackupRestoreSectionProps) => {
     setDeleteTarget(null);
   };
 
-  const getSnapshotCounts = (snapshot: any) => {
+  const getSnapshotCounts = (snapshot: BackupSnapshot | null | undefined) => {
     if (!snapshot || typeof snapshot !== "object") return "";
     const parts: string[] = [];
     if (snapshot.transactions?.length) parts.push(`${snapshot.transactions.length} transactions`);

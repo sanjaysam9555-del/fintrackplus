@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense, useRef, useCallback, useMemo } from "react";
-import { GlassDock } from "@/components/GlassDock";
+import { GlassDock, DockItemId } from "@/components/GlassDock";
 import { DesktopSidebar } from "@/components/DesktopSidebar";
 import { Dashboard } from "@/components/Dashboard";
 import { DashboardSkeleton, PageLoader } from "@/components/ui/skeleton-loader";
@@ -37,6 +37,10 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<TabId>('home');
   const [viewMode, setViewMode] = useState<ViewMode>('home');
   const [isAddSheetOpen, setIsAddSheetOpen] = useState(false);
+  // Stays true forever after the first open — keeps AddTransactionSheet mounted
+  // so its own AnimatePresence can play the closing animation instead of the
+  // whole subtree vanishing the instant isAddSheetOpen flips to false.
+  const [hasOpenedAddSheet, setHasOpenedAddSheet] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
@@ -115,6 +119,10 @@ const Index = () => {
   useEffect(() => {
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (isAddSheetOpen) setHasOpenedAddSheet(true);
+  }, [isAddSheetOpen]);
   
   const resetScrollPosition = useCallback(() => {
     // iOS PWA: reset scroll after sheets close to prevent safe-area spacing drift
@@ -163,30 +171,13 @@ const Index = () => {
     swipeThreshold: 100,
   });
   
-  // Track previous view to know if we're transitioning to/from settings
-  const prevViewRef = useRef<ViewMode>(viewMode);
-  useEffect(() => {
-    prevViewRef.current = viewMode;
-  }, [viewMode]);
-  
-  // Animation variants for settings on mobile
-  const settingsMotionProps = useMemo(() => {
-    const isSettingsTransition = isMobile && (viewMode === 'settings' || prevViewRef.current === 'settings');
-    if (isSettingsTransition) {
-      return {
-        initial: viewMode === 'settings' ? { x: '100%', opacity: 1 } : { x: 0, opacity: 1 },
-        animate: { x: 0, opacity: 1 },
-        exit: viewMode === 'settings' ? { x: 0, opacity: 1 } : { x: '100%', opacity: 1 },
-        transition: { type: 'spring' as const, damping: 20, stiffness: 200 },
-      };
-    }
-    return {
-      initial: { opacity: 0, y: 8 },
-      animate: { opacity: 1, y: 0 },
-      exit: { opacity: 0, y: -8 },
-      transition: { duration: 0.2, ease: 'easeOut' as const },
-    };
-  }, [isMobile, viewMode]);
+  // Animation variants for content transitions — same fade for every tab, including settings
+  const contentMotionProps = {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -8 },
+    transition: { duration: 0.2, ease: 'easeOut' as const },
+  };
   
   const handleTabChange = (tab: TabId) => {
     if (tab === activeTab && viewMode === tab) return;
@@ -199,16 +190,15 @@ const Index = () => {
     switch (viewMode) {
       case 'home':
         return isLoading ? <DashboardSkeleton /> : (
-          <Dashboard 
-            isLoading={false} 
-            onAddClick={handleOpenAddSheet} 
+          <Dashboard
+            isLoading={false}
+            onAddClick={handleOpenAddSheet}
             onNavigate={handleNavigate}
             onRefresh={refreshData}
             isRefreshing={false}
             isOnline={isOnline}
             pendingCount={pendingCount}
             userId={user?.id}
-            onSearchClick={handleOpenSearch}
             onEditSheetChange={handleEditSheetChange}
             isEmployee={isEmployee}
           />
@@ -216,19 +206,19 @@ const Index = () => {
       case 'expenses':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="expense" userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
+            <TransactionList type="expense" userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} />
           </Suspense>
         );
       case 'income':
         return (
           <Suspense fallback={<TransactionListSkeleton />}>
-            <TransactionList type="income" userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} onNavigate={handleNavigate} />
+            <TransactionList type="income" userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} />
           </Suspense>
         );
       case 'projects':
         return (
           <Suspense fallback={<ContentSkeleton />}>
-            <ProjectOverviewPage userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} onSearchClick={handleOpenSearch} />
+            <ProjectOverviewPage userId={user?.id} isEmployee={isEmployee} onEditSheetChange={handleEditSheetChange} />
           </Suspense>
         );
       case 'ai':
@@ -240,7 +230,7 @@ const Index = () => {
       case 'settings':
         return (
           <Suspense fallback={<SettingsSkeleton />}>
-            <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} onBack={handleBackToHome} onBackToHome={navigatedFromHome.current ? handleBackToHome : undefined} onRefresh={refreshData} isRefreshing={false} isOnline={isOnline} pendingCount={pendingCount} />
+            <SettingsPage initialSection={settingsSection} onSectionChange={setSettingsSection} onBackToHome={navigatedFromHome.current ? handleBackToHome : undefined} onRefresh={refreshData} isRefreshing={false} isOnline={isOnline} pendingCount={pendingCount} onOpenAISummary={() => handleNavigate('ai')} />
           </Suspense>
         );
       default:
@@ -248,8 +238,13 @@ const Index = () => {
     }
   };
   
-  // Hide dock when viewing settings, AI, or when any transaction sheet is open
-  const showDock = viewMode !== 'settings' && viewMode !== 'ai' && !isAddSheetOpen && !isEditSheetOpen;
+  // Hide dock when viewing AI Summary, or when any transaction sheet is open. Settings stays
+  // visible like the other dock tabs (home/expenses/income/projects).
+  const showDock = viewMode !== 'ai' && !isAddSheetOpen && !isEditSheetOpen;
+
+  // Which dock item should show the active highlight — search takes priority while its
+  // dialog is open, then settings, otherwise whichever main tab is active.
+  const dockActiveId: DockItemId = isSearchOpen ? 'search' : viewMode === 'settings' ? 'settings' : activeTab;
   
   // Force password change gate
   if (mustChangePassword && memberId && !roleLoading) {
@@ -297,7 +292,7 @@ const Index = () => {
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={viewMode}
-              {...settingsMotionProps}
+              {...contentMotionProps}
               className="max-w-md mx-auto md:max-w-none md:mx-0 will-change-transform"
               onTouchStart={viewMode === 'settings' ? dismissSettingsSwipe.onTouchStart : undefined}
               onTouchEnd={viewMode === 'settings' ? dismissSettingsSwipe.onTouchEnd : undefined}
@@ -311,14 +306,16 @@ const Index = () => {
       {/* Glass Dock Navigation - Hidden on desktop and in settings/ai on mobile */}
       {showDock && (
         <GlassDock
-          activeTab={activeTab}
+          activeTab={dockActiveId}
           onTabChange={handleTabChange}
           onAddClick={() => setIsAddSheetOpen(true)}
+          onSearchClick={handleOpenSearch}
+          onSettingsClick={() => handleNavigate('settings')}
         />
       )}
       
-      {/* Add Transaction Sheet - Lazy loaded */}
-      {isAddSheetOpen && (
+      {/* Add Transaction Sheet - Lazy loaded, stays mounted after first open so its close animation can play */}
+      {hasOpenedAddSheet && (
         <Suspense fallback={null}>
           <AddTransactionSheet
             isOpen={isAddSheetOpen}

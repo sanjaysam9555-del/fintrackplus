@@ -633,5 +633,6 @@ export {
   SidebarRail,
   SidebarSeparator,
   SidebarTrigger,
+  // eslint-disable-next-line react-refresh/only-export-components -- shadcn primitive: intentionally co-exports the useSidebar hook alongside the components
   useSidebar,
 };

@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -9,6 +9,7 @@ import { motion } from "framer-motion";
 
 export type TimeFilter = 'week' | 'month' | 'year' | 'fy' | 'all' | 'custom';
 
+// eslint-disable-next-line react-refresh/only-export-components -- co-located helper constant used by multiple importers; splitting into a separate module would require updating imports across the app
 export const TIME_FILTER_OPTIONS: { value: TimeFilter; label: string }[] = [
   { value: 'week', label: 'Week' },
   { value: 'month', label: 'Month' },
@@ -18,6 +19,7 @@ export const TIME_FILTER_OPTIONS: { value: TimeFilter; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components -- co-located helper function used by multiple importers; splitting into a separate module would require updating imports across the app
 export const getTimeFilterLabel = (timeFilter: TimeFilter, customStartDate?: Date, customEndDate?: Date) => {
   const today = new Date();
   switch (timeFilter) {
@@ -40,6 +42,7 @@ export const getTimeFilterLabel = (timeFilter: TimeFilter, customStartDate?: Dat
   }
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- co-located helper function used by multiple importers; splitting into a separate module would require updating imports across the app
 export const computeDateRange = (
   timeFilter: TimeFilter,
   customStartDate?: Date,
@@ -322,5 +325,56 @@ export const CompactTimeFrameSelector = ({
         </div>
       </div>
     </div>
+  );
+};
+
+/** Dropdown trigger + compact panel, for placing the time frame selector in a header corner. */
+interface TimeFrameDropdownProps {
+  timeFilter: TimeFilter;
+  onTimeFilterChange: (filter: TimeFilter) => void;
+  customStartDate?: Date;
+  customEndDate?: Date;
+  onCustomStartDateChange: (date: Date | undefined) => void;
+  onCustomEndDateChange: (date: Date | undefined) => void;
+  className?: string;
+}
+
+export const TimeFrameDropdown = ({
+  timeFilter,
+  onTimeFilterChange,
+  customStartDate,
+  customEndDate,
+  onCustomStartDateChange,
+  onCustomEndDateChange,
+  className,
+}: TimeFrameDropdownProps) => {
+  const [open, setOpen] = useState(false);
+  const label = getTimeFilterLabel(timeFilter, customStartDate, customEndDate);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className={cn(
+            "flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors text-xs font-medium text-foreground max-w-[9.5rem]",
+            className
+          )}
+        >
+          <span className="truncate">{label}</span>
+          <ChevronDown size={14} className="text-muted-foreground shrink-0" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 bg-card z-[60] pointer-events-auto" align="end">
+        <CompactTimeFrameSelector
+          timeFilter={timeFilter}
+          onTimeFilterChange={onTimeFilterChange}
+          customStartDate={customStartDate}
+          customEndDate={customEndDate}
+          onCustomStartDateChange={onCustomStartDateChange}
+          onCustomEndDateChange={onCustomEndDateChange}
+          onClose={() => setOpen(false)}
+        />
+      </PopoverContent>
+    </Popover>
   );
 };

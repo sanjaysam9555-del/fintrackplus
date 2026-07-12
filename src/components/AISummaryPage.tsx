@@ -53,7 +53,9 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
           return cached.insights;
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error('Failed to read cached deep insights', e);
+    }
     return [];
   });
   const [isGeneratingDeep, setIsGeneratingDeep] = useState(false);
@@ -317,9 +319,9 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
       } else {
         throw new Error('Unexpected response format');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Deep insights error:', err);
-      const message = err?.message || 'Failed to generate insights';
+      const message = err instanceof Error ? err.message : 'Failed to generate insights';
       setDeepError(message);
       toast.error(message);
     } finally {
@@ -338,10 +340,17 @@ export const AISummaryPage = ({ onBack }: AISummaryPageProps) => {
           return; // Cache is fresh
         }
       }
-    } catch {}
+    } catch (e) {
+      console.error('Failed to read cached deep insights', e);
+    }
     // No valid cache — auto-generate
     generateDeepInsights();
-  }, [hasData]); // intentionally exclude generateDeepInsights to run only on mount
+    // Intentionally exclude generateDeepInsights: it's recreated whenever buildAIPayload's
+    // dependencies (transactions, fyRange, projects, etc.) change, and including it here would
+    // re-trigger auto-generation (and an AI API call) on every data change instead of only once
+    // per mount / stale-cache check.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasData]);
 
   return (
     <div className="min-h-screen pb-40 md:pb-8 md:px-6 md:max-w-6xl">

@@ -77,7 +77,7 @@ interface DbNotification {
   message: string;
   created_at: string;
   read: boolean | null;
-  details: any;
+  details: unknown;
   entity_type: string | null;
   entity_id: string | null;
   actor_name: string | null;
@@ -137,14 +137,14 @@ export const NotificationsPage = () => {
 
   const markNotificationRead = async (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-    await supabase.from('notifications').update({ read: true } as any).eq('id', id);
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
   };
 
   const markAllNotificationsRead = async () => {
     const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
     if (unreadIds.length === 0) return;
     setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    await supabase.from('notifications').update({ read: true } as any).in('id', unreadIds);
+    await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
   };
   
   const filteredNotifications = activeFilter === 'all' 

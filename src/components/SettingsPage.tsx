@@ -84,7 +84,7 @@ interface DbNotification {
   message: string;
   created_at: string;
   read: boolean | null;
-  details: any;
+  details: unknown;
   entity_type: string | null;
   entity_id: string | null;
   actor_name: string | null;
@@ -167,14 +167,14 @@ const NotificationsContent = () => {
 
   const markNotificationRead = async (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-    await supabase.from('notifications').update({ read: true } as any).eq('id', id);
+    await supabase.from('notifications').update({ read: true }).eq('id', id);
   };
 
   const markAllNotificationsRead = async () => {
     const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
     if (unreadIds.length === 0) return;
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    await supabase.from('notifications').update({ read: true } as any).in('id', unreadIds);
+    await supabase.from('notifications').update({ read: true }).in('id', unreadIds);
   };
   
   const getIcon = (type: string) => {
@@ -354,15 +354,15 @@ type SettingsSection = 'categories' | 'vendors' | 'labels' | 'reports' | 'logs' 
 interface SettingsPageProps {
   initialSection?: SettingsSection;
   onSectionChange?: (section: SettingsSection) => void;
-  onBack?: () => void;
   onBackToHome?: () => void;
   onRefresh?: () => void;
   isRefreshing?: boolean;
   isOnline?: boolean;
   pendingCount?: number;
+  onOpenAISummary?: () => void;
 }
 
-export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, onBackToHome, onRefresh, isRefreshing, isOnline = true, pendingCount = 0 }: SettingsPageProps) => {
+export const SettingsPage = ({ initialSection = null, onSectionChange, onBackToHome, onRefresh, isRefreshing, isOnline = true, pendingCount = 0, onOpenAISummary }: SettingsPageProps) => {
   const { categories, projects, userProfile, partners, projectLabels, defaultTimeFilter, setDefaultTimeFilter, syncStatus, lastSyncedAt } = useFinanceStore();
   const { signOut, user } = useAuth();
   const { isOwner, isAdmin, isEmployee, canViewPartners, canViewReports, canViewLogs, canManageTeam } = useUserRole();
@@ -371,7 +371,7 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
   const [showProfileEdit, setShowProfileEdit] = useState(false);
   const isInstalled = typeof window !== 'undefined' && (
     window.matchMedia('(display-mode: standalone)').matches ||
-    (window.navigator as any).standalone === true
+    (window.navigator as Navigator & { standalone?: boolean }).standalone === true
   );
   const [activeSection, setActiveSection] = useState<SettingsSection>(initialSection);
   
@@ -441,6 +441,9 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
     dataItems.push({ icon: RefreshCw, label: "Recurring", sublabel: `${recurringCount} active`, onClick: () => handleSectionChange('recurring') });
   }
 
+  if (!isEmployee) {
+    insightsItems.push({ icon: Sparkles, label: "AI Summary", sublabel: "Insights & trends", onClick: () => onOpenAISummary?.() });
+  }
   if (canViewReports) {
     insightsItems.push({ icon: FileBarChart, label: "Reports", sublabel: "View & export", onClick: () => handleSectionChange('reports') });
   }
@@ -547,11 +550,6 @@ export const SettingsPage = ({ initialSection = null, onSectionChange, onBack, o
       {/* Header */}
       <div className="p-4 safe-top">
         <div className="flex items-center gap-3">
-          {onBack && (
-            <button onClick={onBack} className="p-2 -ml-2 rounded-full hover:bg-muted">
-              <ArrowLeft size={20} />
-            </button>
-          )}
           <h1 className="text-2xl font-bold">Settings</h1>
         </div>
       </div>

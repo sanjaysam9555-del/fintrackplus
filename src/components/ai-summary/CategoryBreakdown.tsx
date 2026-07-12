@@ -43,7 +43,7 @@ export const CategoryBreakdown = ({ data, total }: CategoryBreakdownProps) => {
     ...(otherSum > 0 ? [{ name: 'Other', value: otherSum, color: '#888', percent: (otherSum / total) * 100 }] : [])
   ];
 
-  const CustomTooltip = ({ active, payload }: any) => {
+  const CustomTooltip = ({ active, payload }: { active?: boolean; payload?: { payload: CategoryData }[] }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (

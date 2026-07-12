@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { UserRoleProvider } from "@/hooks/UserRoleProvider";
 import { useStatusBar } from "@/hooks/useStatusBar";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, MotionConfig } from "framer-motion";
 import { SplashScreen } from "@/components/SplashScreen";
 import { isLandingDomain, isAppDomain, isPWA, appPath } from "@/lib/domainUtils";
 import { PaywallGate } from "@/components/PaywallGate";
@@ -34,7 +34,7 @@ if (typeof window !== 'undefined') {
     import("./pages/Auth");
   };
   if ('requestIdleCallback' in window) {
-    (window as any).requestIdleCallback(prefetch);
+    window.requestIdleCallback(prefetch);
   } else {
     setTimeout(prefetch, 1000);
   }
@@ -211,17 +211,19 @@ const AppRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <UserRoleProvider>
-            <AppRoutes />
-          </UserRoleProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <MotionConfig reducedMotion="user">
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <UserRoleProvider>
+              <AppRoutes />
+            </UserRoleProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </MotionConfig>
   </QueryClientProvider>
 );
 

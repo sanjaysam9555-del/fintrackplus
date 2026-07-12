@@ -4,7 +4,7 @@ import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { CategoryIcon } from "./CategoryIcon";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
-import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users, Paperclip, Receipt, Share2, Landmark } from "lucide-react";
+import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users, Paperclip, Receipt, Share2, Landmark, Calendar, Tag, Store, FolderKanban, StickyNote } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
@@ -22,6 +22,32 @@ interface TransactionItemProps {
   onEditSheetChange?: (isOpen: boolean) => void;
   compact?: boolean;
 }
+
+const DetailRow = ({
+  icon: Icon,
+  label,
+  value,
+  valueClassName,
+  iconClassName,
+  iconBgClassName,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+  valueClassName?: string;
+  iconClassName?: string;
+  iconBgClassName?: string;
+}) => (
+  <div className="flex items-center gap-3 py-2">
+    <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center shrink-0", iconBgClassName || "bg-muted")}>
+      <Icon size={13} className={iconClassName || "text-muted-foreground"} />
+    </div>
+    <div className="flex-1 min-w-0 flex items-center justify-between gap-3">
+      <span className="text-xs text-muted-foreground shrink-0">{label}</span>
+      <span className={cn("text-sm font-medium text-right truncate", valueClassName)}>{value}</span>
+    </div>
+  </div>
+);
 
 export const TransactionItem = ({ transaction, category, userId, onEditSheetChange, compact = false }: TransactionItemProps) => {
   const { deleteTransaction, addTransaction, projects, partners, orgName, orgLogoUrl } = useFinanceStore();
@@ -204,71 +230,78 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
             </div>
             
             <div className="flex-1 min-w-0">
-              <p className={cn(
-                "text-foreground truncate",
-                compact ? "text-sm font-medium" : "text-sm font-semibold lg:text-base"
-              )}>
-                {transaction.title || transaction.vendor || category?.name || 'Transaction'}
-              </p>
-              <p className={cn(
-                "text-muted-foreground truncate",
-                compact ? "text-xs" : "text-xs lg:text-sm"
-              )}>
-                {(() => {
-                  const parts: string[] = [];
-                  
-                  if (transaction.vendor && transaction.vendor !== (transaction.title || '')) {
-                    parts.push(transaction.vendor);
-                  }
-                  
-                  if (category?.name) {
-                    parts.push(category.name);
-                  }
-                  
-                  if (project?.name && parts.length < 2) {
-                    parts.push(project.name);
-                  }
-                  
-                  if (parts.length < 2) {
-                    parts.push(transaction.paymentMethod === 'cash' ? 'Cash' : 'Online');
-                  }
-                  
-                  parts.push(`${formatTime(transaction.time)}, ${formatDate(transaction.date)}`);
-                  
-                  return parts.join(' • ');
-                })()}
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              {/* Receipt & GST indicators */}
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
+                <p className={cn(
+                  "text-foreground truncate",
+                  compact ? "text-sm font-medium" : "text-sm font-semibold lg:text-base"
+                )}>
+                  {transaction.title || transaction.vendor || category?.name || 'Transaction'}
+                </p>
                 {transaction.receiptUrl && (
-                  <span title="Receipt attached">
+                  <span title="Receipt attached" className="shrink-0">
                     <Paperclip size={12} className="text-primary" />
                   </span>
                 )}
                 {transaction.isGst && (
-                  <Badge variant="outline" className="px-1.5 py-0 text-[10px] h-4 bg-amber-500/10 text-amber-600 border-amber-500/30">
+                  <Badge variant="outline" className="px-1.5 py-0 text-[10px] h-4 bg-amber-500/10 text-amber-600 border-amber-500/30 shrink-0">
                     GST
                   </Badge>
                 )}
               </div>
+              <div className="flex items-center gap-1 min-w-0 mt-0.5">
+                <p className={cn(
+                  "text-muted-foreground truncate",
+                  compact ? "text-xs" : "text-xs lg:text-sm"
+                )}>
+                  {(() => {
+                    const parts: string[] = [];
+
+                    if (transaction.vendor && transaction.vendor !== (transaction.title || '')) {
+                      parts.push(transaction.vendor);
+                    }
+
+                    if (category?.name) {
+                      parts.push(category.name);
+                    }
+
+                    if (parts.length === 0 && project?.name) {
+                      parts.push(project.name);
+                    }
+
+                    if (parts.length === 0) {
+                      parts.push(transaction.paymentMethod === 'cash' ? 'Cash' : 'Online');
+                    }
+
+                    return parts.join(' • ');
+                  })()}
+                </p>
+                {transaction.paymentMethod === 'cash' ? (
+                  <Banknote size={11} className="text-cash shrink-0" />
+                ) : (
+                  <CreditCard size={11} className="text-online shrink-0" />
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
               <p className={cn(
                 "font-bold text-right whitespace-nowrap",
-                compact ? "text-sm" : "text-sm lg:text-base",
+                compact ? "text-sm" : "text-base lg:text-lg",
                 isExpense ? "text-destructive" : "text-success"
               )}>
                 {isExpense ? '-' : '+'}{formatCurrency(transaction.amount)}
               </p>
-              <ChevronDown 
-                size={compact ? 14 : 16} 
-                className={cn(
-                  "text-muted-foreground transition-transform flex-shrink-0",
-                  isExpanded && "rotate-180"
-                )} 
-              />
+              <p className="text-[11px] text-muted-foreground whitespace-nowrap">
+                {formatTime(transaction.time)}, {formatDate(transaction.date)}
+              </p>
             </div>
+            <ChevronDown
+              size={compact ? 14 : 16}
+              className={cn(
+                "text-muted-foreground transition-transform flex-shrink-0",
+                isExpanded && "rotate-180"
+              )}
+            />
           </div>
           
           {/* Expanded Details */}
@@ -281,109 +314,101 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                <div className="px-3 pb-3 pt-1 border-t border-border">
-                  <div className="space-y-2 pt-2">
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Date:</span>
-                        <span className="font-medium">{formatDate(transaction.date)}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Payment:</span>
-                        <span className="font-medium flex items-center gap-1">
-                          {transaction.paymentMethod === 'cash' ? (
-                            <><Banknote size={12} /> Cash</>
-                          ) : (
-                            <><CreditCard size={12} /> Online</>
-                          )}
-                        </span>
-                      </div>
-                      {category?.name && (
-                        <div className="flex items-center gap-2 col-span-2">
-                          <span className="text-muted-foreground">Category:</span>
-                          <span className="font-medium">{category.name}</span>
-                        </div>
-                      )}
-                      {transaction.vendor && transaction.vendor !== transaction.title && (
-                        <div className="flex items-center gap-2 col-span-2">
-                          <span className="text-muted-foreground">Vendor:</span>
-                          <span className="font-medium">{transaction.vendor}</span>
-                        </div>
-                      )}
-                      {partner && (
-                        <div className="flex items-center gap-2 col-span-2">
-                          <span className="text-muted-foreground">Handled by:</span>
-                          <div className="flex items-center gap-1.5">
+                <div className="px-3 pb-3 pt-2 border-t border-border bg-muted/20">
+                  <div className="divide-y divide-border/60">
+                    <DetailRow icon={Calendar} label="Date" value={formatDate(transaction.date)} />
+                    <DetailRow
+                      icon={transaction.paymentMethod === 'cash' ? Banknote : CreditCard}
+                      label="Payment"
+                      value={transaction.paymentMethod === 'cash' ? 'Cash' : 'Online'}
+                      iconClassName={transaction.paymentMethod === 'cash' ? "text-cash" : "text-online"}
+                      iconBgClassName={transaction.paymentMethod === 'cash' ? "bg-cash/10" : "bg-online/10"}
+                    />
+                    {category?.name && (
+                      <DetailRow icon={Tag} label="Category" value={category.name} />
+                    )}
+                    {transaction.vendor && transaction.vendor !== transaction.title && (
+                      <DetailRow icon={Store} label="Vendor" value={transaction.vendor} />
+                    )}
+                    {partner && (
+                      <DetailRow
+                        icon={Users}
+                        label="Handled by"
+                        value={
+                          <span className="inline-flex items-center gap-1.5">
                             {partner.avatarUrl ? (
-                              <img src={partner.avatarUrl} alt={partner.name} className="w-4 h-4 rounded-full object-cover" />
+                              <img src={partner.avatarUrl} alt={partner.name} className="w-4 h-4 rounded-full object-cover shrink-0" />
                             ) : (
-                              <div 
-                                className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold"
+                              <span
+                                className="w-4 h-4 rounded-full flex items-center justify-center text-white text-[8px] font-bold shrink-0"
                                 style={{ backgroundColor: partner.color }}
                               >
                                 {partner.name.charAt(0).toUpperCase()}
-                              </div>
+                              </span>
                             )}
-                            <span className="font-medium">{partner.name}</span>
-                          </div>
-                        </div>
-                      )}
-                      {project && (
-                        <div className="flex items-center gap-2 col-span-2">
-                          <span className="text-muted-foreground">Project:</span>
-                          <span className="font-medium text-primary">{project.name}</span>
-                        </div>
-                      )}
-                      {transaction.notes && (
-                        <div className="col-span-2">
-                          <span className="text-muted-foreground">Notes: </span>
-                          <span className="text-foreground">{transaction.notes}</span>
-                        </div>
-                      )}
+                            {partner.name}
+                          </span>
+                        }
+                      />
+                    )}
+                    {project && (
+                      <DetailRow icon={FolderKanban} label="Project" value={project.name} valueClassName="text-primary" />
+                    )}
+                  </div>
+
+                  {transaction.notes && (
+                    <div className="flex items-start gap-3 mt-2 pt-2 border-t border-border/60">
+                      <div className="w-7 h-7 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                        <StickyNote size={13} className="text-muted-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0 pt-1">
+                        <p className="text-xs text-muted-foreground mb-0.5">Notes</p>
+                        <p className="text-sm text-foreground">{transaction.notes}</p>
+                      </div>
                     </div>
-                    
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleEdit}
-                        className="flex-1 h-8"
-                      >
-                        <Pencil size={12} className="mr-1" /> Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          shareTransaction({
-                            transaction,
-                            categoryName: category?.name,
-                            projectName: project?.name,
-                            projectColor: project?.color,
-                            vendorName: transaction.vendor,
-                            partnerName: partner?.name,
-                            partnerColor: partner?.color,
-                            orgName,
-                            orgLogoUrl,
-                          });
-                        }}
-                        className="flex-1 h-8"
-                      >
-                        <Share2 size={12} className="mr-1" /> Share
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete();
-                        }}
-                        className="flex-1 h-8"
-                      >
-                        <Trash2 size={12} className="mr-1" /> Delete
-                      </Button>
-                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleEdit}
+                      className="flex-1 h-9 rounded-lg"
+                    >
+                      <Pencil size={12} className="mr-1.5" /> Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        shareTransaction({
+                          transaction,
+                          categoryName: category?.name,
+                          projectName: project?.name,
+                          projectColor: project?.color,
+                          vendorName: transaction.vendor,
+                          partnerName: partner?.name,
+                          partnerColor: partner?.color,
+                          orgName,
+                          orgLogoUrl,
+                        });
+                      }}
+                      className="flex-1 h-9 rounded-lg"
+                    >
+                      <Share2 size={12} className="mr-1.5" /> Share
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete();
+                      }}
+                      className="flex-1 h-9 rounded-lg"
+                    >
+                      <Trash2 size={12} className="mr-1.5" /> Delete
+                    </Button>
                   </div>
                 </div>
               </motion.div>

@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { Transaction, Category, Project, ProjectLabel, FinanceState, TransactionType, PaymentMethod, UserProfile, Notification, Vendor, Partner, NotificationChange } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
 import { addToSyncQueue, getQueueSize, processSyncQueue, loadSyncQueue, loadRecentlySynced } from './syncEngine';
 import { doesHandledByBelongToPartner, findPartnerByHandledBy, getInternalTransferVendor, isInternalTransferVendor } from './partnerIdentity';
 
@@ -187,7 +188,7 @@ export const useFinanceStore = create<FinanceStore>()(
         if (oldFilter !== filter) {
           const userName = get().userProfile.name || 'Unknown';
           get().addNotification({
-            type: 'settings' as any,
+            type: 'settings',
             title: 'Time Filter Changed',
             message: `${userName} changed default time frame from ${oldFilter.toUpperCase()} to ${filter.toUpperCase()}`,
             details: [{ field: 'Time Frame', from: oldFilter.toUpperCase(), to: filter.toUpperCase() }],
@@ -439,12 +440,12 @@ export const useFinanceStore = create<FinanceStore>()(
               type: notification.type,
               title: notification.title,
               message: notification.message,
-              details: (notification.details || []) as any,
+              details: (notification.details || []) as unknown as Json,
               entity_type: notification.entityType || null,
               entity_id: notification.entityId || null,
               actor_name: actorName,
               read: false,
-            } as any);
+            });
           } catch (e) {
             console.error('Failed to persist notification:', e);
           }

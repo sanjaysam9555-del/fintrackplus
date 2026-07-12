@@ -40,13 +40,14 @@ export const ForcePasswordChange = ({ memberId, onComplete }: ForcePasswordChang
       await supabase.auth.refreshSession();
 
       // Clear the must_change_password flag via security-definer RPC (bypasses RLS)
-      const { error: flagError } = await supabase.rpc('clear_must_change_password' as any);
+      const { error: flagError } = await supabase.rpc('clear_must_change_password');
       if (flagError) throw flagError;
 
       toast.success('Password updated successfully');
       onComplete();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to update password');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to update password';
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

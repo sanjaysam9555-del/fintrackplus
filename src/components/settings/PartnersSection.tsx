@@ -196,18 +196,24 @@ const PartnerForm = ({
 
 // ── Total Holdings Card (static, all-time) ──────────────────────────
 
+interface PartnerBalanceSummary {
+  partner: Partner;
+  closingCashBalance: number;
+  closingOnlineBalance: number;
+}
+
 interface TotalHoldingsCardProps {
   partners: Partner[];
-  getPartnerBalancesForPeriod: (start: string, end: string) => any[];
+  getPartnerBalancesForPeriod: (start: string, end: string) => PartnerBalanceSummary[];
 }
 
 const TotalHoldingsCard = ({ partners, getPartnerBalancesForPeriod }: TotalHoldingsCardProps) => {
   const allTimeBalances = useMemo(() => {
     return getPartnerBalancesForPeriod('2000-01-01', '2099-12-31');
-  }, [getPartnerBalancesForPeriod, partners]);
+  }, [getPartnerBalancesForPeriod]);
 
-  const totalCash = allTimeBalances.reduce((sum: number, pb: any) => sum + pb.closingCashBalance, 0);
-  const totalOnline = allTimeBalances.reduce((sum: number, pb: any) => sum + pb.closingOnlineBalance, 0);
+  const totalCash = allTimeBalances.reduce((sum: number, pb: PartnerBalanceSummary) => sum + pb.closingCashBalance, 0);
+  const totalOnline = allTimeBalances.reduce((sum: number, pb: PartnerBalanceSummary) => sum + pb.closingOnlineBalance, 0);
   const totalHoldings = totalCash + totalOnline;
 
   return (
@@ -294,8 +300,14 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<string | null>(null);
   const timeFilter = activeTimeFilter;
-  const customStartDate = activeCustomStartDate ? new Date(activeCustomStartDate) : undefined;
-  const customEndDate = activeCustomEndDate ? new Date(activeCustomEndDate) : undefined;
+  const customStartDate = useMemo(
+    () => (activeCustomStartDate ? new Date(activeCustomStartDate) : undefined),
+    [activeCustomStartDate]
+  );
+  const customEndDate = useMemo(
+    () => (activeCustomEndDate ? new Date(activeCustomEndDate) : undefined),
+    [activeCustomEndDate]
+  );
   const setTimeFilter = setActiveTimeFilter;
   const setCustomStartDate = (date: Date | undefined) => setActiveCustomDateRange(date ? date.toISOString() : null, activeCustomEndDate);
   const setCustomEndDate = (date: Date | undefined) => setActiveCustomDateRange(activeCustomStartDate, date ? date.toISOString() : null);
@@ -323,7 +335,7 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
 
   const partnerBalances = useMemo(() => {
     return getPartnerBalancesForPeriod(dateRange.start, dateRange.end);
-  }, [getPartnerBalancesForPeriod, dateRange, partners, transactions]);
+  }, [getPartnerBalancesForPeriod, dateRange]);
 
   // Compute unassigned/orphaned transactions
   const unassignedStats = useMemo(() => {
@@ -524,8 +536,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             duration: 4000,
             className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
           });
-        } catch (err: any) {
-          toast.error(err.message || 'Failed to create approval request');
+        } catch (err: unknown) {
+          toast.error((err instanceof Error && err.message) || 'Failed to create approval request');
         }
       } else {
         // Find the org_member id for this partner's user_id
@@ -553,8 +565,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
               toast.success(`${partner.name} removed from app`);
               // Refresh local state
               window.location.reload();
-            } catch (err: any) {
-              toast.error(err.message || 'Failed to remove member');
+            } catch (err: unknown) {
+              toast.error((err instanceof Error && err.message) || 'Failed to remove member');
             }
           }
         }
@@ -585,8 +597,8 @@ export const PartnersSection = ({ onBack, userId }: PartnersSectionProps) => {
             duration: 4000,
             className: 'border-amber-500/30 bg-amber-50 dark:bg-amber-950/30',
           });
-        } catch (err: any) {
-          toast.error(err.message || 'Failed to create approval request');
+        } catch (err: unknown) {
+          toast.error((err instanceof Error && err.message) || 'Failed to create approval request');
         }
       } else {
         deletePartner(partner.id, userId);

@@ -133,4 +133,5 @@ export const UserRoleProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components -- core context provider used app-wide; splitting this file would risk breaking many imports
 export const useUserRoleContext = () => useContext(UserRoleContext);

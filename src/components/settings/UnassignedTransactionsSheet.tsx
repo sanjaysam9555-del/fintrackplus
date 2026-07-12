@@ -89,9 +89,9 @@ export const UnassignedTransactionsSheet = ({
                     </div>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       {t.paymentMethod === 'cash' ? (
-                        <Banknote size={12} className="text-muted-foreground" />
+                        <Banknote size={12} className="text-cash" />
                       ) : (
-                        <CreditCard size={12} className="text-muted-foreground" />
+                        <CreditCard size={12} className="text-online" />
                       )}
                       <p className={cn(
                         "text-sm font-bold whitespace-nowrap",

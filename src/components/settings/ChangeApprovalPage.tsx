@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Check, X, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '../ui/button';
@@ -41,7 +41,7 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
   const [resolvingId, setResolvingId] = useState<string | null>(null);
   const [resolvedStatus, setResolvedStatus] = useState<'approved' | 'rejected' | null>(null);
 
-  const fetchCurrentUserName = async () => {
+  const fetchCurrentUserName = useCallback(async () => {
     if (!user) return;
     const { data } = await supabase
       .from('profiles')
@@ -49,9 +49,9 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
       .eq('user_id', user.id)
       .maybeSingle();
     if (data?.name) setCurrentUserName(data.name);
-  };
+  }, [user]);
 
-  const fetchApprovals = async () => {
+  const fetchApprovals = useCallback(async () => {
     if (!user) return;
     try {
       // Fetch ALL org approvals (RLS scopes to org), no status filter
@@ -94,12 +94,12 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchApprovals();
     fetchCurrentUserName();
-  }, [user]);
+  }, [fetchApprovals, fetchCurrentUserName]);
 
   const handleApproval = async (approvalId: string, status: 'approved' | 'rejected') => {
     try {
@@ -144,7 +144,7 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
           if (partnerData?.user_id) {
             await supabase
               .from('transactions')
-              .update({ handled_by: null } as any)
+              .update({ handled_by: null })
               .eq('handled_by', partnerData.user_id);
           }
           await supabase.from('partners').delete().eq('id', approval.entity_id);
@@ -173,10 +173,10 @@ export const ChangeApprovalPage = ({ onBack }: ChangeApprovalPageProps) => {
         setResolvedStatus(null);
         fetchApprovals();
       }, 600);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setResolvingId(null);
       setResolvedStatus(null);
-      toast.error(err.message || 'Failed to process approval');
+      toast.error((err instanceof Error && err.message) || 'Failed to process approval');
     }
   };
 

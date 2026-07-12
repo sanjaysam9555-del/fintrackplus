@@ -28,7 +28,7 @@ export const FloatingMobileCTA = () => {
         >
           <button
             className="pointer-events-auto relative flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-full text-primary-foreground bg-gradient-to-r from-primary to-primary/80 backdrop-blur-md shadow-[0_8px_32px_rgba(25,102,205,0.3)] hover:shadow-[0_8px_40px_rgba(25,102,205,0.4)] transition-shadow"
-            onClick={() => { const url = getAppUrl(); url.startsWith('http') ? window.location.href = url : navigate(url); }}
+            onClick={() => { const url = getAppUrl(); if (url.startsWith('http')) { window.location.href = url; } else { navigate(url); } }}
           >
             {/* Pulsing ring */}
             <span className="absolute inset-0 rounded-full border-2 border-primary/40 animate-ping opacity-30" />

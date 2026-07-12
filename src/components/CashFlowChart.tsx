@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Transaction } from "@/lib/types";
@@ -15,6 +15,7 @@ interface CashFlowChartProps {
   timeFilter: TimeFilter;
   dateRange: { start: string; end: string };
   onPointSelect?: (amount: number, label: string) => void;
+  topRightExtra?: ReactNode;
 }
 
 interface ChartDataPoint {
@@ -25,7 +26,7 @@ interface ChartDataPoint {
   date: string;
 }
 
-export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSelect }: CashFlowChartProps) => {
+export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSelect, topRightExtra }: CashFlowChartProps) => {
   const [selectedPoint, setSelectedPoint] = useState<ChartDataPoint | null>(null);
   
   const chartData = useMemo(() => {
@@ -85,7 +86,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
       } else {
         // Monthly
         const useYear = realDaysDiff > 730;
-        let current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+        const current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
         while (current <= latestDate) {
           const mStart = new Date(current.getFullYear(), current.getMonth(), 1);
           const mEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
@@ -110,14 +111,14 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
     if (timeFilter === 'fy') {
       // Financial Year: Generate months from start to min(endDate, today)
       const actualEnd = endDate > today ? today : endDate;
-      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-      
+      const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+
       while (current <= actualEnd) {
         const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
         const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
-        
+
         const { income, expense } = calcForRange(monthStart, monthEnd);
-        
+
         dataPoints.push({
           name: format(monthStart, 'MMM'),
           income,
@@ -125,7 +126,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
           net: income - expense,
           date: format(monthStart, 'yyyy-MM-dd'),
         });
-        
+
         current.setMonth(current.getMonth() + 1);
       }
     } else if (timeFilter === 'week' || daysDiff <= 7) {
@@ -173,7 +174,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
       }
     } else if (timeFilter === 'year' || daysDiff > 31) {
       // Show months within the exact date range
-      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
       const actualEnd = endDate > today ? today : endDate;
       
       while (current <= actualEnd) {
@@ -248,7 +249,7 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
     return ((current - previous) / Math.abs(previous)) * 100;
   }, [chartData]);
   
-  const handleClick = (data: any) => {
+  const handleClick: ComponentProps<typeof AreaChart>['onClick'] = (data) => {
     if (data?.activePayload?.[0]) {
       const point = data.activePayload[0].payload as ChartDataPoint;
       setSelectedPoint(point);
@@ -269,11 +270,14 @@ export const CashFlowChart = ({ transactions, timeFilter, dateRange, onPointSele
             {totalNet < 0 ? '-' : ''}{formatCurrency(Math.abs(totalNet))}
           </p>
         </div>
-        <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-          percentChange >= 0 ? 'bg-success-light text-success' : 'bg-destructive-light text-destructive'
-        }`}>
-          <TrendingUp size={12} />
-          {percentChange >= 0 ? '+' : ''}{percentChange.toFixed(1)}%
+        <div className="flex flex-col items-end gap-1">
+          {topRightExtra}
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+            percentChange >= 0 ? 'bg-success-light text-success' : 'bg-destructive-light text-destructive'
+          }`}>
+            <TrendingUp size={12} />
+            {percentChange >= 0 ? '+' : ''}{percentChange.toFixed(1)}%
+          </div>
         </div>
       </div>
       

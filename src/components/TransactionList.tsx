@@ -5,38 +5,49 @@ import { formatDate as formatDateLabel, formatCurrency } from "@/lib/constants";
 import { TransactionItem } from "./TransactionItem";
 import { PageLoader } from "./ui/skeleton-loader";
 import { UpcomingRecurringBanner } from "./UpcomingRecurringBanner";
-import { Search, ArrowUpDown, Settings } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowUpDown, SlidersHorizontal } from "lucide-react";
+import { TransactionFilterSheet, TransactionFilters, emptyFilters, countActiveFilters } from "./TransactionFilterSheet";
+import { doesHandledByBelongToPartner } from "@/lib/partnerIdentity";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Input } from "./ui/input";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { AreaChart, Area, ResponsiveContainer, XAxis, Tooltip } from "recharts";
 import { format, differenceInDays, parseISO } from "date-fns";
-import { TimeFrameSelector, computeDateRange, getTimeFilterLabel } from "./TimeFrameSelector";
+import { TimeFrameDropdown, computeDateRange, getTimeFilterLabel } from "./TimeFrameSelector";
 
 interface TransactionListProps {
   type: TransactionType;
   userId?: string;
   isEmployee?: boolean;
   onEditSheetChange?: (isOpen: boolean) => void;
-  onSearchClick?: () => void;
-  onNavigate?: (section: string) => void;
 }
 
-export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetChange, onSearchClick, onNavigate }: TransactionListProps) => {
-  const { transactions, categories, getTotalIncome, getTotalExpense, activeTimeFilter, activeCustomStartDate, activeCustomEndDate, setActiveTimeFilter, setActiveCustomDateRange } = useFinanceStore();
+export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetChange }: TransactionListProps) => {
+  const { transactions, categories, vendors, partners, projects, projectLabels, getTotalIncome, getTotalExpense, activeTimeFilter, activeCustomStartDate, activeCustomEndDate, setActiveTimeFilter, setActiveCustomDateRange } = useFinanceStore();
   const timeFilter = activeTimeFilter;
-  const customStartDate = activeCustomStartDate ? new Date(activeCustomStartDate) : undefined;
-  const customEndDate = activeCustomEndDate ? new Date(activeCustomEndDate) : undefined;
+  const customStartDate = useMemo(
+    () => (activeCustomStartDate ? new Date(activeCustomStartDate) : undefined),
+    [activeCustomStartDate]
+  );
+  const customEndDate = useMemo(
+    () => (activeCustomEndDate ? new Date(activeCustomEndDate) : undefined),
+    [activeCustomEndDate]
+  );
   const setTimeFilter = setActiveTimeFilter;
   const setCustomStartDate = (date: Date | undefined) => setActiveCustomDateRange(date ? date.toISOString() : null, activeCustomEndDate);
   const setCustomEndDate = (date: Date | undefined) => setActiveCustomDateRange(activeCustomStartDate, date ? date.toISOString() : null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading] = useState(false);
   const [sortBy, setSortBy] = useState<string>('date-desc');
-  const [uncategorizedFilter, setUncategorizedFilter] = useState<string | null>(null);
-  
+  const [filters, setFilters] = useState<TransactionFilters>(emptyFilters);
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
+  const activeFilterCount = countActiveFilters(filters);
+
   const filteredCategories = categories.filter(c => c.type === type);
+  const filteredVendors = useMemo(() => [...vendors].sort((a, b) => a.name.localeCompare(b.name)), [vendors]);
+  const filteredProjects = useMemo(() => [...projects].filter(p => !p.archived).sort((a, b) => a.name.localeCompare(b.name)), [projects]);
+  const filteredPartners = useMemo(() => [...partners].sort((a, b) => a.name.localeCompare(b.name)), [partners]);
+  const filteredLabels = useMemo(() => [...projectLabels].sort((a, b) => a.name.localeCompare(b.name)), [projectLabels]);
   
   const dateRange = useMemo(() => {
     return computeDateRange(timeFilter, customStartDate, customEndDate);
@@ -49,18 +60,17 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
     return base
       .filter(t => t.type === type)
       .filter(t => t.date >= dateRange.start && t.date <= dateRange.end)
-      .filter(t => !selectedCategory || t.categoryId === selectedCategory)
+      .filter(t => filters.categoryIds.length === 0 || filters.categoryIds.includes(t.categoryId))
+      .filter(t => filters.vendorNames.length === 0 || filters.vendorNames.includes(t.vendor))
+      .filter(t => filters.paymentModes.length === 0 || filters.paymentModes.includes(t.paymentMethod))
+      .filter(t => filters.partnerIds.length === 0 || filters.partnerIds.some(pid => doesHandledByBelongToPartner(partners.find(p => p.id === pid), t.handledBy)))
+      .filter(t => filters.projectIds.length === 0 || (!!t.projectId && filters.projectIds.includes(t.projectId)))
       .filter(t => {
-        if (uncategorizedFilter === 'no-category') {
-          const notSpecifiedCat = categories.find(c => c.name === 'Not Specified' && c.type === type);
-          return !t.categoryId || t.categoryId === '' || (notSpecifiedCat && t.categoryId === notSpecifiedCat.id);
-        }
-        if (uncategorizedFilter === 'no-project') return !t.projectId;
-        if (uncategorizedFilter === 'no-vendor') return !t.vendor || t.vendor === 'Unknown' || t.vendor === '' || t.vendor === 'Not Specified';
-        if (uncategorizedFilter === 'no-partner') return !t.handledBy;
-        return true;
+        if (filters.labelIds.length === 0) return true;
+        const project = t.projectId ? projects.find(p => p.id === t.projectId) : undefined;
+        return !!project?.labelIds?.some(lid => filters.labelIds.includes(lid));
       });
-  }, [transactions, type, dateRange, selectedCategory, uncategorizedFilter, isEmployee, userId]);
+  }, [transactions, type, dateRange, filters, isEmployee, userId, partners, projects]);
   
   const total = useMemo(() => {
     return filteredTransactions.reduce((sum, t) => sum + t.amount, 0);
@@ -164,7 +174,7 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
         }
       } else {
         const useYearSuffix = realDaysDiff > 730;
-        let current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+        const current = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
         while (current <= latestDate) {
           const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
           const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
@@ -185,22 +195,22 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
     if (timeFilter === 'fy') {
       // Financial Year: Generate months from start to min(endDate, today)
       const actualEnd = endDate > today ? today : endDate;
-      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-      
+      const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+
       while (current <= actualEnd) {
         const monthStart = new Date(current.getFullYear(), current.getMonth(), 1);
         const monthEnd = new Date(current.getFullYear(), current.getMonth() + 1, 0);
-        
+
         const monthTransactions = filteredTransactions.filter(t => {
           const d = parseISO(t.date);
           return d >= monthStart && d <= monthEnd;
         });
-        
+
         dataPoints.push({
           name: format(monthStart, 'MMM'),
           value: monthTransactions.reduce((sum, t) => sum + t.amount, 0),
         });
-        
+
         current.setMonth(current.getMonth() + 1);
       }
     } else if (timeFilter === 'week' || daysDiff <= 7) {
@@ -242,7 +252,7 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
       }
     } else if (timeFilter === 'year' || daysDiff > 31) {
       // Show months within the exact date range
-      let current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+      const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
       const actualEnd = endDate > today ? today : endDate;
       
       while (current <= actualEnd) {
@@ -309,30 +319,7 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
         <h1 className="text-2xl font-bold">
           {type === 'expense' ? 'Expenses' : 'Income'}
         </h1>
-        <div className="flex items-center gap-1">
-          {onSearchClick && (
-            <button
-              onClick={onSearchClick}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-              title="Search (⌘K)"
-            >
-              <Search size={20} className="text-muted-foreground" />
-            </button>
-          )}
-          {onNavigate && (
-            <button
-              onClick={() => onNavigate('settings')}
-              className="p-2 rounded-full hover:bg-muted transition-colors"
-            >
-              <Settings size={20} className="text-muted-foreground" />
-            </button>
-          )}
-        </div>
-      </div>
-      
-      {/* Time Filter Tabs */}
-      <div className="px-4 mb-4">
-        <TimeFrameSelector
+        <TimeFrameDropdown
           timeFilter={timeFilter}
           onTimeFilterChange={setTimeFilter}
           customStartDate={customStartDate}
@@ -341,7 +328,7 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
           onCustomEndDateChange={setCustomEndDate}
         />
       </div>
-      
+
       {/* Summary Card with Chart */}
       <div className="px-4 mb-4">
         <motion.div
@@ -410,95 +397,65 @@ export const TransactionList = ({ type, userId, isEmployee = false, onEditSheetC
         </motion.div>
       </div>
       
-      {/* Upcoming Recurring Banner */}
-      <div className="px-4 mb-4">
-        <UpcomingRecurringBanner type={type} />
-      </div>
-      
-      {/* Search Button - Opens Global Search */}
-      <div className="px-4 mb-4">
+      {/* Upcoming Recurring Banner (Income only) */}
+      {type === 'income' && (
+        <div className="px-4 mb-4">
+          <UpcomingRecurringBanner type={type} />
+        </div>
+      )}
+
+      {/* Filters & Sort */}
+      <div className="px-4 mb-2 flex items-center justify-between gap-2">
         <button
-          onClick={onSearchClick}
-          className="w-full flex items-center gap-3 px-4 py-3 bg-muted/50 rounded-xl text-muted-foreground hover:bg-muted transition-colors"
+          onClick={() => setIsFilterSheetOpen(true)}
+          className={cn(
+            "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors",
+            activeFilterCount > 0 ? "bg-foreground text-background" : "bg-muted text-muted-foreground hover:bg-muted/80"
+          )}
         >
-          <Search size={18} />
-          <span className="flex-1 text-left text-sm">Search transactions...</span>
-          <kbd className="hidden md:inline-flex px-1.5 py-0.5 bg-background rounded text-xs font-mono">⌘K</kbd>
+          <SlidersHorizontal size={14} />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
+
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-auto h-auto gap-1.5 px-3 py-1.5 rounded-full border-none bg-muted text-sm font-medium text-muted-foreground hover:bg-muted/80 transition-colors focus:ring-0 focus:ring-offset-0 [&>svg:last-child]:opacity-100 [&>svg:last-child]:h-3.5 [&>svg:last-child]:w-3.5">
+            <ArrowUpDown size={14} className="text-muted-foreground shrink-0" />
+            Sort
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recent">Recent</SelectItem>
+            <SelectItem value="date-desc">Date (Newest)</SelectItem>
+            <SelectItem value="date-asc">Date (Oldest)</SelectItem>
+            <SelectItem value="amount-desc">Amount (High)</SelectItem>
+            <SelectItem value="amount-asc">Amount (Low)</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-      
-      {/* Category Chips */}
-      <div className="px-4 mb-2 overflow-x-auto">
-        <div className="flex gap-2 pb-2">
-          <button
-            onClick={() => { setSelectedCategory(null); setUncategorizedFilter(null); }}
-            className={cn(
-              "px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors text-sm",
-              !selectedCategory && !uncategorizedFilter
-                ? "bg-foreground text-background" 
-                : "bg-muted text-muted-foreground"
-            )}
-          >
-            All
-          </button>
-          {filteredCategories.filter(c => c.name !== 'Not Specified').slice(0, 6).map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => { setSelectedCategory(selectedCategory === cat.id ? null : cat.id); setUncategorizedFilter(null); }}
-              className={cn(
-                "px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors flex items-center gap-2 text-sm",
-                selectedCategory === cat.id 
-                  ? "bg-foreground text-background" 
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              {cat.name}
-            </button>
-          ))}
-          <div className="w-px self-stretch my-1 bg-foreground/30 flex-shrink-0" />
-          {[
-            { key: 'no-category', label: 'No Category' },
-            { key: 'no-project', label: 'No Project' },
-            { key: 'no-vendor', label: 'No Vendor' },
-            { key: 'no-partner', label: 'No Partner' },
-          ].map((filter) => (
-            <button
-              key={filter.key}
-              onClick={() => { setUncategorizedFilter(uncategorizedFilter === filter.key ? null : filter.key); setSelectedCategory(null); }}
-              className={cn(
-                "px-4 py-2 rounded-full font-medium whitespace-nowrap transition-colors text-sm",
-                uncategorizedFilter === filter.key 
-                  ? "bg-foreground text-background" 
-                  : "bg-muted text-muted-foreground"
-              )}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      
-      {/* Sort Dropdown */}
+
+      {/* Result Count */}
       <div className="px-4 mb-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-medium text-muted-foreground">
-            {sortedTransactions.length} transaction{sortedTransactions.length !== 1 ? 's' : ''}
-          </p>
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-[130px] h-7 text-xs gap-1 border-muted">
-              <ArrowUpDown size={12} className="text-muted-foreground shrink-0" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Recent</SelectItem>
-              <SelectItem value="date-desc">Date (Newest)</SelectItem>
-              <SelectItem value="date-asc">Date (Oldest)</SelectItem>
-              <SelectItem value="amount-desc">Amount (High)</SelectItem>
-              <SelectItem value="amount-asc">Amount (Low)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <p className="text-sm font-medium text-muted-foreground">
+          {sortedTransactions.length} transaction{sortedTransactions.length !== 1 ? 's' : ''}
+        </p>
       </div>
+
+      <TransactionFilterSheet
+        open={isFilterSheetOpen}
+        onOpenChange={setIsFilterSheetOpen}
+        filters={filters}
+        onFiltersChange={setFilters}
+        resultCount={sortedTransactions.length}
+        categories={filteredCategories}
+        vendors={filteredVendors}
+        partners={filteredPartners}
+        projectLabels={filteredLabels}
+        projects={filteredProjects}
+      />
 
       {/* Transaction List */}
       <div className="px-4 space-y-4">
