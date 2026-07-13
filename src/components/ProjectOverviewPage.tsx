@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FolderKanban, Archive, ArchiveRestore, MoreVertical, Copy, Trash2, Plus, X, Check, Tag, Pencil, Users, SlidersHorizontal, ArrowUpDown } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { Project } from "@/lib/types";
 import { ProjectDetailSheet } from "./ProjectDetailSheet";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
@@ -133,7 +134,7 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
       labelIds: formData.labelIds,
       assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
-    toast.success("Project updated");
+    useSuccessAnimationStore.getState().show("Project Updated");
     setEditingProjectId(null);
     setNewLabelName('');
   };
@@ -156,7 +157,7 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
       labelIds: formData.labelIds,
       assignedEmployeeIds: formData.assignedEmployeeIds,
     }, userId);
-    toast.success("Project added");
+    useSuccessAnimationStore.getState().show("Project Added");
     setShowAddForm(false);
     setFormData({ name: '', description: '', internalCost: 0, clientCost: 0, expectedMargin: 0, color: '#10B981', labelIds: [], assignedEmployeeIds: [] });
     setNewLabelName('');
@@ -237,7 +238,7 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
       expectedMargin: project.expectedMargin || 0,
       color: project.color,
     }, userId);
-    toast.success(`Project "${project.name}" duplicated`);
+    useSuccessAnimationStore.getState().show("Project Duplicated");
   };
   // Get ALL transactions for a project (not just expenses)
   const getProjectTransactions = (projectId: string) => {
@@ -268,7 +269,7 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
   const handleArchiveConfirm = () => {
     if (archiveProject) {
       updateProject(archiveProject.id, { archived: !archiveProject.archived }, userId);
-      toast.success(archiveProject.archived ? 'Project restored' : 'Project archived');
+      useSuccessAnimationStore.getState().show(archiveProject.archived ? 'Project Restored' : 'Project Archived');
       setArchiveProject(null);
     }
   };
@@ -276,7 +277,7 @@ export const ProjectOverviewPage = ({ userId, isEmployee = false, onEditSheetCha
   const handleDeleteConfirm = () => {
     if (deleteProjectState) {
       deleteProject(deleteProjectState.id, userId);
-      toast.success(`Project "${deleteProjectState.name}" deleted`);
+      useSuccessAnimationStore.getState().show("Project Deleted");
       setDeleteProjectState(null);
     }
   };

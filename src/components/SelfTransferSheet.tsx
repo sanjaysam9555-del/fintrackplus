@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useFinanceStore } from "@/lib/store";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -57,7 +58,7 @@ export const SelfTransferSheet = ({ isOpen, onClose, partner, userId }: SelfTran
       incomeCategoryId: incomeCat.id,
     }, userId);
 
-    toast.success(`${direction === 'deposit' ? 'Deposit' : 'Withdrawal'} of ${CURRENCY_SYMBOL}${numAmount.toLocaleString()} recorded`);
+    useSuccessAnimationStore.getState().show(direction === 'deposit' ? 'Deposit Recorded' : 'Withdrawal Recorded');
     setAmount("");
     setNotes("");
     setDirection('deposit');

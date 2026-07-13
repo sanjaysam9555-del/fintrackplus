@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, useMotionValue, useTransform, useAnimation, PanInfo } from "framer-motion";
 import { ChevronDown, Pencil, Trash2, CreditCard, Banknote, Users, Paperclip, Receipt, Share2, Landmark, Calendar, Tag, Store, FolderKanban, StickyNote } from "lucide-react";
 import { useFinanceStore } from "@/lib/store";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "./DeleteConfirmDialog";
 import { EditTransactionSheet } from "./EditTransactionSheet";
@@ -131,7 +132,7 @@ export const TransactionItem = ({ transaction, category, userId, onEditSheetChan
             }, userId, deletedLinked.id);
           }
           
-          toast.success('Transaction restored');
+          useSuccessAnimationStore.getState().show('Transaction restored');
         },
       },
     });

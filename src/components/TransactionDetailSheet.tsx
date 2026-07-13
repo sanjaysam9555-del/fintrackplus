@@ -4,6 +4,7 @@ import { X, Pencil, Trash2, CreditCard, Banknote, Tag, FolderKanban, Store, Stic
 import { Transaction } from "@/lib/types";
 import { formatCurrency, formatTime, formatDate } from "@/lib/constants";
 import { useFinanceStore } from "@/lib/store";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CategoryIcon } from "./CategoryIcon";
@@ -101,7 +102,7 @@ export const TransactionDetailSheet = ({
           if (deletedLinked) {
             addTransaction({ ...deletedLinked }, userId, deletedLinked.id);
           }
-          toast.success('Transaction restored');
+          useSuccessAnimationStore.getState().show('Transaction restored');
         },
       },
     });

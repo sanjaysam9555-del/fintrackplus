@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Project, Transaction } from "@/lib/types";
 import { useFinanceStore } from "@/lib/store";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useProjectDocuments } from "@/hooks/useProjectDocuments";
@@ -225,7 +226,7 @@ export const ProjectDetailSheet = ({
     if (!project || !userId) return;
     updateProject(project.id, editForm, userId);
     setIsEditing(false);
-    toast.success("Project updated");
+    useSuccessAnimationStore.getState().show("Project Updated");
   }, [project, userId, editForm, updateProject]);
 
   const handleDuplicateProject = useCallback(() => {
@@ -239,20 +240,20 @@ export const ProjectDetailSheet = ({
       expectedMargin: project.expectedMargin || 0,
       color: project.color,
     }, userId);
-    toast.success(`Project "${project.name}" duplicated`);
+    useSuccessAnimationStore.getState().show("Project Duplicated");
   }, [project, userId, addProject]);
 
   const handleArchiveConfirm = useCallback(() => {
     if (!project) return;
     updateProject(project.id, { archived: !project.archived }, userId);
-    toast.success(project.archived ? 'Project restored' : 'Project archived');
+    useSuccessAnimationStore.getState().show(project.archived ? 'Project Restored' : 'Project Archived');
     setShowArchiveConfirm(false);
   }, [project, userId, updateProject]);
 
   const handleDeleteConfirm = useCallback(() => {
     if (!project) return;
     deleteProject(project.id, userId);
-    toast.success(`Project "${project.name}" deleted`);
+    useSuccessAnimationStore.getState().show("Project Deleted");
     setShowDeleteConfirm(false);
     onClose();
   }, [project, userId, deleteProject, onClose]);

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useFinanceStore } from "@/lib/store";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { TransactionType, PaymentMethod, PlannedInstallment } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
@@ -29,7 +30,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle } from "lucide-react";
 import { formatCurrency, formatDate } from "@/lib/constants";
-import { toast } from "sonner";
 import { ReceiptUpload } from "./ReceiptUpload";
 import { GstToggle } from "./GstToggle";
 import { InstallmentRow } from "./InstallmentRow";
@@ -185,10 +185,7 @@ export const AddTransactionSheet = ({ isOpen, onClose, defaultType = 'expense', 
     }, userId);
 
     // Show success confirmation
-    toast.success(type === 'expense' ? 'Expense Added' : 'Income Added', {
-      description: `₹${parseFloat(amount).toLocaleString()} ${title ? `- ${title}` : ''}${isPartPayment ? ' (Part Payment)' : ''}`,
-      duration: 3000,
-    });
+    useSuccessAnimationStore.getState().show(type === 'expense' ? 'Expense Added' : 'Income Added');
 
     setAmount("");
     setTitle("");

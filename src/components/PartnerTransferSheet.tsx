@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { PaymentMethod } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
@@ -86,10 +87,7 @@ export const PartnerTransferSheet = ({ isOpen, onClose, userId }: PartnerTransfe
       toPartnerName: toPartner?.name || ''
     }, userId);
 
-    toast.success('Transfer Complete', {
-      description: `${CURRENCY_SYMBOL}${transferAmount.toLocaleString()} from ${fromPartner?.name} to ${toPartner?.name}`,
-      duration: 3000
-    });
+    useSuccessAnimationStore.getState().show('Transfer Complete');
 
     resetForm();
     onClose();

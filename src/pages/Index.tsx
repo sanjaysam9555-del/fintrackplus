@@ -12,6 +12,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 import { ForcePasswordChange } from "@/components/ForcePasswordChange";
+import { SuccessConfirmation } from "@/components/SuccessConfirmation";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { useLocation, useNavigate } from "react-router-dom";
 import { appPath } from "@/lib/domainUtils";
 
@@ -41,6 +43,8 @@ const Index = () => {
   // so its own AnimatePresence can play the closing animation instead of the
   // whole subtree vanishing the instant isAddSheetOpen flips to false.
   const [hasOpenedAddSheet, setHasOpenedAddSheet] = useState(false);
+  const successMessage = useSuccessAnimationStore((s) => s.message);
+  const clearSuccessMessage = useSuccessAnimationStore((s) => s.clear);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [settingsSection, setSettingsSection] = useState<SettingsSection>(null);
@@ -326,7 +330,9 @@ const Index = () => {
           />
         </Suspense>
       )}
-      
+
+      <SuccessConfirmation message={successMessage} onComplete={clearSuccessMessage} />
+
       {/* Global Search Dialog — only mounted when open to avoid running search hook on every store change */}
       {isSearchOpen && (
         <Suspense fallback={null}>

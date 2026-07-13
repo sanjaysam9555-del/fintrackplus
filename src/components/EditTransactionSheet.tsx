@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useFinanceStore } from "@/lib/store";
+import { useSuccessAnimationStore } from "@/lib/successAnimationStore";
 import { Transaction, TransactionType, PaymentMethod } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { CURRENCY_SYMBOL } from "@/lib/constants";
@@ -181,12 +182,9 @@ export const EditTransactionSheet = ({ isOpen, onClose, transaction, userId }: E
     }
 
     await updateTransaction(transaction.id, updates, userId);
-    
-    toast.success('Transaction Updated', {
-      description: `₹${parseFloat(amount).toLocaleString()} ${title ? `- ${title}` : ''}`,
-      duration: 3000,
-    });
-    
+
+    useSuccessAnimationStore.getState().show('Transaction Updated');
+
     onClose();
   };
   
