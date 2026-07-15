@@ -37,7 +37,7 @@ export const PdfPreview = ({ url }: PdfPreviewProps) => {
           canvas.className = "w-full h-auto rounded-lg shadow-sm mb-3 bg-white";
           const context = canvas.getContext("2d");
           if (!context) continue;
-          await page.render({ canvasContext: context, viewport, canvas }).promise;
+          await page.render({ canvasContext: context, viewport } as Parameters<typeof page.render>[0]).promise;
           if (cancelled) return;
           containerRef.current?.appendChild(canvas);
         }
