@@ -247,12 +247,16 @@ export const AuthPage = () => {
   const navigate = useNavigate();
 
   // If user becomes authenticated while on /auth (e.g. after sign-in from a stale
-  // protected URL like /billing), force-redirect to the app root.
+  // protected URL like /billing, or an OAuth consent redirect), honor ?next=
+  // when it is a same-origin relative path; otherwise fall back to app root.
   useEffect(() => {
     if (user) {
-      navigate(appPath('/'), { replace: true });
+      const rawNext = searchParams.get('next');
+      const safeNext =
+        rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : null;
+      navigate(safeNext ?? appPath('/'), { replace: true });
     }
-  }, [user, navigate]);
+  }, [user, navigate, searchParams]);
 
   const isLogin = view === 'login';
 
