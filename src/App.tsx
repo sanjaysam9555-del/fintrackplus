@@ -26,6 +26,7 @@ const Terms = lazy(() => import("./pages/Terms"));
 const Refund = lazy(() => import("./pages/Refund"));
 const Billing = lazy(() => import("./pages/Billing"));
 const AdminConsole = lazy(() => import("./pages/AdminConsole"));
+const OAuthConsent = lazy(() => import("./pages/OAuthConsent"));
 
 // Prefetch critical routes during idle time so they load instantly when needed
 if (typeof window !== 'undefined') {
@@ -105,6 +106,7 @@ const AppRoutes = () => {
         {verifier}
         <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
           <Routes>
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/install" element={<InstallPage />} />
             <Route path="/admin" element={<AdminConsole />} />
             <Route path="/admin/comp" element={<AdminConsole />} />
@@ -135,6 +137,8 @@ const AppRoutes = () => {
         {verifier}
         <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
           <Routes>
+            {/* OAuth consent — public, must be reachable pre-auth */}
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             {/* Public pages */}
             <Route path="/landing" element={<Landing />} />
             <Route path="/privacy" element={<Privacy />} />
@@ -174,6 +178,8 @@ const AppRoutes = () => {
       {verifier}
       <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
         <Routes>
+          {/* OAuth consent */}
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           {/* Public routes */}
           <Route path="/install" element={<InstallPage />} />
           <Route path="/admin" element={<AdminConsole />} />
