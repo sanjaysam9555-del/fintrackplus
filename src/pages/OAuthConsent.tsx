@@ -38,7 +38,12 @@ export default function OAuthConsent() {
     }
     if (!user) {
       const next = window.location.pathname + window.location.search;
-      navigate(`/auth?next=${encodeURIComponent(next)}`, { replace: true });
+      // Landing domain (fintrackplus.com) mounts auth at /application/auth;
+      // app/preview domains mount it at /auth. Pick based on current host.
+      const host = window.location.hostname;
+      const isLanding = /(^|\.)fintrackplus\.com$/i.test(host) && !host.startsWith("app.");
+      const authPath = isLanding ? "/application/auth" : "/auth";
+      navigate(`${authPath}?next=${encodeURIComponent(next)}`, { replace: true });
       return;
     }
     let active = true;
