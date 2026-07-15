@@ -106,6 +106,7 @@ const AppRoutes = () => {
         {verifier}
         <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
           <Routes>
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             <Route path="/install" element={<InstallPage />} />
             <Route path="/admin" element={<AdminConsole />} />
             <Route path="/admin/comp" element={<AdminConsole />} />
@@ -136,6 +137,8 @@ const AppRoutes = () => {
         {verifier}
         <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
           <Routes>
+            {/* OAuth consent — public, must be reachable pre-auth */}
+            <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
             {/* Public pages */}
             <Route path="/landing" element={<Landing />} />
             <Route path="/privacy" element={<Privacy />} />
@@ -175,6 +178,8 @@ const AppRoutes = () => {
       {verifier}
       <Suspense fallback={user ? <AppSkeleton /> : <AuthPageSkeleton />}>
         <Routes>
+          {/* OAuth consent */}
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           {/* Public routes */}
           <Route path="/install" element={<InstallPage />} />
           <Route path="/admin" element={<AdminConsole />} />
